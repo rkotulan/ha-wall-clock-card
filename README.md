@@ -72,11 +72,20 @@ You can customize the Wall Clock Card through the Lovelace UI or by editing your
 
 ### UI Configuration
 
+The card now includes a full visual editor for easy configuration:
+
 1. Add the card to your dashboard
 2. Click the three dots in the top-right corner of the card
 3. Click "Edit"
-4. Configure the options as needed
-5. Click "Save"
+4. Use the visual editor to configure all options:
+   - Time format (12/24 hour, display of seconds)
+   - Date format (weekday, month, day, year display options)
+   - Background images (local or online sources)
+   - Individual background image management with add/remove functionality
+   - Background opacity and rotation interval
+   - Font color
+   - Sensors to display
+5. Click "Save" to apply your changes
 
 ### YAML Configuration
 
@@ -102,16 +111,14 @@ dateFormat:
 #   weekday: 'long'
 #   month: 'long'
 #   day: 'numeric'
-# Optional: Background images (list of URLs)
-backgroundImages:
+# Optional: Local background images (list of URLs)
+locaBackgroundImages:
   - '/local/images/background1.jpg'
   - '/local/images/background2.jpg'
   - '/local/images/background3.jpg'
 # Optional: Background overlay opacity (0-1, default: 0.5)
 backgroundOpacity: 0.5
-# Optional: Use online images instead of or in addition to local images
-useOnlineImages: true
-# Optional: Image source ('picsum' or 'local', default: 'picsum')
+# Optional: Image source ('none', 'picsum', 'local', default: 'none')
 imageSource: 'picsum'
 # Optional: Configuration for the image source
 imageConfig:
@@ -161,26 +168,35 @@ The Wall Clock Card can fetch background images from online sources, which means
 
 #### Built-in Image Sources
 
-1. **Local Images** (`imageSource: 'local'`): 
-   - Uses images from local paths or URLs specified in the configuration
-   - No additional configuration needed, automatically uses the images from the `backgroundImages` property
+1. **None** (`imageSource: 'none'`):
+   - Disables background images completely
+   - Use this option if you don't want any background images
    - Configuration:
      ```yaml
-     # The backgroundImages property is automatically used by the local image source
+     imageSource: 'none'
+     ```
+
+2. **Local Images** (`imageSource: 'local'`): 
+   - Uses images from local paths or URLs specified in the configuration
+   - No additional configuration needed, automatically uses the images from the `locaBackgroundImages` property
+   - In the UI editor, you can add, remove, and edit individual background images
+   - Images are automatically shuffled at startup for a random starting order
+   - Configuration:
+     ```yaml
+     # The locaBackgroundImages property is used by the local image source
      imageSource: 'local'
-     backgroundImages:
+     locaBackgroundImages:
        - '/local/images/background1.jpg'
        - '/local/images/background2.jpg'
        - '/local/images/background3.jpg'
      ```
 
-2. **Picsum Photos** (`imageSource: 'picsum'`): 
+3. **Picsum Photos** (`imageSource: 'picsum'`): 
    - A simple service that provides random high-quality images
    - No API key required
    - Fast and reliable
    - Uses Picsum's seed-based URL format to avoid CORS issues
    - Images are fetched directly from https://picsum.photos/
-   - This is the default image source
    - Configuration:
      ```yaml
      imageSource: 'picsum'
@@ -243,7 +259,7 @@ The Wall Clock Card uses lazy loading for background images to improve performan
 3. **Error Handling**: If an image fails to load, the component will automatically try the next image
 4. **Memory Efficient**: Only the URLs of all images are stored initially, with actual image data loaded on demand
 
-When `useOnlineImages` is enabled, the component will fetch the specified number of image URLs from the selected source when it loads. If you also have local images configured in `backgroundImages`, both sets of images will be used in the rotation.
+When `imageSource` is set to an online source like 'picsum', the component will fetch the specified number of image URLs from the selected source when it loads. If you also have local images configured in `locaBackgroundImages`, both sets of images will be used in the rotation. If you don't want any background images, you can set `imageSource: 'none'`.
 
 ## Development
 

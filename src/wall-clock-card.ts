@@ -1,9 +1,10 @@
 import { LitElement, html, css, property, customElement, CSSResult, TemplateResult } from 'lit-element';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ImageSourceConfig, getImageSource } from './image-sources';
+import './wall-clock-card-editor';
 
 // Interface for sensor configuration
-interface SensorConfig {
+export interface SensorConfig {
   entity: string;
   label?: string;
 }
@@ -16,15 +17,16 @@ interface ImageStatus {
   error: boolean;
 }
 
-interface WallClockConfig {
+export interface WallClockConfig {
   timeFormat?: Intl.DateTimeFormatOptions;
   dateFormat?: Intl.DateTimeFormatOptions;
-  backgroundImages?: string[];
+  locaBackgroundImages?: string[];
   backgroundOpacity?: number;
-  useOnlineImages?: boolean;
-  imageSource?: string; // ID of the image source plugin
+  imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
   // Legacy properties for backward compatibility
+  backgroundImages?: string[]; // Legacy property, use locaBackgroundImages instead
+  useOnlineImages?: boolean; // Legacy property, use imageSource instead
   onlineImageSource?: string;
   onlineImageConfig?: ImageSourceConfig;
   backgroundRotationInterval?: number;
@@ -33,6 +35,9 @@ interface WallClockConfig {
   // Legacy properties for backward compatibility
   sensorEntity?: string; // Single sensor (legacy)
   sensorLabel?: string; // Single sensor label (legacy)
+
+  // Allow string indexing for dynamic property access
+  [key: string]: any;
 }
 
 @customElement('wall-clock-card')
@@ -82,16 +87,35 @@ export class WallClockCard extends LitElement {
     try {
       const urls: string[] = [];
 
-      // Fetch online image URLs if enabled
-      if (this.config.useOnlineImages) {
+      // Get the image source from config
+      const imageSource = this.config.imageSource || 'picsum';
+
+      // Skip image fetching if imageSource is 'none'
+      if (imageSource === 'none') {
+        console.log('Image source is set to none, skipping image fetching');
+        this.imageUrls = [];
+        this.imageStatuses = [];
+        return;
+      }
+
+      // Fetch online image URLs if imageSource is not 'local'
+      if (imageSource !== 'local') {
         const onlineUrls = await this.fetchOnlineImageUrls();
         urls.push(...onlineUrls);
       }
 
       // Fetch local image URLs if available
-      if (this.config.backgroundImages && this.config.backgroundImages.length > 0) {
+      // First check locaBackgroundImages (new property), then fall back to backgroundImages (legacy)
+      const localImages = this.config.locaBackgroundImages || this.config.backgroundImages;
+      if (localImages && localImages.length > 0) {
         const localUrls = await this.fetchLocalImageUrls();
         urls.push(...localUrls);
+      }
+
+      // If using local image source, shuffle the array to randomize the order
+      if (imageSource === 'local' && urls.length > 0) {
+        this.shuffleArray(urls);
+        console.log('Shuffled local image URLs for random starting order');
       }
 
       // Store the URLs and initialize image statuses
@@ -165,10 +189,13 @@ export class WallClockCard extends LitElement {
         return [];
       }
 
+      // First check locaBackgroundImages (new property), then fall back to backgroundImages (legacy)
+      const localImages = this.config.locaBackgroundImages || this.config.backgroundImages || [];
+
       // Prepare the configuration for the local image source
       const sourceConfig: ImageSourceConfig = {
         ...imageSource.getDefaultConfig(),
-        images: this.config.backgroundImages || [],
+        images: localImages,
       };
 
       // Fetch image URLs from the local image source
@@ -185,6 +212,14 @@ export class WallClockCard extends LitElement {
     } catch (error) {
       console.error('Error in fetchLocalImageUrls:', error);
       return [];
+    }
+  }
+
+  // Helper method to shuffle an array (Fisher-Yates algorithm)
+  private shuffleArray(array: any[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
     }
   }
 
@@ -298,13 +333,14 @@ export class WallClockCard extends LitElement {
   }
 
   private tryFallbackImageSource(): void {
-    // If we're using online images and experiencing failures, try to switch to Picsum
-    if (this.config.useOnlineImages && this.config.imageSource !== 'picsum') {
+    // If we're using an online image source (not 'none' or 'local') and experiencing failures, try to switch to Picsum
+    if (this.config.imageSource !== 'none' && this.config.imageSource !== 'local' && this.config.imageSource !== 'picsum') {
       console.log('Switching to Picsum as fallback image source');
       this.config = {
         ...this.config,
         imageSource: 'picsum',
-        onlineImageSource: 'picsum' // For backward compatibility
+        onlineImageSource: 'picsum', // For backward compatibility
+        useOnlineImages: true // For backward compatibility
       };
 
       // Reset failure counters and fetch new images
@@ -433,11 +469,31 @@ export class WallClockCard extends LitElement {
       throw new Error('Invalid configuration');
     }
 
-    // Set default values for image source and config
-    // Use imageSource if available, fall back to onlineImageSource for backward compatibility
-    let imageSource = config.imageSource || config.onlineImageSource || 'picsum';
+    // Handle legacy properties
+    // If useOnlineImages is set but imageSource is not, convert it to imageSource
+    let imageSource = config.imageSource;
+    if (imageSource === undefined) {
+      if (config.useOnlineImages === true) {
+        imageSource = config.onlineImageSource || 'picsum';
+      } else if (config.useOnlineImages === false) {
+        // If useOnlineImages is false and there are backgroundImages, use 'local'
+        // Otherwise, use 'none'
+        if (config.backgroundImages && config.backgroundImages.length > 0) {
+          imageSource = 'local';
+        } else {
+          imageSource = 'none';
+        }
+      } else {
+        // Default to 'none' if neither is set
+        imageSource = 'none';
+      }
+    }
+
     // Use imageConfig if available, fall back to onlineImageConfig for backward compatibility
     let imageConfig: ImageSourceConfig = config.imageConfig || config.onlineImageConfig || {};
+
+    // Handle legacy backgroundImages property
+    const locaBackgroundImages = config.locaBackgroundImages || config.backgroundImages || [];
 
     this.config = {
       ...config,
@@ -454,10 +510,12 @@ export class WallClockCard extends LitElement {
         day: 'numeric'
       },
       backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,
-      useOnlineImages: config.useOnlineImages || false,
       imageSource,
       imageConfig,
+      locaBackgroundImages,
       // For backward compatibility
+      backgroundImages: locaBackgroundImages,
+      useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
       onlineImageSource: imageSource,
       onlineImageConfig: imageConfig,
       backgroundRotationInterval: config.backgroundRotationInterval || 90,

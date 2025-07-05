@@ -1,8 +1,23 @@
 # Changelog
 
+## 1.2.0
+
+- Changed configuration: replaced `useOnlineImages: true` with `imageSource: 'none'`
+- Renamed `backgroundImages` to `locaBackgroundImages` for clarity
+- Updated editor UI to reflect these changes
+- Added ability to disable background images completely with `imageSource: 'none'`
+- Added UI for adding, removing, and editing individual background images
+- Added automatic shuffling of local background images at startup for random order
+
+## 1.1.0
+
+- Added configuration editor for the card in Home Assistant
+- Improved configuration experience with visual controls for all options
+- Support for configuring time and date formats through the UI
+- Support for configuring background images and appearance settings
+
 ## 1.0.1
 
-- README update
 - Added image to README to showcase the card
 
 ## 1.0.0 (Initial Release)
