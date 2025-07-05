@@ -4,6 +4,14 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 
 ![Wall Clock Card](images/showcase-01.png)
 
+## Our Story
+
+This project started with a simple need: a beautiful, functional clock for our refrigerator-mounted tablet running Home Assistant. We wanted an at-a-glance display of time, date, and weather that would be visible from anywhere in the kitchen.
+
+Junie from JetBrains took on the programming challenge, creating a clean, elegant solution using TypeScript and modern web components. What began as a simple clock quickly evolved to include weather forecasts, sensor displays, and beautiful background images.
+
+Today, our Wall Clock Card serves as the central information hub on our kitchen tablet, providing all the essential information we need throughout the day in a visually pleasing package.
+
 ## Features
 
 - Beautiful clock card for your Lovelace dashboard
