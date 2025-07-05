@@ -47,6 +47,8 @@ export class WallClockCard extends LitElement {
   @property({ type: String }) hours = '';
   @property({ type: String }) minutes = '';
   @property({ type: String }) seconds = '';
+  @property({ type: Number }) consecutiveFailures = 0; // Track consecutive image loading failures
+  @property({ type: Boolean }) isRetrying = false; // Flag to track if we're in retry mode
 
   private timer?: number;
   private imageRotationTimer?: number;
@@ -236,6 +238,10 @@ export class WallClockCard extends LitElement {
         error: false
       };
       this.currentImageUrl = url;
+
+      // Reset consecutive failures counter on successful load
+      this.consecutiveFailures = 0;
+
       this.requestUpdate();
     };
     img.onerror = () => {
@@ -253,10 +259,52 @@ export class WallClockCard extends LitElement {
   }
 
   private tryNextImage(): void {
-    // If the current image failed to load, try the next one
+    // Increment the consecutive failures counter
+    this.consecutiveFailures++;
+
+    // If we've had too many consecutive failures, stop trying
+    const MAX_CONSECUTIVE_FAILURES = 5;
+    if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      console.warn(`Too many consecutive image loading failures (${this.consecutiveFailures}). Stopping retry attempts.`);
+      // Try to switch to a different image source if available
+      this.tryFallbackImageSource();
+      return;
+    }
+
+    // If we're already in retry mode, don't schedule another retry
+    if (this.isRetrying) {
+      return;
+    }
+
+    // If the current image failed to load, try the next one with a delay
     if (this.imageUrls.length > 1) {
-      this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
-      this.loadCurrentImage();
+      this.isRetrying = true;
+
+      // Add an exponential backoff delay based on the number of failures
+      const delay = Math.min(1000 * Math.pow(2, this.consecutiveFailures - 1), 30000);
+      console.log(`Scheduling next image load attempt in ${delay}ms (failure #${this.consecutiveFailures})`);
+
+      setTimeout(() => {
+        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
+        this.isRetrying = false;
+        this.loadCurrentImage();
+      }, delay);
+    }
+  }
+
+  private tryFallbackImageSource(): void {
+    // If we're using Unsplash and it's failing, try to switch to Picsum
+    if (this.config.useOnlineImages && this.config.onlineImageSource === 'unsplash') {
+      console.log('Switching from Unsplash to Picsum as fallback image source');
+      this.config = {
+        ...this.config,
+        onlineImageSource: 'picsum'
+      };
+
+      // Reset failure counters and fetch new images
+      this.consecutiveFailures = 0;
+      this.isRetrying = false;
+      this.fetchImageUrls();
     }
   }
 
@@ -286,6 +334,13 @@ export class WallClockCard extends LitElement {
       return;
     }
 
+    // If we've had too many consecutive failures, don't try to preload
+    const MAX_CONSECUTIVE_FAILURES = 5;
+    if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      console.warn(`Skipping preload due to too many consecutive failures (${this.consecutiveFailures})`);
+      return;
+    }
+
     // Mark the next image as loading
     this.imageStatuses[nextIndex] = {
       ...nextStatus,
@@ -304,6 +359,10 @@ export class WallClockCard extends LitElement {
         loading: false,
         error: false
       };
+
+      // Reset consecutive failures counter on successful preload
+      // This helps ensure we're tracking failures across both main loading and preloading
+      this.consecutiveFailures = 0;
     };
     img.onerror = () => {
       console.error(`Error preloading next image: ${url}`);
@@ -313,6 +372,10 @@ export class WallClockCard extends LitElement {
         loading: false,
         error: true
       };
+
+      // We don't increment consecutiveFailures here because we don't want
+      // preload failures to trigger the fallback mechanism directly.
+      // The main image loading will handle that if needed.
     };
     img.src = url;
   }

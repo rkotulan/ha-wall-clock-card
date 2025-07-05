@@ -92,8 +92,9 @@ export class UnsplashSource implements ImageSource {
         const randomSeed = Date.now() + i;
 
         // Create a direct URL to an Unsplash image using their CDN
-        // This avoids the CORS issues with source.unsplash.com
-        const imageUrl = `https://images.unsplash.com/collection/${collectionId}/1920x1080?${randomSeed}`;
+        // Using a more reliable format with source parameter and fit=crop
+        // This format is more stable and less likely to be rejected
+        const imageUrl = `https://source.unsplash.com/collection/${collectionId}/1920x1080/?sig=${randomSeed}`;
 
         fetchedImages.push(imageUrl);
       } catch (err) {
