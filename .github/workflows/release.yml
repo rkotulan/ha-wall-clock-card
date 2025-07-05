@@ -4,12 +4,15 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Prepare release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       # Build
       - name: Build the file
@@ -18,10 +21,9 @@ jobs:
           yarn install
           npm run build
 
-      # Upload build file to the releas as an asset.
-      - name: Upload zip to release
-        uses: svenstaro/upload-release-action@v1-release
-
+      # Upload build file to the release as an asset.
+      - name: Upload asset to release
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: /home/runner/work/ha-wall-clock-card/ha-wall-clock-card/dist/wall-clock-card.js
