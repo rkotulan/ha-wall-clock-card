@@ -2,6 +2,5 @@
   "name": "Wall Clock Card",
   "content_in_root": false,
   "filename": "wall-clock-card.js",
-  "render_readme": true,
-  "homeassistant": "0.118.0"
+  "render_readme": true
 }
