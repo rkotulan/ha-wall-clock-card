@@ -3,6 +3,8 @@ node_modules/
 
 # Build files
 dist/
+*.ts
+*.ts.map
 
 # IDE files
 .idea/
