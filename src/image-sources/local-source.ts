@@ -39,7 +39,6 @@ export class LocalSource implements ImageSource {
    */
   getDefaultConfig(): LocalSourceConfig {
     return {
-      count: 0,
       images: []
     };
   }

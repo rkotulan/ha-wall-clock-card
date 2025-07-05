@@ -4,7 +4,6 @@
  */
 export interface ImageSourceConfig {
   // Common configuration properties for all image sources
-  count?: number;
   category?: string;
   [key: string]: any; // Allow additional source-specific properties
 }

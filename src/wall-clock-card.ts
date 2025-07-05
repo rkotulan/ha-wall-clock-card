@@ -22,8 +22,11 @@ interface WallClockConfig {
   backgroundImages?: string[];
   backgroundOpacity?: number;
   useOnlineImages?: boolean;
-  onlineImageSource?: string; // ID of the image source plugin
-  onlineImageConfig?: ImageSourceConfig; // Configuration for the image source
+  imageSource?: string; // ID of the image source plugin
+  imageConfig?: ImageSourceConfig; // Configuration for the image source
+  // Legacy properties for backward compatibility
+  onlineImageSource?: string;
+  onlineImageConfig?: ImageSourceConfig;
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
@@ -117,7 +120,8 @@ export class WallClockCard extends LitElement {
   private async fetchOnlineImageUrls(): Promise<string[]> {
     try {
       // Get the image source ID from config, default to 'picsum'
-      const sourceId = this.config.onlineImageSource || 'picsum';
+      // Use imageSource if available, fall back to onlineImageSource for backward compatibility
+      const sourceId = this.config.imageSource || this.config.onlineImageSource || 'picsum';
 
       // Get the image source plugin
       const imageSource = getImageSource(sourceId);
@@ -128,9 +132,10 @@ export class WallClockCard extends LitElement {
       }
 
       // Prepare the configuration for the image source
+      // Use imageConfig if available, fall back to onlineImageConfig for backward compatibility
       const sourceConfig: ImageSourceConfig = {
         ...imageSource.getDefaultConfig(),
-        ...this.config.onlineImageConfig || {},
+        ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
       };
 
       // Fetch image URLs from the image source
@@ -198,7 +203,7 @@ export class WallClockCard extends LitElement {
         // Move to the next image
         this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
         this.loadCurrentImage();
-      }, (this.config.backgroundRotationInterval || 30) * 1000); // Convert seconds to milliseconds
+      }, (this.config.backgroundRotationInterval || 90) * 1000); // Convert seconds to milliseconds
 
       // Preload the next image after a short delay
       this.scheduleNextImagePreload();
@@ -294,11 +299,12 @@ export class WallClockCard extends LitElement {
 
   private tryFallbackImageSource(): void {
     // If we're using online images and experiencing failures, try to switch to Picsum
-    if (this.config.useOnlineImages && this.config.onlineImageSource !== 'picsum') {
+    if (this.config.useOnlineImages && this.config.imageSource !== 'picsum') {
       console.log('Switching to Picsum as fallback image source');
       this.config = {
         ...this.config,
-        onlineImageSource: 'picsum'
+        imageSource: 'picsum',
+        onlineImageSource: 'picsum' // For backward compatibility
       };
 
       // Reset failure counters and fetch new images
@@ -428,8 +434,10 @@ export class WallClockCard extends LitElement {
     }
 
     // Set default values for image source and config
-    let onlineImageSource = config.onlineImageSource || 'picsum';
-    let onlineImageConfig: ImageSourceConfig = config.onlineImageConfig || {};
+    // Use imageSource if available, fall back to onlineImageSource for backward compatibility
+    let imageSource = config.imageSource || config.onlineImageSource || 'picsum';
+    // Use imageConfig if available, fall back to onlineImageConfig for backward compatibility
+    let imageConfig: ImageSourceConfig = config.imageConfig || config.onlineImageConfig || {};
 
     this.config = {
       ...config,
@@ -447,9 +455,12 @@ export class WallClockCard extends LitElement {
       },
       backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,
       useOnlineImages: config.useOnlineImages || false,
-      onlineImageSource,
-      onlineImageConfig,
-      backgroundRotationInterval: config.backgroundRotationInterval || 30,
+      imageSource,
+      imageConfig,
+      // For backward compatibility
+      onlineImageSource: imageSource,
+      onlineImageConfig: imageConfig,
+      backgroundRotationInterval: config.backgroundRotationInterval || 90,
       sensors: config.sensors || [],
       sensorEntity: config.sensorEntity || '',
       sensorLabel: config.sensorLabel || '',

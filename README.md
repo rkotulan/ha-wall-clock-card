@@ -111,15 +111,14 @@ backgroundImages:
 backgroundOpacity: 0.5
 # Optional: Use online images instead of or in addition to local images
 useOnlineImages: true
-# Optional: Online image source ('picsum', default: 'picsum')
-onlineImageSource: 'picsum'
+# Optional: Image source ('picsum' or 'local', default: 'picsum')
+imageSource: 'picsum'
 # Optional: Configuration for the image source
-onlineImageConfig:
-  count: 10  # Number of images to fetch
+imageConfig:
   # Additional source-specific configuration options
 
-# Optional: Background image rotation interval in seconds (default: 30)
-backgroundRotationInterval: 30
+# Optional: Background image rotation interval in seconds (default: 90)
+backgroundRotationInterval: 90
 # Optional: Multiple sensors to display in the top left corner
 sensors:
   - entity: 'sensor.living_room_temperature'
@@ -156,36 +155,36 @@ Each sensor configuration requires an `entity` property (the entity ID of the se
 
 For backward compatibility, you can still use the legacy `sensorEntity` and `sensorLabel` properties to display a single sensor.
 
-### Online Image Sources
+### Image Sources
 
 The Wall Clock Card can fetch background images from online sources, which means you don't need to manually download and store images on your Home Assistant server. The card uses a plugin system for image sources, allowing you to use built-in sources or create your own.
 
 #### Built-in Image Sources
 
-1. **Local Images** (`onlineImageSource: 'local'`): 
+1. **Local Images** (`imageSource: 'local'`): 
    - Uses images from local paths or URLs specified in the configuration
    - No additional configuration needed, automatically uses the images from the `backgroundImages` property
-   - This is the default source for the `backgroundImages` property
    - Configuration:
      ```yaml
      # The backgroundImages property is automatically used by the local image source
+     imageSource: 'local'
      backgroundImages:
        - '/local/images/background1.jpg'
        - '/local/images/background2.jpg'
        - '/local/images/background3.jpg'
      ```
 
-2. **Picsum Photos** (`onlineImageSource: 'picsum'`): 
+2. **Picsum Photos** (`imageSource: 'picsum'`): 
    - A simple service that provides random high-quality images
    - No API key required
    - Fast and reliable
    - Uses Picsum's seed-based URL format to avoid CORS issues
    - Images are fetched directly from https://picsum.photos/
+   - This is the default image source
    - Configuration:
      ```yaml
-     onlineImageSource: 'picsum'
-     onlineImageConfig:
-       count: 5  # Number of images to fetch
+     imageSource: 'picsum'
+     imageConfig: {}  # No additional configuration needed
      ```
 
 
@@ -225,7 +224,6 @@ export class MyCustomSource implements ImageSource {
 
   getDefaultConfig(): MyCustomSourceConfig {
     return {
-      count: 5,
       apiKey: ''
     };
   }

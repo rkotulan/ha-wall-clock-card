@@ -3,6 +3,7 @@
 ## 1.0.1
 
 - README update
+- Added image to README to showcase the card
 
 ## 1.0.0 (Initial Release)
 
