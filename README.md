@@ -2,7 +2,7 @@
 
 A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date.
 
-![Wall Clock Card](https://via.placeholder.com/800x400.png?text=Wall+Clock+Card)
+![Wall Clock Card](images/showcase-01.png)
 
 ## Features
 
