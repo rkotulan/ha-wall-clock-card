@@ -1,7 +1,6 @@
 import { ImageSource } from './image-source';
 import { ImageSourceRegistry } from './image-source-registry';
 import { picsumSource } from './picsum-source';
-import { unsplashSource } from './unsplash-source';
 import { localSource } from './local-source';
 
 // Get the registry instance
@@ -9,14 +8,12 @@ const registry = ImageSourceRegistry.getInstance();
 
 // Register the built-in image sources
 registry.register(picsumSource);
-registry.register(unsplashSource);
 registry.register(localSource);
 
 // Export everything for external use
 export * from './image-source';
 export * from './image-source-registry';
 export * from './picsum-source';
-export * from './unsplash-source';
 export * from './local-source';
 
 // Export a function to register custom image sources

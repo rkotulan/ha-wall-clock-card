@@ -293,9 +293,9 @@ export class WallClockCard extends LitElement {
   }
 
   private tryFallbackImageSource(): void {
-    // If we're using Unsplash and it's failing, try to switch to Picsum
-    if (this.config.useOnlineImages && this.config.onlineImageSource === 'unsplash') {
-      console.log('Switching from Unsplash to Picsum as fallback image source');
+    // If we're using online images and experiencing failures, try to switch to Picsum
+    if (this.config.useOnlineImages && this.config.onlineImageSource !== 'picsum') {
+      console.log('Switching to Picsum as fallback image source');
       this.config = {
         ...this.config,
         onlineImageSource: 'picsum'

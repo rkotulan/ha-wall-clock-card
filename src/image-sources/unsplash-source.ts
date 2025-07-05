@@ -6,6 +6,10 @@ import { ImageSource, ImageSourceConfig } from './image-source';
 export interface UnsplashSourceConfig extends ImageSourceConfig {
   // Category for Unsplash images (e.g., 'nature,water')
   category?: string;
+  // API key for Unsplash API (required for API mode)
+  apiKey?: string;
+  // Whether to use the official Unsplash API (requires apiKey)
+  useApi?: boolean;
 }
 
 /**
@@ -62,7 +66,24 @@ export class UnsplashSource implements ImageSource {
   async fetchImages(config: UnsplashSourceConfig): Promise<string[]> {
     const count = config.count || 5;
     const category = config.category || '';
+    const useApi = config.useApi || false;
+    const apiKey = config.apiKey || '';
     const fetchedImages: string[] = [];
+
+    // If useApi is true and apiKey is provided, use the official Unsplash API
+    if (useApi && apiKey) {
+      try {
+        console.log('Using official Unsplash API');
+        return await this.fetchImagesFromApi(apiKey, category, count);
+      } catch (error) {
+        console.error('Error fetching images from Unsplash API:', error);
+        console.log('Falling back to direct URL method');
+        // Fall back to the direct URL method if the API fails
+      }
+    }
+
+    // Direct URL method (fallback or default if useApi is false)
+    console.log('Using direct URL method for Unsplash images');
 
     // Parse the category string to get individual categories
     const categories = category.split(',').map(c => c.trim().toLowerCase());
@@ -107,13 +128,79 @@ export class UnsplashSource implements ImageSource {
   }
 
   /**
+   * Fetch images from the official Unsplash API
+   * @param apiKey Unsplash API key
+   * @param category Category for images
+   * @param count Number of images to fetch
+   * @returns Promise that resolves to an array of image URLs
+   */
+  private async fetchImagesFromApi(apiKey: string, category: string, count: number): Promise<string[]> {
+    const fetchedImages: string[] = [];
+
+    // Prepare the search query from categories
+    let query = '';
+    if (category) {
+      // Use the first category as the main query
+      const categories = category.split(',').map(c => c.trim().toLowerCase());
+      if (categories.length > 0) {
+        query = categories[0];
+      }
+    }
+
+    try {
+      // Construct the API URL
+      let apiUrl = 'https://api.unsplash.com/photos/random?';
+      const params = new URLSearchParams({
+        client_id: apiKey,
+        count: count.toString(),
+        orientation: 'landscape',
+        content_filter: 'high'
+      });
+
+      // Add query if provided
+      if (query) {
+        params.append('query', query);
+      }
+
+      apiUrl += params.toString();
+
+      // Make the API request
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        throw new Error(`Unsplash API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Extract image URLs from the response
+      if (Array.isArray(data)) {
+        data.forEach(photo => {
+          // Use the raw URL for highest quality
+          const imageUrl = photo.urls.raw + '&w=1920&h=1080&fit=crop';
+          fetchedImages.push(imageUrl);
+        });
+      }
+
+      console.log(`Fetched ${fetchedImages.length} images from Unsplash API`);
+    } catch (error) {
+      console.error('Error fetching from Unsplash API:', error);
+      throw error; // Re-throw to allow fallback
+    }
+
+    return fetchedImages;
+  }
+
+  /**
    * Get the default configuration for the Unsplash image source
    * @returns Default configuration
    */
   getDefaultConfig(): UnsplashSourceConfig {
     return {
       count: 5,
-      category: 'nature'
+      category: 'nature',
+      apiKey: '',
+      useApi: false
     };
   }
 

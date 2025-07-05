@@ -18,7 +18,6 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 - Adjustable black overlay for background images
 - **Online image sources** - automatically fetch beautiful background images from:
   - [Picsum Photos](https://picsum.photos/) - random high-quality images
-  - [Unsplash Source](https://source.unsplash.com/) - beautiful, free photos with category filtering
 
 ## Installation
 
@@ -112,14 +111,12 @@ backgroundImages:
 backgroundOpacity: 0.5
 # Optional: Use online images instead of or in addition to local images
 useOnlineImages: true
-# Optional: Online image source ('picsum' or 'unsplash', default: 'picsum')
+# Optional: Online image source ('picsum', default: 'picsum')
 onlineImageSource: 'picsum'
 # Optional: Configuration for the image source
 onlineImageConfig:
   count: 10  # Number of images to fetch
   # Additional source-specific configuration options
-  # For example, for Unsplash:
-  # category: 'nature,water'
 
 # Optional: Background image rotation interval in seconds (default: 30)
 backgroundRotationInterval: 30
@@ -191,19 +188,6 @@ The Wall Clock Card can fetch background images from online sources, which means
        count: 5  # Number of images to fetch
      ```
 
-3. **Unsplash** (`onlineImageSource: 'unsplash'`):
-   - Provides beautiful, free photos from Unsplash
-   - No API key required (uses Unsplash's collection IDs)
-   - Supports filtering by category
-   - Configuration:
-     ```yaml
-     onlineImageSource: 'unsplash'
-     onlineImageConfig:
-       count: 5  # Number of images to fetch
-       category: 'nature,water'  # Categories to fetch images from
-     ```
-   - Supported categories include: nature, water, architecture, city, landscape, animals, food, travel, people, technology, abstract, space, interior, flowers, and various colors (dark, light, minimal, colorful, black, white, red, blue, green, yellow, orange, purple, pink, brown, gray, black-and-white)
-   - You can combine multiple categories by separating them with commas (e.g., 'nature,water,landscape')
 
 
 #### Custom Image Sources
