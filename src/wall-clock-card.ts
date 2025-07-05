@@ -1,6 +1,7 @@
 import { LitElement, html, css, property, customElement, CSSResult, TemplateResult } from 'lit-element';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ImageSourceConfig, getImageSource } from './image-sources';
+import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
 import './wall-clock-card-editor';
 
 // Interface for sensor configuration
@@ -36,6 +37,14 @@ export interface WallClockConfig {
   sensorEntity?: string; // Single sensor (legacy)
   sensorLabel?: string; // Single sensor label (legacy)
 
+  // Weather forecast settings
+  showWeather?: boolean; // Whether to show weather forecast
+  weatherProvider?: string; // ID of the weather provider plugin ('openweathermap', etc.)
+  weatherConfig?: WeatherProviderConfig; // Configuration for the weather provider
+  weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
+  weatherForecastDays?: number; // Number of days to show in forecast (1-7)
+  weatherTitle?: string; // Custom title for the weather section (default: "Weather")
+
   // Allow string indexing for dynamic property access
   [key: string]: any;
 }
@@ -57,11 +66,16 @@ export class WallClockCard extends LitElement {
   @property({ type: String }) seconds = '';
   @property({ type: Number }) consecutiveFailures = 0; // Track consecutive image loading failures
   @property({ type: Boolean }) isRetrying = false; // Flag to track if we're in retry mode
+  @property({ type: Object }) weatherData?: WeatherData; // Weather data from provider
+  @property({ type: Boolean }) weatherLoading = false; // Flag to track if weather data is loading
+  @property({ type: Boolean }) weatherError = false; // Flag to track if there was an error loading weather data
+  @property({ type: String }) weatherErrorMessage = ''; // Error message if weather data loading failed
 
   private timer?: number;
   private imageRotationTimer?: number;
   private fetchingImageUrls = false;
   private preloadTimer?: number;
+  private weatherUpdateTimer?: number;
 
   constructor() {
     super();
@@ -78,6 +92,16 @@ export class WallClockCard extends LitElement {
 
     // Fetch image URLs (not the actual images)
     this.fetchImageUrls();
+
+    // Fetch weather data if enabled
+    if (this.config.showWeather) {
+      this.fetchWeatherData();
+
+      // Update weather data every 30 minutes (1800000 ms)
+      this.weatherUpdateTimer = window.setInterval(() => {
+        this.fetchWeatherData();
+      }, 1800000);
+    }
   }
 
   private async fetchImageUrls(): Promise<void> {
@@ -434,6 +458,44 @@ export class WallClockCard extends LitElement {
     if (this.preloadTimer) {
       clearTimeout(this.preloadTimer);
     }
+    if (this.weatherUpdateTimer) {
+      clearInterval(this.weatherUpdateTimer);
+    }
+  }
+
+  /**
+   * Fetch weather data from the configured provider
+   */
+  private async fetchWeatherData(): Promise<void> {
+    if (this.weatherLoading || !this.config.showWeather) return;
+
+    this.weatherLoading = true;
+    this.weatherError = false;
+    this.weatherErrorMessage = '';
+
+    try {
+      // Get the weather provider from config, default to openweathermap
+      const providerId = this.config.weatherProvider || 'openweathermap';
+      const provider = getWeatherProvider(providerId);
+
+      if (!provider) {
+        throw new Error(`Weather provider '${providerId}' not found`);
+      }
+
+      // Get the weather config from the card config
+      const weatherConfig = this.config.weatherConfig || {};
+
+      // Fetch weather data from the provider
+      this.weatherData = await provider.fetchWeather(weatherConfig);
+
+      console.log(`Fetched weather data from ${provider.name}:`, this.weatherData);
+    } catch (error) {
+      this.weatherError = true;
+      this.weatherErrorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error fetching weather data:', error);
+    } finally {
+      this.weatherLoading = false;
+    }
   }
 
   // Required for Home Assistant custom cards
@@ -763,8 +825,95 @@ export class WallClockCard extends LitElement {
 
       .sensor-value {
         font-size: 2.5rem;
+        font-weight: 400;
+      }
+
+      /* Weather display styles */
+      .weather-container {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        z-index: 4;
+        max-width: 40%;
+        max-height: 60%;
+        overflow-y: auto;
+        padding-left: 8px;
+      }
+
+      .weather-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+        opacity: 0.8;
+        text-align: right;
+      }
+
+      .weather-current {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-bottom: 16px;
+      }
+
+      .weather-temp-container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .weather-temp {
+        font-size: 2.5rem;
         line-height: 2.5rem;
         font-weight: 400;
+      }
+
+      .weather-condition {
+        font-size: 1.5rem;
+        font-weight: 300;
+        opacity: 0.8;
+      }
+
+      .weather-icon {
+        width: 50px;
+        height: 50px;
+        margin-left: 8px;
+      }
+
+      .weather-forecast {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .forecast-day {
+        display: flex;
+        align-items: center;
+      }
+
+      .forecast-date {
+        font-size: 1.4rem;
+        font-weight: 300;
+        margin-right: 8px;
+        opacity: 0.8;
+      }
+
+      .forecast-icon {
+        width: 50px;
+        height: 50px;
+        margin: 0 8px;
+      }
+
+      .forecast-temp {
+        font-size: 1.4rem;
+        font-weight: 400;
+      }
+
+      .weather-error {
+        color: #f44336;
+        font-size: 1rem;
       }
 
       /* Responsive adjustments */
@@ -776,6 +925,16 @@ export class WallClockCard extends LitElement {
 
         .date {
           font-size: 6rem;
+        }
+
+        .weather-temp {
+          font-size: 3rem;
+          line-height: 3rem;
+        }
+
+        .weather-icon {
+          width: 60px;
+          height: 60px;
         }
       }
     `;
@@ -813,6 +972,12 @@ export class WallClockCard extends LitElement {
           </div>` : 
           ''
         }
+        ${this.config.showWeather && this.weatherData ? 
+          html`<div class="weather-container" style="color: ${this.config.fontColor};">
+            ${this.renderWeatherContent()}
+          </div>` : 
+          ''
+        }
         <div class="clock" style="color: ${this.config.fontColor};">
           <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
           <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
@@ -820,6 +985,69 @@ export class WallClockCard extends LitElement {
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
       </ha-card>
     `;
+  }
+
+  /**
+   * Render weather content based on display mode
+   */
+  private renderWeatherContent(): TemplateResult {
+    if (this.weatherError) {
+      return html`<div class="weather-error">${this.weatherErrorMessage}</div>`;
+    }
+
+    if (!this.weatherData) {
+      return html`<div class="weather-loading">Loading weather data...</div>`;
+    }
+
+    const displayMode = this.config.weatherDisplayMode || 'both';
+    const forecastDays = this.config.weatherForecastDays || 3;
+    const weatherTitle = this.config.weatherTitle || 'Weather';
+
+    // Limit forecast days to available data (max 7 days)
+    const limitedForecastDays = Math.min(forecastDays, this.weatherData.daily.length);
+
+    return html`
+      <div class="weather-title" style="color: ${this.config.fontColor};">${weatherTitle}</div>
+
+      ${(displayMode === 'current' || displayMode === 'both') ? 
+        html`
+          <div class="weather-current">
+            <div class="weather-temp-container">
+              <img class="weather-icon" src="${this.weatherData.current.icon}" alt="${this.weatherData.current.condition}">
+              <div class="weather-temp">${Math.round(this.weatherData.current.temperature)}°</div>              
+            </div>
+            <div class="weather-condition">${this.weatherData.current.condition}</div>
+          </div>
+        ` : 
+        ''
+      }
+
+      ${(displayMode === 'forecast' || displayMode === 'both') ? 
+        html`
+          <div class="weather-forecast">
+            ${this.weatherData.daily.slice(0, limitedForecastDays).map(day => html`
+              <div class="forecast-day">
+                <div class="forecast-date">${this.formatForecastDate(day.date)}</div>
+                <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
+                <div class="forecast-temp">${Math.round(day.temperatureMin)}° - ${Math.round(day.temperatureMax)}°</div>
+              </div>
+            `)}
+          </div>
+        ` : 
+        ''
+      }
+    `;
+  }
+
+  /**
+   * Format a date for display in the forecast
+   */
+  private formatForecastDate(date: Date): string {
+    // Get day name in Czech or English based on language setting
+    const language = this.config.weatherConfig?.language || 'cs';
+
+    // Format: "Mon", "Tue", etc.
+    return date.toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US', { weekday: 'short' });
   }
 }
 
