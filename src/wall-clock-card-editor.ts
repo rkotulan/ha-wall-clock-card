@@ -1,13 +1,14 @@
 import { LitElement, html, customElement, property, TemplateResult, CSSResult, css } from 'lit-element';
 import { HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig } from 'custom-card-helpers';
 import { WallClockConfig, SensorConfig } from './wall-clock-card';
+import { BackgroundImage, TimeOfDay } from './image-sources/image-source';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ type: Object }) hass?: HomeAssistant;
   @property({ type: Object }) _config?: WallClockConfig;
   @property({ type: Array }) _sensors: SensorConfig[] = [];
-  @property({ type: Array }) _localBackgroundImages: string[] = [];
+  @property({ type: Array }) _backgroundImages: BackgroundImage[] = [];
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -83,6 +84,29 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     { value: 'both', label: 'Current and Forecast' },
   ];
 
+  // Weather condition options based on OpenWeatherMap icon codes
+  private _weatherConditionOptions = [
+    { value: 'all', label: 'All Weather Conditions' },
+    { value: 'clear sky', label: 'Clear Sky (01d/01n)' },
+    { value: 'few clouds', label: 'Few Clouds (02d/02n)' },
+    { value: 'scattered clouds', label: 'Scattered Clouds (03d/03n)' },
+    { value: 'broken clouds', label: 'Broken Clouds (04d/04n)' },
+    { value: 'shower rain', label: 'Shower Rain (09d/09n)' },
+    { value: 'rain', label: 'Rain (10d/10n)' },
+    { value: 'thunderstorm', label: 'Thunderstorm (11d/11n)' },
+    { value: 'snow', label: 'Snow (13d/13n)' },
+    { value: 'mist', label: 'Mist (50d/50n)' },
+  ];
+
+  // Time of day options
+  private _timeOfDayOptions = [
+    { value: TimeOfDay.Unspecified, label: 'Any Time (Unspecified)' },
+    { value: TimeOfDay.Morning, label: 'Morning' },
+    { value: TimeOfDay.Noon, label: 'Noon' },
+    { value: TimeOfDay.Afternoon, label: 'Afternoon' },
+    { value: TimeOfDay.Evening, label: 'Evening' },
+  ];
+
   setConfig(config: LovelaceCardConfig): void {
     // Cast the config to WallClockConfig
     const wallClockConfig = config as unknown as WallClockConfig;
@@ -107,8 +131,24 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
       }
     }
 
-    // Handle legacy backgroundImages property
-    const locaBackgroundImages = wallClockConfig.locaBackgroundImages || wallClockConfig.backgroundImages || [];
+    // Convert legacy string array backgroundImages to the new structure if needed
+    if (Array.isArray(wallClockConfig.backgroundImages) && 
+        wallClockConfig.backgroundImages.length > 0 && 
+        typeof wallClockConfig.backgroundImages[0] === 'string') {
+      // Create a new array of BackgroundImage objects
+      const backgroundImages: BackgroundImage[] = [];
+      for (const img of wallClockConfig.backgroundImages) {
+        if (typeof img === 'string') {
+          backgroundImages.push({
+            url: img,
+            weather: 'all',
+            timeOfDay: TimeOfDay.Unspecified
+          });
+        }
+      }
+      // Update the config with the new structure
+      wallClockConfig.backgroundImages = backgroundImages;
+    }
 
     this._config = {
       ...wallClockConfig,
@@ -127,9 +167,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
       backgroundOpacity: wallClockConfig.backgroundOpacity !== undefined ? wallClockConfig.backgroundOpacity : 0.3,
       imageSource: imageSource,
       imageConfig: wallClockConfig.imageConfig || wallClockConfig.onlineImageConfig || {},
-      locaBackgroundImages: locaBackgroundImages,
-      // For backward compatibility
-      backgroundImages: locaBackgroundImages,
       useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
       backgroundRotationInterval: wallClockConfig.backgroundRotationInterval || 90,
       sensors: wallClockConfig.sensors || [],
@@ -145,8 +182,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     // Load sensors from config
     this._loadSensors();
 
-    // Load local background images from config
-    this._loadLocalBackgroundImages();
+    // Load unified background images from config
+    this._loadBackgroundImages();
   }
 
   private _loadSensors(): void {
@@ -163,14 +200,14 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
   }
 
-  private _loadLocalBackgroundImages(): void {
-    if (this._config?.locaBackgroundImages && this._config.locaBackgroundImages.length > 0) {
-      this._localBackgroundImages = [...this._config.locaBackgroundImages];
-    } else if (this._config?.backgroundImages && this._config.backgroundImages.length > 0) {
-      // For backward compatibility
-      this._localBackgroundImages = [...this._config.backgroundImages];
+
+  private _loadBackgroundImages(): void {
+    if (this._config?.backgroundImages && this._config.backgroundImages.length > 0) {
+      // Use the structure if available
+      this._backgroundImages = [...this._config.backgroundImages];
     } else {
-      this._localBackgroundImages = [];
+      // Initialize empty array
+      this._backgroundImages = [];
     }
   }
 
@@ -228,56 +265,40 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
   }
 
-  private _addLocalBackgroundImage(): void {
-    this._localBackgroundImages = [...this._localBackgroundImages, ''];
-    // Update the config with a deep copy
-    if (this._config) {
-      // Create a deep copy of the config
-      const newConfig = JSON.parse(JSON.stringify(this._config));
-      newConfig.locaBackgroundImages = [...this._localBackgroundImages];
-      // For backward compatibility
-      newConfig.backgroundImages = [...this._localBackgroundImages];
 
-      // Update the local config reference
-      this._config = newConfig;
-
-      // Fire the config-changed event with the new config
-      fireEvent(this, 'config-changed', { config: newConfig });
-    }
-  }
-
-  private _removeLocalBackgroundImage(index: number): void {
-    this._localBackgroundImages = this._localBackgroundImages.filter((_, i) => i !== index);
-    // Update the config with a deep copy
-    if (this._config) {
-      // Create a deep copy of the config
-      const newConfig = JSON.parse(JSON.stringify(this._config));
-      newConfig.locaBackgroundImages = [...this._localBackgroundImages];
-      // For backward compatibility
-      newConfig.backgroundImages = [...this._localBackgroundImages];
-
-      // Update the local config reference
-      this._config = newConfig;
-
-      // Fire the config-changed event with the new config
-      fireEvent(this, 'config-changed', { config: newConfig });
-    }
-  }
-
-  private _updateLocalBackgroundImage(index: number, value: string): void {
-    this._localBackgroundImages = this._localBackgroundImages.map((url, i) => {
-      if (i === index) {
-        return value;
+  private _addBackgroundImage(): void {
+    this._backgroundImages = [
+      ...this._backgroundImages, 
+      { 
+        url: '', 
+        weather: 'all', 
+        timeOfDay: TimeOfDay.Unspecified 
       }
-      return url;
+    ];
+    this._updateBackgroundImagesConfig();
+  }
+
+  private _removeBackgroundImage(index: number): void {
+    this._backgroundImages = this._backgroundImages.filter((_, i) => i !== index);
+    this._updateBackgroundImagesConfig();
+  }
+
+  private _updateBackgroundImage(index: number, updatedImage: Partial<BackgroundImage>): void {
+    this._backgroundImages = this._backgroundImages.map((img, i) => {
+      if (i === index) {
+        return { ...img, ...updatedImage };
+      }
+      return img;
     });
+    this._updateBackgroundImagesConfig();
+  }
+
+  private _updateBackgroundImagesConfig(): void {
     // Update the config with a deep copy
     if (this._config) {
       // Create a deep copy of the config
       const newConfig = JSON.parse(JSON.stringify(this._config));
-      newConfig.locaBackgroundImages = [...this._localBackgroundImages];
-      // For backward compatibility
-      newConfig.backgroundImages = [...this._localBackgroundImages];
+      newConfig.backgroundImages = [...this._backgroundImages];
 
       // Update the local config reference
       this._config = newConfig;
@@ -321,6 +342,18 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         padding-bottom: 4px;
       }
 
+      .section-subheader {
+        font-size: 16px;
+        font-weight: 500;
+        margin: 15px 0 5px 0;
+      }
+
+      .info-text {
+        font-size: 14px;
+        color: var(--secondary-text-color, #727272);
+        margin: 5px 0 15px 0;
+      }
+
       .sensor-row {
         display: flex;
         margin-bottom: 8px;
@@ -356,6 +389,31 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
       .image-actions {
         flex: 0 0 40px;
         text-align: center;
+      }
+
+      .weather-conditions {
+        margin-top: 10px;
+      }
+
+      .weather-condition {
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 15px;
+      }
+
+      .condition-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .condition-header ha-textfield {
+        flex: 1;
+      }
+
+      .condition-images {
+        margin-left: 15px;
       }
 
       mwc-button {
@@ -734,34 +792,92 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         </div>
 
         ${this._config.imageSource === 'local' ? html`
-          <div class="section-header">Local Background Images</div>
+          <!-- Background Images Section -->
+          <div class="section-header">Background Images</div>
+          <div class="info-text">
+            Configure background images with weather and time-of-day information.
+            Each image can be configured to show for specific weather conditions and times of day.
+            Select "All Weather Conditions" to show an image regardless of weather.
+            Select "Any Time" to show an image regardless of time of day.
+          </div>
 
-          ${this._localBackgroundImages.map((imageUrl, index) => html`
-            <div class="image-row">
-              <div class="image-url">
-                <ha-textfield
-                  label="Image URL"
-                  .value=${imageUrl || ''}
-                  @input=${(ev: CustomEvent) => {
-                    ev.stopPropagation();
-                    ev.preventDefault();
+          ${this._backgroundImages.map((image, index) => html`
+            <div class="weather-condition">
+              <div class="image-row">
+                <div class="image-url">
+                  <ha-textfield
+                    label="Image URL"
+                    .value=${image.url || ''}
+                    @input=${(ev: CustomEvent) => {
+                      ev.stopPropagation();
+                      ev.preventDefault();
 
-                    const target = ev.target as HTMLElement & { value?: string };
-                    if (!target) return;
-                    this._updateLocalBackgroundImage(index, target.value || '');
-                  }}
-                ></ha-textfield>
+                      const target = ev.target as HTMLElement & { value?: string };
+                      if (!target) return;
+                      this._updateBackgroundImage(index, { url: target.value || '' });
+                    }}
+                  ></ha-textfield>
+                </div>
+                <div class="image-actions">
+                  <ha-icon-button
+                    .path=${'M19,13H5V11H19V13Z'} 
+                    @click=${() => this._removeBackgroundImage(index)}
+                  ></ha-icon-button>
+                </div>
               </div>
-              <div class="image-actions">
-                <ha-icon-button
-                  .path=${'M19,13H5V11H19V13Z'} 
-                  @click=${() => this._removeLocalBackgroundImage(index)}
-                ></ha-icon-button>
+
+              <div class="row" style="margin-top: 8px;">
+                <div class="label">Weather Condition</div>
+                <div class="value">
+                  <ha-select
+                    label="Weather Condition"
+                    .value=${image.weather || 'all'}
+                    @click=${(ev: CustomEvent) => {
+                      ev.stopPropagation();
+                    }}
+                    @closed=${(ev: CustomEvent) => {
+                      ev.stopPropagation();
+
+                      const target = ev.target as HTMLElement & { value?: string };
+                      if (!target || !target.value) return;
+                      this._updateBackgroundImage(index, { weather: target.value });
+                    }}
+                  >
+                    ${this._weatherConditionOptions.map(
+                      (option) => html`<mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
+                    )}
+                  </ha-select>
+                </div>
+              </div>
+
+              <div class="row" style="margin-top: 8px;">
+                <div class="label">Time of Day</div>
+                <div class="value">
+                  <ha-select
+                    label="Time of Day"
+                    .value=${image.timeOfDay || TimeOfDay.Unspecified}
+                    @click=${(ev: CustomEvent) => {
+                      ev.stopPropagation();
+                    }}
+                    @closed=${(ev: CustomEvent) => {
+                      ev.stopPropagation();
+
+                      const target = ev.target as HTMLElement & { value?: string };
+                      if (!target || !target.value) return;
+                      this._updateBackgroundImage(index, { timeOfDay: target.value as TimeOfDay });
+                    }}
+                  >
+                    ${this._timeOfDayOptions.map(
+                      (option) => html`<mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
+                    )}
+                  </ha-select>
+                </div>
               </div>
             </div>
           `)}
 
-          <mwc-button @click=${this._addLocalBackgroundImage}>Add Background Image</mwc-button>
+          <mwc-button @click=${this._addBackgroundImage}>Add Background Image</mwc-button>
+
         ` : ''}
 
         <div class="row">

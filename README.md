@@ -124,11 +124,16 @@ dateFormat:
 #   weekday: 'long'
 #   month: 'long'
 #   day: 'numeric'
-# Optional: Local background images (list of URLs)
-locaBackgroundImages:
-  - '/local/images/background1.jpg'
-  - '/local/images/background2.jpg'
-  - '/local/images/background3.jpg'
+# Optional: Background images configuration
+
+# Unified background images with weather and time-of-day support
+backgroundImages:
+  - url: '/local/images/morning-clear.jpg'
+    weather: 'clear sky'
+    timeOfDay: 'morning'
+  - url: '/local/images/default.jpg'
+    weather: 'all'
+    timeOfDay: 'unspecified'
 # Optional: Background overlay opacity (0-1, default: 0.5)
 backgroundOpacity: 0.5
 # Optional: Image source ('none', 'picsum', 'local', default: 'none')
@@ -191,17 +196,42 @@ The Wall Clock Card can fetch background images from online sources, which means
 
 2. **Local Images** (`imageSource: 'local'`): 
    - Uses images from local paths or URLs specified in the configuration
-   - No additional configuration needed, automatically uses the images from the `locaBackgroundImages` property
-   - In the UI editor, you can add, remove, and edit individual background images
    - Images are automatically shuffled at startup for a random starting order
+   - In the UI editor, you can add, remove, and edit individual background images
+   - **Background image configuration**:
+
+     **Background Images**:
+        - Configure images with weather conditions and time of day
+        - Use `backgroundImages` property with objects containing `url`, `weather`, and `timeOfDay`
+        - Special `weather: 'all'` value matches any weather condition
+        - Special `timeOfDay: 'unspecified'` value matches any time of day
+        - Images are selected based on current weather and time of day
+        - More specific matches are prioritized over general ones
+
+
    - Configuration:
      ```yaml
-     # The locaBackgroundImages property is used by the local image source
+     # Background images with weather and time-of-day support
      imageSource: 'local'
-     locaBackgroundImages:
-       - '/local/images/background1.jpg'
-       - '/local/images/background2.jpg'
-       - '/local/images/background3.jpg'
+     backgroundImages:
+       - url: '/local/images/morning-clear.jpg'
+         weather: 'clear sky'
+         timeOfDay: 'morning'
+       - url: '/local/images/afternoon-clear.jpg'
+         weather: 'clear sky'
+         timeOfDay: 'afternoon'
+       - url: '/local/images/evening-clear.jpg'
+         weather: 'clear sky'
+         timeOfDay: 'evening'
+       - url: '/local/images/rainy-day.jpg'
+         weather: 'rain'
+         timeOfDay: 'unspecified'
+       - url: '/local/images/snowy-night.jpg'
+         weather: 'snow'
+         timeOfDay: 'evening'
+       - url: '/local/images/default.jpg'
+         weather: 'all'
+         timeOfDay: 'unspecified'
      ```
 
 3. **Picsum Photos** (`imageSource: 'picsum'`): 
@@ -306,7 +336,7 @@ The Wall Clock Card uses lazy loading for background images to improve performan
 3. **Error Handling**: If an image fails to load, the component will automatically try the next image
 4. **Memory Efficient**: Only the URLs of all images are stored initially, with actual image data loaded on demand
 
-When `imageSource` is set to an online source like 'picsum', the component will fetch the specified number of image URLs from the selected source when it loads. If you also have local images configured in `locaBackgroundImages`, both sets of images will be used in the rotation. If you don't want any background images, you can set `imageSource: 'none'`.
+When `imageSource` is set to an online source like 'picsum', the component will fetch the specified number of image URLs from the selected source when it loads. If you also have local images configured in `backgroundImages`, both sets of images will be used in the rotation. If you don't want any background images, you can set `imageSource: 'none'`.
 
 ## Development
 

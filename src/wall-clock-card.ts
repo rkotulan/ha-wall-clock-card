@@ -1,6 +1,6 @@
 import { LitElement, html, css, property, customElement, CSSResult, TemplateResult } from 'lit-element';
 import { HomeAssistant } from 'custom-card-helpers';
-import { ImageSourceConfig, getImageSource } from './image-sources';
+import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay } from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
 import './wall-clock-card-editor';
 
@@ -21,19 +21,20 @@ interface ImageStatus {
 export interface WallClockConfig {
   timeFormat?: Intl.DateTimeFormatOptions;
   dateFormat?: Intl.DateTimeFormatOptions;
-  locaBackgroundImages?: string[];
   backgroundOpacity?: number;
   imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
-  // Legacy properties for backward compatibility
-  backgroundImages?: string[]; // Legacy property, use locaBackgroundImages instead
-  useOnlineImages?: boolean; // Legacy property, use imageSource instead
-  onlineImageSource?: string;
-  onlineImageConfig?: ImageSourceConfig;
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
+
+  // New unified background images structure
+  backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
+
   // Legacy properties for backward compatibility
+  useOnlineImages?: boolean; // Legacy property, use imageSource instead
+  onlineImageSource?: string;
+  onlineImageConfig?: ImageSourceConfig;
   sensorEntity?: string; // Single sensor (legacy)
   sensorLabel?: string; // Single sensor label (legacy)
 
@@ -129,8 +130,7 @@ export class WallClockCard extends LitElement {
       }
 
       // Fetch local image URLs if available
-      // First check locaBackgroundImages (new property), then fall back to backgroundImages (legacy)
-      const localImages = this.config.locaBackgroundImages || this.config.backgroundImages;
+      const localImages = this.config.backgroundImages;
       if (localImages && localImages.length > 0) {
         const localUrls = await this.fetchLocalImageUrls();
         urls.push(...localUrls);
@@ -213,18 +213,26 @@ export class WallClockCard extends LitElement {
         return [];
       }
 
-      // First check locaBackgroundImages (new property), then fall back to backgroundImages (legacy)
-      const localImages = this.config.locaBackgroundImages || this.config.backgroundImages || [];
-
       // Prepare the configuration for the local image source
       const sourceConfig: ImageSourceConfig = {
         ...imageSource.getDefaultConfig(),
-        images: localImages,
       };
+
+      // If we have backgroundImages structure, use it
+      if (this.config.backgroundImages && this.config.backgroundImages.length > 0) {
+        sourceConfig.backgroundImages = this.config.backgroundImages;
+      } else {
+        // No background images configured
+        sourceConfig.images = [];
+      }
 
       // Fetch image URLs from the local image source
       console.log('Fetching image URLs from Local Images source with config:', sourceConfig);
-      const fetchedUrls = await imageSource.fetchImages(sourceConfig);
+
+      // Always pass weather data if available, the image source will decide how to use it
+      const fetchedUrls = this.weatherData
+        ? await imageSource.fetchImages(sourceConfig, this.weatherData)
+        : await imageSource.fetchImages(sourceConfig);
 
       if (fetchedUrls.length > 0) {
         console.log(`Successfully fetched ${fetchedUrls.length} image URLs from Local Images source`);
@@ -554,8 +562,24 @@ export class WallClockCard extends LitElement {
     // Use imageConfig if available, fall back to onlineImageConfig for backward compatibility
     let imageConfig: ImageSourceConfig = config.imageConfig || config.onlineImageConfig || {};
 
-    // Handle legacy backgroundImages property
-    const locaBackgroundImages = config.locaBackgroundImages || config.backgroundImages || [];
+    // Convert legacy string array backgroundImages to the new structure if needed
+    if (Array.isArray(config.backgroundImages) && 
+        config.backgroundImages.length > 0 && 
+        typeof config.backgroundImages[0] === 'string') {
+      // Create a new array of BackgroundImage objects
+      const backgroundImages: BackgroundImage[] = [];
+      for (const img of config.backgroundImages) {
+        if (typeof img === 'string') {
+          backgroundImages.push({
+            url: img,
+            weather: 'all',
+            timeOfDay: TimeOfDay.Unspecified
+          });
+        }
+      }
+      // Update the config with the new structure
+      config.backgroundImages = backgroundImages;
+    }
 
     this.config = {
       ...config,
@@ -574,9 +598,6 @@ export class WallClockCard extends LitElement {
       backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,
       imageSource,
       imageConfig,
-      locaBackgroundImages,
-      // For backward compatibility
-      backgroundImages: locaBackgroundImages,
       useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
       onlineImageSource: imageSource,
       onlineImageConfig: imageConfig,

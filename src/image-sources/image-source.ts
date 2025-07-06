@@ -1,3 +1,28 @@
+import { WeatherData } from '../weather-providers';
+
+/**
+ * Time of day enumeration
+ */
+export enum TimeOfDay {
+  Unspecified = "unspecified",
+  Morning = "morning",
+  Noon = "noon",
+  Afternoon = "afternoon",
+  Evening = "evening"
+}
+
+/**
+ * Background image interface
+ */
+export interface BackgroundImage {
+  // URL of the image
+  url: string;
+  // Weather condition, or "all" for all weather conditions
+  weather: string;
+  // Time of day, or "unspecified" for all times of day
+  timeOfDay: TimeOfDay;
+}
+
 /**
  * Interface for image source plugins
  * All image source plugins must implement this interface
@@ -27,9 +52,10 @@ export interface ImageSource {
   /**
    * Fetch images from this source
    * @param config Configuration for this image source
+   * @param weatherData Optional weather data to use for selecting images
    * @returns Promise that resolves to an array of image URLs
    */
-  fetchImages(config: ImageSourceConfig): Promise<string[]>;
+  fetchImages(config: ImageSourceConfig, weatherData?: WeatherData): Promise<string[]>;
 
   /**
    * Get the default configuration for this image source
