@@ -2,6 +2,7 @@ import { LitElement, html, css, property, customElement, CSSResult, TemplateResu
 import { HomeAssistant } from 'custom-card-helpers';
 import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay } from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
+import { translateWeatherCondition } from './translations';
 import './wall-clock-card-editor';
 
 // Interface for sensor configuration
@@ -1023,6 +1024,16 @@ export class WallClockCard extends LitElement {
         font-weight: 400;
       }
 
+      .forecast-condition {
+        font-size: 0.9rem;
+        margin-top: 0.2rem;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
       .weather-error {
         color: #f44336;
         font-size: 1rem;
@@ -1150,7 +1161,7 @@ export class WallClockCard extends LitElement {
               <img class="weather-icon" src="${this.weatherData.current.icon}" alt="${this.weatherData.current.condition}">
               <div class="weather-temp">${Math.round(this.weatherData.current.temperature)}°</div>              
             </div>
-            <div class="weather-condition">${this.weatherData.current.condition}</div>
+            <div class="weather-condition">${translateWeatherCondition(this.weatherData.current.condition, this.config.weatherConfig?.language || 'cs')}</div>
           </div>
         ` : 
         ''
@@ -1164,6 +1175,7 @@ export class WallClockCard extends LitElement {
                 <div class="forecast-date">${this.formatForecastDate(day.date)}</div>
                 <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
                 <div class="forecast-temp">${Math.round(day.temperatureMin)}° - ${Math.round(day.temperatureMax)}°</div>
+                <div class="forecast-condition">${translateWeatherCondition(day.condition, this.config.weatherConfig?.language || 'cs')}</div>
               </div>
             `)}
           </div>

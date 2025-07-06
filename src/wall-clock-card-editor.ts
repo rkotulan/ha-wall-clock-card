@@ -2,6 +2,7 @@ import { LitElement, html, customElement, property, TemplateResult, CSSResult, c
 import { HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig } from 'custom-card-helpers';
 import { WallClockConfig, SensorConfig } from './wall-clock-card';
 import { BackgroundImage, TimeOfDay } from './image-sources/image-source';
+import { translateWeatherCondition } from './translations';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -78,6 +79,16 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     { value: 'openweathermap', label: 'OpenWeatherMap' },
   ];
 
+  // Language options
+  private _languageOptions = [
+    { value: 'cs', label: 'Czech (Čeština)' },
+    { value: 'de', label: 'German (Deutsch)' },
+    { value: 'sk', label: 'Slovak (Slovenčina)' },
+    { value: 'pl', label: 'Polish (Polski)' },
+    { value: 'es', label: 'Spanish (Español)' },
+    { value: 'fr', label: 'French (Français)' },
+  ];
+
   // Weather display mode options
   private _weatherDisplayModeOptions = [
     { value: 'current', label: 'Current Weather Only' },
@@ -86,18 +97,23 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
   ];
 
   // Weather condition options based on OpenWeatherMap icon codes
-  private _weatherConditionOptions = [
-    { value: 'all', label: 'All Weather Conditions' },
-    { value: 'clear sky', label: 'Clear Sky (01d/01n)' },
-    { value: 'few clouds', label: 'Few Clouds (02d/02n)' },
-    { value: 'scattered clouds', label: 'Scattered Clouds (03d/03n)' },
-    { value: 'broken clouds', label: 'Broken Clouds (04d/04n)' },
-    { value: 'shower rain', label: 'Shower Rain (09d/09n)' },
-    { value: 'rain', label: 'Rain (10d/10n)' },
-    { value: 'thunderstorm', label: 'Thunderstorm (11d/11n)' },
-    { value: 'snow', label: 'Snow (13d/13n)' },
-    { value: 'mist', label: 'Mist (50d/50n)' },
-  ];
+  private _getWeatherConditionOptions(): { value: string, label: string }[] {
+    // Get the language from config, default to Czech
+    const language = this._config?.weatherConfig?.language || 'cs';
+
+    return [
+      { value: 'all', label: `${translateWeatherCondition('all', language)}` },
+      { value: 'clear sky', label: `${translateWeatherCondition('clear sky', language)} (01d/01n)` },
+      { value: 'few clouds', label: `${translateWeatherCondition('few clouds', language)} (02d/02n)` },
+      { value: 'scattered clouds', label: `${translateWeatherCondition('scattered clouds', language)} (03d/03n)` },
+      { value: 'broken clouds', label: `${translateWeatherCondition('broken clouds', language)} (04d/04n)` },
+      { value: 'shower rain', label: `${translateWeatherCondition('shower rain', language)} (09d/09n)` },
+      { value: 'rain', label: `${translateWeatherCondition('rain', language)} (10d/10n)` },
+      { value: 'thunderstorm', label: `${translateWeatherCondition('thunderstorm', language)} (11d/11n)` },
+      { value: 'snow', label: `${translateWeatherCondition('snow', language)} (13d/13n)` },
+      { value: 'mist', label: `${translateWeatherCondition('mist', language)} (50d/50n)` },
+    ];
+  };
 
   // Time of day options
   private _timeOfDayOptions = [
@@ -844,7 +860,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                       this._updateBackgroundImage(index, { weather: target.value });
                     }}
                   >
-                    ${this._weatherConditionOptions.map(
+                    ${this._getWeatherConditionOptions().map(
                       (option) => html`<mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
                     )}
                   </ha-select>
@@ -1303,6 +1319,44 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     fireEvent(this, 'config-changed', { config: newConfig });
                   }}
                 ></ha-textfield>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="label">Language</div>
+              <div class="value">
+                <ha-select
+                  label="Language"
+                  .value=${this._config.weatherConfig?.language || 'cs'}
+                  @click=${(ev: CustomEvent) => {
+                    ev.stopPropagation();
+                  }}
+                  @closed=${(ev: CustomEvent) => {
+                    ev.stopPropagation();
+
+                    const target = ev.target as HTMLElement & { value?: string };
+                    if (!target || !this._config) return;
+
+                    // Create a deep copy of the config
+                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                    // Update the new config
+                    newConfig.weatherConfig = {
+                      ...newConfig.weatherConfig || {},
+                      language: target.value || 'cs'
+                    };
+
+                    // Update the local config reference
+                    this._config = newConfig;
+
+                    // Fire the config-changed event with the new config
+                    fireEvent(this, 'config-changed', { config: newConfig });
+                  }}
+                >
+                  ${this._languageOptions.map(
+                    (option) => html`<mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
+                  )}
+                </ha-select>
               </div>
             </div>
           ` : ''}

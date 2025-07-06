@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.11.0
+
+- Added localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French)
+- Weather conditions are now displayed in the user's selected language
+- Added translations for all standard weather conditions
+- Improved forecast display with translated condition names
+- Enhanced editor UI to show weather condition options in the selected language
+- Added language selection dropdown to the configuration UI
+
 ## 1.10.1
 
 - Fixed error "Failed to execute 'define' on 'CustomElementRegistry': the name 'wall-clock-card' has already been used with this registry"
