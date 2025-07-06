@@ -917,7 +917,29 @@ export class WallClockCard extends LitElement {
       }
 
       /* Responsive adjustments */
-      @media (min-width: 600px) {
+      @media (min-width: 900px) {
+        .clock {
+          font-size: 16rem;
+          line-height: 14rem;
+        }
+
+        .date {
+          font-size: 6rem;
+          line-height: 5rem;
+        }
+
+        .weather-temp {
+          font-size: 3rem;
+          line-height: 3rem;
+        }
+
+        .weather-icon {
+          width: 60px;
+          height: 60px;
+        }
+      }
+
+      @media (min-width: 1280px) {
         .clock {
           font-size: 18rem;
           line-height: 14rem;

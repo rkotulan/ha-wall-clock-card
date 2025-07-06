@@ -3,7 +3,8 @@ node_modules/
 
 # Build files
 dist/
-*.ts
+# Allow TypeScript source files
+# *.ts
 *.ts.map
 
 # IDE files

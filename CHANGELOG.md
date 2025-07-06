@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4
+
+- Fixed build issues on GitHub actions
+
 ## 1.3.3
 
 - Added customizable title for the weather section (default: "Weather")
