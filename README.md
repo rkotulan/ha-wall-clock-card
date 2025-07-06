@@ -246,6 +246,27 @@ The Wall Clock Card can fetch background images from online sources, which means
      imageConfig: {}  # No additional configuration needed
      ```
 
+4. **Unsplash** (`imageSource: 'unsplash'`):
+   - Beautiful, free photos from Unsplash collections
+   - Supports weather and time-of-day based image selection
+   - Requires an API key for optimal functionality
+   - Configuration:
+     ```yaml
+     imageSource: 'unsplash'
+     imageConfig:
+       category: 'nature'  # Optional category (e.g., 'nature,water')
+       apiKey: 'your-unsplash-api-key'  # Required for Unsplash API
+     ```
+
+   - **Getting an Unsplash API Key**:
+     1. You will need an Access Key from Unsplash for this plugin to work properly
+     2. Head over to [Unsplash registration page](https://unsplash.com/join) and fill out the form
+     3. After you have registered and confirmed your email, head over to your [apps page](https://unsplash.com/oauth/applications) and click "New Application"
+     4. Read and accept all the terms
+     5. Give your new app a name (e.g., "wall-clock-card"), a description (e.g., "Custom card using Unsplash images as backgrounds in Home Assistant"), and click "Create application"
+     6. On the next page, you will see your "Access Key". Add this to your configuration or secrets.yaml
+     7. If you don't have a secrets.yaml, you should! Read about it here: [Home Assistant Secrets](https://www.home-assistant.io/docs/configuration/secrets/)
+
 
 
 #### Custom Image Sources

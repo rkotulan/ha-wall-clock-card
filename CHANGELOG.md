@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.10.1
+
+- Fixed error "Failed to execute 'define' on 'CustomElementRegistry': the name 'wall-clock-card' has already been used with this registry"
+- Resolved issue with duplicate custom element registration
+
+## 1.10.0
+
+- Improved Unsplash image source to always fetch new images on rotation instead of cycling through preloaded ones
+- Enhanced user experience with fresh images for each rotation when using Unsplash
+- Maintained fallback to preloaded images if fetching new images fails
+- Optimized image loading for Unsplash to reduce unnecessary preloading
+
+## 1.9.0
+
+- Added Unsplash image source with weather and time-of-day based image selection
+- Enhanced image queries to include current weather conditions and time of day
+- Added support for both direct URL and API methods for Unsplash
+- Added documentation for obtaining an Unsplash API key
+- Improved image relevance by incorporating weather and time context
+- Modified Unsplash image source to always use API when an API key is provided
+- Removed "Use API" toggle from the UI editor for Unsplash
+
 ## 1.8.0
 
 - Simplified weather categories to match OpenWeatherMap icon codes

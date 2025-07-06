@@ -69,6 +69,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     { value: 'none', label: 'None (No Background Images)' },
     { value: 'picsum', label: 'Picsum Photos' },
     { value: 'local', label: 'Local Images' },
+    { value: 'unsplash', label: 'Unsplash' },
   ];
 
   // Weather provider options
@@ -877,6 +878,90 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
           `)}
 
           <mwc-button @click=${this._addBackgroundImage}>Add Background Image</mwc-button>
+
+        ` : ''}
+
+        ${this._config.imageSource === 'unsplash' ? html`
+          <!-- Unsplash Configuration Section -->
+          <div class="section-header">Unsplash Configuration</div>
+          <div class="info-text">
+            Configure Unsplash image source settings. You can use Unsplash with or without an API key.
+            Using an API key provides better image quality and more reliable service.
+          </div>
+
+          <div class="row">
+            <div class="label">Category</div>
+            <div class="value">
+              <ha-textfield
+                label="Category"
+                .value=${this._config.imageConfig?.category || 'nature'}
+                @input=${(ev: CustomEvent) => {
+                  ev.stopPropagation();
+                  ev.preventDefault();
+
+                  const target = ev.target as HTMLElement & { value?: string };
+                  if (!target || !this._config) return;
+
+                  // Create a deep copy of the config
+                  const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                  // Ensure imageConfig exists
+                  if (!newConfig.imageConfig) {
+                    newConfig.imageConfig = {};
+                  }
+
+                  // Update the category
+                  newConfig.imageConfig.category = target.value || 'nature';
+
+                  // Update the local config reference
+                  this._config = newConfig;
+
+                  // Fire the config-changed event with the new config
+                  fireEvent(this, 'config-changed', { config: newConfig });
+                }}
+              ></ha-textfield>
+            </div>
+          </div>
+
+          <div class="info-text">
+            An API key is required for Unsplash to work properly.
+          </div>
+
+          ${true ? html`
+            <div class="row">
+              <div class="label">API Key</div>
+              <div class="value">
+                <ha-textfield
+                  label="API Key"
+                  .value=${this._config.imageConfig?.apiKey || ''}
+                  @input=${(ev: CustomEvent) => {
+                    ev.stopPropagation();
+                    ev.preventDefault();
+
+                    const target = ev.target as HTMLElement & { value?: string };
+                    if (!target || !this._config) return;
+
+                    // Create a deep copy of the config
+                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                    // Ensure imageConfig exists
+                    if (!newConfig.imageConfig) {
+                      newConfig.imageConfig = {};
+                    }
+
+                    // Update the API key
+                    newConfig.imageConfig.apiKey = target.value || '';
+
+                    // Update the local config reference
+                    this._config = newConfig;
+
+                    // Fire the config-changed event with the new config
+                    fireEvent(this, 'config-changed', { config: newConfig });
+                  }}
+                ></ha-textfield>
+              </div>
+            </div>
+          ` : ''}
 
         ` : ''}
 

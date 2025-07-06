@@ -267,13 +267,104 @@ export class WallClockCard extends LitElement {
     // If we have image URLs, set up rotation
     if (this.imageUrls.length > 0) {
       this.imageRotationTimer = window.setInterval(() => {
-        // Move to the next image
-        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
-        this.loadCurrentImage();
+        // For Unsplash, fetch a new image instead of cycling through preloaded ones
+        if (this.config.imageSource === 'unsplash') {
+          this.fetchNewUnsplashImage();
+        } else {
+          // For other image sources, move to the next image in the preloaded array
+          this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
+          this.loadCurrentImage();
+        }
       }, (this.config.backgroundRotationInterval || 90) * 1000); // Convert seconds to milliseconds
 
-      // Preload the next image after a short delay
-      this.scheduleNextImagePreload();
+      // Preload the next image after a short delay (only for non-Unsplash sources)
+      if (this.config.imageSource !== 'unsplash') {
+        this.scheduleNextImagePreload();
+      }
+    }
+  }
+
+  private async fetchNewUnsplashImage(): Promise<void> {
+    try {
+      // Get the Unsplash image source plugin
+      const imageSource = getImageSource('unsplash');
+
+      if (!imageSource) {
+        console.error('Unsplash image source not found. This should not happen.');
+        return;
+      }
+
+      // Prepare the configuration for the Unsplash image source
+      const sourceConfig: ImageSourceConfig = {
+        ...imageSource.getDefaultConfig(),
+        ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
+        // Set count to 1 to fetch just one new image
+        count: 1
+      };
+
+      console.log('Fetching new image from Unsplash with config:', sourceConfig);
+
+      // Fetch a single new image from Unsplash
+      const fetchedUrls = await imageSource.fetchImages(sourceConfig, this.weatherData);
+
+      if (fetchedUrls.length > 0) {
+        console.log('Successfully fetched new image from Unsplash');
+
+        // Create a new image status for the fetched image
+        const newImageUrl = fetchedUrls[0];
+        const newImageStatus: ImageStatus = {
+          url: newImageUrl,
+          loaded: false,
+          loading: false,
+          error: false
+        };
+
+        // Load the new image
+        console.log(`Loading new Unsplash image: ${newImageUrl}`);
+        const img = new Image();
+        img.onload = () => {
+          console.log(`New Unsplash image loaded successfully: ${newImageUrl}`);
+          newImageStatus.loaded = true;
+          newImageStatus.loading = false;
+
+          // Update the current image URL
+          this.currentImageUrl = newImageUrl;
+
+          // Reset consecutive failures counter on successful load
+          this.consecutiveFailures = 0;
+
+          this.requestUpdate();
+        };
+        img.onerror = () => {
+          console.error(`Error loading new Unsplash image: ${newImageUrl}`);
+          newImageStatus.error = true;
+          newImageStatus.loading = false;
+
+          // If the new image fails to load, try to use an existing image
+          if (this.imageUrls.length > 0) {
+            this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
+            this.loadCurrentImage();
+          }
+        };
+
+        // Start loading the image
+        newImageStatus.loading = true;
+        img.src = newImageUrl;
+      } else {
+        console.warn('Could not fetch new image from Unsplash. Falling back to existing images.');
+        // Fall back to the existing image rotation if fetching a new image fails
+        if (this.imageUrls.length > 0) {
+          this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
+          this.loadCurrentImage();
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching new Unsplash image:', error);
+      // Fall back to the existing image rotation if an error occurs
+      if (this.imageUrls.length > 0) {
+        this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
+        this.loadCurrentImage();
+      }
     }
   }
 
@@ -1093,9 +1184,6 @@ export class WallClockCard extends LitElement {
     return date.toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US', { weekday: 'short' });
   }
 }
-
-// Define the custom element
-customElements.define('wall-clock-card', WallClockCard);
 
 // Add card to window for type checking
 declare global {

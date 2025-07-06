@@ -1,4 +1,5 @@
 import { ImageSource, ImageSourceConfig } from './image-source';
+import { WeatherData } from '../weather-providers';
 
 /**
  * Configuration for the Unsplash image source
@@ -9,6 +10,8 @@ export interface UnsplashSourceConfig extends ImageSourceConfig {
   // API key for Unsplash API (required for API mode)
   apiKey?: string;
   // Whether to use the official Unsplash API (requires apiKey)
+  // Note: This property is kept for backward compatibility but is no longer used
+  // as the API is always used when an API key is provided
   useApi?: boolean;
 }
 
@@ -63,15 +66,38 @@ export class UnsplashSource implements ImageSource {
    * @param config Configuration for the Unsplash image source
    * @returns Promise that resolves to an array of image URLs
    */
-  async fetchImages(config: UnsplashSourceConfig): Promise<string[]> {
+  async fetchImages(config: UnsplashSourceConfig, weatherData?: WeatherData): Promise<string[]> {
     const count = config.count || 5;
-    const category = config.category || '';
-    const useApi = config.useApi || false;
+    let category = config.category || '';
     const apiKey = config.apiKey || '';
     const fetchedImages: string[] = [];
 
-    // If useApi is true and apiKey is provided, use the official Unsplash API
-    if (useApi && apiKey) {
+    // Get the current time of day
+    const currentTimeOfDay = this.getCurrentTimeOfDay();
+    console.log(`Current time of day: ${currentTimeOfDay}`);
+
+    // If weather data is available, add weather condition to the category
+    if (weatherData) {
+      const weatherCondition = weatherData.current.condition.toLowerCase();
+      console.log(`Current weather condition: ${weatherCondition}`);
+
+      // Add weather condition and time of day to the category if not already included
+      if (category) {
+        if (!category.toLowerCase().includes(weatherCondition)) {
+          category += `,${weatherCondition}`;
+        }
+        if (!category.toLowerCase().includes(currentTimeOfDay)) {
+          category += `,${currentTimeOfDay}`;
+        }
+      } else {
+        category = `${weatherCondition},${currentTimeOfDay}`;
+      }
+
+      console.log(`Using category with weather and time: ${category}`);
+    }
+
+    // If apiKey is provided, use the official Unsplash API (always use API when possible)
+    if (apiKey) {
       try {
         console.log('Using official Unsplash API');
         return await this.fetchImagesFromApi(apiKey, category, count);
@@ -145,6 +171,12 @@ export class UnsplashSource implements ImageSource {
       if (categories.length > 0) {
         query = categories[0];
       }
+
+      // Add weather and time of day as additional keywords in the query
+      if (categories.length > 1) {
+        const additionalKeywords = categories.slice(1).join(' ');
+        query += ` ${additionalKeywords}`;
+      }
     }
 
     try {
@@ -200,7 +232,7 @@ export class UnsplashSource implements ImageSource {
       count: 5,
       category: 'nature',
       apiKey: '',
-      useApi: false
+      useApi: true
     };
   }
 
@@ -210,6 +242,26 @@ export class UnsplashSource implements ImageSource {
    */
   getCategories(): string[] {
     return Object.keys(this.collections);
+  }
+
+  /**
+   * Get the current time of day based on the current hour
+   * @returns The current time of day
+   */
+  private getCurrentTimeOfDay(): string {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 10) {
+      return 'morning';
+    } else if (hour >= 10 && hour < 14) {
+      return 'noon';
+    } else if (hour >= 14 && hour < 18) {
+      return 'afternoon';
+    } else if (hour >= 18 || hour < 5) {
+      return 'evening';
+    }
+
+    return 'day';
   }
 }
 
