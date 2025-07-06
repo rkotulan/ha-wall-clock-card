@@ -856,14 +856,13 @@
 
       ${"forecast"===t||"both"===t?M`
           <div class="weather-forecast">
-            ${this.weatherData.daily.slice(0,o).map(e=>{var t;return M`
+            ${this.weatherData.daily.slice(0,o).map(e=>M`
               <div class="forecast-day">
                 <div class="forecast-date">${this.formatForecastDate(e.date)}</div>
                 <img class="forecast-icon" src="${e.icon}" alt="${e.condition}">
                 <div class="forecast-temp">${Math.round(e.temperatureMin)}° - ${Math.round(e.temperatureMax)}°</div>
-                <div class="forecast-condition">${me(e.condition,(null===(t=this.config.weatherConfig)||void 0===t?void 0:t.language)||"cs")}</div>
               </div>
-            `})}
+            `)}
           </div>
         `:""}
     `}formatForecastDate(e){var t;const i=(null===(t=this.config.weatherConfig)||void 0===t?void 0:t.language)||"cs";return e.toLocaleDateString("cs"===i?"cs-CZ":"en-US",{weekday:"short"})}};Se([G({type:Object})],xe.prototype,"hass",void 0),Se([G({type:String})],xe.prototype,"currentTime",void 0),Se([G({type:String})],xe.prototype,"currentDate",void 0),Se([G({type:Object})],xe.prototype,"config",void 0),Se([G({type:Number})],xe.prototype,"currentImageIndex",void 0),Se([G({type:Array})],xe.prototype,"imageUrls",void 0),Se([G({type:Array})],xe.prototype,"imageStatuses",void 0),Se([G({type:String})],xe.prototype,"currentImageUrl",void 0),Se([G({type:Array})],xe.prototype,"sensorValues",void 0),Se([G({type:String})],xe.prototype,"legacySensorValue",void 0),Se([G({type:String})],xe.prototype,"hours",void 0),Se([G({type:String})],xe.prototype,"minutes",void 0),Se([G({type:String})],xe.prototype,"seconds",void 0),Se([G({type:Number})],xe.prototype,"consecutiveFailures",void 0),Se([G({type:Boolean})],xe.prototype,"isRetrying",void 0),Se([G({type:Object})],xe.prototype,"weatherData",void 0),Se([G({type:Boolean})],xe.prototype,"weatherLoading",void 0),Se([G({type:Boolean})],xe.prototype,"weatherError",void 0),Se([G({type:String})],xe.prototype,"weatherErrorMessage",void 0),xe=Se([K("wall-clock-card")],xe),window.customCards=window.customCards||[],window.customCards.push({type:"wall-clock-card",name:"Wall Clock Card",description:"A card that displays a clock with seconds and the current date"})})();

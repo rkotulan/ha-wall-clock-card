@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.1
+
+- Fixed issue with weather condition translations not displaying correctly
+
 ## 1.11.0
 
 - Added localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French)

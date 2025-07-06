@@ -1175,7 +1175,6 @@ export class WallClockCard extends LitElement {
                 <div class="forecast-date">${this.formatForecastDate(day.date)}</div>
                 <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
                 <div class="forecast-temp">${Math.round(day.temperatureMin)}° - ${Math.round(day.temperatureMax)}°</div>
-                <div class="forecast-condition">${translateWeatherCondition(day.condition, this.config.weatherConfig?.language || 'cs')}</div>
               </div>
             `)}
           </div>
