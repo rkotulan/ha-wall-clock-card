@@ -2,6 +2,10 @@ import {LitElement, html, customElement, property, TemplateResult, CSSResult, cs
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
 import {BackgroundImage, TimeOfDay} from './image-sources/image-source';
+import {
+    getAllTransportationProviders,
+    StopConfig as TransportationStopConfig
+} from './transportation-providers';
 import {translateWeatherCondition} from './translations';
 
 @customElement('wall-clock-card-editor')
@@ -10,6 +14,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Object}) _config?: WallClockConfig;
     @property({type: Array}) _sensors: SensorConfig[] = [];
     @property({type: Array}) _backgroundImages: BackgroundImage[] = [];
+    @property({type: Array}) _stops: TransportationStopConfig[] = [];
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -95,6 +100,17 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'forecast', label: 'Forecast Only'},
         {value: 'both', label: 'Current and Forecast'},
     ];
+
+    // Transportation provider options
+    private _getTransportationProviderOptions(): { value: string, label: string }[] {
+        const providers = getAllTransportationProviders();
+        return [
+            ...providers.map(provider => ({
+                value: provider.id,
+                label: provider.name
+            }))
+        ];
+    };
 
     // Weather condition options based on OpenWeatherMap icon codes
     private _getWeatherConditionOptions(): { value: string, label: string }[] {
@@ -193,7 +209,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             weatherProvider: wallClockConfig.weatherProvider || 'openweathermap',
             weatherConfig: wallClockConfig.weatherConfig || {},
             weatherDisplayMode: wallClockConfig.weatherDisplayMode || 'both',
-            weatherForecastDays: wallClockConfig.weatherForecastDays || 3
+            weatherForecastDays: wallClockConfig.weatherForecastDays || 3,
+            // Transportation settings
+            transportation: wallClockConfig.transportation || undefined
         };
 
         // Load sensors from config
@@ -201,6 +219,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Load unified background images from config
         this._loadBackgroundImages();
+
+        // Load stops from config
+        this._loadStops();
     }
 
     private _loadSensors(): void {
@@ -214,6 +235,34 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             }];
         } else {
             this._sensors = [];
+        }
+    }
+
+    private _loadStops(): void {
+        if (!this._config?.transportation) {
+            this._stops = [];
+            return;
+        }
+
+        // Handle backward compatibility - convert old format to new format
+        if ('stopId' in this._config.transportation && 'postId' in this._config.transportation) {
+            // Old format with single stop
+            const oldConfig = this._config.transportation as unknown as {
+                stopId: number;
+                postId: number;
+                maxDepartures?: number;
+            };
+            this._stops = [{
+                stopId: oldConfig.stopId,
+                postId: oldConfig.postId,
+                maxDepartures: oldConfig.maxDepartures
+            }];
+        } else if (this._config.transportation.stops && this._config.transportation.stops.length > 0) {
+            // New format with multiple stops
+            this._stops = [...this._config.transportation.stops];
+        } else {
+            // No stops configured
+            this._stops = [];
         }
     }
 
@@ -273,6 +322,129 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             // Create a deep copy of the config
             const newConfig = JSON.parse(JSON.stringify(this._config));
             newConfig.sensors = [...this._sensors];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _addStop(): void {
+        this._stops = [...this._stops, {stopId: 1793, postId: 3, maxDepartures: 3}];
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    provider: 'idsjmk', // Default to IDSJMK provider
+                    stops: [],
+                    maxDepartures: 3
+                };
+            }
+
+            // Convert old format to new format if needed
+            if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
+                const oldConfig = newConfig.transportation as unknown as {
+                    stopId: number;
+                    postId: number;
+                    maxDepartures?: number;
+                };
+                newConfig.transportation = {
+                    stops: [{
+                        stopId: oldConfig.stopId,
+                        postId: oldConfig.postId,
+                        maxDepartures: oldConfig.maxDepartures
+                    }],
+                    maxDepartures: oldConfig.maxDepartures
+                };
+            }
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _removeStop(index: number): void {
+        this._stops = this._stops.filter((_, i) => i !== index);
+        // Update the config with a deep copy
+        if (this._config && this._config.transportation) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    provider: 'idsjmk', // Default to IDSJMK provider
+                    stops: [],
+                    maxDepartures: 3
+                };
+            }
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
+
+            // If no stops left, remove transportation config
+            if (this._stops.length === 0) {
+                newConfig.transportation = undefined;
+            }
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _stopChanged(index: number, property: string, value: any): void {
+        this._stops = this._stops.map((stop, i) => {
+            if (i === index) {
+                return {...stop, [property]: value};
+            }
+            return stop;
+        });
+
+        // Update the config with a deep copy
+        if (this._config && this._config.transportation) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    stops: [],
+                    maxDepartures: 3
+                };
+            }
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
 
             // Update the local config reference
             this._config = newConfig;
@@ -1535,7 +1707,349 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         <span>${this._config.weatherForecastDays || 3} days</span>
                                     </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="label">Update Interval</div>
+                                    <div class="value">
+                                        <ha-textfield
+                                                label="Update interval in minutes (min: 1)"
+                                                type="number"
+                                                min="1"
+                                                .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & {
+                                                        value?: string | number
+                                                    };
+                                                    if (!target || !this._config) return;
+
+                                                    // Create a deep copy of the config
+                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                    // Get the value as a number
+                                                    let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
+
+                                                    // Ensure minimum of 1 minute
+                                                    intervalMinutes = Math.max(intervalMinutes || 30, 1);
+
+                                                    // Convert minutes to seconds for internal storage
+                                                    const intervalSeconds = intervalMinutes * 60;
+
+                                                    // Update the new config
+                                                    newConfig.weatherUpdateInterval = intervalSeconds;
+
+                                                    // Update the local config reference
+                                                    this._config = newConfig;
+
+                                                    // Fire the config-changed event with the new config
+                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                }}
+                                        ></ha-textfield>
+                                        <span>minutes</span>
+                                    </div>
+                                </div>
                             ` : ''}
+                        ` : ''}
+                    </div>
+                </ha-expansion-panel>
+
+                <!-- Transportation Settings Section -->
+                <ha-expansion-panel outlined>
+                    <h3 slot="header">Transportation Departures</h3>
+                    <div class="content">
+                        <div class="row">
+                            <div class="label">Enable Transportation</div>
+                            <div class="value">
+                                <ha-switch
+                                        .checked=${!!this._config.transportation}
+                                        @change=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { checked?: boolean };
+                                            if (!target || !this._config) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            if (target.checked) {
+                                                newConfig.transportation = {
+                                                    provider: 'idsjmk', // Default to IDSJMK provider
+                                                    stops: [{
+                                                        stopId: 1793,
+                                                        postId: 3,
+                                                        maxDepartures: 3
+                                                    }],
+                                                    maxDepartures: 3
+                                                };
+
+                                                // Load the stops
+                                                this._loadStops();
+                                            } else {
+                                                newConfig.transportation = undefined;
+                                                this._stops = [];
+                                            }
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                ></ha-switch>
+                                <span>Display transportation departures</span>
+                            </div>
+                        </div>
+
+                        ${this._config.transportation ? html`
+                            <div class="row">
+                                <div class="label">Transportation Provider</div>
+                                <div class="value">
+                                    <ha-select
+                                            label="Provider"
+                                            .value=${
+                                                // Handle both old and new format
+                                                ('provider' in this._config.transportation) 
+                                                    ? this._config.transportation.provider || 'idsjmk'
+                                                    : 'idsjmk'
+                                            }
+                                            @click=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                            }}
+                                            @closed=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+
+                                                const target = ev.target as HTMLElement & { value?: string };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Convert old format to new format if needed
+                                                if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
+                                                    const oldConfig = newConfig.transportation as unknown as {
+                                                        stopId: number;
+                                                        postId: number;
+                                                        maxDepartures?: number;
+                                                    };
+                                                    newConfig.transportation = {
+                                                        provider: target.value || 'idsjmk',
+                                                        stops: [{
+                                                            stopId: oldConfig.stopId,
+                                                            postId: oldConfig.postId,
+                                                            maxDepartures: oldConfig.maxDepartures
+                                                        }],
+                                                        maxDepartures: oldConfig.maxDepartures
+                                                    };
+                                                } else {
+                                                    // Update the new config
+                                                    newConfig.transportation = {
+                                                        ...newConfig.transportation,
+                                                        provider: target.value || 'idsjmk'
+                                                    };
+                                                }
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    >
+                                        ${this._getTransportationProviderOptions().map(
+                                                (option) => html`
+                                                    <mwc-list-item .value=${option.value}>${option.label}
+                                                    </mwc-list-item>`
+                                        )}
+                                    </ha-select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="label">Global Max Departures</div>
+                                <div class="value">
+                                    <ha-slider
+                                            min="1"
+                                            max="5"
+                                            step="1"
+                                            pin
+                                            .value=${
+                                                // Handle both old and new format
+                                                ('maxDepartures' in this._config.transportation) 
+                                                    ? this._config.transportation.maxDepartures || 3
+                                                    : ('stops' in this._config.transportation && this._config.transportation.stops)
+                                                        ? this._config.transportation.maxDepartures || 3
+                                                        : 3
+                                            }
+                                            @change=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & {
+                                                    value?: string | number
+                                                };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Convert old format to new format if needed
+                                                if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
+                                                    const oldConfig = newConfig.transportation as unknown as {
+                                                        stopId: number;
+                                                        postId: number;
+                                                        maxDepartures?: number;
+                                                    };
+                                                    newConfig.transportation = {
+                                                        stops: [{
+                                                            stopId: oldConfig.stopId,
+                                                            postId: oldConfig.postId,
+                                                            maxDepartures: oldConfig.maxDepartures
+                                                        }],
+                                                        maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
+                                                    };
+                                                } else {
+                                                    // Update the new config
+                                                    newConfig.transportation = {
+                                                        ...newConfig.transportation,
+                                                        maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
+                                                    };
+                                                }
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Reload stops
+                                                this._loadStops();
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-slider>
+                                    <span>${
+                                        // Handle both old and new format
+                                        ('maxDepartures' in this._config.transportation) 
+                                            ? this._config.transportation.maxDepartures || 3
+                                            : ('stops' in this._config.transportation && this._config.transportation.stops)
+                                                ? this._config.transportation.maxDepartures || 3
+                                                : 3
+                                    } departures</span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="label">Update Interval</div>
+                                <div class="value">
+                                    <ha-textfield
+                                            label="Update interval in minutes (min: 1)"
+                                            type="number"
+                                            min="1"
+                                            .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
+                                            @input=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & {
+                                                    value?: string | number
+                                                };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Get the value as a number
+                                                let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
+
+                                                // Ensure minimum of 1 minute
+                                                intervalMinutes = Math.max(intervalMinutes || 1, 1);
+
+                                                // Convert minutes to seconds for internal storage
+                                                const intervalSeconds = intervalMinutes * 60;
+
+                                                // Update the new config
+                                                newConfig.transportationUpdateInterval = intervalSeconds;
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-textfield>
+                                    <span>minutes</span>
+                                </div>
+                            </div>
+
+                            <div class="section-subheader">Stops</div>
+
+                            ${this._stops.map((stop, index) => html`
+                                <div class="sensor-row" style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                    <div class="sensor-entity">
+                                        <ha-textfield
+                                                label="Stop ID"
+                                                type="number"
+                                                .value=${stop.stopId || 1793}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'stopId', parseInt(target.value || '1793', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                    <div class="sensor-label">
+                                        <ha-textfield
+                                                label="Post ID"
+                                                type="number"
+                                                .value=${stop.postId || 3}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'postId', parseInt(target.value || '3', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                    <div class="sensor-label">
+                                        <ha-textfield
+                                                label="Max Departures"
+                                                type="number"
+                                                min="1"
+                                                max="5"
+                                                .value=${stop.maxDepartures || 3}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'maxDepartures', parseInt(target.value || '3', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                    <div class="sensor-actions">
+                                        <ha-icon-button
+                                                .path=${'M19,13H5V11H19V13Z'}
+                                                @click=${() => this._removeStop(index)}
+                                        ></ha-icon-button>
+                                    </div>
+                                </div>
+                            `)}
+
+                            <mwc-button @click=${this._addStop}>Add Stop</mwc-button>
+
+                            <div class="info-text">
+                                For detailed documentation on transportation configuration, see <a href="https://github.com/juzim/ha-wall-clock-card/blob/main/transportation.md" target="_blank">transportation.md</a>
+                            </div>
                         ` : ''}
                     </div>
                 </ha-expansion-panel>

@@ -1,6 +1,6 @@
 # Wall Clock Card for Home Assistant
 
-A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
+A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display, public transportation departures, and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
 
 ![Wall Clock Card](images/showcase-01.png)
 
@@ -8,7 +8,7 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 
 This project started with a simple need: a beautiful, functional clock for our refrigerator-mounted tablet running Home Assistant. We wanted an at-a-glance display of time, date, and weather that would be visible from anywhere in the kitchen.
 
-Junie from JetBrains took on the programming challenge, creating a clean, elegant solution using TypeScript and modern web components. What began as a simple clock quickly evolved to include weather forecasts, sensor displays, and beautiful background images.
+Junie from JetBrains took on the programming challenge, creating a clean, elegant solution using TypeScript and modern web components. What began as a simple clock quickly evolved to include weather forecasts, sensor displays, public transportation departures, and beautiful background images.
 
 Today, our Wall Clock Card serves as the central information hub on our kitchen tablet, providing all the essential information we need throughout the day in a visually pleasing package.
 
@@ -33,10 +33,17 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Multi-day forecast with temperature ranges (1-7 days)
   - Configurable display mode (current, forecast, or both)
   - Customizable weather section title
-  - Weather data automatically updates every 30 minutes
+  - Weather data automatically updates at configurable intervals (default: 30 minutes)
   - Supports OpenWeatherMap API (free tier)
   - Localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French)
   - Simplified weather categories for better readability
+
+- **Transportation departures**:
+  - Display public transportation departures in the bottom bar
+  - Shows line numbers, destinations, and time until departure
+  - Indicates low-floor vehicles with a wheelchair symbol
+  - Updates automatically at configurable intervals (default: 60 seconds)
+  - Configurable number of departures to show (1-5)
 
 - **Background images**:
   - Multiple image sources with automatic rotation
@@ -397,6 +404,7 @@ weatherConfig:
   language: 'cs'  # Language code (cs for Czech, en for English, etc.)
 weatherDisplayMode: 'both'  # 'current', 'forecast', or 'both'
 weatherForecastDays: 3  # Number of days to show in forecast (1-7)
+weatherUpdateInterval: 30  # Update interval in minutes (minimum: 1, default: 30)
 ```
 
 #### Weather Provider
@@ -409,9 +417,33 @@ Currently, the card supports the OpenWeatherMap API for weather data. You'll nee
    - Make sure your API key is activated (can take a few hours after registration)
 3. Configure the card with your API key
 
-The weather data is automatically updated every 30 minutes to avoid excessive API calls.
+The weather data is automatically updated at configurable intervals (default: 30 minutes) to avoid excessive API calls. You can adjust this with the `weatherUpdateInterval` option (in minutes, minimum: 1).
 
 > **Note**: This card uses the OpenWeatherMap One Call API 2.5, which is included in the free tier. No special subscription is required.
+
+### Transportation Configuration
+
+You can configure the transportation departures display in the bottom bar of the card:
+
+```yaml
+type: 'custom:wall-clock-card'
+# Transportation settings
+transportation:
+  stopId: 1793        # ID of the stop (required)
+  postId: 3           # ID of the platform/direction (required)
+  maxDepartures: 3    # Number of departures to show (1-5, default: 3)
+transportationUpdateInterval: 1  # Update interval in minutes (minimum: 1, default: 1)
+```
+
+The transportation feature displays public transportation departures from a specified stop. This is particularly useful for showing upcoming departures from a nearby transit stop.
+
+Features:
+- Shows real-time departures with line numbers, destinations, and time until departure
+- Indicates low-floor vehicles with a wheelchair symbol (♿)
+- Updates automatically every minute
+- Displays the direction/platform name as "Direction: {name}"
+
+For detailed documentation and API details, see [transportation.md](transportation.md).
 
 ### Background Image Handling
 

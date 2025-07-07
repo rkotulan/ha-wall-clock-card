@@ -2,6 +2,12 @@ import { LitElement, html, css, property, customElement, CSSResult, TemplateResu
 import { HomeAssistant } from 'custom-card-helpers';
 import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay } from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
+import { 
+  TransportationConfig, 
+  TransportationData, 
+  TransportationDeparture,
+  getTransportationProvider 
+} from './transportation-providers';
 import { translateWeatherCondition } from './translations';
 import './wall-clock-card-editor';
 
@@ -9,6 +15,13 @@ import './wall-clock-card-editor';
 export interface SensorConfig {
   entity: string;
   label?: string;
+}
+
+// Legacy interfaces for backward compatibility
+export interface StopConfig {
+  stopId: number;
+  postId: number;
+  maxDepartures?: number;
 }
 
 // Interface for tracking image loading status
@@ -47,9 +60,21 @@ export interface WallClockConfig {
   weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
   weatherForecastDays?: number; // Number of days to show in forecast (1-7)
   weatherTitle?: string; // Custom title for the weather section (default: "Weather")
+  weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
+
+  // Transportation departures settings
+  transportation?: TransportationConfig | LegacyTransportationConfig; // Configuration for transportation departures
+  transportationUpdateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 
   // Allow string indexing for dynamic property access
   [key: string]: any;
+}
+
+// Legacy transportation configuration for backward compatibility
+interface LegacyTransportationConfig {
+  stopId: number;
+  postId: number;
+  maxDepartures?: number;
 }
 
 @customElement('wall-clock-card')
@@ -73,12 +98,14 @@ export class WallClockCard extends LitElement {
   @property({ type: Boolean }) weatherLoading = false; // Flag to track if weather data is loading
   @property({ type: Boolean }) weatherError = false; // Flag to track if there was an error loading weather data
   @property({ type: String }) weatherErrorMessage = ''; // Error message if weather data loading failed
+  @property({ type: Object }) transportationData: TransportationData = { departures: [], loading: false }; // Transportation data
 
   private timer?: number;
   private imageRotationTimer?: number;
   private fetchingImageUrls = false;
   private preloadTimer?: number;
   private weatherUpdateTimer?: number;
+  private transportationUpdateTimer?: number;
 
   constructor() {
     super();
@@ -100,10 +127,42 @@ export class WallClockCard extends LitElement {
     if (this.config.showWeather) {
       this.fetchWeatherData();
 
-      // Update weather data every 30 minutes (1800000 ms)
+      // Get configured weather update interval or default to 30 minutes (1800 seconds)
+      let weatherInterval = this.config.weatherUpdateInterval || 1800;
+
+      // Ensure minimum interval of 60 seconds
+      weatherInterval = Math.max(weatherInterval, 60);
+
+      // Convert to milliseconds
+      const weatherIntervalMs = weatherInterval * 1000;
+
+      console.log(`Setting weather update interval to ${weatherInterval} seconds`);
+
+      // Update weather data at the configured interval
       this.weatherUpdateTimer = window.setInterval(() => {
         this.fetchWeatherData();
-      }, 1800000);
+      }, weatherIntervalMs);
+    }
+
+    // Fetch transportation data if enabled
+    if (this.config.transportation) {
+      this.fetchTransportationData();
+
+      // Get configured transportation update interval or default to 60 seconds
+      let transportationInterval = this.config.transportationUpdateInterval || 60;
+
+      // Ensure minimum interval of 60 seconds
+      transportationInterval = Math.max(transportationInterval, 60);
+
+      // Convert to milliseconds
+      const transportationIntervalMs = transportationInterval * 1000;
+
+      console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+
+      // Update transportation data at the configured interval
+      this.transportationUpdateTimer = window.setInterval(() => {
+        this.fetchTransportationData();
+      }, transportationIntervalMs);
     }
   }
 
@@ -561,6 +620,79 @@ export class WallClockCard extends LitElement {
     }
     if (this.weatherUpdateTimer) {
       clearInterval(this.weatherUpdateTimer);
+    }
+    if (this.transportationUpdateTimer) {
+      clearInterval(this.transportationUpdateTimer);
+    }
+  }
+
+  /**
+   * Fetch transportation data from the configured provider
+   */
+  private async fetchTransportationData(): Promise<void> {
+    if (!this.config.transportation) return;
+
+    // Mark as loading
+    this.transportationData = {
+      ...this.transportationData,
+      loading: true,
+      error: undefined
+    };
+
+    try {
+      // Handle backward compatibility - convert legacy format to new format
+      let transportationConfig: TransportationConfig;
+
+      if ('stopId' in this.config.transportation && 'postId' in this.config.transportation) {
+        // Legacy format with single stop
+        const legacyConfig = this.config.transportation as LegacyTransportationConfig;
+
+        // Convert to new format with IDSJMK provider
+        transportationConfig = {
+          provider: 'idsjmk', // Default to IDSJMK provider for backward compatibility
+          stops: [{
+            stopId: legacyConfig.stopId,
+            postId: legacyConfig.postId,
+            maxDepartures: legacyConfig.maxDepartures
+          }],
+          maxDepartures: legacyConfig.maxDepartures
+        };
+      } else {
+        // New format
+        transportationConfig = this.config.transportation as TransportationConfig;
+
+        // If provider is not specified, default to IDSJMK for backward compatibility
+        if (!transportationConfig.provider) {
+          transportationConfig.provider = 'idsjmk';
+        }
+      }
+
+      // Get the transportation provider
+      const provider = getTransportationProvider(transportationConfig.provider);
+
+      if (!provider) {
+        throw new Error(`Transportation provider '${transportationConfig.provider}' not found`);
+      }
+
+      // Convert stops to the format expected by the provider
+      const stops = transportationConfig.stops.map(stop => ({
+        stopId: stop.stopId,
+        postId: stop.postId,
+        maxDepartures: stop.maxDepartures || transportationConfig.maxDepartures || 3
+      }));
+
+      // Fetch transportation data from the provider
+      const providerConfig = transportationConfig.providerConfig || {};
+      this.transportationData = await provider.fetchTransportation(providerConfig, stops);
+
+      console.log(`Fetched transportation data from ${provider.name}:`, this.transportationData);
+    } catch (error) {
+      console.error('Error fetching transportation data:', error);
+      this.transportationData = {
+        departures: [],
+        error: error instanceof Error ? error.message : String(error),
+        loading: false
+      };
     }
   }
 
@@ -1040,6 +1172,123 @@ export class WallClockCard extends LitElement {
         font-size: 1rem;
       }
 
+      /* Transportation styles */
+      .transportation-container {
+        position: absolute;
+        bottom: 16px;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 4;
+        padding: 8px 16px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
+      }
+
+      .transportation-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+
+      .transportation-departures {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 16px;
+      }
+
+      .stop-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        margin-bottom: 16px;
+      }
+
+      /* Responsive layout for transportation stops */
+      @media (min-width: 600px) {
+        .transportation-departures {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+
+        .stop-group {
+          width: calc(50% - 8px);
+        }
+      }
+
+      /* 3 columns for wider screens */
+      @media (min-width: 900px) {
+        .stop-group {
+          width: calc(33.33% - 8px);
+        }
+      }
+
+      /* 4 columns for very wide screens */
+      @media (min-width: 1200px) {
+        .stop-group {
+          width: calc(25% - 8px);
+        }
+      }
+
+      .stop-name {
+        font-size: 1.3rem;
+        font-weight: 400;
+        margin-bottom: 8px;
+        text-align: left;
+        width: 100%;
+      }
+
+      .stop-departures {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+      }
+
+      .departure-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.3);
+        padding: 8px 12px;
+        border-radius: 4px;
+        width: 100%;
+      }
+
+      .departure-line {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-right: 8px;
+        min-width: 2rem;
+        text-align: center;
+      }
+
+      .departure-destination {
+        font-size: 1.2rem;
+        margin-right: 8px;
+      }
+
+      .departure-time {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #4CAF50;
+      }
+
+      .departure-lowfloor {
+        margin-left: 4px;
+        font-size: 1.2rem;
+      }
+
+      .transportation-error {
+        color: #f44336;
+        font-size: 1rem;
+      }
+
       /* Responsive adjustments */
       @media (min-width: 900px) {
         .clock {
@@ -1129,7 +1378,71 @@ export class WallClockCard extends LitElement {
           <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
+        ${this.config.transportation ? 
+          html`<div class="transportation-container" style="color: ${this.config.fontColor};">
+            ${this.renderTransportationContent()}
+          </div>` : 
+          ''
+        }
       </ha-card>
+    `;
+  }
+
+  /**
+   * Render transportation content
+   */
+  private renderTransportationContent(): TemplateResult {
+    if (this.transportationData.loading) {
+      return html`<div>Loading transportation data...</div>`;
+    }
+
+    if (this.transportationData.error) {
+      return html`<div class="transportation-error">${this.transportationData.error}</div>`;
+    }
+
+    if (!this.transportationData.departures || this.transportationData.departures.length === 0) {
+      return html`<div>No departures available</div>`;
+    }
+
+    // Group departures by stop name and postId
+    const departuresByStop: { [key: string]: TransportationDeparture[] } = {};
+
+    for (const departure of this.transportationData.departures) {
+      const key = `${departure.stopName}-${departure.postId}`;
+      if (!departuresByStop[key]) {
+        departuresByStop[key] = [];
+      }
+      departuresByStop[key].push(departure);
+    }
+
+    return html`
+      <div class="transportation-title" style="color: ${this.config.fontColor};">
+        Transportation Departures
+      </div>
+      <div class="transportation-departures">
+        ${Object.entries(departuresByStop).map(([_key, departures]) => {
+          // Get the stop name from the first departure
+          const stopName = departures[0].stopName;
+
+          return html`
+            <div class="stop-group">
+              <div class="stop-name" style="color: ${this.config.fontColor};">
+                Direction: ${stopName}
+              </div>
+              <div class="stop-departures">
+                ${departures.map(departure => html`
+                  <div class="departure-item">
+                    <div class="departure-line" style="color: ${this.config.fontColor};">${departure.lineName}</div>
+                    <div class="departure-destination" style="color: ${this.config.fontColor};">→ ${departure.finalStop}</div>
+                    <div class="departure-time" style="color: ${this.config.fontColor};">${departure.timeMark}</div>
+                    ${departure.isLowFloor ? html`<div class="departure-lowfloor">♿</div>` : ''}
+                  </div>
+                `)}
+              </div>
+            </div>
+          `;
+        })}
+      </div>
     `;
   }
 
