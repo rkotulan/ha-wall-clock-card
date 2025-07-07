@@ -1,6 +1,6 @@
 # Wall Clock Card for Home Assistant
 
-A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date.
+A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
 
 ![Wall Clock Card](images/showcase-01.png)
 
@@ -14,23 +14,61 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
 
 ## Features
 
-- Beautiful clock card for your Lovelace dashboard
-- Large, centered clock with hours, minutes, and seconds
-- Date display with weekday, month, day, and optional year
-- Automatically updates every second
-- Uses Home Assistant's theme colors
-- Configurable date and time formats
-- Configurable font color (default: white)
-- Display multiple sensors in the top left corner
-- Background image collection with rotation
-- Adjustable black overlay for background images
-- **Online image sources** - automatically fetch beautiful background images from:
-  - [Picsum Photos](https://picsum.photos/) - random high-quality images
-- **Weather forecast** - display current weather and forecast in the top right corner:
+- **Beautiful clock display**:
+  - Large, centered clock with hours, minutes, and seconds
+  - Date display with weekday, month, day, and optional year
+  - Automatically updates every second
+  - Uses Home Assistant's theme colors
+  - Configurable date and time formats
+  - Configurable font color (default: white)
+
+- **Sensor integration**:
+  - Display multiple sensors in the top left corner
+  - Customizable labels for each sensor
+  - Automatic updates when sensor values change
+
+- **Weather forecast**:
+  - Display current weather and forecast in the top right corner
   - Current temperature and conditions with icon
-  - Multi-day forecast with temperature ranges
+  - Multi-day forecast with temperature ranges (1-7 days)
   - Configurable display mode (current, forecast, or both)
-  - Supports OpenWeatherMap API
+  - Customizable weather section title
+  - Weather data automatically updates every 30 minutes
+  - Supports OpenWeatherMap API (free tier)
+  - Localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French)
+  - Simplified weather categories for better readability
+
+- **Background images**:
+  - Multiple image sources with automatic rotation
+  - Adjustable black overlay for better text readability
+  - Configurable rotation interval
+  - Weather and time-of-day based image selection
+  - Lazy loading for improved performance
+  - Automatic preloading for smooth transitions
+
+- **Image sources**:
+  - **Local images**:
+    - Support for your own image collection
+    - Weather and time-of-day based image selection
+    - Directory-based image loading with automatic categorization
+    - Filename pattern matching for easy organization
+
+  - **Picsum Photos**:
+    - Random high-quality images
+    - No API key required
+    - Fast and reliable
+
+  - **Unsplash**:
+    - Beautiful, free photos from Unsplash collections
+    - Weather and time-of-day based image selection
+    - Temperature-based image queries (cold/hot modifiers)
+    - Fresh images on each rotation
+
+- **Configuration**:
+  - Full visual editor in Home Assistant UI
+  - Comprehensive YAML configuration options
+  - Individual background image management
+  - Language selection for weather conditions
 
 ## Installation
 
