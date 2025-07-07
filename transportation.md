@@ -6,14 +6,26 @@ This document describes how to configure the transportation departures feature i
 
 The transportation departures feature allows you to display public transportation departures from multiple stops in the bottom bar of the card. The data is fetched from the IDSJMK API (Integrated Transport System of the South Moravian Region, Czech Republic).
 
+## Providers
+
+### idsjmk
+
+The `idsjmk` provider fetches data from the IDSJMK API, which provides real-time public transportation information for the South Moravian Region in the Czech Republic.
+
 ## Configuration
+
+You have to enable public transportation departures in the yaml configuration. 
+```yaml
+enableTransportation: true
+```
 
 ### Stops Configuration
 
 Use an array of stops to configure transportation departures:
 
 ```yaml
-transportation:
+enableTransportation: true
+transportation:  
   provider: 'idsjmk'  # Transportation provider ID (optional, defaults to 'idsjmk')
   stops:              # Array of stop configurations
     - stopId: 1793    # ID of the first stop
@@ -43,14 +55,7 @@ transportation:
 
 ```yaml
 type: custom:wall-clock-card
-timeFormat:
-  hour: '2-digit'
-  minute: '2-digit'
-  hour12: false
-dateFormat:
-  weekday: 'long'
-  month: 'long'
-  day: 'numeric'
+enableTransportation: true
 transportation:
   provider: 'idsjmk'
   stops:
@@ -65,28 +70,7 @@ transportation:
 
 ## API Details
 
-### API Optimization
-
-To minimize API calls, the component makes a single API call per unique stopId (without the postId parameter):
-
-```
-https://mapa.idsjmk.cz/api/departures?stopid={stopId}
-```
-
-Then it filters the response to find all configured postIds for that stop. This means that if you have multiple platforms at the same stop (e.g., different directions), only one API call is made for that stop.
-
-### Response Format
-
-The API response includes:
-- Stop information
-- List of platforms (posts) with:
-  - Platform ID (postId)
-  - Platform name
-  - List of departures with:
-    - Line number
-    - Destination
-    - Time until departure
-    - Low-floor vehicle indicator
+Use this API endpoint to fetch transportation departures is on your risk. Kordis JMK does not allow to use this API for commercial purposes. The API is provided by Kordis JMK.
 
 ## Display Format
 
@@ -104,7 +88,7 @@ Departures are displayed in the bottom bar of the card, grouped by stop/platform
 On mobile devices and narrow screens, stops are stacked vertically. On wider screens, stops are arranged in columns side by side for better space utilization:
 - 2 columns on screens wider than 600px
 - 3 columns on screens wider than 900px
-- 4 columns on screens wider than 1200px
+- 4 columns on screens wider than 1400px
 
 ### Visual Example (Mobile/Narrow Screens)
 
