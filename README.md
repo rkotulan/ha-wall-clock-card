@@ -128,9 +128,9 @@ dateFormat:
 
 # Unified background images with weather and time-of-day support
 backgroundImages:
-  - url: '/local/images/morning-clear.jpg'
+  - url: '/local/images/sunrise-clear.jpg'
     weather: 'clear sky'
-    timeOfDay: 'morning'
+    timeOfDay: 'sunrise-sunset'
   - url: '/local/images/default.jpg'
     weather: 'all'
     timeOfDay: 'unspecified'
@@ -215,19 +215,18 @@ The Wall Clock Card can fetch background images from online sources, which means
           - `mist`
           - `all` (matches any weather condition)
         - **Supported times of day**:
-          - `morning`
-          - `noon`
-          - `afternoon`
-          - `evening`
+          - `sunrise-sunset`
+          - `day`
+          - `night`
           - `unspecified` (matches any time of day)
 
      **Image Directory**:
         - Alternatively, specify just a root directory for images with the `imageDirectory` property
         - Images will be automatically loaded and categorized based on either:
           1. Directory structure: `/local/images/wcp-bg/wather-category/timeOfDay/image.jpg`
-             - Example: `/local/images/wcp-bg/clear-sky/morning/image.jpg`
+             - Example: `/local/images/wcp-bg/clear-sky/sunrise-sunset/image.jpg`
           2. Filename pattern: `name-{wather-category}-{timeOfDay}.jpg`
-             - Example: `image-clear-sky-morning.jpg`
+             - Example: `image-clear-sky-sunrise-sunset.jpg`
         - The original method of specifying individual images remains available
 
 
@@ -236,21 +235,21 @@ The Wall Clock Card can fetch background images from online sources, which means
      # Method 1: Background images with weather and time-of-day support
      imageSource: 'local'
      backgroundImages:
-       - url: '/local/images/morning-clear.jpg'
+       - url: '/local/images/sunrise-clear.jpg'
          weather: 'clear sky'
-         timeOfDay: 'morning'
-       - url: '/local/images/afternoon-clear.jpg'
+         timeOfDay: 'sunrise-sunset'
+       - url: '/local/images/day-clear.jpg'
          weather: 'clear sky'
-         timeOfDay: 'afternoon'
-       - url: '/local/images/evening-clear.jpg'
+         timeOfDay: 'day'
+       - url: '/local/images/night-clear.jpg'
          weather: 'clear sky'
-         timeOfDay: 'evening'
+         timeOfDay: 'night'
        - url: '/local/images/rainy-day.jpg'
          weather: 'rain'
          timeOfDay: 'unspecified'
        - url: '/local/images/snowy-night.jpg'
          weather: 'snow'
-         timeOfDay: 'evening'
+         timeOfDay: 'night'
        - url: '/local/images/default.jpg'
          weather: 'all'
          timeOfDay: 'unspecified'

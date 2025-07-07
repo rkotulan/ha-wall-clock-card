@@ -197,14 +197,12 @@ export class UnsplashSource implements ImageSource {
 
       // Add time-specific modifiers
       const currentTimeOfDay = this.getCurrentTimeOfDay();
-      if (currentTimeOfDay === 'morning') {
-        query += ' sunrise dawn morning';
-      } else if (currentTimeOfDay === 'noon') {
-        query += ' midday bright daylight';
-      } else if (currentTimeOfDay === 'afternoon') {
-        query += ' afternoon daylight';
-      } else if (currentTimeOfDay === 'evening') {
-        query += ' sunset dusk evening night';
+      if (currentTimeOfDay === 'sunrise-sunset') {
+        query += ' sunrise sunset dawn dusk';
+      } else if (currentTimeOfDay === 'day') {
+        query += ' daylight bright midday afternoon';
+      } else if (currentTimeOfDay === 'night') {
+        query += ' night dark stars moonlight';
       }
 
       console.log(`Enhanced query with weather data: ${query}`);
@@ -282,14 +280,12 @@ export class UnsplashSource implements ImageSource {
   private getCurrentTimeOfDay(): string {
     const hour = new Date().getHours();
 
-    if (hour >= 5 && hour < 10) {
-      return 'morning';
-    } else if (hour >= 10 && hour < 14) {
-      return 'noon';
-    } else if (hour >= 14 && hour < 18) {
-      return 'afternoon';
-    } else if (hour >= 18 || hour < 5) {
-      return 'evening';
+    if ((hour >= 5 && hour < 9) || (hour >= 17 && hour < 21)) {
+      return 'sunrise-sunset';
+    } else if (hour >= 9 && hour < 17) {
+      return 'day';
+    } else if (hour >= 21 || hour < 5) {
+      return 'night';
     }
 
     return 'day';

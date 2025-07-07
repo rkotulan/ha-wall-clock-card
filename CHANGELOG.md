@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.0
+
+- Changed time-of-day values from "morning, noon, afternoon, evening" to "sunrise-sunset, day, night"
+- Simplified time-of-day categorization for better usability
+- Updated time-of-day logic in local and unsplash image sources
+- Updated documentation to reflect the new time-of-day values
+- No backward compatibility with old time-of-day values
+
 ## 1.14.1
 
 - Enhanced editor UI appearance and usability

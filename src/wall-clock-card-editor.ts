@@ -118,10 +118,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     // Time of day options
     private _timeOfDayOptions = [
         {value: TimeOfDay.Unspecified, label: 'Any Time (Unspecified)'},
-        {value: TimeOfDay.Morning, label: 'Morning'},
-        {value: TimeOfDay.Noon, label: 'Noon'},
-        {value: TimeOfDay.Afternoon, label: 'Afternoon'},
-        {value: TimeOfDay.Evening, label: 'Evening'},
+        {value: TimeOfDay.SunriseSunset, label: 'Sunrise/Sunset'},
+        {value: TimeOfDay.Day, label: 'Day'},
+        {value: TimeOfDay.Night, label: 'Night'},
     ];
 
     setConfig(config: LovelaceCardConfig): void {

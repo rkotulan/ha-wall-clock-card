@@ -121,7 +121,7 @@ export class LocalSource implements ImageSource {
 
       // Time of day values
       const timesOfDay = [
-        TimeOfDay.Morning, TimeOfDay.Noon, TimeOfDay.Afternoon, TimeOfDay.Evening, TimeOfDay.Unspecified
+        TimeOfDay.SunriseSunset, TimeOfDay.Day, TimeOfDay.Night, TimeOfDay.Unspecified
       ];
 
       // Method 2: Filename-based categorization
@@ -249,14 +249,12 @@ export class LocalSource implements ImageSource {
   private getCurrentTimeOfDay(): TimeOfDay {
     const hour = new Date().getHours();
 
-    if (hour >= 5 && hour < 10) {
-      return TimeOfDay.Morning;
-    } else if (hour >= 10 && hour < 14) {
-      return TimeOfDay.Noon;
-    } else if (hour >= 14 && hour < 18) {
-      return TimeOfDay.Afternoon;
-    } else if (hour >= 18 || hour < 5) {
-      return TimeOfDay.Evening;
+    if ((hour >= 5 && hour < 9) || (hour >= 17 && hour < 21)) {
+      return TimeOfDay.SunriseSunset;
+    } else if (hour >= 9 && hour < 17) {
+      return TimeOfDay.Day;
+    } else if (hour >= 21 || hour < 5) {
+      return TimeOfDay.Night;
     }
 
     return TimeOfDay.Unspecified;

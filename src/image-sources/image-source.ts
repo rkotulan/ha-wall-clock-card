@@ -5,10 +5,9 @@ import { WeatherData } from '../weather-providers';
  */
 export enum TimeOfDay {
   Unspecified = "unspecified",
-  Morning = "morning",
-  Noon = "noon",
-  Afternoon = "afternoon",
-  Evening = "evening"
+  SunriseSunset = "sunrise-sunset",
+  Day = "day",
+  Night = "night"
 }
 
 /**
