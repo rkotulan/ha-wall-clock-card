@@ -716,7 +716,7 @@
                             <div class="section-subheader">Stops</div>
 
                             ${this._stops.map((e,t)=>M`
-                                <div class="sensor-row" style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                <div class="sensor-row">
                                     <div class="sensor-entity">
                                         <ha-textfield
                                                 label="Stop ID"
@@ -744,7 +744,7 @@
                                         ></ha-textfield>
                                     </div>
                                 </div>
-                                <div class="sensor-row" style="margin-top: 8px; margin-bottom: 16px;">
+                                <div class="sensor-row" style="margin-bottom: 16px; padding-bottom: 16px;">
                                     <div class="sensor-entity" style="width: 100%;">
                                         <ha-textfield
                                                 label="Stop Name (optional)"

@@ -8,23 +8,13 @@ The transportation departures feature allows you to display public transportatio
 
 ## Configuration
 
-### Single Stop Configuration (Legacy Format)
+### Stops Configuration
 
-For a single stop, you can use the simple format:
-
-```yaml
-transportation:
-  stopId: 1793        # ID of the stop (required)
-  postId: 3           # ID of the platform/direction (required)
-  maxDepartures: 3    # Number of departures to show (1-5, default: 3)
-```
-
-### Multiple Stops Configuration (New Format)
-
-For multiple stops, use the new format with an array of stops:
+Use an array of stops to configure transportation departures:
 
 ```yaml
 transportation:
+  provider: 'idsjmk'  # Transportation provider ID (optional, defaults to 'idsjmk')
   stops:              # Array of stop configurations
     - stopId: 1793    # ID of the first stop
       postId: 3       # ID of the platform/direction for the first stop
@@ -38,16 +28,18 @@ transportation:
 
 ### Configuration Options
 
-- **stops** (required for multiple stops): Array of stop configurations.
-  - **stopId** (required): The ID of the stop you want to display departures for.
-  - **postId** (required): The ID of the platform/direction at the stop.
+- **provider** (optional): The ID of the transportation provider to use (default: 'idsjmk').
+- **providerConfig** (optional): Configuration options specific to the selected provider.
+- **stops** (required): Array of stop configurations.
+  - **stopId** (required): The ID of the stop you want to display departures for (can be a number or string).
+  - **postId** (required): The ID of the platform/direction at the stop (can be a number or string).
   - **name** (optional): A custom name for the stop (if not provided, the name from the API will be used).
   - **maxDepartures** (optional): The number of departures to show for this stop (minimum: 1, maximum: 5).
 - **maxDepartures** (optional): Global setting for the number of departures to display per stop (minimum: 1, maximum: 5, default: 3).
 
 ## Examples
 
-### Single Stop Example (Legacy Format)
+### Configuration Example
 
 ```yaml
 type: custom:wall-clock-card
@@ -60,24 +52,7 @@ dateFormat:
   month: 'long'
   day: 'numeric'
 transportation:
-  stopId: 1793
-  postId: 3
-  maxDepartures: 3
-```
-
-### Multiple Stops Example (New Format)
-
-```yaml
-type: custom:wall-clock-card
-timeFormat:
-  hour: '2-digit'
-  minute: '2-digit'
-  hour12: false
-dateFormat:
-  weekday: 'long'
-  month: 'long'
-  day: 'numeric'
-transportation:
+  provider: 'idsjmk'
   stops:
     - stopId: 1793
       postId: 3
