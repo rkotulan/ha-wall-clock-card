@@ -332,7 +332,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     private _addStop(): void {
-        this._stops = [...this._stops, {stopId: 1793, postId: 3, maxDepartures: 3}];
+        this._stops = [...this._stops, {stopId: 1793, postId: 3, maxDepartures: 3, name: ''}];
         // Update the config with a deep copy
         if (this._config) {
             // Create a deep copy of the config
@@ -2033,6 +2033,24 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                     if (!target) return;
 
                                                     this._stopChanged(index, 'maxDepartures', parseInt(target.value || '3', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                </div>
+                                <div class="sensor-row" style="margin-top: 8px; margin-bottom: 16px;">
+                                    <div class="sensor-entity" style="width: 100%;">
+                                        <ha-textfield
+                                                label="Stop Name (optional)"
+                                                .value=${stop.name || ''}
+                                                style="width: 100%;"
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'name', target.value || '');
                                                 }}
                                         ></ha-textfield>
                                     </div>

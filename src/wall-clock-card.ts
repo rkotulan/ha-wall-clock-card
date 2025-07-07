@@ -99,6 +99,7 @@ export class WallClockCard extends LitElement {
   @property({ type: Boolean }) weatherError = false; // Flag to track if there was an error loading weather data
   @property({ type: String }) weatherErrorMessage = ''; // Error message if weather data loading failed
   @property({ type: Object }) transportationData: TransportationData = { departures: [], loading: false }; // Transportation data
+  @property({ type: Date }) lastTransportationUpdate?: Date; // Last time transportation data was updated
 
   private timer?: number;
   private imageRotationTimer?: number;
@@ -678,12 +679,16 @@ export class WallClockCard extends LitElement {
       const stops = transportationConfig.stops.map(stop => ({
         stopId: stop.stopId,
         postId: stop.postId,
-        maxDepartures: stop.maxDepartures || transportationConfig.maxDepartures || 3
+        maxDepartures: stop.maxDepartures || transportationConfig.maxDepartures || 3,
+        name: stop.name // Pass the custom name if provided
       }));
 
       // Fetch transportation data from the provider
       const providerConfig = transportationConfig.providerConfig || {};
       this.transportationData = await provider.fetchTransportation(providerConfig, stops);
+
+      // Update the last update timestamp
+      this.lastTransportationUpdate = new Date();
 
       console.log(`Fetched transportation data from ${provider.name}:`, this.transportationData);
     } catch (error) {
@@ -992,7 +997,7 @@ export class WallClockCard extends LitElement {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        z-index: 1;
+        z-index: 0;
         border-radius: var(--ha-card-border-radius, 4px);
       }
 
@@ -1003,7 +1008,7 @@ export class WallClockCard extends LitElement {
         width: 100%;
         height: 100%;
         background-color: #000000;
-        z-index: 2;
+        z-index: 1;
         border-radius: var(--ha-card-border-radius, 4px);
       }
 
@@ -1013,7 +1018,7 @@ export class WallClockCard extends LitElement {
         line-height: 10rem;
         font-weight: 300;
         text-align: center;
-        z-index: 3;
+        z-index: 2;
         position: relative;
         display: flex;
         align-items: flex-start;
@@ -1040,7 +1045,7 @@ export class WallClockCard extends LitElement {
         text-align: center;
         margin-top: 0.2rem;
         opacity: 1;
-        z-index: 3;
+        z-index: 2;
         position: relative;
       }
 
@@ -1051,7 +1056,7 @@ export class WallClockCard extends LitElement {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        z-index: 4;
+        z-index: 3;
         max-width: 40%;
         max-height: 60%;
         overflow-y: auto;
@@ -1082,7 +1087,7 @@ export class WallClockCard extends LitElement {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        z-index: 4;
+        z-index: 3;
         max-width: 40%;
         max-height: 60%;
         overflow-y: auto;
@@ -1175,15 +1180,15 @@ export class WallClockCard extends LitElement {
       /* Transportation styles */
       .transportation-container {
         position: absolute;
-        bottom: 16px;
+        bottom: 0;
         left: 0;
         right: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
-        z-index: 4;
+        z-index: 3;
         padding: 8px 16px;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.1);
         border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
       }
 
@@ -1205,10 +1210,33 @@ export class WallClockCard extends LitElement {
         display: flex;
         flex-direction: column;
         width: 100%;
-        margin-bottom: 16px;
       }
 
       /* Responsive layout for transportation stops */
+      @media (max-width: 480px) {
+        /* Force single column on very small screens */
+        .transportation-departures {
+          flex-direction: column;
+        }
+
+        .stop-group {
+          width: 100%;
+        }
+      }
+
+      @media (min-width: 481px) and (max-width: 599px) {
+        /* Allow 2 columns on slightly larger screens if they fit */
+        .transportation-departures {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+
+        .stop-group {
+          width: calc(50% - 8px);
+        }
+      }
+
       @media (min-width: 600px) {
         .transportation-departures {
           flex-direction: row;
@@ -1222,14 +1250,21 @@ export class WallClockCard extends LitElement {
       }
 
       /* 3 columns for wider screens */
-      @media (min-width: 900px) {
+      @media (min-width: 900px) and (max-width: 1179px) {
         .stop-group {
-          width: calc(33.33% - 8px);
+          width: calc(33% - 8px);
+        }
+      }
+
+      /* 3 columns for 1180px resolution as requested */
+      @media (min-width: 1180px) and (max-width: 1399px) {
+        .stop-group {
+          width: calc(33% - 8px);
         }
       }
 
       /* 4 columns for very wide screens */
-      @media (min-width: 1200px) {
+      @media (min-width: 1400px) {
         .stop-group {
           width: calc(25% - 8px);
         }
@@ -1237,10 +1272,13 @@ export class WallClockCard extends LitElement {
 
       .stop-name {
         font-size: 1.3rem;
-        font-weight: 400;
-        margin-bottom: 8px;
+        font-weight: 500;
         text-align: left;
         width: 100%;
+        margin-top: 0;
+        margin-bottom: 8px;
+        margin-left: 12px;
+        opacity: 0.8;
       }
 
       .stop-departures {
@@ -1257,7 +1295,7 @@ export class WallClockCard extends LitElement {
         background-color: rgba(0, 0, 0, 0.3);
         padding: 8px 12px;
         border-radius: 4px;
-        width: 100%;
+        width: calc(100% - 24px);
       }
 
       .departure-line {
@@ -1287,6 +1325,14 @@ export class WallClockCard extends LitElement {
       .transportation-error {
         color: #f44336;
         font-size: 1rem;
+      }
+
+      .transportation-update-time {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        text-align: center;
+        margin-top: 8px;
+        width: 100%;
       }
 
       /* Responsive adjustments */
@@ -1330,6 +1376,10 @@ export class WallClockCard extends LitElement {
         .weather-icon {
           width: 60px;
           height: 60px;
+        }
+        
+        .stop-group {
+          margin-bottom: 16px;
         }
       }
     `;
@@ -1416,9 +1466,6 @@ export class WallClockCard extends LitElement {
     }
 
     return html`
-      <div class="transportation-title" style="color: ${this.config.fontColor};">
-        Transportation Departures
-      </div>
       <div class="transportation-departures">
         ${Object.entries(departuresByStop).map(([_key, departures]) => {
           // Get the stop name from the first departure
@@ -1426,9 +1473,9 @@ export class WallClockCard extends LitElement {
 
           return html`
             <div class="stop-group">
-              <div class="stop-name" style="color: ${this.config.fontColor};">
-                Direction: ${stopName}
-              </div>
+              <h3 class="stop-name" style="color: ${this.config.fontColor};">
+                 ${stopName}
+              </h3>
               <div class="stop-departures">
                 ${departures.map(departure => html`
                   <div class="departure-item">

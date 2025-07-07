@@ -12,6 +12,14 @@
   - 2 columns on screens wider than 600px
   - 3 columns on screens wider than 900px
   - 4 columns on screens wider than 1200px
+- Added ability to customize stop names
+  - Custom names can be set for each stop in the configuration
+  - If not provided, the name from the API will be used
+  - Added UI control in the editor for setting stop names
+- Improved stop name display in transportation section
+  - Stop names now appear on a separate line with a visual separator
+  - Added a bottom border to clearly distinguish stop names from departures
+  - Increased font weight for better readability
 - Updated documentation to reflect the new configuration options
 - Improved user interface for better readability on different screen sizes
 

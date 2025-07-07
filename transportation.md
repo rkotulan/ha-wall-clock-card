@@ -41,6 +41,7 @@ transportation:
 - **stops** (required for multiple stops): Array of stop configurations.
   - **stopId** (required): The ID of the stop you want to display departures for.
   - **postId** (required): The ID of the platform/direction at the stop.
+  - **name** (optional): A custom name for the stop (if not provided, the name from the API will be used).
   - **maxDepartures** (optional): The number of departures to show for this stop (minimum: 1, maximum: 5).
 - **maxDepartures** (optional): Global setting for the number of departures to display per stop (minimum: 1, maximum: 5, default: 3).
 

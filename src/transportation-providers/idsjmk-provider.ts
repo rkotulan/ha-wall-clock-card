@@ -84,11 +84,14 @@ export class IDSJMKProvider implements TransportationProvider {
           }
 
           // Get the stop name from the post
-          const stopName = post.Name;
+          const apiStopName = post.Name;
 
           // Find the stop config for this stopId and postId
           const stopConfig = stopsForThisId.find(s => s.postId === postId);
           if (!stopConfig) continue;
+
+          // Use custom name if provided, otherwise use API-provided name
+          const stopName = stopConfig.name || apiStopName;
 
           // Get the departures and limit to maxDepartures
           const maxDepartures = stopConfig.maxDepartures || 3;
