@@ -23,6 +23,14 @@ export const weatherTranslations: WeatherTranslations = {
     'es': 'Todas las condiciones climáticas',
     'fr': 'Toutes les conditions météorologiques'
   },
+  'clouds': {
+    'cs': 'Oblačno',
+    'de': 'Bewölkt',
+    'sk': 'Oblačno',
+    'pl': 'Zachmurzenie',
+    'es': 'Nubes',
+    'fr': 'Nuages'
+  },
   'clear sky': {
     'cs': 'Jasná obloha',
     'de': 'Klarer Himmel',
@@ -94,6 +102,14 @@ export const weatherTranslations: WeatherTranslations = {
     'pl': 'Mgła',
     'es': 'Niebla',
     'fr': 'Brouillard'
+  },
+  'light rain': {
+    'cs': 'Slabý déšť',
+    'de': 'Leichter Regen',
+    'sk': 'Slabý dážď',
+    'pl': 'Lekki deszcz',
+    'es': 'Lluvia ligera',
+    'fr': 'Pluie légère'
   }
 };
 
@@ -111,6 +127,16 @@ export function translateWeatherCondition(condition: string, language: string): 
 
   // Convert condition to lowercase for case-insensitive lookup
   const lowerCondition = condition.toLowerCase();
+
+  // Simplify cloud conditions
+  if (lowerCondition === 'few clouds' || lowerCondition === 'scattered clouds' || lowerCondition === 'broken clouds') {
+    return weatherTranslations['clouds'][language];
+  }
+
+  // Simplify rain conditions
+  if (lowerCondition === 'thunderstorm' || lowerCondition === 'shower rain') {
+    return weatherTranslations['rain'][language];
+  }
 
   // Return the translation if it exists, otherwise return the original condition
   return weatherTranslations[lowerCondition]?.[language] || condition;

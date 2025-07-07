@@ -25,6 +25,7 @@ export interface WallClockConfig {
   backgroundOpacity?: number;
   imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
+  imageDirectory?: string; // Root directory for images (used for automatic image loading)
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements

@@ -207,11 +207,33 @@ The Wall Clock Card can fetch background images from online sources, which means
         - Special `timeOfDay: 'unspecified'` value matches any time of day
         - Images are selected based on current weather and time of day
         - More specific matches are prioritized over general ones
+        - **Supported weather conditions**:
+          - `clear sky`
+          - `clouds` (includes `few clouds`, `scattered clouds`, and `broken clouds`)
+          - `rain` (includes `shower rain` and `thunderstorm`)
+          - `snow`
+          - `mist`
+          - `all` (matches any weather condition)
+        - **Supported times of day**:
+          - `morning`
+          - `noon`
+          - `afternoon`
+          - `evening`
+          - `unspecified` (matches any time of day)
+
+     **Image Directory**:
+        - Alternatively, specify just a root directory for images with the `imageDirectory` property
+        - Images will be automatically loaded and categorized based on either:
+          1. Directory structure: `/local/images/wcp-bg/wather-category/timeOfDay/image.jpg`
+             - Example: `/local/images/wcp-bg/clear-sky/morning/image.jpg`
+          2. Filename pattern: `name-{wather-category}-{timeOfDay}.jpg`
+             - Example: `image-clear-sky-morning.jpg`
+        - The original method of specifying individual images remains available
 
 
    - Configuration:
      ```yaml
-     # Background images with weather and time-of-day support
+     # Method 1: Background images with weather and time-of-day support
      imageSource: 'local'
      backgroundImages:
        - url: '/local/images/morning-clear.jpg'
@@ -232,6 +254,12 @@ The Wall Clock Card can fetch background images from online sources, which means
        - url: '/local/images/default.jpg'
          weather: 'all'
          timeOfDay: 'unspecified'
+     ```
+
+     ```yaml
+     # Method 2: Specify just a root directory for images
+     imageSource: 'local'
+     imageDirectory: '/local/images/wcp-bg/'
      ```
 
 3. **Picsum Photos** (`imageSource: 'picsum'`): 

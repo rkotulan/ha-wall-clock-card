@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.14.1
+
+- Enhanced editor UI appearance and usability
+- Fixed TypeScript error: 'weatherCondition' is declared but its value is never read
+- Enhanced image queries by including the current weather condition directly in the search query
+
+## 1.14.0
+
+- Enhanced Unsplash image source to better utilize weather data for image selection
+- Improved `fetchImagesFromApi` function to accept weather data parameter
+- Added temperature-based image queries (cold/hot modifiers based on temperature)
+- Enhanced time-of-day specific image queries with more descriptive terms
+- Improved image relevance by using more specific weather and time context
+
+## 1.13.0
+
+- Simplified weather conditions for better readability:
+  - Combined "few clouds", "scattered clouds", and "broken clouds" into just "clouds"
+  - Combined "thunderstorm" and "shower rain" into just "rain"
+- Updated documentation to reflect the simplified weather conditions
+
+## 1.12.0
+
+- Added support for directory-based image loading in the Local image source
+- Added two methods for automatic image categorization:
+  1. Directory structure: `/root/category/timeOfDay/image.jpg`
+  2. Filename pattern: `name-{category}-{timeOfDay}.jpg`
+- Added new `imageDirectory` configuration option to specify the root directory for images
+- Maintained backward compatibility with existing image configuration methods
+- Updated documentation with examples of the new configuration options
+
 ## 1.11.1
 
 - Fixed issue with weather condition translations not displaying correctly

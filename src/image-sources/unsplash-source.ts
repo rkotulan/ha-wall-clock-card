@@ -100,7 +100,7 @@ export class UnsplashSource implements ImageSource {
     if (apiKey) {
       try {
         console.log('Using official Unsplash API');
-        return await this.fetchImagesFromApi(apiKey, category, count);
+        return await this.fetchImagesFromApi(apiKey, category, count, weatherData);
       } catch (error) {
         console.error('Error fetching images from Unsplash API:', error);
         console.log('Falling back to direct URL method');
@@ -158,9 +158,10 @@ export class UnsplashSource implements ImageSource {
    * @param apiKey Unsplash API key
    * @param category Category for images
    * @param count Number of images to fetch
+   * @param weatherData Optional weather data to enhance image queries
    * @returns Promise that resolves to an array of image URLs
    */
-  private async fetchImagesFromApi(apiKey: string, category: string, count: number): Promise<string[]> {
+  private async fetchImagesFromApi(apiKey: string, category: string, count: number, weatherData?: WeatherData): Promise<string[]> {
     const fetchedImages: string[] = [];
 
     // Prepare the search query from categories
@@ -177,6 +178,36 @@ export class UnsplashSource implements ImageSource {
         const additionalKeywords = categories.slice(1).join(' ');
         query += ` ${additionalKeywords}`;
       }
+    }
+
+    // If weather data is available, enhance the query with more specific weather details
+    if (weatherData) {
+      const weatherCondition = weatherData.current.condition.toLowerCase();
+      const temperature = Math.round(weatherData.current.temperature);
+
+      // Add weather condition to the query
+      query += ` ${weatherCondition}`;
+
+      // Add more specific weather details to improve image relevance
+      if (temperature < 0) {
+        query += ' cold freezing snow ice';
+      } else if (temperature > 25) {
+        query += ' hot summer warm';
+      }
+
+      // Add time-specific modifiers
+      const currentTimeOfDay = this.getCurrentTimeOfDay();
+      if (currentTimeOfDay === 'morning') {
+        query += ' sunrise dawn morning';
+      } else if (currentTimeOfDay === 'noon') {
+        query += ' midday bright daylight';
+      } else if (currentTimeOfDay === 'afternoon') {
+        query += ' afternoon daylight';
+      } else if (currentTimeOfDay === 'evening') {
+        query += ' sunset dusk evening night';
+      }
+
+      console.log(`Enhanced query with weather data: ${query}`);
     }
 
     try {
