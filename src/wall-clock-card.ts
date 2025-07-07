@@ -1111,7 +1111,7 @@ export class WallClockCard extends LitElement {
       .weather-forecast {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
       }
 
       .forecast-day {
@@ -1135,6 +1135,8 @@ export class WallClockCard extends LitElement {
       .forecast-temp {
         font-size: 1.4rem;
         font-weight: 400;
+        width: 80px;
+        text-align: right;
       }
 
       .forecast-condition {
