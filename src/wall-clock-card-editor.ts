@@ -244,21 +244,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             return;
         }
 
-        // Handle backward compatibility - convert old format to new format
-        if ('stopId' in this._config.transportation && 'postId' in this._config.transportation) {
-            // Old format with single stop
-            const oldConfig = this._config.transportation as unknown as {
-                stopId: number;
-                postId: number;
-                maxDepartures?: number;
-            };
-            this._stops = [{
-                stopId: oldConfig.stopId,
-                postId: oldConfig.postId,
-                maxDepartures: oldConfig.maxDepartures
-            }];
-        } else if (this._config.transportation.stops && this._config.transportation.stops.length > 0) {
-            // New format with multiple stops
+        if (this._config.transportation.stops && this._config.transportation.stops.length > 0) {
+            // Load stops from configuration
             this._stops = [...this._config.transportation.stops];
         } else {
             // No stops configured
@@ -347,22 +334,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 };
             }
 
-            // Convert old format to new format if needed
-            if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
-                const oldConfig = newConfig.transportation as unknown as {
-                    stopId: number;
-                    postId: number;
-                    maxDepartures?: number;
-                };
-                newConfig.transportation = {
-                    stops: [{
-                        stopId: oldConfig.stopId,
-                        postId: oldConfig.postId,
-                        maxDepartures: oldConfig.maxDepartures
-                    }],
-                    maxDepartures: oldConfig.maxDepartures
-                };
-            }
 
             // Ensure stops array exists
             if (!newConfig.transportation.stops) {
@@ -1756,65 +1727,17 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 </ha-expansion-panel>
 
                 <!-- Transportation Settings Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Transportation Departures</h3>
-                    <div class="content">
-                        <div class="row">
-                            <div class="label">Enable Transportation</div>
-                            <div class="value">
-                                <ha-switch
-                                        .checked=${!!this._config.transportation}
-                                        @change=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                ${this._config.enableTransportation === true ? html`
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Transportation Departures</h3>
+                        <div class="content">
 
-                                            const target = ev.target as HTMLElement & { checked?: boolean };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            if (target.checked) {
-                                                newConfig.transportation = {
-                                                    provider: 'idsjmk', // Default to IDSJMK provider
-                                                    stops: [{
-                                                        stopId: 1793,
-                                                        postId: 3,
-                                                        maxDepartures: 3
-                                                    }],
-                                                    maxDepartures: 3
-                                                };
-
-                                                // Load the stops
-                                                this._loadStops();
-                                            } else {
-                                                newConfig.transportation = undefined;
-                                                this._stops = [];
-                                            }
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-switch>
-                                <span>Display transportation departures</span>
-                            </div>
-                        </div>
-
-                        ${this._config.transportation ? html`
                             <div class="row">
                                 <div class="label">Transportation Provider</div>
                                 <div class="value">
                                     <ha-select
                                             label="Provider"
-                                            .value=${
-                                                // Handle both old and new format
-                                                ('provider' in this._config.transportation) 
-                                                    ? this._config.transportation.provider || 'idsjmk'
-                                                    : 'idsjmk'
-                                            }
+                                            .value=${this._config.transportation?.provider || 'idsjmk'}
                                             @click=${(ev: CustomEvent) => {
                                                 ev.stopPropagation();
                                             }}
@@ -1827,29 +1750,11 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 // Create a deep copy of the config
                                                 const newConfig = JSON.parse(JSON.stringify(this._config));
 
-                                                // Convert old format to new format if needed
-                                                if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
-                                                    const oldConfig = newConfig.transportation as unknown as {
-                                                        stopId: number;
-                                                        postId: number;
-                                                        maxDepartures?: number;
-                                                    };
-                                                    newConfig.transportation = {
-                                                        provider: target.value || 'idsjmk',
-                                                        stops: [{
-                                                            stopId: oldConfig.stopId,
-                                                            postId: oldConfig.postId,
-                                                            maxDepartures: oldConfig.maxDepartures
-                                                        }],
-                                                        maxDepartures: oldConfig.maxDepartures
-                                                    };
-                                                } else {
-                                                    // Update the new config
-                                                    newConfig.transportation = {
-                                                        ...newConfig.transportation,
-                                                        provider: target.value || 'idsjmk'
-                                                    };
-                                                }
+                                                // Update the new config
+                                                newConfig.transportation = {
+                                                    ...newConfig.transportation,
+                                                    provider: target.value || 'idsjmk'
+                                                };
 
                                                 // Update the local config reference
                                                 this._config = newConfig;
@@ -1875,14 +1780,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             max="5"
                                             step="1"
                                             pin
-                                            .value=${
-                                                // Handle both old and new format
-                                                ('maxDepartures' in this._config.transportation) 
-                                                    ? this._config.transportation.maxDepartures || 3
-                                                    : ('stops' in this._config.transportation && this._config.transportation.stops)
-                                                        ? this._config.transportation.maxDepartures || 3
-                                                        : 3
-                                            }
+                                            .value=${this._config.transportation?.maxDepartures || 3}
                                             @change=${(ev: CustomEvent) => {
                                                 ev.stopPropagation();
                                                 ev.preventDefault();
@@ -1895,28 +1793,11 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 // Create a deep copy of the config
                                                 const newConfig = JSON.parse(JSON.stringify(this._config));
 
-                                                // Convert old format to new format if needed
-                                                if ('stopId' in newConfig.transportation && 'postId' in newConfig.transportation) {
-                                                    const oldConfig = newConfig.transportation as unknown as {
-                                                        stopId: number;
-                                                        postId: number;
-                                                        maxDepartures?: number;
-                                                    };
-                                                    newConfig.transportation = {
-                                                        stops: [{
-                                                            stopId: oldConfig.stopId,
-                                                            postId: oldConfig.postId,
-                                                            maxDepartures: oldConfig.maxDepartures
-                                                        }],
-                                                        maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
-                                                    };
-                                                } else {
-                                                    // Update the new config
-                                                    newConfig.transportation = {
-                                                        ...newConfig.transportation,
-                                                        maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
-                                                    };
-                                                }
+                                                // Update the new config
+                                                newConfig.transportation = {
+                                                    ...newConfig.transportation,
+                                                    maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
+                                                };
 
                                                 // Update the local config reference
                                                 this._config = newConfig;
@@ -1928,14 +1809,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 fireEvent(this, 'config-changed', {config: newConfig});
                                             }}
                                     ></ha-slider>
-                                    <span>${
-                                        // Handle both old and new format
-                                        ('maxDepartures' in this._config.transportation) 
-                                            ? this._config.transportation.maxDepartures || 3
-                                            : ('stops' in this._config.transportation && this._config.transportation.stops)
-                                                ? this._config.transportation.maxDepartures || 3
-                                                : 3
-                                    } departures</span>
+                                    <span>${this._config.transportation?.maxDepartures || 3} departures</span>
                                 </div>
                             </div>
 
@@ -2066,11 +1940,13 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <mwc-button @click=${this._addStop}>Add Stop</mwc-button>
 
                             <div class="info-text">
-                                For detailed documentation on transportation configuration, see <a href="https://github.com/juzim/ha-wall-clock-card/blob/main/transportation.md" target="_blank">transportation.md</a>
-                            </div>
-                        ` : ''}
-                    </div>
-                </ha-expansion-panel>
+                                For detailed documentation on transportation configuration, see <a
+                                    href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
+                                    target="_blank">transportation.md</a>
+                            </div>                        
+                        </div>
+                    </ha-expansion-panel>
+                ` : ''}
         `;
     }
 }

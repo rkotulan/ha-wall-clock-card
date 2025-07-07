@@ -63,19 +63,14 @@ export interface WallClockConfig {
   weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
 
   // Transportation departures settings
-  transportation?: TransportationConfig | LegacyTransportationConfig; // Configuration for transportation departures
+  enableTransportation?: boolean; // Whether to show transportation departures
+  transportation?: TransportationConfig; // Configuration for transportation departures
   transportationUpdateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 
   // Allow string indexing for dynamic property access
   [key: string]: any;
 }
 
-// Legacy transportation configuration for backward compatibility
-interface LegacyTransportationConfig {
-  stopId: number;
-  postId: number;
-  maxDepartures?: number;
-}
 
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
@@ -631,7 +626,7 @@ export class WallClockCard extends LitElement {
    * Fetch transportation data from the configured provider
    */
   private async fetchTransportationData(): Promise<void> {
-    if (!this.config.transportation) return;
+    if (!this.config.transportation || this.config.enableTransportation === false) return;
 
     // Mark as loading
     this.transportationData = {
@@ -641,31 +636,11 @@ export class WallClockCard extends LitElement {
     };
 
     try {
-      // Handle backward compatibility - convert legacy format to new format
-      let transportationConfig: TransportationConfig;
+      const transportationConfig = this.config.transportation as TransportationConfig;
 
-      if ('stopId' in this.config.transportation && 'postId' in this.config.transportation) {
-        // Legacy format with single stop
-        const legacyConfig = this.config.transportation as LegacyTransportationConfig;
-
-        // Convert to new format with IDSJMK provider
-        transportationConfig = {
-          provider: 'idsjmk', // Default to IDSJMK provider for backward compatibility
-          stops: [{
-            stopId: legacyConfig.stopId,
-            postId: legacyConfig.postId,
-            maxDepartures: legacyConfig.maxDepartures
-          }],
-          maxDepartures: legacyConfig.maxDepartures
-        };
-      } else {
-        // New format
-        transportationConfig = this.config.transportation as TransportationConfig;
-
-        // If provider is not specified, default to IDSJMK for backward compatibility
-        if (!transportationConfig.provider) {
-          transportationConfig.provider = 'idsjmk';
-        }
+      // Default to IDSJMK provider if not specified
+      if (!transportationConfig.provider) {
+        transportationConfig.provider = 'idsjmk';
       }
 
       // Get the transportation provider
@@ -1377,7 +1352,7 @@ export class WallClockCard extends LitElement {
           width: 60px;
           height: 60px;
         }
-        
+
         .stop-group {
           margin-bottom: 16px;
         }
@@ -1428,7 +1403,7 @@ export class WallClockCard extends LitElement {
           <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
-        ${this.config.transportation ? 
+        ${this.config.transportation && this.config.enableTransportation !== false ? 
           html`<div class="transportation-container" style="color: ${this.config.fontColor};">
             ${this.renderTransportationContent()}
           </div>` : 
