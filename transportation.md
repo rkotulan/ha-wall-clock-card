@@ -10,7 +10,7 @@ The transportation departures feature allows you to display public transportatio
 
 ### idsjmk
 
-The `idsjmk` provider fetches data from the IDSJMK API, which provides real-time public transportation information for the South Moravian Region in the Czech Republic.
+The `idsjmk` provider fetches data from the IDSJMK API (Integrated Transport System of the South Moravian Region - IDSJMK), which provides real-time public transportation information for Brno and the South Moravian Region in the Czech Republic.
 
 ## Configuration
 

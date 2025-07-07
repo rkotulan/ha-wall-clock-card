@@ -19,7 +19,7 @@ export interface IDSJMKProviderConfig extends TransportationProviderConfig {
  */
 export class IDSJMKProvider implements TransportationProvider {
   readonly id = 'idsjmk';
-  readonly name = 'IDSJMK';
+  readonly name = 'IDSJMK (Brno)';
   readonly description = 'Integrated Transport System of the South Moravian Region, Czech Republic';
 
   /**
