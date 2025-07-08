@@ -8,7 +8,7 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 
 This project started with a simple need: a beautiful, functional clock for our refrigerator-mounted tablet running Home Assistant. We wanted an at-a-glance display of time, date, and weather that would be visible from anywhere in the kitchen.
 
-Junie from JetBrains took on the programming challenge, creating a clean, elegant solution using TypeScript and modern web components. What began as a simple clock quickly evolved to include weather forecasts, sensor displays, and beautiful background images.
+Junie from JetBrains took on the programming challenge, creating a clean, elegant solution using TypeScript and modern web components. What began as a simple clock quickly evolved to include weather forecasts, sensor displays and beautiful background images.
 
 Today, our Wall Clock Card serves as the central information hub on our kitchen tablet, providing all the essential information we need throughout the day in a visually pleasing package.
 
@@ -33,7 +33,7 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Multi-day forecast with temperature ranges (1-7 days)
   - Configurable display mode (current, forecast, or both)
   - Customizable weather section title
-  - Weather data automatically updates every 30 minutes
+  - Weather data automatically updates at configurable intervals (default: 30 minutes)
   - Supports OpenWeatherMap API (free tier)
   - Localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French)
   - Simplified weather categories for better readability
@@ -258,19 +258,11 @@ The Wall Clock Card can fetch background images from online sources, which means
           - `night`
           - `unspecified` (matches any time of day)
 
-     **Image Directory**:
-        - Alternatively, specify just a root directory for images with the `imageDirectory` property
-        - Images will be automatically loaded and categorized based on either:
-          1. Directory structure: `/local/images/wcp-bg/wather-category/timeOfDay/image.jpg`
-             - Example: `/local/images/wcp-bg/clear-sky/sunrise-sunset/image.jpg`
-          2. Filename pattern: `name-{wather-category}-{timeOfDay}.jpg`
-             - Example: `image-clear-sky-sunrise-sunset.jpg`
-        - The original method of specifying individual images remains available
 
 
    - Configuration:
      ```yaml
-     # Method 1: Background images with weather and time-of-day support
+     # Background images with weather and time-of-day support
      imageSource: 'local'
      backgroundImages:
        - url: '/local/images/sunrise-clear.jpg'
@@ -293,11 +285,6 @@ The Wall Clock Card can fetch background images from online sources, which means
          timeOfDay: 'unspecified'
      ```
 
-     ```yaml
-     # Method 2: Specify just a root directory for images
-     imageSource: 'local'
-     imageDirectory: '/local/images/wcp-bg/'
-     ```
 
 3. **Picsum Photos** (`imageSource: 'picsum'`): 
    - A simple service that provides random high-quality images
@@ -397,6 +384,7 @@ weatherConfig:
   language: 'cs'  # Language code (cs for Czech, en for English, etc.)
 weatherDisplayMode: 'both'  # 'current', 'forecast', or 'both'
 weatherForecastDays: 3  # Number of days to show in forecast (1-7)
+weatherUpdateInterval: 30  # Update interval in minutes (minimum: 1, default: 30)
 ```
 
 #### Weather Provider
@@ -409,7 +397,7 @@ Currently, the card supports the OpenWeatherMap API for weather data. You'll nee
    - Make sure your API key is activated (can take a few hours after registration)
 3. Configure the card with your API key
 
-The weather data is automatically updated every 30 minutes to avoid excessive API calls.
+The weather data is automatically updated at configurable intervals (default: 30 minutes) to avoid excessive API calls. You can adjust this with the `weatherUpdateInterval` option (in minutes, minimum: 1).
 
 > **Note**: This card uses the OpenWeatherMap One Call API 2.5, which is included in the free tier. No special subscription is required.
 

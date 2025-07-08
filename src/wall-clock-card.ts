@@ -2,6 +2,12 @@ import { LitElement, html, css, property, customElement, CSSResult, TemplateResu
 import { HomeAssistant } from 'custom-card-helpers';
 import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay } from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
+import { 
+  TransportationConfig, 
+  TransportationData, 
+  TransportationDeparture,
+  getTransportationProvider 
+} from './transportation-providers';
 import { translateWeatherCondition } from './translations';
 import './wall-clock-card-editor';
 
@@ -9,6 +15,12 @@ import './wall-clock-card-editor';
 export interface SensorConfig {
   entity: string;
   label?: string;
+}
+
+// Legacy interfaces for backward compatibility
+export interface StopConfig {
+  stopId: number;
+  postId: number;
 }
 
 // Interface for tracking image loading status
@@ -25,7 +37,6 @@ export interface WallClockConfig {
   backgroundOpacity?: number;
   imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
-  imageDirectory?: string; // Root directory for images (used for automatic image loading)
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
@@ -47,10 +58,17 @@ export interface WallClockConfig {
   weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
   weatherForecastDays?: number; // Number of days to show in forecast (1-7)
   weatherTitle?: string; // Custom title for the weather section (default: "Weather")
+  weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
+
+  // Transportation departures settings
+  enableTransportation?: boolean; // Whether to show transportation departures
+  transportation?: TransportationConfig; // Configuration for transportation departures
+  transportationUpdateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 
   // Allow string indexing for dynamic property access
   [key: string]: any;
 }
+
 
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
@@ -73,12 +91,15 @@ export class WallClockCard extends LitElement {
   @property({ type: Boolean }) weatherLoading = false; // Flag to track if weather data is loading
   @property({ type: Boolean }) weatherError = false; // Flag to track if there was an error loading weather data
   @property({ type: String }) weatherErrorMessage = ''; // Error message if weather data loading failed
+  @property({ type: Object }) transportationData: TransportationData = { departures: [], loading: false }; // Transportation data
+  @property({ type: Date }) lastTransportationUpdate?: Date; // Last time transportation data was updated
 
   private timer?: number;
   private imageRotationTimer?: number;
   private fetchingImageUrls = false;
   private preloadTimer?: number;
   private weatherUpdateTimer?: number;
+  private transportationUpdateTimer?: number;
 
   constructor() {
     super();
@@ -90,20 +111,66 @@ export class WallClockCard extends LitElement {
     }, 1000);
   }
 
-  connectedCallback(): void {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
 
-    // Fetch image URLs (not the actual images)
-    this.fetchImageUrls();
-
-    // Fetch weather data if enabled
+    // Fetch weather data first if enabled
     if (this.config.showWeather) {
-      this.fetchWeatherData();
+      await this.fetchWeatherData();
 
-      // Update weather data every 30 minutes (1800000 ms)
+      // Get configured weather update interval or default to 30 minutes (1800 seconds)
+      let weatherInterval = this.config.weatherUpdateInterval || 1800;
+
+      // Ensure minimum interval of 60 seconds
+      weatherInterval = Math.max(weatherInterval, 60);
+
+      // Convert to milliseconds
+      const weatherIntervalMs = weatherInterval * 1000;
+
+      console.log(`Setting weather update interval to ${weatherInterval} seconds`);
+
+      // Update weather data at the configured interval
       this.weatherUpdateTimer = window.setInterval(() => {
-        this.fetchWeatherData();
-      }, 1800000);
+        // Use a self-executing async function to allow await
+        (async () => {
+          try {
+            await this.fetchWeatherData();
+          } catch (error) {
+            console.error('Error in weather update interval:', error);
+          }
+        })();
+      }, weatherIntervalMs);
+    }
+
+    // Fetch image URLs (not the actual images)
+    await this.fetchImageUrls();
+
+    // Fetch transportation data if enabled
+    if (this.config.transportation) {
+      await this.fetchTransportationData();
+
+      // Get configured transportation update interval or default to 60 seconds
+      let transportationInterval = this.config.transportationUpdateInterval || 60;
+
+      // Ensure minimum interval of 60 seconds
+      transportationInterval = Math.max(transportationInterval, 60);
+
+      // Convert to milliseconds
+      const transportationIntervalMs = transportationInterval * 1000;
+
+      console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+
+      // Update transportation data at the configured interval
+      this.transportationUpdateTimer = window.setInterval(() => {
+        // Use a self-executing async function to allow await
+        (async () => {
+          try {
+            await this.fetchTransportationData();
+          } catch (error) {
+            console.error('Error in transportation update interval:', error);
+          }
+        })();
+      }, transportationIntervalMs);
     }
   }
 
@@ -133,6 +200,8 @@ export class WallClockCard extends LitElement {
 
       // Fetch local image URLs if available
       const localImages = this.config.backgroundImages;
+
+      // Call fetchLocalImageUrls if we have backgroundImages
       if (localImages && localImages.length > 0) {
         const localUrls = await this.fetchLocalImageUrls();
         urls.push(...localUrls);
@@ -228,6 +297,7 @@ export class WallClockCard extends LitElement {
         sourceConfig.images = [];
       }
 
+
       // Fetch image URLs from the local image source
       console.log('Fetching image URLs from Local Images source with config:', sourceConfig);
 
@@ -271,7 +341,14 @@ export class WallClockCard extends LitElement {
       this.imageRotationTimer = window.setInterval(() => {
         // For Unsplash, fetch a new image instead of cycling through preloaded ones
         if (this.config.imageSource === 'unsplash') {
-          this.fetchNewUnsplashImage();
+          // Use a self-executing async function to allow await
+          (async () => {
+            try {
+              await this.fetchNewUnsplashImage();
+            } catch (error) {
+              console.error('Error in image rotation interval for Unsplash:', error);
+            }
+          })();
         } else {
           // For other image sources, move to the next image in the preloaded array
           this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
@@ -457,7 +534,7 @@ export class WallClockCard extends LitElement {
     }
   }
 
-  private tryFallbackImageSource(): void {
+  private async tryFallbackImageSource(): Promise<void> {
     // If we're using an online image source (not 'none' or 'local') and experiencing failures, try to switch to Picsum
     if (this.config.imageSource !== 'none' && this.config.imageSource !== 'local' && this.config.imageSource !== 'picsum') {
       console.log('Switching to Picsum as fallback image source');
@@ -471,7 +548,7 @@ export class WallClockCard extends LitElement {
       // Reset failure counters and fetch new images
       this.consecutiveFailures = 0;
       this.isRetrying = false;
-      this.fetchImageUrls();
+      await this.fetchImageUrls();
     }
   }
 
@@ -562,6 +639,66 @@ export class WallClockCard extends LitElement {
     if (this.weatherUpdateTimer) {
       clearInterval(this.weatherUpdateTimer);
     }
+    if (this.transportationUpdateTimer) {
+      clearInterval(this.transportationUpdateTimer);
+    }
+  }
+
+  /**
+   * Fetch transportation data from the configured provider
+   */
+  private async fetchTransportationData(): Promise<void> {
+    if (!this.config.transportation || this.config.enableTransportation === false) return;
+
+    // Mark as loading
+    this.transportationData = {
+      ...this.transportationData,
+      loading: true,
+      error: undefined
+    };
+
+    try {
+      const transportationConfig = this.config.transportation as TransportationConfig;
+
+      // Default to IDSJMK provider if not specified
+      if (!transportationConfig.provider) {
+        transportationConfig.provider = 'idsjmk';
+      }
+
+      // Get the transportation provider
+      const provider = getTransportationProvider(transportationConfig.provider);
+
+      if (!provider) {
+        throw new Error(`Transportation provider '${transportationConfig.provider}' not found`);
+      }
+
+      // Convert stops to the format expected by the provider
+      const stops = transportationConfig.stops.map(stop => ({
+        stopId: stop.stopId,
+        postId: stop.postId,
+        name: stop.name // Pass the custom name if provided
+      }));
+
+      // Fetch transportation data from the provider
+      const providerConfig = transportationConfig.providerConfig || {};
+      // Include maxDepartures in the provider config if it's defined in transportationConfig
+      if (transportationConfig.maxDepartures !== undefined) {
+        providerConfig.maxDepartures = transportationConfig.maxDepartures;
+      }
+      this.transportationData = await provider.fetchTransportation(providerConfig, stops);
+
+      // Update the last update timestamp
+      this.lastTransportationUpdate = new Date();
+
+      console.log(`Fetched transportation data from ${provider.name}:`, this.transportationData);
+    } catch (error) {
+      console.error('Error fetching transportation data:', error);
+      this.transportationData = {
+        departures: [],
+        error: error instanceof Error ? error.message : String(error),
+        loading: false
+      };
+    }
   }
 
   /**
@@ -627,7 +764,7 @@ export class WallClockCard extends LitElement {
     };
   }
 
-  setConfig(config: WallClockConfig): void {
+  async setConfig(config: WallClockConfig): Promise<void> {
     if (!config) {
       throw new Error('Invalid configuration');
     }
@@ -716,8 +853,13 @@ export class WallClockCard extends LitElement {
     this.imageStatuses = [];
     this.currentImageUrl = '';
 
+    // Fetch weather data first if enabled
+    if (this.config.showWeather) {
+      await this.fetchWeatherData();
+    }
+
     // Fetch new image URLs
-    this.fetchImageUrls();
+    await this.fetchImageUrls();
 
     // Update the time
     this.updateTime();
@@ -860,7 +1002,7 @@ export class WallClockCard extends LitElement {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        z-index: 1;
+        z-index: 0;
         border-radius: var(--ha-card-border-radius, 4px);
       }
 
@@ -871,7 +1013,7 @@ export class WallClockCard extends LitElement {
         width: 100%;
         height: 100%;
         background-color: #000000;
-        z-index: 2;
+        z-index: 1;
         border-radius: var(--ha-card-border-radius, 4px);
       }
 
@@ -881,7 +1023,7 @@ export class WallClockCard extends LitElement {
         line-height: 10rem;
         font-weight: 300;
         text-align: center;
-        z-index: 3;
+        z-index: 2;
         position: relative;
         display: flex;
         align-items: flex-start;
@@ -908,7 +1050,7 @@ export class WallClockCard extends LitElement {
         text-align: center;
         margin-top: 0.2rem;
         opacity: 1;
-        z-index: 3;
+        z-index: 2;
         position: relative;
       }
 
@@ -919,7 +1061,7 @@ export class WallClockCard extends LitElement {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        z-index: 4;
+        z-index: 3;
         max-width: 40%;
         max-height: 60%;
         overflow-y: auto;
@@ -950,7 +1092,7 @@ export class WallClockCard extends LitElement {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        z-index: 4;
+        z-index: 3;
         max-width: 40%;
         max-height: 60%;
         overflow-y: auto;
@@ -999,7 +1141,7 @@ export class WallClockCard extends LitElement {
       .weather-forecast {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
       }
 
       .forecast-day {
@@ -1023,6 +1165,8 @@ export class WallClockCard extends LitElement {
       .forecast-temp {
         font-size: 1.4rem;
         font-weight: 400;
+        width: 80px;
+        text-align: right;
       }
 
       .forecast-condition {
@@ -1038,6 +1182,164 @@ export class WallClockCard extends LitElement {
       .weather-error {
         color: #f44336;
         font-size: 1rem;
+      }
+
+      /* Transportation styles */
+      .transportation-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 3;
+        padding: 8px 16px;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
+      }
+
+      .transportation-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+
+      .transportation-departures {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 16px;
+      }
+
+      .stop-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      /* Responsive layout for transportation stops */
+      @media (max-width: 480px) {
+        /* Force single column on very small screens */
+        .transportation-departures {
+          flex-direction: column;
+        }
+
+        .stop-group {
+          width: 100%;
+        }
+      }
+
+      @media (min-width: 481px) and (max-width: 599px) {
+        /* Allow 2 columns on slightly larger screens if they fit */
+        .transportation-departures {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+
+        .stop-group {
+          width: calc(50% - 8px);
+        }
+      }
+
+      @media (min-width: 600px) {
+        .transportation-departures {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+
+        .stop-group {
+          width: calc(50% - 8px);
+        }
+      }
+
+      /* 3 columns for wider screens */
+      @media (min-width: 900px) and (max-width: 1179px) {
+        .stop-group {
+          width: calc(33% - 8px);
+        }
+      }
+
+      /* 3 columns for 1180px resolution as requested */
+      @media (min-width: 1180px) and (max-width: 1399px) {
+        .stop-group {
+          width: calc(33% - 8px);
+        }
+      }
+
+      /* 4 columns for very wide screens */
+      @media (min-width: 1400px) {
+        .stop-group {
+          width: calc(25% - 8px);
+        }
+      }
+
+      .stop-name {
+        font-size: 1.3rem;
+        font-weight: 500;
+        text-align: left;
+        width: 100%;
+        margin-top: 0;
+        margin-bottom: 8px;
+        margin-left: 12px;
+        opacity: 0.8;
+      }
+
+      .stop-departures {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+      }
+
+      .departure-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.3);
+        padding: 8px 12px;
+        border-radius: 4px;
+        width: calc(100% - 24px);
+      }
+
+      .departure-line {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-right: 8px;
+        min-width: 2rem;
+        text-align: center;
+      }
+
+      .departure-destination {
+        font-size: 1.2rem;
+        margin-right: 8px;
+      }
+
+      .departure-time {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #4CAF50;
+      }
+
+      .departure-lowfloor {
+        margin-left: 4px;
+        font-size: 1.2rem;
+      }
+
+      .transportation-error {
+        color: #f44336;
+        font-size: 1rem;
+      }
+
+      .transportation-update-time {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        text-align: center;
+        margin-top: 8px;
+        width: 100%;
       }
 
       /* Responsive adjustments */
@@ -1082,6 +1384,10 @@ export class WallClockCard extends LitElement {
           width: 60px;
           height: 60px;
         }
+
+        .stop-group {
+          margin-bottom: 16px;
+        }
       }
     `;
   }
@@ -1124,12 +1430,73 @@ export class WallClockCard extends LitElement {
           </div>` : 
           ''
         }
-        <div class="clock" style="color: ${this.config.fontColor};">
+        <div class="clock" style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
           <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
           <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
+        ${this.config.transportation && this.config.enableTransportation !== false ? 
+          html`<div class="transportation-container" style="color: ${this.config.fontColor};">
+            ${this.renderTransportationContent()}
+          </div>` : 
+          ''
+        }
       </ha-card>
+    `;
+  }
+
+  /**
+   * Render transportation content
+   */
+  private renderTransportationContent(): TemplateResult {
+    if (this.transportationData.loading) {
+      return html`<div>Loading transportation data...</div>`;
+    }
+
+    if (this.transportationData.error) {
+      return html`<div class="transportation-error">${this.transportationData.error}</div>`;
+    }
+
+    if (!this.transportationData.departures || this.transportationData.departures.length === 0) {
+      return html`<div>No departures available</div>`;
+    }
+
+    // Group departures by stop name and postId
+    const departuresByStop: { [key: string]: TransportationDeparture[] } = {};
+
+    for (const departure of this.transportationData.departures) {
+      const key = `${departure.stopName}-${departure.postId}`;
+      if (!departuresByStop[key]) {
+        departuresByStop[key] = [];
+      }
+      departuresByStop[key].push(departure);
+    }
+
+    return html`
+      <div class="transportation-departures">
+        ${Object.entries(departuresByStop).map(([_key, departures]) => {
+          // Get the stop name from the first departure
+          const stopName = departures[0].stopName;
+
+          return html`
+            <div class="stop-group">
+              <h3 class="stop-name" style="color: ${this.config.fontColor};">
+                 ${stopName}
+              </h3>
+              <div class="stop-departures">
+                ${departures.map(departure => html`
+                  <div class="departure-item">
+                    <div class="departure-line" style="color: ${this.config.fontColor};">${departure.lineName}</div>
+                    <div class="departure-destination" style="color: ${this.config.fontColor};">→ ${departure.finalStop}</div>
+                    <div class="departure-time" style="color: ${this.config.fontColor};">${departure.timeMark}</div>
+                    ${departure.isLowFloor ? html`<div class="departure-lowfloor">♿</div>` : ''}
+                  </div>
+                `)}
+              </div>
+            </div>
+          `;
+        })}
+      </div>
     `;
   }
 
@@ -1141,7 +1508,7 @@ export class WallClockCard extends LitElement {
       return html`<div class="weather-error">${this.weatherErrorMessage}</div>`;
     }
 
-    if (!this.weatherData) {
+    if (!this.weatherData || !this.weatherData.current) {
       return html`<div class="weather-loading">Loading weather data...</div>`;
     }
 

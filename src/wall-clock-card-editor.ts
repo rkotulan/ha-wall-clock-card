@@ -2,6 +2,10 @@ import {LitElement, html, customElement, property, TemplateResult, CSSResult, cs
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
 import {BackgroundImage, TimeOfDay} from './image-sources/image-source';
+import {
+    getAllTransportationProviders,
+    StopConfig as TransportationStopConfig
+} from './transportation-providers';
 import {translateWeatherCondition} from './translations';
 
 @customElement('wall-clock-card-editor')
@@ -10,6 +14,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Object}) _config?: WallClockConfig;
     @property({type: Array}) _sensors: SensorConfig[] = [];
     @property({type: Array}) _backgroundImages: BackgroundImage[] = [];
+    @property({type: Array}) _stops: TransportationStopConfig[] = [];
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -96,6 +101,17 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'both', label: 'Current and Forecast'},
     ];
 
+    // Transportation provider options
+    private _getTransportationProviderOptions(): { value: string, label: string }[] {
+        const providers = getAllTransportationProviders();
+        return [
+            ...providers.map(provider => ({
+                value: provider.id,
+                label: provider.name
+            }))
+        ];
+    };
+
     // Weather condition options based on OpenWeatherMap icon codes
     private _getWeatherConditionOptions(): { value: string, label: string }[] {
         // Get the language from config, default to Czech
@@ -104,12 +120,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         return [
             {value: 'all', label: `${translateWeatherCondition('all', language)}`},
             {value: 'clear sky', label: `${translateWeatherCondition('clear sky', language)} (01d/01n)`},
-            {value: 'few clouds', label: `${translateWeatherCondition('few clouds', language)} (02d/02n)`},
-            {value: 'scattered clouds', label: `${translateWeatherCondition('scattered clouds', language)} (03d/03n)`},
-            {value: 'broken clouds', label: `${translateWeatherCondition('broken clouds', language)} (04d/04n)`},
-            {value: 'shower rain', label: `${translateWeatherCondition('shower rain', language)} (09d/09n)`},
-            {value: 'rain', label: `${translateWeatherCondition('rain', language)} (10d/10n)`},
-            {value: 'thunderstorm', label: `${translateWeatherCondition('thunderstorm', language)} (11d/11n)`},
+            {value: 'clouds', label: `${translateWeatherCondition('clouds', language)} (02d/03d/04d)`},
+            {value: 'rain', label: `${translateWeatherCondition('rain', language)} (09d/10d/11d)`},
             {value: 'snow', label: `${translateWeatherCondition('snow', language)} (13d/13n)`},
             {value: 'mist', label: `${translateWeatherCondition('mist', language)} (50d/50n)`},
         ];
@@ -183,7 +195,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             backgroundOpacity: wallClockConfig.backgroundOpacity !== undefined ? wallClockConfig.backgroundOpacity : 0.3,
             imageSource: imageSource,
             imageConfig: wallClockConfig.imageConfig || wallClockConfig.onlineImageConfig || {},
-            imageDirectory: wallClockConfig.imageDirectory || '',
             useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
             backgroundRotationInterval: wallClockConfig.backgroundRotationInterval || 90,
             sensors: wallClockConfig.sensors || [],
@@ -193,7 +204,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             weatherProvider: wallClockConfig.weatherProvider || 'openweathermap',
             weatherConfig: wallClockConfig.weatherConfig || {},
             weatherDisplayMode: wallClockConfig.weatherDisplayMode || 'both',
-            weatherForecastDays: wallClockConfig.weatherForecastDays || 3
+            weatherForecastDays: wallClockConfig.weatherForecastDays || 3,
+            // Transportation settings
+            transportation: wallClockConfig.transportation || undefined
         };
 
         // Load sensors from config
@@ -201,6 +214,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Load unified background images from config
         this._loadBackgroundImages();
+
+        // Load stops from config
+        this._loadStops();
     }
 
     private _loadSensors(): void {
@@ -214,6 +230,21 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             }];
         } else {
             this._sensors = [];
+        }
+    }
+
+    private _loadStops(): void {
+        if (!this._config?.transportation) {
+            this._stops = [];
+            return;
+        }
+
+        if (this._config.transportation.stops && this._config.transportation.stops.length > 0) {
+            // Load stops from configuration
+            this._stops = [...this._config.transportation.stops];
+        } else {
+            // No stops configured
+            this._stops = [];
         }
     }
 
@@ -273,6 +304,113 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             // Create a deep copy of the config
             const newConfig = JSON.parse(JSON.stringify(this._config));
             newConfig.sensors = [...this._sensors];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _addStop(): void {
+        this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    provider: 'idsjmk', // Default to IDSJMK provider
+                    stops: [],
+                    maxDepartures: 2
+                };
+            }
+
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _removeStop(index: number): void {
+        this._stops = this._stops.filter((_, i) => i !== index);
+        // Update the config with a deep copy
+        if (this._config && this._config.transportation) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    provider: 'idsjmk', // Default to IDSJMK provider
+                    stops: [],
+                    maxDepartures: 2
+                };
+            }
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
+
+            // If no stops left, remove transportation config
+            if (this._stops.length === 0) {
+                newConfig.transportation = undefined;
+            }
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _stopChanged(index: number, property: string, value: any): void {
+        this._stops = this._stops.map((stop, i) => {
+            if (i === index) {
+                return {...stop, [property]: value};
+            }
+            return stop;
+        });
+
+        // Update the config with a deep copy
+        if (this._config && this._config.transportation) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure transportation config exists
+            if (!newConfig.transportation) {
+                newConfig.transportation = {
+                    stops: [],
+                    maxDepartures: 2
+                };
+            }
+
+            // Ensure stops array exists
+            if (!newConfig.transportation.stops) {
+                newConfig.transportation.stops = [];
+            }
+
+            // Update stops
+            newConfig.transportation.stops = [...this._stops];
 
             // Update the local config reference
             this._config = newConfig;
@@ -956,48 +1094,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 Select "Any Time" to show an image regardless of time of day.
                             </div>
 
-                            <!-- Image Directory Section -->
-                            <div class="section-subheader">Image Directory</div>
+
+                            <div class="section-subheader">Background Images</div>
                             <div class="info-text">
-                                Alternatively, you can specify a root directory for images. Images will be automatically
-                                loaded and categorized
-                                based on directory structure or filename pattern. This is useful if you have many images
-                                organized in a consistent way.
-                            </div>
-                            <div class="row">
-                                <div class="label">Image Directory</div>
-                                <div class="value">
-                                    <ha-textfield
-                                            label="Root directory for images (e.g., /local/images/wcp-bg/)"
-                                            .value=${this._config.imageDirectory || ''}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
-
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.imageDirectory = target.value || '';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    ></ha-textfield>
-                                </div>
-                            </div>
-
-                            <div class="section-subheader">Individual Background Images</div>
-                            <div class="info-text">
-                                Configure individual background images with specific weather conditions and times of
-                                day.
-                                This method can be used alongside or instead of the image directory method.
+                                Configure background images with specific weather conditions and times of day.
                             </div>
 
                             ${this._backgroundImages.map((image, index) => html`
@@ -1535,10 +1635,257 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         <span>${this._config.weatherForecastDays || 3} days</span>
                                     </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="label">Update Interval</div>
+                                    <div class="value">
+                                        <ha-textfield
+                                                label="Update interval in minutes (min: 1)"
+                                                type="number"
+                                                min="1"
+                                                .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & {
+                                                        value?: string | number
+                                                    };
+                                                    if (!target || !this._config) return;
+
+                                                    // Create a deep copy of the config
+                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                    // Get the value as a number
+                                                    let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
+
+                                                    // Ensure minimum of 1 minute
+                                                    intervalMinutes = Math.max(intervalMinutes || 30, 1);
+
+                                                    // Convert minutes to seconds for internal storage
+                                                    const intervalSeconds = intervalMinutes * 60;
+
+                                                    // Update the new config
+                                                    newConfig.weatherUpdateInterval = intervalSeconds;
+
+                                                    // Update the local config reference
+                                                    this._config = newConfig;
+
+                                                    // Fire the config-changed event with the new config
+                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                }}
+                                        ></ha-textfield>
+                                        <span>minutes</span>
+                                    </div>
+                                </div>
                             ` : ''}
                         ` : ''}
                     </div>
                 </ha-expansion-panel>
+
+                <!-- Transportation Settings Section -->
+                ${this._config.enableTransportation === true ? html`
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Transportation Departures</h3>
+                        <div class="content">
+
+                            <div class="row">
+                                <div class="label">Transportation Provider</div>
+                                <div class="value">
+                                    <ha-select
+                                            label="Provider"
+                                            .value=${this._config.transportation?.provider || 'idsjmk'}
+                                            @click=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                            }}
+                                            @closed=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+
+                                                const target = ev.target as HTMLElement & { value?: string };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Update the new config
+                                                newConfig.transportation = {
+                                                    ...newConfig.transportation,
+                                                    provider: target.value || 'idsjmk'
+                                                };
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    >
+                                        ${this._getTransportationProviderOptions().map(
+                                                (option) => html`
+                                                    <mwc-list-item .value=${option.value}>${option.label}
+                                                    </mwc-list-item>`
+                                        )}
+                                    </ha-select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="label">Global Max Departures</div>
+                                <div class="value">
+                                    <ha-slider
+                                            min="1"
+                                            max="5"
+                                            step="1"
+                                            pin
+                                            .value=${this._config.transportation?.maxDepartures || 2}
+                                            @change=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & {
+                                                    value?: string | number
+                                                };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Update the new config
+                                                newConfig.transportation = {
+                                                    ...newConfig.transportation,
+                                                    maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
+                                                };
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Reload stops
+                                                this._loadStops();
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-slider>
+                                    <span>${this._config.transportation?.maxDepartures || 2} departures</span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="label">Update Interval</div>
+                                <div class="value">
+                                    <ha-textfield
+                                            label="Update interval in minutes (min: 1)"
+                                            type="number"
+                                            min="1"
+                                            .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
+                                            @input=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & {
+                                                    value?: string | number
+                                                };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Get the value as a number
+                                                let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
+
+                                                // Ensure minimum of 1 minute
+                                                intervalMinutes = Math.max(intervalMinutes || 1, 1);
+
+                                                // Convert minutes to seconds for internal storage
+                                                const intervalSeconds = intervalMinutes * 60;
+
+                                                // Update the new config
+                                                newConfig.transportationUpdateInterval = intervalSeconds;
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-textfield>
+                                    <span>minutes</span>
+                                </div>
+                            </div>
+
+                            <div class="section-subheader">Stops</div>
+
+                            ${this._stops.map((stop, index) => html`
+                                <div class="sensor-row">
+                                    <div class="sensor-entity">
+                                        <ha-textfield
+                                                label="Stop ID"
+                                                type="number"
+                                                .value=${stop.stopId || 1793}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'stopId', parseInt(target.value || '1793', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                    <div class="sensor-label">
+                                        <ha-textfield
+                                                label="Post ID"
+                                                type="number"
+                                                .value=${stop.postId || 3}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'postId', parseInt(target.value || '3', 10));
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                </div>
+                                <div class="sensor-row" style="margin-bottom: 16px; padding-bottom: 16px;">
+                                    <div class="sensor-entity" style="width: 100%;">
+                                        <ha-textfield
+                                                label="Stop Name (optional)"
+                                                .value=${stop.name || ''}
+                                                style="width: 100%;"
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+
+                                                    this._stopChanged(index, 'name', target.value || '');
+                                                }}
+                                        ></ha-textfield>
+                                    </div>
+                                    <div class="sensor-actions">
+                                        <ha-icon-button
+                                                .path=${'M19,13H5V11H19V13Z'}
+                                                @click=${() => this._removeStop(index)}
+                                        ></ha-icon-button>
+                                    </div>
+                                </div>
+                            `)}
+
+                            <mwc-button @click=${this._addStop}>Add Stop</mwc-button>
+
+                            <div class="info-text">
+                                For detailed documentation on transportation configuration, see <a
+                                    href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
+                                    target="_blank">transportation.md</a>
+                            </div>                        
+                        </div>
+                    </ha-expansion-panel>
+                ` : ''}
         `;
     }
 }

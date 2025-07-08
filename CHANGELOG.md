@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.16.0
+
+- Added configurable update intervals for weather and transportation data
+  - Weather update interval can now be set in minutes (minimum: 1, default: 30)
+  - Transportation update interval can now be set in minutes (minimum: 1, default: 1)
+  - Added UI controls in the editor for both update intervals
+- Enhanced transportation display with responsive layout
+  - Individual stops are now displayed in columns on wider screens
+  - Supports up to 4 stops side by side depending on screen width
+  - 2 columns on screens wider than 600px
+  - 3 columns on screens wider than 900px
+  - 4 columns on screens wider than 1200px
+- Added ability to customize stop names
+  - Custom names can be set for each stop in the configuration
+  - If not provided, the name from the API will be used
+  - Added UI control in the editor for setting stop names
+- Improved stop name display in transportation section
+  - Stop names now appear on a separate line with a visual separator
+  - Added a bottom border to clearly distinguish stop names from departures
+  - Increased font weight for better readability
+- Updated documentation to reflect the new configuration options
+- Improved user interface for better readability on different screen sizes
+
 ## 1.15.0
 
 - Changed time-of-day values from "morning, noon, afternoon, evening" to "sunrise-sunset, day, night"
