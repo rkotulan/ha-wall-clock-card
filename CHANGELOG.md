@@ -22,6 +22,8 @@
   - Increased font weight for better readability
 - Updated documentation to reflect the new configuration options
 - Improved user interface for better readability on different screen sizes
+- Remove ImageDirectory configuration option
+- Improved selection background image by weather condition and time-of-day categorization
 
 ## 1.15.0
 
