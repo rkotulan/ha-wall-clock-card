@@ -111,15 +111,12 @@ export class WallClockCard extends LitElement {
     }, 1000);
   }
 
-  connectedCallback(): void {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
 
-    // Fetch image URLs (not the actual images)
-    this.fetchImageUrls();
-
-    // Fetch weather data if enabled
+    // Fetch weather data first if enabled
     if (this.config.showWeather) {
-      this.fetchWeatherData();
+      await this.fetchWeatherData();
 
       // Get configured weather update interval or default to 30 minutes (1800 seconds)
       let weatherInterval = this.config.weatherUpdateInterval || 1800;
@@ -134,13 +131,23 @@ export class WallClockCard extends LitElement {
 
       // Update weather data at the configured interval
       this.weatherUpdateTimer = window.setInterval(() => {
-        this.fetchWeatherData();
+        // Use a self-executing async function to allow await
+        (async () => {
+          try {
+            await this.fetchWeatherData();
+          } catch (error) {
+            console.error('Error in weather update interval:', error);
+          }
+        })();
       }, weatherIntervalMs);
     }
 
+    // Fetch image URLs (not the actual images)
+    await this.fetchImageUrls();
+
     // Fetch transportation data if enabled
     if (this.config.transportation) {
-      this.fetchTransportationData();
+      await this.fetchTransportationData();
 
       // Get configured transportation update interval or default to 60 seconds
       let transportationInterval = this.config.transportationUpdateInterval || 60;
@@ -155,7 +162,14 @@ export class WallClockCard extends LitElement {
 
       // Update transportation data at the configured interval
       this.transportationUpdateTimer = window.setInterval(() => {
-        this.fetchTransportationData();
+        // Use a self-executing async function to allow await
+        (async () => {
+          try {
+            await this.fetchTransportationData();
+          } catch (error) {
+            console.error('Error in transportation update interval:', error);
+          }
+        })();
       }, transportationIntervalMs);
     }
   }
@@ -327,7 +341,14 @@ export class WallClockCard extends LitElement {
       this.imageRotationTimer = window.setInterval(() => {
         // For Unsplash, fetch a new image instead of cycling through preloaded ones
         if (this.config.imageSource === 'unsplash') {
-          this.fetchNewUnsplashImage();
+          // Use a self-executing async function to allow await
+          (async () => {
+            try {
+              await this.fetchNewUnsplashImage();
+            } catch (error) {
+              console.error('Error in image rotation interval for Unsplash:', error);
+            }
+          })();
         } else {
           // For other image sources, move to the next image in the preloaded array
           this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
@@ -513,7 +534,7 @@ export class WallClockCard extends LitElement {
     }
   }
 
-  private tryFallbackImageSource(): void {
+  private async tryFallbackImageSource(): Promise<void> {
     // If we're using an online image source (not 'none' or 'local') and experiencing failures, try to switch to Picsum
     if (this.config.imageSource !== 'none' && this.config.imageSource !== 'local' && this.config.imageSource !== 'picsum') {
       console.log('Switching to Picsum as fallback image source');
@@ -527,7 +548,7 @@ export class WallClockCard extends LitElement {
       // Reset failure counters and fetch new images
       this.consecutiveFailures = 0;
       this.isRetrying = false;
-      this.fetchImageUrls();
+      await this.fetchImageUrls();
     }
   }
 
@@ -743,7 +764,7 @@ export class WallClockCard extends LitElement {
     };
   }
 
-  setConfig(config: WallClockConfig): void {
+  async setConfig(config: WallClockConfig): Promise<void> {
     if (!config) {
       throw new Error('Invalid configuration');
     }
@@ -832,8 +853,13 @@ export class WallClockCard extends LitElement {
     this.imageStatuses = [];
     this.currentImageUrl = '';
 
+    // Fetch weather data first if enabled
+    if (this.config.showWeather) {
+      await this.fetchWeatherData();
+    }
+
     // Fetch new image URLs
-    this.fetchImageUrls();
+    await this.fetchImageUrls();
 
     // Update the time
     this.updateTime();
@@ -1482,7 +1508,7 @@ export class WallClockCard extends LitElement {
       return html`<div class="weather-error">${this.weatherErrorMessage}</div>`;
     }
 
-    if (!this.weatherData) {
+    if (!this.weatherData || !this.weatherData.current) {
       return html`<div class="weather-loading">Loading weather data...</div>`;
     }
 

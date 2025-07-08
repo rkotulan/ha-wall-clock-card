@@ -39,15 +39,14 @@ export class LocalSource implements ImageSource {
       let filteredImages: BackgroundImage[] = [];
 
       // If we have weather data, filter by weather condition
-      if (weatherData) {
+      if (weatherData && weatherData.current) {
         const currentCondition = weatherData.current.condition.toLowerCase();
         console.log(`Current weather condition: ${currentCondition}`);
 
         // First try to find images that match both weather and time of day
         filteredImages = config.backgroundImages.filter(img => {
           // Map both the image weather condition and the current condition for comparison
-          const mappedImageWeather = this.mapWeatherCondition(img.weather);
-          return (mappedImageWeather === currentCondition || img.weather === 'all') && 
+          return (img.weather === this.mapWeatherCondition(currentCondition) || img.weather === 'all') &&
                  img.timeOfDay === currentTimeOfDay;
         });
 
@@ -55,8 +54,7 @@ export class LocalSource implements ImageSource {
         if (filteredImages.length === 0) {
           filteredImages = config.backgroundImages.filter(img => {
             // Map both the image weather condition and the current condition for comparison
-            const mappedImageWeather = this.mapWeatherCondition(img.weather);
-            return (mappedImageWeather === currentCondition || img.weather === 'all') && 
+            return (img.weather === this.mapWeatherCondition(currentCondition) || img.weather === 'all') &&
                    img.timeOfDay === TimeOfDay.Unspecified;
           });
         }

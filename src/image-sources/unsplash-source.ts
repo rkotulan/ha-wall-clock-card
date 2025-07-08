@@ -77,7 +77,7 @@ export class UnsplashSource implements ImageSource {
     console.log(`Current time of day: ${currentTimeOfDay}`);
 
     // If weather data is available, add weather condition to the category
-    if (weatherData) {
+    if (weatherData && weatherData.current) {
       const weatherCondition = weatherData.current.condition.toLowerCase();
       console.log(`Current weather condition: ${weatherCondition}`);
 
@@ -181,7 +181,7 @@ export class UnsplashSource implements ImageSource {
     }
 
     // If weather data is available, enhance the query with more specific weather details
-    if (weatherData) {
+    if (weatherData && weatherData.current) {
       const weatherCondition = weatherData.current.condition.toLowerCase();
       const temperature = Math.round(weatherData.current.temperature);
 
