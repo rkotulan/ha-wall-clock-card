@@ -21,7 +21,6 @@ export interface SensorConfig {
 export interface StopConfig {
   stopId: number;
   postId: number;
-  maxDepartures?: number;
 }
 
 // Interface for tracking image loading status
@@ -654,12 +653,15 @@ export class WallClockCard extends LitElement {
       const stops = transportationConfig.stops.map(stop => ({
         stopId: stop.stopId,
         postId: stop.postId,
-        maxDepartures: stop.maxDepartures || transportationConfig.maxDepartures || 3,
         name: stop.name // Pass the custom name if provided
       }));
 
       // Fetch transportation data from the provider
       const providerConfig = transportationConfig.providerConfig || {};
+      // Include maxDepartures in the provider config if it's defined in transportationConfig
+      if (transportationConfig.maxDepartures !== undefined) {
+        providerConfig.maxDepartures = transportationConfig.maxDepartures;
+      }
       this.transportationData = await provider.fetchTransportation(providerConfig, stops);
 
       // Update the last update timestamp
@@ -1400,7 +1402,7 @@ export class WallClockCard extends LitElement {
           </div>` : 
           ''
         }
-        <div class="clock" style="color: ${this.config.fontColor};">
+        <div class="clock" style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
           <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
           <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
         </div>

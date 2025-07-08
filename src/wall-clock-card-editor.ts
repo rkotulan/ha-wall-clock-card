@@ -319,7 +319,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     private _addStop(): void {
-        this._stops = [...this._stops, {stopId: 1793, postId: 3, maxDepartures: 3, name: ''}];
+        this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
         // Update the config with a deep copy
         if (this._config) {
             // Create a deep copy of the config
@@ -330,7 +330,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 newConfig.transportation = {
                     provider: 'idsjmk', // Default to IDSJMK provider
                     stops: [],
-                    maxDepartures: 3
+                    maxDepartures: 2
                 };
             }
 
@@ -363,7 +363,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 newConfig.transportation = {
                     provider: 'idsjmk', // Default to IDSJMK provider
                     stops: [],
-                    maxDepartures: 3
+                    maxDepartures: 2
                 };
             }
 
@@ -405,7 +405,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             if (!newConfig.transportation) {
                 newConfig.transportation = {
                     stops: [],
-                    maxDepartures: 3
+                    maxDepartures: 2
                 };
             }
 
@@ -1780,7 +1780,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             max="5"
                                             step="1"
                                             pin
-                                            .value=${this._config.transportation?.maxDepartures || 3}
+                                            .value=${this._config.transportation?.maxDepartures || 2}
                                             @change=${(ev: CustomEvent) => {
                                                 ev.stopPropagation();
                                                 ev.preventDefault();
@@ -1809,7 +1809,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 fireEvent(this, 'config-changed', {config: newConfig});
                                             }}
                                     ></ha-slider>
-                                    <span>${this._config.transportation?.maxDepartures || 3} departures</span>
+                                    <span>${this._config.transportation?.maxDepartures || 2} departures</span>
                                 </div>
                             </div>
 
@@ -1889,24 +1889,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                     if (!target) return;
 
                                                     this._stopChanged(index, 'postId', parseInt(target.value || '3', 10));
-                                                }}
-                                        ></ha-textfield>
-                                    </div>
-                                    <div class="sensor-label">
-                                        <ha-textfield
-                                                label="Max Departures"
-                                                type="number"
-                                                min="1"
-                                                max="5"
-                                                .value=${stop.maxDepartures || 3}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target) return;
-
-                                                    this._stopChanged(index, 'maxDepartures', parseInt(target.value || '3', 10));
                                                 }}
                                         ></ha-textfield>
                                     </div>

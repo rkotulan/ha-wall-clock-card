@@ -13,7 +13,6 @@ export interface TransportationProviderConfig {
 export interface StopConfig {
   stopId: number | string;
   postId?: number | string;
-  maxDepartures?: number;
   name?: string; // Optional custom name for the stop
   [key: string]: any; // Allow additional provider-specific properties
 }

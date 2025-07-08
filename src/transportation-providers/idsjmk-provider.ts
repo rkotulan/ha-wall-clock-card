@@ -93,8 +93,8 @@ export class IDSJMKProvider implements TransportationProvider {
           // Use custom name if provided, otherwise use API-provided name
           const stopName = stopConfig.name || apiStopName;
 
-          // Get the departures and limit to maxDepartures
-          const maxDepartures = stopConfig.maxDepartures || 3;
+          // Get the departures and limit to maxDepartures (global setting from config or default 2)
+          const maxDepartures = _config.maxDepartures || 2;
 
           const departures = post.Departures.slice(0, Math.min(maxDepartures, 5)).map((dep: any) => ({
             lineId: dep.LineId,
