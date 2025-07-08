@@ -90,15 +90,12 @@ lovelace:
 
 ### HACS Installation
 
-1. Add this repository to HACS as a custom repository
-   - Go to HACS in your Home Assistant instance
-   - Click on the three dots in the top right corner
-   - Select "Custom repositories"
-   - Add the URL of this repository
-   - Select "Lovelace" as the category
-2. Install the "Wall Clock Card" from HACS
-3. HACS will automatically add the required resource to your Lovelace configuration
-4. Restart Home Assistant if needed
+1. Open HACS in your Home Assistant instance
+2. Search for "Wall Clock Card"
+3. Click on the "Wall Clock Card" in the search results
+4. Click "Download" in the bottom right corner
+5. HACS will automatically add the required resource to your Lovelace configuration
+6. Restart Home Assistant if needed
 
 ## Usage
 
