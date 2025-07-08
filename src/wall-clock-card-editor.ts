@@ -120,12 +120,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         return [
             {value: 'all', label: `${translateWeatherCondition('all', language)}`},
             {value: 'clear sky', label: `${translateWeatherCondition('clear sky', language)} (01d/01n)`},
-            {value: 'few clouds', label: `${translateWeatherCondition('few clouds', language)} (02d/02n)`},
-            {value: 'scattered clouds', label: `${translateWeatherCondition('scattered clouds', language)} (03d/03n)`},
-            {value: 'broken clouds', label: `${translateWeatherCondition('broken clouds', language)} (04d/04n)`},
-            {value: 'shower rain', label: `${translateWeatherCondition('shower rain', language)} (09d/09n)`},
-            {value: 'rain', label: `${translateWeatherCondition('rain', language)} (10d/10n)`},
-            {value: 'thunderstorm', label: `${translateWeatherCondition('thunderstorm', language)} (11d/11n)`},
+            {value: 'clouds', label: `${translateWeatherCondition('clouds', language)} (02d/03d/04d)`},
+            {value: 'rain', label: `${translateWeatherCondition('rain', language)} (09d/10d/11d)`},
             {value: 'snow', label: `${translateWeatherCondition('snow', language)} (13d/13n)`},
             {value: 'mist', label: `${translateWeatherCondition('mist', language)} (50d/50n)`},
         ];
@@ -199,7 +195,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             backgroundOpacity: wallClockConfig.backgroundOpacity !== undefined ? wallClockConfig.backgroundOpacity : 0.3,
             imageSource: imageSource,
             imageConfig: wallClockConfig.imageConfig || wallClockConfig.onlineImageConfig || {},
-            imageDirectory: wallClockConfig.imageDirectory || '',
             useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
             backgroundRotationInterval: wallClockConfig.backgroundRotationInterval || 90,
             sensors: wallClockConfig.sensors || [],
@@ -1099,48 +1094,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 Select "Any Time" to show an image regardless of time of day.
                             </div>
 
-                            <!-- Image Directory Section -->
-                            <div class="section-subheader">Image Directory</div>
+
+                            <div class="section-subheader">Background Images</div>
                             <div class="info-text">
-                                Alternatively, you can specify a root directory for images. Images will be automatically
-                                loaded and categorized
-                                based on directory structure or filename pattern. This is useful if you have many images
-                                organized in a consistent way.
-                            </div>
-                            <div class="row">
-                                <div class="label">Image Directory</div>
-                                <div class="value">
-                                    <ha-textfield
-                                            label="Root directory for images (e.g., /local/images/wcp-bg/)"
-                                            .value=${this._config.imageDirectory || ''}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
-
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.imageDirectory = target.value || '';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    ></ha-textfield>
-                                </div>
-                            </div>
-
-                            <div class="section-subheader">Individual Background Images</div>
-                            <div class="info-text">
-                                Configure individual background images with specific weather conditions and times of
-                                day.
-                                This method can be used alongside or instead of the image directory method.
+                                Configure background images with specific weather conditions and times of day.
                             </div>
 
                             ${this._backgroundImages.map((image, index) => html`

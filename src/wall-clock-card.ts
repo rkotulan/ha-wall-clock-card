@@ -37,7 +37,6 @@ export interface WallClockConfig {
   backgroundOpacity?: number;
   imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
-  imageDirectory?: string; // Root directory for images (used for automatic image loading)
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
@@ -187,6 +186,8 @@ export class WallClockCard extends LitElement {
 
       // Fetch local image URLs if available
       const localImages = this.config.backgroundImages;
+
+      // Call fetchLocalImageUrls if we have backgroundImages
       if (localImages && localImages.length > 0) {
         const localUrls = await this.fetchLocalImageUrls();
         urls.push(...localUrls);
@@ -281,6 +282,7 @@ export class WallClockCard extends LitElement {
         // No background images configured
         sourceConfig.images = [];
       }
+
 
       // Fetch image URLs from the local image source
       console.log('Fetching image URLs from Local Images source with config:', sourceConfig);

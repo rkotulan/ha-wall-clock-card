@@ -258,19 +258,11 @@ The Wall Clock Card can fetch background images from online sources, which means
           - `night`
           - `unspecified` (matches any time of day)
 
-     **Image Directory**:
-        - Alternatively, specify just a root directory for images with the `imageDirectory` property
-        - Images will be automatically loaded and categorized based on either:
-          1. Directory structure: `/local/images/wcp-bg/wather-category/timeOfDay/image.jpg`
-             - Example: `/local/images/wcp-bg/clear-sky/sunrise-sunset/image.jpg`
-          2. Filename pattern: `name-{wather-category}-{timeOfDay}.jpg`
-             - Example: `image-clear-sky-sunrise-sunset.jpg`
-        - The original method of specifying individual images remains available
 
 
    - Configuration:
      ```yaml
-     # Method 1: Background images with weather and time-of-day support
+     # Background images with weather and time-of-day support
      imageSource: 'local'
      backgroundImages:
        - url: '/local/images/sunrise-clear.jpg'
@@ -293,11 +285,6 @@ The Wall Clock Card can fetch background images from online sources, which means
          timeOfDay: 'unspecified'
      ```
 
-     ```yaml
-     # Method 2: Specify just a root directory for images
-     imageSource: 'local'
-     imageDirectory: '/local/images/wcp-bg/'
-     ```
 
 3. **Picsum Photos** (`imageSource: 'picsum'`): 
    - A simple service that provides random high-quality images
