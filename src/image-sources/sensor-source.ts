@@ -39,7 +39,7 @@ export class SensorSource implements ImageSource {
 
     // If we have cached images and it's been less than the refresh interval, use the cached images
     if (this.cachedImages.length > 0 && (now - this.lastFetchTime) < this.refreshInterval) {
-      console.log(`Using cached images (${this.cachedImages.length} images)`);
+      console.log(`[sensor-source] Using cached images (${this.cachedImages.length} images)`);
       return this.filterImagesByWeatherAndTime(this.cachedImages, weatherData);
     }
 
@@ -48,7 +48,7 @@ export class SensorSource implements ImageSource {
 
     // If no entity ID is provided, return an empty array
     if (!entityId) {
-      console.warn('No entity ID provided for Sensor image source');
+      console.warn('[sensor-source] No entity ID provided for Sensor image source');
       return [];
     }
 
@@ -58,7 +58,7 @@ export class SensorSource implements ImageSource {
 
       // If we can't get the Home Assistant instance, return an empty array
       if (!hass) {
-        console.warn('Could not get Home Assistant instance');
+        console.warn('[sensor-source] Could not get Home Assistant instance');
         return [];
       }
 
@@ -67,7 +67,7 @@ export class SensorSource implements ImageSource {
 
       // If the sensor doesn't exist, return an empty array
       if (!state) {
-        console.warn(`Sensor ${entityId} not found`);
+        console.warn(`[sensor-source] Sensor ${entityId} not found`);
         return [];
       }
 
@@ -76,7 +76,7 @@ export class SensorSource implements ImageSource {
 
       // If the files attribute doesn't exist or is not an array, return an empty array
       if (!files || !Array.isArray(files)) {
-        console.warn(`Sensor ${entityId} does not have a valid files attribute`);
+        console.warn(`[sensor-source] Sensor ${entityId} does not have a valid files attribute`);
         return [];
       }
 
@@ -84,12 +84,12 @@ export class SensorSource implements ImageSource {
       this.cachedImages = files;
       this.lastFetchTime = now;
 
-      console.log(`Fetched ${files.length} images from sensor ${entityId}`);
+      console.log(`[sensor-source] Fetched ${files.length} images from sensor ${entityId}`);
 
       // Filter the images by weather and time of day
       return this.filterImagesByWeatherAndTime(files, weatherData);
     } catch (error) {
-      console.error('Error fetching images from sensor:', error);
+      console.error('[sensor-source] Error fetching images from sensor:', error);
       return [];
     }
   }
@@ -108,12 +108,12 @@ export class SensorSource implements ImageSource {
 
     // Get the current time of day
     const currentTimeOfDay = this.getCurrentTimeOfDay();
-    console.log(`Current time of day: ${currentTimeOfDay}`);
+    console.log(`[sensor-source] Current time of day: ${currentTimeOfDay}`);
 
     // If we have weather data, filter by weather condition and time of day
     if (weatherData && weatherData.current) {
       const currentCondition = this.mapWeatherCondition(weatherData.current.condition.toLowerCase());
-      console.log(`Current weather condition: ${currentCondition}`);
+      console.log(`[sensor-source] Current weather condition: ${currentCondition}`);
 
       // Create an array to store the filtered images
       let filteredImages: string[] = [];
@@ -129,13 +129,13 @@ export class SensorSource implements ImageSource {
 
       // If we found matching images, return them
       if (filteredImages.length > 0) {
-        console.log(`Found ${filteredImages.length} images matching current conditions`);
+        console.log(`[sensor-source] Found ${filteredImages.length} images matching current conditions`);
         return filteredImages;
       }
     }
 
     // If no weather data or no matches, return all images
-    console.log(`No matching images found, returning all images`);
+    console.log(`[sensor-source] No matching images found, returning all images`);
     return images;
   }
 

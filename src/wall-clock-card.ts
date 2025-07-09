@@ -129,7 +129,7 @@ export class WallClockCard extends LitElement {
       // Convert to milliseconds
       const weatherIntervalMs = weatherInterval * 1000;
 
-      console.log(`Setting weather update interval to ${weatherInterval} seconds`);
+      console.log(`[wall-clock] Setting weather update interval to ${weatherInterval} seconds`);
 
       // Update weather data at the configured interval
       this.weatherUpdateTimer = window.setInterval(() => {
@@ -138,7 +138,7 @@ export class WallClockCard extends LitElement {
           try {
             await this.fetchWeatherData();
           } catch (error) {
-            console.error('Error in weather update interval:', error);
+            console.error('[wall-clock] Error in weather update interval:', error);
           }
         })();
       }, weatherIntervalMs);
@@ -163,7 +163,7 @@ export class WallClockCard extends LitElement {
         // Convert to milliseconds
         const transportationIntervalMs = transportationInterval * 1000;
 
-        console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+        console.log(`[wall-clock] Setting transportation update interval to ${transportationInterval} seconds`);
 
         // Update transportation data at the configured interval
         this.transportationUpdateTimer = window.setInterval(() => {
@@ -172,12 +172,12 @@ export class WallClockCard extends LitElement {
             try {
               await this.fetchTransportationData();
             } catch (error) {
-              console.error('Error in transportation update interval:', error);
+              console.error('[wall-clock] Error in transportation update interval:', error);
             }
           })();
         }, transportationIntervalMs);
       } else {
-        console.log('Transportation on-demand loading is enabled. Data will be loaded when requested.');
+        console.log('[wall-clock] Transportation on-demand loading is enabled. Data will be loaded when requested.');
       }
     }
   }
@@ -194,7 +194,7 @@ export class WallClockCard extends LitElement {
 
       // Skip image fetching if imageSource is 'none'
       if (imageSource === 'none') {
-        console.log('Image source is set to none, skipping image fetching');
+        console.log('[wall-clock] Image source is set to none, skipping image fetching');
         this.imageUrls = [];
         this.imageStatuses = [];
         return;
@@ -218,7 +218,7 @@ export class WallClockCard extends LitElement {
       // If using local or sensor image source, shuffle the array to randomize the order
       if ((imageSource === 'local' || imageSource === 'sensor') && urls.length > 0) {
         this.shuffleArray(urls);
-        console.log(`Shuffled ${imageSource} image URLs for random starting order`);
+        console.log(`[wall-clock] Shuffled ${imageSource} image URLs for random starting order`);
       }
 
       // Store the URLs and initialize image statuses
@@ -230,7 +230,7 @@ export class WallClockCard extends LitElement {
         error: false
       }));
 
-      console.log(`Collected ${urls.length} image URLs for lazy loading`);
+      console.log(`[wall-clock] Collected ${urls.length} image URLs for lazy loading`);
 
       // If we have images, set up rotation and load the first image
       if (urls.length > 0) {
@@ -238,7 +238,7 @@ export class WallClockCard extends LitElement {
         this.loadCurrentImage();
       }
     } catch (error) {
-      console.error('Error fetching image URLs:', error);
+      console.error('[wall-clock] Error fetching image URLs:', error);
     } finally {
       this.fetchingImageUrls = false;
     }
@@ -254,7 +254,7 @@ export class WallClockCard extends LitElement {
       const imageSource = getImageSource(sourceId);
 
       if (!imageSource) {
-        console.error(`Image source '${sourceId}' not found.`);
+        console.error(`[wall-clock] Image source '${sourceId}' not found.`);
         return [];
       }
 
@@ -266,18 +266,21 @@ export class WallClockCard extends LitElement {
       };
 
       // Fetch image URLs from the image source
-      console.log(`Fetching image URLs from ${imageSource.name} with config:`, sourceConfig);
-      const fetchedUrls = await imageSource.fetchImages(sourceConfig);
+      console.log(`[wall-clock] Fetching image URLs from ${imageSource.name} with config:`, sourceConfig);
+      // Always pass weather data if available, the image source will decide how to use it
+      const fetchedUrls = this.weatherData
+        ? await imageSource.fetchImages(sourceConfig, this.weatherData)
+        : await imageSource.fetchImages(sourceConfig);
 
       if (fetchedUrls.length > 0) {
-        console.log(`Successfully fetched ${fetchedUrls.length} image URLs from ${imageSource.name}`);
+        console.log(`[wall-clock] Successfully fetched ${fetchedUrls.length} image URLs from ${imageSource.name}`);
         return fetchedUrls;
       } else {
-        console.warn(`Could not fetch any image URLs from ${imageSource.name}.`);
+        console.warn(`[wall-clock] Could not fetch any image URLs from ${imageSource.name}.`);
         return [];
       }
     } catch (error) {
-      console.error('Error in fetchOnlineImageUrls:', error);
+      console.error('[wall-clock] Error in fetchOnlineImageUrls:', error);
       return [];
     }
   }
@@ -288,7 +291,7 @@ export class WallClockCard extends LitElement {
       const imageSource = getImageSource('local');
 
       if (!imageSource) {
-        console.error('Local image source not found. This should not happen.');
+        console.error('[wall-clock] Local image source not found. This should not happen.');
         return [];
       }
 
@@ -307,7 +310,7 @@ export class WallClockCard extends LitElement {
 
 
       // Fetch image URLs from the local image source
-      console.log('Fetching image URLs from Local Images source with config:', sourceConfig);
+      console.log('[wall-clock] Fetching image URLs from Local Images source with config:', sourceConfig);
 
       // Always pass weather data if available, the image source will decide how to use it
       const fetchedUrls = this.weatherData
@@ -315,14 +318,14 @@ export class WallClockCard extends LitElement {
         : await imageSource.fetchImages(sourceConfig);
 
       if (fetchedUrls.length > 0) {
-        console.log(`Successfully fetched ${fetchedUrls.length} image URLs from Local Images source`);
+        console.log(`[wall-clock] Successfully fetched ${fetchedUrls.length} image URLs from Local Images source`);
         return fetchedUrls;
       } else {
-        console.warn('No local image URLs found in configuration.');
+        console.warn('[wall-clock] No local image URLs found in configuration.');
         return [];
       }
     } catch (error) {
-      console.error('Error in fetchLocalImageUrls:', error);
+      console.error('[wall-clock] Error in fetchLocalImageUrls:', error);
       return [];
     }
   }
@@ -354,7 +357,7 @@ export class WallClockCard extends LitElement {
             try {
               await this.fetchNewUnsplashImage();
             } catch (error) {
-              console.error('Error in image rotation interval for Unsplash:', error);
+              console.error('[wall-clock] Error in image rotation interval for Unsplash:', error);
             }
           })();
         } else {
@@ -377,7 +380,7 @@ export class WallClockCard extends LitElement {
       const imageSource = getImageSource('unsplash');
 
       if (!imageSource) {
-        console.error('Unsplash image source not found. This should not happen.');
+        console.error('[wall-clock] Unsplash image source not found. This should not happen.');
         return;
       }
 
@@ -389,13 +392,13 @@ export class WallClockCard extends LitElement {
         count: 1
       };
 
-      console.log('Fetching new image from Unsplash with config:', sourceConfig);
+      console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig);
 
       // Fetch a single new image from Unsplash
       const fetchedUrls = await imageSource.fetchImages(sourceConfig, this.weatherData);
 
       if (fetchedUrls.length > 0) {
-        console.log('Successfully fetched new image from Unsplash');
+        console.log('[wall-clock] Successfully fetched new image from Unsplash');
 
         // Create a new image status for the fetched image
         const newImageUrl = fetchedUrls[0];
@@ -407,10 +410,10 @@ export class WallClockCard extends LitElement {
         };
 
         // Load the new image
-        console.log(`Loading new Unsplash image: ${newImageUrl}`);
+        console.log(`[wall-clock] Loading new Unsplash image: ${newImageUrl}`);
         const img = new Image();
         img.onload = () => {
-          console.log(`New Unsplash image loaded successfully: ${newImageUrl}`);
+          console.log(`[wall-clock] New Unsplash image loaded successfully: ${newImageUrl}`);
           newImageStatus.loaded = true;
           newImageStatus.loading = false;
 
@@ -423,7 +426,7 @@ export class WallClockCard extends LitElement {
           this.requestUpdate();
         };
         img.onerror = () => {
-          console.error(`Error loading new Unsplash image: ${newImageUrl}`);
+          console.error(`[wall-clock] Error loading new Unsplash image: ${newImageUrl}`);
           newImageStatus.error = true;
           newImageStatus.loading = false;
 
@@ -438,7 +441,7 @@ export class WallClockCard extends LitElement {
         newImageStatus.loading = true;
         img.src = newImageUrl;
       } else {
-        console.warn('Could not fetch new image from Unsplash. Falling back to existing images.');
+        console.warn('[wall-clock] Could not fetch new image from Unsplash. Falling back to existing images.');
         // Fall back to the existing image rotation if fetching a new image fails
         if (this.imageUrls.length > 0) {
           this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
@@ -446,7 +449,7 @@ export class WallClockCard extends LitElement {
         }
       }
     } catch (error) {
-      console.error('Error fetching new Unsplash image:', error);
+      console.error('[wall-clock] Error fetching new Unsplash image:', error);
       // Fall back to the existing image rotation if an error occurs
       if (this.imageUrls.length > 0) {
         this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
@@ -477,10 +480,10 @@ export class WallClockCard extends LitElement {
     };
 
     // Load the image
-    console.log(`Loading image: ${url}`);
+    console.log(`[wall-clock] Loading image: ${url}`);
     const img = new Image();
     img.onload = () => {
-      console.log(`Image loaded successfully: ${url}`);
+      console.log(`[wall-clock] Image loaded successfully: ${url}`);
       this.imageStatuses[this.currentImageIndex] = {
         ...this.imageStatuses[this.currentImageIndex],
         loaded: true,
@@ -495,7 +498,7 @@ export class WallClockCard extends LitElement {
       this.requestUpdate();
     };
     img.onerror = () => {
-      console.error(`Error loading image: ${url}`);
+      console.error(`[wall-clock] Error loading image: ${url}`);
       this.imageStatuses[this.currentImageIndex] = {
         ...this.imageStatuses[this.currentImageIndex],
         loaded: false,
@@ -515,7 +518,7 @@ export class WallClockCard extends LitElement {
     // If we've had too many consecutive failures, stop trying
     const MAX_CONSECUTIVE_FAILURES = 5;
     if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-      console.warn(`Too many consecutive image loading failures (${this.consecutiveFailures}). Stopping retry attempts.`);
+      console.warn(`[wall-clock] Too many consecutive image loading failures (${this.consecutiveFailures}). Stopping retry attempts.`);
       // Try to switch to a different image source if available
       this.tryFallbackImageSource();
       return;
@@ -532,7 +535,7 @@ export class WallClockCard extends LitElement {
 
       // Add an exponential backoff delay based on the number of failures
       const delay = Math.min(1000 * Math.pow(2, this.consecutiveFailures - 1), 30000);
-      console.log(`Scheduling next image load attempt in ${delay}ms (failure #${this.consecutiveFailures})`);
+      console.log(`[wall-clock] Scheduling next image load attempt in ${delay}ms (failure #${this.consecutiveFailures})`);
 
       setTimeout(() => {
         this.currentImageIndex = (this.currentImageIndex + 1) % this.imageUrls.length;
@@ -545,7 +548,7 @@ export class WallClockCard extends LitElement {
   private async tryFallbackImageSource(): Promise<void> {
     // If we're using an online image source (not 'none' or 'local') and experiencing failures, try to switch to Picsum
     if (this.config.imageSource !== 'none' && this.config.imageSource !== 'local' && this.config.imageSource !== 'picsum') {
-      console.log('Switching to Picsum as fallback image source');
+      console.log('[wall-clock] Switching to Picsum as fallback image source');
       this.config = {
         ...this.config,
         imageSource: 'picsum',
@@ -601,10 +604,10 @@ export class WallClockCard extends LitElement {
 
     // Preload the next image
     const url = this.imageUrls[nextIndex];
-    console.log(`Preloading next image: ${url}`);
+    console.log(`[wall-clock] Preloading next image: ${url}`);
     const img = new Image();
     img.onload = () => {
-      console.log(`Next image preloaded successfully: ${url}`);
+      console.log(`[wall-clock] Next image preloaded successfully: ${url}`);
       this.imageStatuses[nextIndex] = {
         ...this.imageStatuses[nextIndex],
         loaded: true,
@@ -617,7 +620,7 @@ export class WallClockCard extends LitElement {
       this.consecutiveFailures = 0;
     };
     img.onerror = () => {
-      console.error(`Error preloading next image: ${url}`);
+      console.error(`[wall-clock] Error preloading next image: ${url}`);
       this.imageStatuses[nextIndex] = {
         ...this.imageStatuses[nextIndex],
         loaded: false,
@@ -701,9 +704,9 @@ export class WallClockCard extends LitElement {
       // Update the last update timestamp
       this.lastTransportationUpdate = new Date();
 
-      console.log(`Fetched transportation data from ${provider.name}:`, this.transportationData);
+      console.log(`[wall-clock] Fetched transportation data from ${provider.name}:`, this.transportationData);
     } catch (error) {
-      console.error('Error fetching transportation data:', error);
+      console.error('[wall-clock] Error fetching transportation data:', error);
       this.transportationData = {
         departures: [],
         error: error instanceof Error ? error.message : String(error),
@@ -741,18 +744,18 @@ export class WallClockCard extends LitElement {
         // Ensure units is properly set if specified
         if (this.config.weatherConfig.units) {
           weatherConfig.units = this.config.weatherConfig.units;
-          console.log(`Using weather units: ${weatherConfig.units}`);
+          console.log(`[wall-clock] Using weather units: ${weatherConfig.units}`);
         }
       }
 
       // Fetch weather data from the provider
       this.weatherData = await provider.fetchWeather(weatherConfig);
 
-      console.log(`Fetched weather data from ${provider.name}:`, this.weatherData);
+      console.log(`[wall-clock] Fetched weather data from ${provider.name}:`, this.weatherData);
     } catch (error) {
       this.weatherError = true;
       this.weatherErrorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Error fetching weather data:', error);
+      console.error('[wall-clock] Error fetching weather data:', error);
     } finally {
       this.weatherLoading = false;
     }
@@ -1482,8 +1485,8 @@ export class WallClockCard extends LitElement {
             <img 
               class="background-image" 
               src="${this.currentImageUrl}" 
-              @load="${() => console.log('Background image rendered successfully:', this.currentImageUrl)}"
-              @error="${(e: Event) => console.error('Error rendering background image:', this.currentImageUrl, e)}"
+              @load="${() => console.log('[wall-clock] Background image rendered successfully:', this.currentImageUrl)}"
+              @error="${(e: Event) => console.error('[wall-clock] Error rendering background image:', this.currentImageUrl, e)}"
             >
             <div 
               class="background-overlay" 
@@ -1645,7 +1648,7 @@ export class WallClockCard extends LitElement {
    * This is called when the user clicks the bus icon to load transportation data on demand
    */
   private async _handleTransportationClick(): Promise<void> {
-    console.log('Transportation button clicked, loading data on demand');
+    console.log('[wall-clock] Transportation button clicked, loading data on demand');
 
     // Fetch transportation data
     await this.fetchTransportationData();
@@ -1664,7 +1667,7 @@ export class WallClockCard extends LitElement {
       // Convert to milliseconds
       const transportationIntervalMs = transportationInterval * 1000;
 
-      console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+      console.log(`[wall-clock] Setting transportation update interval to ${transportationInterval} seconds`);
 
       // Clear any existing timer
       if (this.transportationUpdateTimer) {
@@ -1678,7 +1681,7 @@ export class WallClockCard extends LitElement {
           try {
             await this.fetchTransportationData();
           } catch (error) {
-            console.error('Error in transportation update interval:', error);
+            console.error('[wall-clock] Error in transportation update interval:', error);
           }
         })();
       }, transportationIntervalMs);
@@ -1700,11 +1703,11 @@ export class WallClockCard extends LitElement {
       // Convert to milliseconds
       const autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
 
-      console.log(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
+      console.log(`[wall-clock] Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
 
       // Set timer to hide departures and show bus button again after timeout
       this.transportationAutoHideTimer = window.setTimeout(() => {
-        console.log(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
+        console.log(`[wall-clock] Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
         this.transportationDataLoaded = false;
       }, autoHideTimeoutMs);
     }

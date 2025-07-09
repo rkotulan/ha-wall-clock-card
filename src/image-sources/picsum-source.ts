@@ -33,7 +33,7 @@ export class PicsumSource implements ImageSource {
     const seed = timestamp;
     const imageUrl = `https://picsum.photos/seed/${seed}/1920/1080`;
 
-    console.log(`Generated Picsum image URL: ${imageUrl}`);
+    console.log(`[picsum-source] Generated Picsum image URL: ${imageUrl}`);
     return [imageUrl];
   }
 

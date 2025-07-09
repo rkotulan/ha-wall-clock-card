@@ -30,18 +30,18 @@ export class LocalSource implements ImageSource {
   async fetchImages(config: LocalSourceConfig, weatherData?: WeatherData): Promise<string[]> {
     // Get the current time of day
     const currentTimeOfDay = this.getCurrentTimeOfDay();
-    console.log(`Current time of day: ${currentTimeOfDay}`);
+    console.log(`[local-source] Current time of day: ${currentTimeOfDay}`);
 
     // If we have the new backgroundImages structure, use it
     if (config.backgroundImages && config.backgroundImages.length > 0) {
-      console.log(`Using new backgroundImages structure with ${config.backgroundImages.length} images`);
+      console.log(`[local-source] Using new backgroundImages structure with ${config.backgroundImages.length} images`);
 
       let filteredImages: BackgroundImage[] = [];
 
       // If we have weather data, filter by weather condition
       if (weatherData && weatherData.current) {
         const currentCondition = weatherData.current.condition.toLowerCase();
-        console.log(`Current weather condition: ${currentCondition}`);
+        console.log(`[local-source] Current weather condition: ${currentCondition}`);
 
         // First try to find images that match both weather and time of day
         filteredImages = config.backgroundImages.filter(img => {
@@ -83,24 +83,24 @@ export class LocalSource implements ImageSource {
 
       // If we found matching images, return their URLs
       if (filteredImages.length > 0) {
-        console.log(`Found ${filteredImages.length} images matching current conditions`);
+        console.log(`[local-source] Found ${filteredImages.length} images matching current conditions`);
         return filteredImages.map(img => img.url);
       }
 
       // If no matches at all, return all images
-      console.log(`No matching images found, returning all images`);
+      console.log(`[local-source] No matching images found, returning all images`);
       return config.backgroundImages.map(img => img.url);
     }
 
 
     // No matching images found, fall back to default images
-    console.log(`No matching images found, falling back to default images`);
+    console.log(`[local-source] No matching images found, falling back to default images`);
 
     // Get the default images from the configuration
     const images = config.images || [];
 
     // Log the number of images found
-    console.log(`Found ${images.length} local images`);
+    console.log(`[local-source] Found ${images.length} local images`);
 
     // Return the images
     return images;

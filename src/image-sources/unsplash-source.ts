@@ -74,12 +74,12 @@ export class UnsplashSource implements ImageSource {
 
     // Get the current time of day
     const currentTimeOfDay = this.getCurrentTimeOfDay();
-    console.log(`Current time of day: ${currentTimeOfDay}`);
+    console.log(`[unsplash-source] Current time of day: ${currentTimeOfDay}`);
 
     // If weather data is available, add weather condition to the category
     if (weatherData && weatherData.current) {
       const weatherCondition = weatherData.current.condition.toLowerCase();
-      console.log(`Current weather condition: ${weatherCondition}`);
+      console.log(`[unsplash-source] Current weather condition: ${weatherCondition}`);
 
       // Add weather condition and time of day to the category if not already included
       if (category) {
@@ -93,23 +93,23 @@ export class UnsplashSource implements ImageSource {
         category = `${weatherCondition},${currentTimeOfDay}`;
       }
 
-      console.log(`Using category with weather and time: ${category}`);
+      console.log(`[unsplash-source] Using category with weather and time: ${category}`);
     }
 
     // If apiKey is provided, use the official Unsplash API (always use API when possible)
     if (apiKey) {
       try {
-        console.log('Using official Unsplash API');
+        console.log('[unsplash-source] Using official Unsplash API');
         return await this.fetchImagesFromApi(apiKey, category, count, weatherData);
       } catch (error) {
-        console.error('Error fetching images from Unsplash API:', error);
-        console.log('Falling back to direct URL method');
+        console.error('[unsplash-source] Error fetching images from Unsplash API:', error);
+        console.log('[unsplash-source] Falling back to direct URL method');
         // Fall back to the direct URL method if the API fails
       }
     }
 
     // Direct URL method (fallback or default if useApi is false)
-    console.log('Using direct URL method for Unsplash images');
+    console.log('[unsplash-source] Using direct URL method for Unsplash images');
 
     // Parse the category string to get individual categories
     const categories = category.split(',').map(c => c.trim().toLowerCase());
@@ -145,7 +145,7 @@ export class UnsplashSource implements ImageSource {
 
         fetchedImages.push(imageUrl);
       } catch (err) {
-        console.warn(`Failed to generate Unsplash image URL (attempt ${i+1}/${count})`, err);
+        console.warn(`[unsplash-source] Failed to generate Unsplash image URL (attempt ${i+1}/${count})`, err);
         // Continue with next attempt
       }
     }
@@ -205,7 +205,7 @@ export class UnsplashSource implements ImageSource {
         query += ' night dark stars moonlight';
       }
 
-      console.log(`Enhanced query with weather data: ${query}`);
+      console.log(`[unsplash-source] Enhanced query with weather data: ${query}`);
     }
 
     try {
@@ -243,9 +243,9 @@ export class UnsplashSource implements ImageSource {
         });
       }
 
-      console.log(`Fetched ${fetchedImages.length} images from Unsplash API`);
+      console.log(`[unsplash-source] Fetched ${fetchedImages.length} images from Unsplash API`);
     } catch (error) {
-      console.error('Error fetching from Unsplash API:', error);
+      console.error('[unsplash-source] Error fetching from Unsplash API:', error);
       throw error; // Re-throw to allow fallback
     }
 

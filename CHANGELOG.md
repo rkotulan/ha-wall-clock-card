@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.3
+
+- Extended shuffling functionality to local image source
+  - Added automatic shuffling of local images at startup for a random starting order
+  - Previously, only sensor images were shuffled (added in 1.18.2)
+  - Improved user experience with varied image presentation
+  - Consistent behavior between local and sensor image sources
+
 ## 1.18.2
 
 - Added shuffling functionality for sensor image source
