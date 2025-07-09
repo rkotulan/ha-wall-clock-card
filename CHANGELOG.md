@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.18.2
+
+- Added shuffling functionality for sensor image source
+  - Images from sensor source are now automatically shuffled at startup for a random starting order
+  - Improved user experience with varied image presentation
+  - Updated documentation to reflect the new functionality
+
 ## 1.18.1
 
 - Added units selector (metric/imperial) in the UI configuration for weather forecast

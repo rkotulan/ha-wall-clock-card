@@ -215,10 +215,10 @@ export class WallClockCard extends LitElement {
         urls.push(...localUrls);
       }
 
-      // If using local image source, shuffle the array to randomize the order
-      if (imageSource === 'local' && urls.length > 0) {
+      // If using local or sensor image source, shuffle the array to randomize the order
+      if ((imageSource === 'local' || imageSource === 'sensor') && urls.length > 0) {
         this.shuffleArray(urls);
-        console.log('Shuffled local image URLs for random starting order');
+        console.log(`Shuffled ${imageSource} image URLs for random starting order`);
       }
 
       // Store the URLs and initialize image statuses

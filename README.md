@@ -90,6 +90,8 @@ lovelace:
 
 ### HACS Installation
 
+[![HASC](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rkotulan&repository=ha-wall-clock-card&category=plugin)
+
 1. Open HACS in your Home Assistant instance
 2. Search for "Wall Clock Card"
 3. Click on the "Wall Clock Card" in the search results
@@ -318,6 +320,7 @@ The Wall Clock Card can fetch background images from online sources, which means
 
 5. **Sensor Images** (`imageSource: 'sensor'`):
    - Uses images from a Home Assistant sensor with a "files" attribute
+   - Images are automatically shuffled at startup for a random starting order
    - Automatically refreshes every 10 minutes
    - Supports weather and time-of-day recognition from image URLs
    - Perfect for integration with command-line sensors or other image collection sensors
