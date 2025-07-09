@@ -64,6 +64,12 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
     - Temperature-based image queries (cold/hot modifiers)
     - Fresh images on each rotation
 
+  - **Sensor Images**:
+    - Uses images from a Home Assistant sensor with a "files" attribute
+    - Images are automatically cached and refreshed every 10 minutes
+    - Supports weather and time-of-day recognition from image URLs
+    - Automatically filters images based on current weather conditions and time of day
+
 - **Configuration**:
   - Full visual editor in Home Assistant UI
   - Comprehensive YAML configuration options
@@ -320,9 +326,9 @@ The Wall Clock Card can fetch background images from online sources, which means
 
 5. **Sensor Images** (`imageSource: 'sensor'`):
    - Uses images from a Home Assistant sensor with a "files" attribute
-   - Images are automatically shuffled at startup for a random starting order
-   - Automatically refreshes every 10 minutes
+   - Images are automatically cached and refreshed every 10 minutes
    - Supports weather and time-of-day recognition from image URLs
+   - Automatically filters images based on current weather conditions and time of day
    - Perfect for integration with command-line sensors or other image collection sensors
    - Configuration:
      ```yaml
@@ -355,6 +361,14 @@ The Wall Clock Card can fetch background images from online sources, which means
      - Include time of day in the image path (e.g., `/images/day/image.jpg`)
      - Supported weather conditions: `clear sky`, `clouds`, `rain`, `snow`, `mist`, etc.
      - Supported times of day: `sunrise-sunset`, `day`, `night`
+
+   - **Weather Condition Mapping**:
+     - The sensor source automatically maps legacy weather conditions to new OpenWeatherMap-based conditions
+     - `clear` → `clear sky`
+     - `few clouds`, `scattered clouds`, `broken clouds` → `clouds`
+     - `fog`, `haze`, `dust`, `smoke` → `mist`
+     - `drizzle`, `shower rain`, `thunderstorm`, `light rain` → `rain`
+     - `tornado`, `windy` → `all` (matches any weather condition)
 
 
 
