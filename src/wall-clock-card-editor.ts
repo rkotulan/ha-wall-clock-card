@@ -94,6 +94,12 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'fr', label: 'French (Français)'},
     ];
 
+    // Units options
+    private _unitsOptions = [
+        {value: 'metric', label: 'Metric (°C, m/s)'},
+        {value: 'imperial', label: 'Imperial (°F, mph)'},
+    ];
+
     // Weather display mode options
     private _weatherDisplayModeOptions = [
         {value: 'current', label: 'Current Weather Only'},
@@ -911,7 +917,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <div class="value">
                                 <ha-select
                                         label="Year Display"
-                                        .value=${this._config.dateFormat?.year || 'numeric'}
+                                        .value=${this._config.dateFormat?.year === undefined ? 'undefined' : this._config.dateFormat?.year}
                                         @click=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
                                         }}
@@ -1531,6 +1537,48 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 }}
                                         >
                                             ${this._languageOptions.map(
+                                                    (option) => html`
+                                                        <mwc-list-item .value=${option.value}>${option.label}
+                                                        </mwc-list-item>`
+                                            )}
+                                        </ha-select>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${this._config.weatherProvider === 'openweathermap' ? html`
+                                <div class="row">
+                                    <div class="label">Units</div>
+                                    <div class="value">
+                                        <ha-select
+                                                label="Units"
+                                                .value=${this._config.weatherConfig?.units || 'metric'}
+                                                @click=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @closed=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target || !this._config) return;
+
+                                                    // Create a deep copy of the config
+                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                    // Update the new config
+                                                    newConfig.weatherConfig = {
+                                                        ...newConfig.weatherConfig || {},
+                                                        units: target.value || 'metric'
+                                                    };
+
+                                                    // Update the local config reference
+                                                    this._config = newConfig;
+
+                                                    // Fire the config-changed event with the new config
+                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                }}
+                                        >
+                                            ${this._unitsOptions.map(
                                                     (option) => html`
                                                         <mwc-list-item .value=${option.value}>${option.label}
                                                         </mwc-list-item>`

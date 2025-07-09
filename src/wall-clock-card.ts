@@ -731,8 +731,19 @@ export class WallClockCard extends LitElement {
         throw new Error(`Weather provider '${providerId}' not found`);
       }
 
-      // Get the weather config from the card config
-      const weatherConfig = this.config.weatherConfig || {};
+      // Get the weather config from the card config and ensure it's properly processed
+      let weatherConfig = provider.getDefaultConfig();
+
+      if (this.config.weatherConfig) {
+        // Create a new object to avoid reference issues
+        weatherConfig = { ...weatherConfig, ...this.config.weatherConfig };
+
+        // Ensure units is properly set if specified
+        if (this.config.weatherConfig.units) {
+          weatherConfig.units = this.config.weatherConfig.units;
+          console.log(`Using weather units: ${weatherConfig.units}`);
+        }
+      }
 
       // Fetch weather data from the provider
       this.weatherData = await provider.fetchWeather(weatherConfig);
@@ -822,20 +833,46 @@ export class WallClockCard extends LitElement {
       config.backgroundImages = backgroundImages;
     }
 
+    // Ensure timeFormat is properly processed
+    let timeFormat: Intl.DateTimeFormatOptions = { 
+      hour: '2-digit' as const, 
+      minute: '2-digit' as const, 
+      second: '2-digit' as const,
+      hour12: false
+    };
+
+    if (config.timeFormat) {
+      // Create a new object to avoid reference issues
+      timeFormat = { ...timeFormat, ...config.timeFormat };
+
+      // Ensure hour12 is properly set if specified
+      if (config.timeFormat.hour12 !== undefined) {
+        timeFormat.hour12 = Boolean(config.timeFormat.hour12);
+      }
+    }
+
+    // Ensure dateFormat is properly processed
+    let dateFormat: Intl.DateTimeFormatOptions = {
+      weekday: 'long' as const,
+      year: 'numeric' as const,
+      month: 'long' as const,
+      day: 'numeric' as const
+    };
+
+    if (config.dateFormat) {
+      // Create a new object to avoid reference issues
+      dateFormat = { ...dateFormat, ...config.dateFormat };
+
+      // Explicitly handle the case when year is undefined
+      if (config.dateFormat.year === undefined) {
+        dateFormat.year = undefined;
+      }
+    }
+
     this.config = {
       ...config,
-      timeFormat: config.timeFormat || { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        hour12: false
-      },
-      dateFormat: config.dateFormat || {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      },
+      timeFormat,
+      dateFormat,
       backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,
       imageSource,
       imageConfig,
@@ -973,7 +1010,14 @@ export class WallClockCard extends LitElement {
     this.seconds = now.getSeconds().toString().padStart(2, '0');
 
     // Format date with configurable format
-    this.currentDate = now.toLocaleDateString([], this.config.dateFormat);
+    let formattedDate = now.toLocaleDateString([], this.config.dateFormat);
+
+    // Add comma after the day if it's not already there
+    // This regex looks for a number (the day) followed by a space and then a letter (start of month)
+    // and replaces it with the day, a comma, a space, and then the month
+    formattedDate = formattedDate.replace(/(\d+)(\s+)([A-Za-z])/, '$1,$2$3');
+
+    this.currentDate = formattedDate;
   }
 
   static get styles(): CSSResult {

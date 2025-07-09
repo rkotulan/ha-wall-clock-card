@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.1
+
+- Added units selector (metric/imperial) in the UI configuration for weather forecast
+- Fixed issue with Year Display setting not being preserved when set to "hidden"
+- Fixed issue with time format not applying hour12: true setting correctly
+- Fixed issue with imperial units not being applied in weather display
+- Added better logging for weather units configuration
+
 ## 1.18.0
 
 - Added sensor-based image source for background images
