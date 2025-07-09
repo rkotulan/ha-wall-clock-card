@@ -92,6 +92,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'pl', label: 'Polish (Polski)'},
         {value: 'es', label: 'Spanish (Español)'},
         {value: 'fr', label: 'French (Français)'},
+        {value: 'ru', label: 'Russian (Русский)'},
     ];
 
     // Units options

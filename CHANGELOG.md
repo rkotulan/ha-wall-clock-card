@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.18.5
+
+- Enhanced language support for forecast date display
+  - Updated formatForecastDate method to support all languages (Czech, German, Slovak, Polish, Spanish, French, Russian)
+  - Improved consistency of language handling across the application
+  - Better internationalization for date formatting in weather forecast
+
+## 1.18.4
+
+- Added Russian language support for weather conditions
+  - Added translations for all weather conditions in Russian
+  - Updated language selection to include Russian option
+  - Enhanced internationalization support
+
 ## 1.18.3
 
 - Extended shuffling functionality to local image source

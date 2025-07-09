@@ -1,6 +1,6 @@
 /**
  * Translations for weather conditions
- * Supports Czech (cs), German (de), Slovak (sk), Polish (pl), Spanish (es), and French (fr)
+ * Supports Czech (cs), German (de), Slovak (sk), Polish (pl), Spanish (es), French (fr), and Russian (ru)
  */
 
 export interface WeatherTranslations {
@@ -21,7 +21,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Všetky poveternostné podmienky',
     'pl': 'Wszystkie warunki pogodowe',
     'es': 'Todas las condiciones climáticas',
-    'fr': 'Toutes les conditions météorologiques'
+    'fr': 'Toutes les conditions météorologiques',
+    'ru': 'Все погодные условия'
   },
   'clouds': {
     'cs': 'Oblačno',
@@ -29,7 +30,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Oblačno',
     'pl': 'Zachmurzenie',
     'es': 'Nubes',
-    'fr': 'Nuages'
+    'fr': 'Nuages',
+    'ru': 'Облачно'
   },
   'clear sky': {
     'cs': 'Jasná obloha',
@@ -37,7 +39,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Jasná obloha',
     'pl': 'Czyste niebo',
     'es': 'Cielo despejado',
-    'fr': 'Ciel dégagé'
+    'fr': 'Ciel dégagé',
+    'ru': 'Ясное небо'
   },
   'few clouds': {
     'cs': 'Málo oblačnosti',
@@ -45,7 +48,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Malá oblačnosť',
     'pl': 'Niewielkie zachmurzenie',
     'es': 'Pocas nubes',
-    'fr': 'Quelques nuages'
+    'fr': 'Quelques nuages',
+    'ru': 'Малооблачно'
   },
   'scattered clouds': {
     'cs': 'Polojasno',
@@ -53,7 +57,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Polojasno',
     'pl': 'Rozproszone chmury',
     'es': 'Nubes dispersas',
-    'fr': 'Nuages épars'
+    'fr': 'Nuages épars',
+    'ru': 'Переменная облачность'
   },
   'broken clouds': {
     'cs': 'Oblačno',
@@ -61,7 +66,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Oblačno',
     'pl': 'Zachmurzenie',
     'es': 'Nubes rotas',
-    'fr': 'Nuages fragmentés'
+    'fr': 'Nuages fragmentés',
+    'ru': 'Облачно с прояснениями'
   },
   'shower rain': {
     'cs': 'Přeháňky',
@@ -69,7 +75,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Prehánky',
     'pl': 'Przelotny deszcz',
     'es': 'Lluvia intermitente',
-    'fr': 'Averses'
+    'fr': 'Averses',
+    'ru': 'Ливень'
   },
   'rain': {
     'cs': 'Déšť',
@@ -77,7 +84,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Dážď',
     'pl': 'Deszcz',
     'es': 'Lluvia',
-    'fr': 'Pluie'
+    'fr': 'Pluie',
+    'ru': 'Дождь'
   },
   'thunderstorm': {
     'cs': 'Bouřka',
@@ -85,7 +93,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Búrka',
     'pl': 'Burza',
     'es': 'Tormenta',
-    'fr': 'Orage'
+    'fr': 'Orage',
+    'ru': 'Гроза'
   },
   'snow': {
     'cs': 'Sněžení',
@@ -93,7 +102,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Sneženie',
     'pl': 'Śnieg',
     'es': 'Nieve',
-    'fr': 'Neige'
+    'fr': 'Neige',
+    'ru': 'Снег'
   },
   'mist': {
     'cs': 'Mlha',
@@ -101,7 +111,8 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Hmla',
     'pl': 'Mgła',
     'es': 'Niebla',
-    'fr': 'Brouillard'
+    'fr': 'Brouillard',
+    'ru': 'Туман'
   },
   'light rain': {
     'cs': 'Slabý déšť',
@@ -109,19 +120,20 @@ export const weatherTranslations: WeatherTranslations = {
     'sk': 'Slabý dážď',
     'pl': 'Lekki deszcz',
     'es': 'Lluvia ligera',
-    'fr': 'Pluie légère'
+    'fr': 'Pluie légère',
+    'ru': 'Небольшой дождь'
   }
 };
 
 /**
  * Get the translation for a weather condition
  * @param condition The weather condition to translate
- * @param language The language code (cs, de, sk, pl, es, fr)
+ * @param language The language code (cs, de, sk, pl, es, fr, ru)
  * @returns The translated weather condition, or the original condition if no translation is found
  */
 export function translateWeatherCondition(condition: string, language: string): string {
   // Default to English if language is not supported
-  if (!['cs', 'de', 'sk', 'pl', 'es', 'fr'].includes(language)) {
+  if (!['cs', 'de', 'sk', 'pl', 'es', 'fr', 'ru'].includes(language)) {
     return condition;
   }
 

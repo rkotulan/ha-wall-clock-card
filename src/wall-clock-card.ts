@@ -392,7 +392,16 @@ export class WallClockCard extends LitElement {
         count: 1
       };
 
-      console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig);
+      // Log the image fetch with weather information if available
+      if (this.weatherData && this.weatherData.current) {
+        console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig, 
+          'Weather:', {
+            condition: this.weatherData.current.condition,
+            temperature: Math.round(this.weatherData.current.temperature) + '°'
+          });
+      } else {
+        console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig);
+      }
 
       // Fetch a single new image from Unsplash
       const fetchedUrls = await imageSource.fetchImages(sourceConfig, this.weatherData);
@@ -1717,11 +1726,24 @@ export class WallClockCard extends LitElement {
    * Format a date for display in the forecast
    */
   private formatForecastDate(date: Date): string {
-    // Get day name in Czech or English based on language setting
+    // Get language from config or default to Czech
     const language = this.config.weatherConfig?.language || 'cs';
 
+    // Map language code to locale for toLocaleDateString
+    let locale: string;
+    switch (language) {
+      case 'cs': locale = 'cs-CZ'; break; // Czech
+      case 'de': locale = 'de-DE'; break; // German
+      case 'sk': locale = 'sk-SK'; break; // Slovak
+      case 'pl': locale = 'pl-PL'; break; // Polish
+      case 'es': locale = 'es-ES'; break; // Spanish
+      case 'fr': locale = 'fr-FR'; break; // French
+      case 'ru': locale = 'ru-RU'; break; // Russian
+      default: locale = 'en-US'; break;   // Default to English
+    }
+
     // Format: "Mon", "Tue", etc.
-    return date.toLocaleDateString(language === 'cs' ? 'cs-CZ' : 'en-US', { weekday: 'short' });
+    return date.toLocaleDateString(locale, { weekday: 'short' });
   }
 }
 
