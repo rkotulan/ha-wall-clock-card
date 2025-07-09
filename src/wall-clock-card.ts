@@ -105,6 +105,14 @@ export class WallClockCard extends LitElement {
 
   constructor() {
     super();
+
+    // Display styled console info with version
+    console.info(
+      "%c WALL-CLOCK-CARD %c 1.18.5 ", 
+      "color: white; background: #3498db; font-weight: 700;", 
+      "color: #3498db; background: white; font-weight: 700;"
+    );
+
     this.updateTime();
 
     // Update the time every second
