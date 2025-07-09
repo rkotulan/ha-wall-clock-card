@@ -6,6 +6,7 @@ import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
+import { getLanguageOptions } from './lokalify';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -18,6 +19,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     connectedCallback(): void {
         super.connectedCallback();
         // Color picker and other HA form elements are now automatically loaded
+
+        // Initialize language options from lokalify
+        this._languageOptions = getLanguageOptions();
     }
 
     // Time format options
@@ -84,16 +88,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'openweathermap', label: 'OpenWeatherMap'},
     ];
 
-    // Language options
-    private _languageOptions = [
-        {value: 'cs', label: 'Czech (Čeština)'},
-        {value: 'de', label: 'German (Deutsch)'},
-        {value: 'sk', label: 'Slovak (Slovenčina)'},
-        {value: 'pl', label: 'Polish (Polski)'},
-        {value: 'es', label: 'Spanish (Español)'},
-        {value: 'fr', label: 'French (Français)'},
-        {value: 'ru', label: 'Russian (Русский)'},
-    ];
+    // Language options from lokalify
+    private _languageOptions: { value: string, label: string }[] = [];
 
     // Units options
     private _unitsOptions = [
@@ -612,6 +608,43 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         }}
                                 ></ha-textfield>
                                 <div style="width: 32px; height: 32px; background-color: ${this._config.fontColor || '#FFFFFF'}; border: 1px solid #000; margin-left: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Language</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Language"
+                                        .value=${this._config.language || 'cs'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.language = target.value || 'cs';
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._languageOptions.map(
+                                            (option) => html`
+                                                <mwc-list-item .value=${option.value}>${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
                             </div>
                         </div>
                     </div>
@@ -1506,45 +1539,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <div class="label">Language</div>
-                                    <div class="value">
-                                        <ha-select
-                                                label="Language"
-                                                .value=${this._config.weatherConfig?.language || 'cs'}
-                                                @click=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @closed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Update the new config
-                                                    newConfig.weatherConfig = {
-                                                        ...newConfig.weatherConfig || {},
-                                                        language: target.value || 'cs'
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        >
-                                            ${this._languageOptions.map(
-                                                    (option) => html`
-                                                        <mwc-list-item .value=${option.value}>${option.label}
-                                                        </mwc-list-item>`
-                                            )}
-                                        </ha-select>
-                                    </div>
-                                </div>
                             ` : ''}
 
                             ${this._config.weatherProvider === 'openweathermap' ? html`

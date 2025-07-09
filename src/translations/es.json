@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Clima",
+    "description": "Condiciones climáticas actuales y pronóstico",
+    "settings": "Configuración del clima"
+  },
+  "conditions": {
+    "all": "Todas las condiciones climáticas",
+    "clouds": "Nubes",
+    "clear_sky": "Cielo despejado",
+    "few_clouds": "Pocas nubes",
+    "scattered_clouds": "Nubes dispersas",
+    "broken_clouds": "Nubes rotas",
+    "shower_rain": "Lluvia intermitente",
+    "rain": "Lluvia",
+    "thunderstorm": "Tormenta",
+    "snow": "Nieve",
+    "mist": "Niebla",
+    "light_rain": "Lluvia ligera"
+  },
+  "forecast": {
+    "title": "Pronóstico",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "next_days": "Próximos días"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

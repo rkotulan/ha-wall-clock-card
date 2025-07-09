@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Clima",
+    "description": "Condições meteorológicas atuais e previsão",
+    "settings": "Configurações do clima"
+  },
+  "conditions": {
+    "all": "Todas as condições meteorológicas",
+    "clouds": "Nublado",
+    "clear_sky": "Céu limpo",
+    "few_clouds": "Poucas nuvens",
+    "scattered_clouds": "Nuvens dispersas",
+    "broken_clouds": "Nuvens fragmentadas",
+    "shower_rain": "Aguaceiros",
+    "rain": "Chuva",
+    "thunderstorm": "Trovoada",
+    "snow": "Neve",
+    "mist": "Névoa",
+    "light_rain": "Chuva fraca"
+  },
+  "forecast": {
+    "title": "Previsão",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "next_days": "Próximos dias"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

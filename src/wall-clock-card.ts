@@ -8,7 +8,7 @@ import {
   TransportationDeparture,
   getTransportationProvider 
 } from './transportation-providers';
-import { translateWeatherCondition } from './translations';
+import { translate, loadTranslations } from './lokalify';
 import './wall-clock-card-editor';
 
 // Interface for sensor configuration
@@ -40,6 +40,7 @@ export interface WallClockConfig {
   backgroundRotationInterval?: number;
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
+  language?: string; // Language for translations
 
   // New unified background images structure
   backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
@@ -108,7 +109,7 @@ export class WallClockCard extends LitElement {
 
     // Display styled console info with version
     console.info(
-      "%c WALL-CLOCK-CARD %c 1.18.5 ", 
+      "%c WALL-CLOCK-CARD %c 1.18.6 ", 
       "color: white; background: #3498db; font-weight: 700;", 
       "color: #3498db; background: white; font-weight: 700;"
     );
@@ -123,6 +124,14 @@ export class WallClockCard extends LitElement {
 
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
+
+    // Load translations for all supported languages
+    try {
+      await loadTranslations();
+      console.log('[wall-clock] Loaded translations for all languages');
+    } catch (error) {
+      console.error('[wall-clock] Error loading translations:', error);
+    }
 
     // Fetch weather data first if enabled
     if (this.config.showWeather) {
@@ -1637,7 +1646,7 @@ export class WallClockCard extends LitElement {
               <img class="weather-icon" src="${this.weatherData.current.icon}" alt="${this.weatherData.current.condition}">
               <div class="weather-temp">${Math.round(this.weatherData.current.temperature)}°</div>              
             </div>
-            <div class="weather-condition">${translateWeatherCondition(this.weatherData.current.condition, this.config.weatherConfig?.language || 'cs')}</div>
+            <div class="weather-condition">${this.translateWeatherCondition(this.weatherData.current.condition)}</div>
           </div>
         ` : 
         ''
@@ -1731,11 +1740,35 @@ export class WallClockCard extends LitElement {
   }
 
   /**
+   * Translate a weather condition
+   * @param condition The weather condition to translate
+   * @returns The translated weather condition
+   */
+  private translateWeatherCondition(condition: string): string {
+    // Get language from config, or Home Assistant language, or default to Czech
+    const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+
+    // Convert condition to a format suitable for path lookup (replace spaces with underscores)
+    const normalizedCondition = condition.toLowerCase().replace(/ /g, '_');
+
+    // Try to get the translation from the conditions section
+    const conditionPath = `conditions.${normalizedCondition}`;
+    const translation = translate(conditionPath, language, null);
+
+    if (translation !== null) {
+      return translation;
+    }
+
+    // Fall back to the original condition if no translation is found
+    return condition;
+  }
+
+  /**
    * Format a date for display in the forecast
    */
   private formatForecastDate(date: Date): string {
-    // Get language from config or default to Czech
-    const language = this.config.weatherConfig?.language || 'cs';
+    // Get language from config, or Home Assistant language, or default to Czech
+    const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
 
     // Map language code to locale for toLocaleDateString
     let locale: string;

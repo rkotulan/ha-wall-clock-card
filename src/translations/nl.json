@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Weer",
+    "description": "Huidige weersomstandigheden en voorspelling",
+    "settings": "Weerinstellingen"
+  },
+  "conditions": {
+    "all": "Alle weersomstandigheden",
+    "clouds": "Bewolkt",
+    "clear_sky": "Heldere hemel",
+    "few_clouds": "Licht bewolkt",
+    "scattered_clouds": "Verspreide wolken",
+    "broken_clouds": "Gebroken bewolking",
+    "shower_rain": "Buien",
+    "rain": "Regen",
+    "thunderstorm": "Onweer",
+    "snow": "Sneeuw",
+    "mist": "Mist",
+    "light_rain": "Lichte regen"
+  },
+  "forecast": {
+    "title": "Voorspelling",
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "next_days": "Volgende dagen"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Pogoda",
+    "description": "Aktualne warunki pogodowe i prognoza",
+    "settings": "Ustawienia pogody"
+  },
+  "conditions": {
+    "all": "Wszystkie warunki pogodowe",
+    "clouds": "Zachmurzenie",
+    "clear_sky": "Czyste niebo",
+    "few_clouds": "Niewielkie zachmurzenie",
+    "scattered_clouds": "Rozproszone chmury",
+    "broken_clouds": "Zachmurzenie",
+    "shower_rain": "Przelotny deszcz",
+    "rain": "Deszcz",
+    "thunderstorm": "Burza",
+    "snow": "Śnieg",
+    "mist": "Mgła",
+    "light_rain": "Lekki deszcz"
+  },
+  "forecast": {
+    "title": "Prognoza",
+    "today": "Dziś",
+    "tomorrow": "Jutro",
+    "next_days": "Następne dni"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

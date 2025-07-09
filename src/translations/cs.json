@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Počasí",
+    "description": "Aktuální počasí a předpověď",
+    "settings": "Nastavení počasí"
+  },
+  "conditions": {
+    "all": "Všechny povětrnostní podmínky",
+    "clouds": "Oblačno",
+    "clear_sky": "Jasná obloha",
+    "few_clouds": "Málo oblačnosti",
+    "scattered_clouds": "Polojasno",
+    "broken_clouds": "Oblačno",
+    "shower_rain": "Přeháňky",
+    "rain": "Déšť",
+    "thunderstorm": "Bouřka",
+    "snow": "Sněžení",
+    "mist": "Mlha",
+    "light_rain": "Slabý déšť"
+  },
+  "forecast": {
+    "title": "Předpověď",
+    "today": "Dnes",
+    "tomorrow": "Zítra",
+    "next_days": "Další dny"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Vremea",
+    "description": "Condiții meteorologice actuale și prognoză",
+    "settings": "Setări meteo"
+  },
+  "conditions": {
+    "all": "Toate condițiile meteorologice",
+    "clouds": "Înnorat",
+    "clear_sky": "Cer senin",
+    "few_clouds": "Puțin înnorat",
+    "scattered_clouds": "Nori împrăștiați",
+    "broken_clouds": "Parțial înnorat",
+    "shower_rain": "Averse",
+    "rain": "Ploaie",
+    "thunderstorm": "Furtună",
+    "snow": "Ninsoare",
+    "mist": "Ceață",
+    "light_rain": "Ploaie ușoară"
+  },
+  "forecast": {
+    "title": "Prognoză",
+    "today": "Astăzi",
+    "tomorrow": "Mâine",
+    "next_days": "Zilele următoare"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.18.6
+
+- Added support for additional European languages:
+  - Italian (Italiano)
+  - Portuguese (Português)
+  - Dutch (Nederlands)
+  - Swedish (Svenska)
+  - Norwegian (Norsk)
+  - Danish (Dansk)
+  - Finnish (Suomi)
+  - Greek (Ελληνικά)
+  - Hungarian (Magyar)
+  - Romanian (Română)
+- Improved language handling in the translation system
+- Reorganized language selection dropdown in alphabetical order
+- Enhanced code maintainability by centralizing supported languages list
+
 ## 1.18.5
 
 - Enhanced language support for forecast date display

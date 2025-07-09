@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Καιρός",
+    "description": "Τρέχουσες καιρικές συνθήκες και πρόγνωση",
+    "settings": "Ρυθμίσεις καιρού"
+  },
+  "conditions": {
+    "all": "Όλες οι καιρικές συνθήκες",
+    "clouds": "Συννεφιά",
+    "clear_sky": "Καθαρός ουρανός",
+    "few_clouds": "Λίγα σύννεφα",
+    "scattered_clouds": "Διάσπαρτα σύννεφα",
+    "broken_clouds": "Μερική συννεφιά",
+    "shower_rain": "Καταιγίδες",
+    "rain": "Βροχή",
+    "thunderstorm": "Καταιγίδα",
+    "snow": "Χιόνι",
+    "mist": "Ομίχλη",
+    "light_rain": "Ελαφριά βροχή"
+  },
+  "forecast": {
+    "title": "Πρόγνωση",
+    "today": "Σήμερα",
+    "tomorrow": "Αύριο",
+    "next_days": "Επόμενες ημέρες"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

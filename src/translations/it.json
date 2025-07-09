@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Meteo",
+    "description": "Condizioni meteorologiche attuali e previsioni",
+    "settings": "Impostazioni meteo"
+  },
+  "conditions": {
+    "all": "Tutte le condizioni meteorologiche",
+    "clouds": "Nuvoloso",
+    "clear_sky": "Cielo sereno",
+    "few_clouds": "Poche nuvole",
+    "scattered_clouds": "Nuvole sparse",
+    "broken_clouds": "Nuvolosità variabile",
+    "shower_rain": "Rovesci di pioggia",
+    "rain": "Pioggia",
+    "thunderstorm": "Temporale",
+    "snow": "Neve",
+    "mist": "Nebbia",
+    "light_rain": "Pioggia leggera"
+  },
+  "forecast": {
+    "title": "Previsioni",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "next_days": "Prossimi giorni"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

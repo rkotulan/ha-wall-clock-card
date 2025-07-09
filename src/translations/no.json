@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Vær",
+    "description": "Gjeldende værforhold og prognose",
+    "settings": "Værinnstillinger"
+  },
+  "conditions": {
+    "all": "Alle værforhold",
+    "clouds": "Overskyet",
+    "clear_sky": "Klar himmel",
+    "few_clouds": "Lettskyet",
+    "scattered_clouds": "Spredte skyer",
+    "broken_clouds": "Delvis skyet",
+    "shower_rain": "Regnbyger",
+    "rain": "Regn",
+    "thunderstorm": "Tordenvær",
+    "snow": "Snø",
+    "mist": "Tåke",
+    "light_rain": "Lett regn"
+  },
+  "forecast": {
+    "title": "Prognose",
+    "today": "I dag",
+    "tomorrow": "I morgen",
+    "next_days": "Kommende dager"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

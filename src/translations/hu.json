@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Időjárás",
+    "description": "Aktuális időjárási viszonyok és előrejelzés",
+    "settings": "Időjárás beállítások"
+  },
+  "conditions": {
+    "all": "Minden időjárási körülmény",
+    "clouds": "Felhős",
+    "clear_sky": "Tiszta égbolt",
+    "few_clouds": "Kevés felhő",
+    "scattered_clouds": "Szórványos felhőzet",
+    "broken_clouds": "Szakadozott felhőzet",
+    "shower_rain": "Zápor",
+    "rain": "Eső",
+    "thunderstorm": "Zivatar",
+    "snow": "Hó",
+    "mist": "Köd",
+    "light_rain": "Gyenge eső"
+  },
+  "forecast": {
+    "title": "Előrejelzés",
+    "today": "Ma",
+    "tomorrow": "Holnap",
+    "next_days": "Következő napok"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

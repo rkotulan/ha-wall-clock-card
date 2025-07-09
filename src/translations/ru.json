@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Погода",
+    "description": "Текущие погодные условия и прогноз",
+    "settings": "Настройки погоды"
+  },
+  "conditions": {
+    "all": "Все погодные условия",
+    "clouds": "Облачно",
+    "clear_sky": "Ясное небо",
+    "few_clouds": "Малооблачно",
+    "scattered_clouds": "Переменная облачность",
+    "broken_clouds": "Облачно с прояснениями",
+    "shower_rain": "Ливень",
+    "rain": "Дождь",
+    "thunderstorm": "Гроза",
+    "snow": "Снег",
+    "mist": "Туман",
+    "light_rain": "Небольшой дождь"
+  },
+  "forecast": {
+    "title": "Прогноз",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "next_days": "Следующие дни"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "м/с",
+      "mph": "миль/ч",
+      "kmh": "км/ч"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Météo",
+    "description": "Conditions météorologiques actuelles et prévisions",
+    "settings": "Paramètres météo"
+  },
+  "conditions": {
+    "all": "Toutes les conditions météorologiques",
+    "clouds": "Nuages",
+    "clear_sky": "Ciel dégagé",
+    "few_clouds": "Quelques nuages",
+    "scattered_clouds": "Nuages épars",
+    "broken_clouds": "Nuages fragmentés",
+    "shower_rain": "Averses",
+    "rain": "Pluie",
+    "thunderstorm": "Orage",
+    "snow": "Neige",
+    "mist": "Brouillard",
+    "light_rain": "Pluie légère"
+  },
+  "forecast": {
+    "title": "Prévisions",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "next_days": "Jours suivants"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

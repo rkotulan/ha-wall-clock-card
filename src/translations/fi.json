@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Sää",
+    "description": "Nykyiset sääolosuhteet ja ennuste",
+    "settings": "Sääasetukset"
+  },
+  "conditions": {
+    "all": "Kaikki sääolosuhteet",
+    "clouds": "Pilvinen",
+    "clear_sky": "Selkeä taivas",
+    "few_clouds": "Vähän pilviä",
+    "scattered_clouds": "Hajanaisia pilviä",
+    "broken_clouds": "Rikkonaisia pilviä",
+    "shower_rain": "Sadekuuroja",
+    "rain": "Sade",
+    "thunderstorm": "Ukkonen",
+    "snow": "Lumi",
+    "mist": "Sumu",
+    "light_rain": "Kevyt sade"
+  },
+  "forecast": {
+    "title": "Ennuste",
+    "today": "Tänään",
+    "tomorrow": "Huomenna",
+    "next_days": "Seuraavat päivät"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

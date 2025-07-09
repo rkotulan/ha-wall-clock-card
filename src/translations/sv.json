@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Väder",
+    "description": "Aktuella väderförhållanden och prognos",
+    "settings": "Väderinställningar"
+  },
+  "conditions": {
+    "all": "Alla väderförhållanden",
+    "clouds": "Molnigt",
+    "clear_sky": "Klar himmel",
+    "few_clouds": "Lätt molnighet",
+    "scattered_clouds": "Spridda moln",
+    "broken_clouds": "Växlande molnighet",
+    "shower_rain": "Regnskurar",
+    "rain": "Regn",
+    "thunderstorm": "Åska",
+    "snow": "Snö",
+    "mist": "Dimma",
+    "light_rain": "Lätt regn"
+  },
+  "forecast": {
+    "title": "Prognos",
+    "today": "Idag",
+    "tomorrow": "Imorgon",
+    "next_days": "Kommande dagar"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}
