@@ -1771,6 +1771,86 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             </div>
 
                             <div class="row">
+                                <div class="label">Show on Demand</div>
+                                <div class="value">
+                                    <ha-switch
+                                            .checked=${this._config.transportation?.onDemand === true}
+                                            @change=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & {
+                                                    checked?: boolean
+                                                };
+                                                if (!target || !this._config || !this._config.transportation) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Update the new config
+                                                newConfig.transportation = {
+                                                    ...newConfig.transportation,
+                                                    onDemand: target.checked
+                                                };
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-switch>
+                                    <span>Only show departures when clicked</span>
+                                </div>
+                            </div>
+
+                            ${this._config.transportation?.onDemand === true ? html`
+                                <div class="row">
+                                    <div class="label">Auto-Hide Timeout</div>
+                                    <div class="value">
+                                        <ha-textfield
+                                                label="Auto-hide timeout in minutes (1-10)"
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                .value=${this._config.transportation?.autoHideTimeout || 5}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+
+                                                    const target = ev.target as HTMLElement & {
+                                                        value?: string | number
+                                                    };
+                                                    if (!target || !this._config || !this._config.transportation) return;
+
+                                                    // Create a deep copy of the config
+                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                    // Get the value as a number
+                                                    let timeoutMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
+
+                                                    // Ensure value is between 1 and 10 minutes
+                                                    timeoutMinutes = Math.max(Math.min(timeoutMinutes || 5, 10), 1);
+
+                                                    // Update the new config
+                                                    newConfig.transportation = {
+                                                        ...newConfig.transportation,
+                                                        autoHideTimeout: timeoutMinutes
+                                                    };
+
+                                                    // Update the local config reference
+                                                    this._config = newConfig;
+
+                                                    // Fire the config-changed event with the new config
+                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                }}
+                                        ></ha-textfield>
+                                        <span>minutes</span>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="row">
                                 <div class="label">Update Interval</div>
                                 <div class="value">
                                     <ha-textfield

@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.17.1
+
+- Added auto-hide timeout for transportation departures in onDemand mode
+  - New configuration option `transportation.autoHideTimeout` to set the timeout (1-10 minutes)
+  - Departures will automatically hide after the specified time and show the bus button again
+  - Added UI control in the editor that only appears when onDemand is enabled
+- Renamed "Load on demand" to "Show on demand" in the UI for better clarity
+- Updated documentation to reflect the new configuration option
+
+## 1.17.0
+
+- Added on-demand loading for transportation departures
+  - New configuration option `transportation.onDemand` to enable on-demand loading
+  - When enabled, a bus icon appears in the bottom left corner
+  - Transportation data is only loaded when the icon is clicked
+  - Saves API calls by not loading transportation data automatically
+  - Added UI control in the editor for enabling on-demand loading
+- Updated documentation with examples of the new configuration option
+- Moved transportationOnDemand property to the transportation section for better organization
+
 ## 1.16.0
 
 - Added configurable update intervals for weather and transportation data

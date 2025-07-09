@@ -25,6 +25,8 @@ export interface TransportationConfig {
   providerConfig?: TransportationProviderConfig; // Configuration for the transportation provider
   stops: StopConfig[]; // Array of stop configurations
   maxDepartures?: number; // Global max departures setting (applies to all stops if not specified at stop level)
+  onDemand?: boolean; // Whether to load transportation data on demand (only when clicked)
+  autoHideTimeout?: number; // Time in minutes after which to hide departures and show the bus button again (1-10 minutes)
 }
 
 /**

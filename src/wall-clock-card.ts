@@ -93,6 +93,7 @@ export class WallClockCard extends LitElement {
   @property({ type: String }) weatherErrorMessage = ''; // Error message if weather data loading failed
   @property({ type: Object }) transportationData: TransportationData = { departures: [], loading: false }; // Transportation data
   @property({ type: Date }) lastTransportationUpdate?: Date; // Last time transportation data was updated
+  @property({ type: Boolean }) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
 
   private timer?: number;
   private imageRotationTimer?: number;
@@ -100,6 +101,7 @@ export class WallClockCard extends LitElement {
   private preloadTimer?: number;
   private weatherUpdateTimer?: number;
   private transportationUpdateTimer?: number;
+  private transportationAutoHideTimer?: number;
 
   constructor() {
     super();
@@ -145,32 +147,38 @@ export class WallClockCard extends LitElement {
     // Fetch image URLs (not the actual images)
     await this.fetchImageUrls();
 
-    // Fetch transportation data if enabled
+    // Fetch transportation data if enabled and not on-demand
     if (this.config.transportation) {
-      await this.fetchTransportationData();
+      // Only fetch data automatically if on-demand loading is not enabled
+      if (!this.config.transportation?.onDemand) {
+        await this.fetchTransportationData();
+        this.transportationDataLoaded = true;
 
-      // Get configured transportation update interval or default to 60 seconds
-      let transportationInterval = this.config.transportationUpdateInterval || 60;
+        // Get configured transportation update interval or default to 60 seconds
+        let transportationInterval = this.config.transportationUpdateInterval || 60;
 
-      // Ensure minimum interval of 60 seconds
-      transportationInterval = Math.max(transportationInterval, 60);
+        // Ensure minimum interval of 60 seconds
+        transportationInterval = Math.max(transportationInterval, 60);
 
-      // Convert to milliseconds
-      const transportationIntervalMs = transportationInterval * 1000;
+        // Convert to milliseconds
+        const transportationIntervalMs = transportationInterval * 1000;
 
-      console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+        console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
 
-      // Update transportation data at the configured interval
-      this.transportationUpdateTimer = window.setInterval(() => {
-        // Use a self-executing async function to allow await
-        (async () => {
-          try {
-            await this.fetchTransportationData();
-          } catch (error) {
-            console.error('Error in transportation update interval:', error);
-          }
-        })();
-      }, transportationIntervalMs);
+        // Update transportation data at the configured interval
+        this.transportationUpdateTimer = window.setInterval(() => {
+          // Use a self-executing async function to allow await
+          (async () => {
+            try {
+              await this.fetchTransportationData();
+            } catch (error) {
+              console.error('Error in transportation update interval:', error);
+            }
+          })();
+        }, transportationIntervalMs);
+      } else {
+        console.log('Transportation on-demand loading is enabled. Data will be loaded when requested.');
+      }
     }
   }
 
@@ -641,6 +649,9 @@ export class WallClockCard extends LitElement {
     }
     if (this.transportationUpdateTimer) {
       clearInterval(this.transportationUpdateTimer);
+    }
+    if (this.transportationAutoHideTimer) {
+      clearTimeout(this.transportationAutoHideTimer);
     }
   }
 
@@ -1199,6 +1210,33 @@ export class WallClockCard extends LitElement {
         border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
       }
 
+      .transportation-on-demand-button {
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+        width: 144px;
+        height: 144px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.25);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        z-index: 3;
+        transition: all 0.3s ease;
+      }
+
+      .transportation-on-demand-button:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+        transform: scale(1.1);
+      }
+
+      .transportation-on-demand-button svg {
+        width: 72px;
+        height: 72px;
+        fill: white;
+      }
+
       .transportation-title {
         font-size: 1.5rem;
         font-weight: 300;
@@ -1436,10 +1474,16 @@ export class WallClockCard extends LitElement {
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
         ${this.config.transportation && this.config.enableTransportation !== false ? 
-          html`<div class="transportation-container" style="color: ${this.config.fontColor};">
-            ${this.renderTransportationContent()}
-          </div>` : 
-          ''
+          this.config.transportation?.onDemand && !this.transportationDataLoaded ?
+            html`<div class="transportation-on-demand-button" @click=${this._handleTransportationClick}>
+              <svg viewBox="0 0 24 24">
+                <path d="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1.78c0.61-0.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8,0.5-8,4v10zm3.5,1c-0.83,0-1.5-0.67-1.5-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zm9,0c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5 1.5-1.5 1.5,0.67 1.5,1.5-0.67,1.5-1.5,1.5zm1.5-6H6V6h12v5z"/>
+              </svg>
+            </div>` :
+            html`<div class="transportation-container" style="color: ${this.config.fontColor};">
+              ${this.renderTransportationContent()}
+            </div>` 
+          : ''
         }
       </ha-card>
     `;
@@ -1550,6 +1594,76 @@ export class WallClockCard extends LitElement {
         ''
       }
     `;
+  }
+
+  /**
+   * Handle click on the transportation button
+   * This is called when the user clicks the bus icon to load transportation data on demand
+   */
+  private async _handleTransportationClick(): Promise<void> {
+    console.log('Transportation button clicked, loading data on demand');
+
+    // Fetch transportation data
+    await this.fetchTransportationData();
+
+    // Mark as loaded so the button is replaced with the data
+    this.transportationDataLoaded = true;
+
+    // Set up an interval to update the data if configured
+    if (this.config.transportationUpdateInterval) {
+      // Get configured transportation update interval or default to 60 seconds
+      let transportationInterval = this.config.transportationUpdateInterval || 60;
+
+      // Ensure minimum interval of 60 seconds
+      transportationInterval = Math.max(transportationInterval, 60);
+
+      // Convert to milliseconds
+      const transportationIntervalMs = transportationInterval * 1000;
+
+      console.log(`Setting transportation update interval to ${transportationInterval} seconds`);
+
+      // Clear any existing timer
+      if (this.transportationUpdateTimer) {
+        clearInterval(this.transportationUpdateTimer);
+      }
+
+      // Update transportation data at the configured interval
+      this.transportationUpdateTimer = window.setInterval(() => {
+        // Use a self-executing async function to allow await
+        (async () => {
+          try {
+            await this.fetchTransportationData();
+          } catch (error) {
+            console.error('Error in transportation update interval:', error);
+          }
+        })();
+      }, transportationIntervalMs);
+    }
+
+    // Set up auto-hide timer if configured
+    if (this.config.transportation?.autoHideTimeout) {
+      // Clear any existing auto-hide timer
+      if (this.transportationAutoHideTimer) {
+        clearTimeout(this.transportationAutoHideTimer);
+      }
+
+      // Get configured auto-hide timeout or default to 5 minutes
+      let autoHideTimeout = this.config.transportation.autoHideTimeout || 5;
+
+      // Ensure timeout is between 1 and 10 minutes
+      autoHideTimeout = Math.max(1, Math.min(10, autoHideTimeout));
+
+      // Convert to milliseconds
+      const autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
+
+      console.log(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
+
+      // Set timer to hide departures and show bus button again after timeout
+      this.transportationAutoHideTimer = window.setTimeout(() => {
+        console.log(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
+        this.transportationDataLoaded = false;
+      }, autoHideTimeoutMs);
+    }
   }
 
   /**

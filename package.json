@@ -1,6 +1,6 @@
 {
   "name": "wall-clock-card",
-  "version": "1.16.0",
+  "version": "1.17.1",
   "description": "A Wall Clock Card for Home Assistant's Lovelace UI that displays a clock with seconds and date",
   "main": "dist/wall-clock-card.js",
   "scripts": {

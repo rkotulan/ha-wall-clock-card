@@ -48,6 +48,26 @@ transportation:
   - **name** (optional): A custom name for the stop (if not provided, the name from the API will be used).
   - **maxDepartures** (optional): The number of departures to show for this stop (minimum: 1, maximum: 5).
 - **maxDepartures** (optional): Global setting for the number of departures to display per stop (minimum: 1, maximum: 5, default: 3).
+- **onDemand** (optional): Whether to show transportation data on demand when the user clicks a button (default: false).
+- **autoHideTimeout** (optional): Time in minutes after which to hide departures and show the bus button again when in onDemand mode (minimum: 1, maximum: 10).
+
+### On-Demand Loading
+
+You can enable on-demand loading of transportation departures to save API calls:
+
+```yaml
+enableTransportation: true
+transportation:
+  onDemand: true  # Enable on-demand loading
+  autoHideTimeout: 5  # Auto-hide departures after 5 minutes (optional, 1-10 minutes)
+  # ... other transportation settings
+```
+
+When on-demand loading is enabled:
+- A bus icon will appear in the bottom left corner of the card
+- Transportation data will only be loaded when the icon is clicked
+- After clicking, departures will be displayed and updated according to the update interval
+- If `autoHideTimeout` is set, departures will be automatically hidden after the specified time (1-10 minutes) and the bus button will be shown again
 
 ## Examples
 
@@ -58,6 +78,8 @@ type: custom:wall-clock-card
 enableTransportation: true
 transportation:
   provider: 'idsjmk'
+  onDemand: true  # Enable on-demand loading (optional)
+  autoHideTimeout: 5  # Auto-hide departures after 5 minutes (optional, 1-10 minutes)
   stops:
     - stopId: 1793
       postId: 3
