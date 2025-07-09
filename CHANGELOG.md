@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.18.0
+
+- Added sensor-based image source for background images
+  - New image source that uses a Home Assistant sensor with a "files" attribute
+  - Sensor entity can be selected in the UI configuration
+  - Images refresh every 10 minutes
+  - Added automatic extraction of weather conditions and time of day from file paths
+  - Valid weather conditions in paths: clear sky, clouds, broken clouds, rain, snow, mist, all
+  - Valid time of day values in paths: sunrise-sunset, day, night, unspecified
+
 ## 1.17.1
 
 - Added auto-hide timeout for transportation departures in onDemand mode

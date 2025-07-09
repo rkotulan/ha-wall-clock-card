@@ -316,6 +316,43 @@ The Wall Clock Card can fetch background images from online sources, which means
      6. On the next page, you will see your "Access Key". Add this to your configuration or secrets.yaml
      7. If you don't have a secrets.yaml, you should! Read about it here: [Home Assistant Secrets](https://www.home-assistant.io/docs/configuration/secrets/)
 
+5. **Sensor Images** (`imageSource: 'sensor'`):
+   - Uses images from a Home Assistant sensor with a "files" attribute
+   - Automatically refreshes every 10 minutes
+   - Supports weather and time-of-day recognition from image URLs
+   - Perfect for integration with command-line sensors or other image collection sensors
+   - Configuration:
+     ```yaml
+     imageSource: 'sensor'
+     imageConfig:
+       entity: 'sensor.background_image_list'  # Entity ID of the sensor with files attribute
+     ```
+
+   - **Example Sensor Configuration**:
+     ```yaml
+     # Example configuration.yaml entry for a command-line sensor
+     command_line:
+        - sensor:
+           name: Background image list for Wall Clock Panel
+           command: >-
+             printf '{"files":[';
+             find /config/www/images/wcp-bg-1920 -type f -iname "*.jpg" \
+               | sed 's/.*/"&"/g' \
+               | paste -sd, - \
+               | sed 's#/config/www/#/local/#g';
+             printf ']}'
+           value_template: "OK"
+           json_attributes: files
+           scan_interval: 600  # Refresh every 10 minutes
+     ```
+
+   - **Image URL Recognition**:
+     - The sensor source automatically extracts weather conditions and time of day from image URLs
+     - Include weather conditions in the image path (e.g., `/images/clear-sky/image.jpg`)
+     - Include time of day in the image path (e.g., `/images/day/image.jpg`)
+     - Supported weather conditions: `clear sky`, `clouds`, `rain`, `snow`, `mist`, etc.
+     - Supported times of day: `sunrise-sunset`, `day`, `night`
+
 
 
 #### Custom Image Sources

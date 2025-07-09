@@ -6,7 +6,6 @@ import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import {translateWeatherCondition} from './translations';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -76,6 +75,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         {value: 'picsum', label: 'Picsum Photos'},
         {value: 'local', label: 'Local Images'},
         {value: 'unsplash', label: 'Unsplash'},
+        {value: 'sensor', label: 'Sensor Images'},
     ];
 
     // Weather provider options
@@ -112,28 +112,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         ];
     };
 
-    // Weather condition options based on OpenWeatherMap icon codes
-    private _getWeatherConditionOptions(): { value: string, label: string }[] {
-        // Get the language from config, default to Czech
-        const language = this._config?.weatherConfig?.language || 'cs';
-
-        return [
-            {value: 'all', label: `${translateWeatherCondition('all', language)}`},
-            {value: 'clear sky', label: `${translateWeatherCondition('clear sky', language)} (01d/01n)`},
-            {value: 'clouds', label: `${translateWeatherCondition('clouds', language)} (02d/03d/04d)`},
-            {value: 'rain', label: `${translateWeatherCondition('rain', language)} (09d/10d/11d)`},
-            {value: 'snow', label: `${translateWeatherCondition('snow', language)} (13d/13n)`},
-            {value: 'mist', label: `${translateWeatherCondition('mist', language)} (50d/50n)`},
-        ];
-    };
-
-    // Time of day options
-    private _timeOfDayOptions = [
-        {value: TimeOfDay.Unspecified, label: 'Any Time (Unspecified)'},
-        {value: TimeOfDay.SunriseSunset, label: 'Sunrise/Sunset'},
-        {value: TimeOfDay.Day, label: 'Day'},
-        {value: TimeOfDay.Night, label: 'Night'},
-    ];
 
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
@@ -1088,93 +1066,33 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Local Background Images</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure background images with weather and time-of-day information.
-                                Each image can be configured to show for specific weather conditions and times of day.
-                                Select "All Weather Conditions" to show an image regardless of weather.
-                                Select "Any Time" to show an image regardless of time of day.
+                                Configure local image URLs. Images will be automatically categorized by weather condition and time of day based on their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
                             </div>
-
 
                             <div class="section-subheader">Background Images</div>
-                            <div class="info-text">
-                                Configure background images with specific weather conditions and times of day.
-                            </div>
 
                             ${this._backgroundImages.map((image, index) => html`
-                                <div class="weather-condition">
-                                    <div class="image-row">
-                                        <div class="image-url">
-                                            <ha-textfield
-                                                    label="Image URL"
-                                                    .value=${image.url || ''}
-                                                    @input=${(ev: CustomEvent) => {
-                                                        ev.stopPropagation();
-                                                        ev.preventDefault();
+                                <div class="image-row">
+                                    <div class="image-url">
+                                        <ha-textfield
+                                                label="Image URL"
+                                                .value=${image.url || ''}
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
 
-                                                        const target = ev.target as HTMLElement & { value?: string };
-                                                        if (!target) return;
-                                                        this._updateBackgroundImage(index, {url: target.value || ''});
-                                                    }}
-                                            ></ha-textfield>
-                                        </div>
-                                        <div class="image-actions">
-                                            <ha-icon-button
-                                                    .path=${'M19,13H5V11H19V13Z'}
-                                                    @click=${() => this._removeBackgroundImage(index)}
-                                            ></ha-icon-button>
-                                        </div>
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+                                                    this._updateBackgroundImage(index, {url: target.value || ''});
+                                                }}
+                                        ></ha-textfield>
                                     </div>
-
-                                    <div class="row" style="margin-top: 8px;">
-                                        <div class="label">Weather Condition</div>
-                                        <div class="value">
-                                            <ha-select
-                                                    label="Weather Condition"
-                                                    .value=${image.weather || 'all'}
-                                                    @click=${(ev: CustomEvent) => {
-                                                        ev.stopPropagation();
-                                                    }}
-                                                    @closed=${(ev: CustomEvent) => {
-                                                        ev.stopPropagation();
-
-                                                        const target = ev.target as HTMLElement & { value?: string };
-                                                        if (!target || !target.value) return;
-                                                        this._updateBackgroundImage(index, {weather: target.value});
-                                                    }}
-                                            >
-                                                ${this._getWeatherConditionOptions().map(
-                                                        (option) => html`
-                                                            <mwc-list-item .value=${option.value}>${option.label}
-                                                            </mwc-list-item>`
-                                                )}
-                                            </ha-select>
-                                        </div>
-                                    </div>
-
-                                    <div class="row" style="margin-top: 8px;">
-                                        <div class="label">Time of Day</div>
-                                        <div class="value">
-                                            <ha-select
-                                                    label="Time of Day"
-                                                    .value=${image.timeOfDay || TimeOfDay.Unspecified}
-                                                    @click=${(ev: CustomEvent) => {
-                                                        ev.stopPropagation();
-                                                    }}
-                                                    @closed=${(ev: CustomEvent) => {
-                                                        ev.stopPropagation();
-
-                                                        const target = ev.target as HTMLElement & { value?: string };
-                                                        if (!target || !target.value) return;
-                                                        this._updateBackgroundImage(index, {timeOfDay: target.value as TimeOfDay});
-                                                    }}
-                                            >
-                                                ${this._timeOfDayOptions.map(
-                                                        (option) => html`
-                                                            <mwc-list-item .value=${option.value}>${option.label}
-                                                            </mwc-list-item>`
-                                                )}
-                                            </ha-select>
-                                        </div>
+                                    <div class="image-actions">
+                                        <ha-icon-button
+                                                .path=${'M19,13H5V11H19V13Z'}
+                                                @click=${() => this._removeBackgroundImage(index)}
+                                        ></ha-icon-button>
                                     </div>
                                 </div>
                             `)}
@@ -1272,6 +1190,65 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     </ha-expansion-panel>
                 ` : ''}
 
+                ${this._config.imageSource === 'sensor' ? html`
+                    <!-- Sensor Images Configuration Section -->
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Sensor Images Configuration</h3>
+                        <div class="content">
+                            <div class="info-text">
+                                Configure the sensor that provides the image list. The sensor should have a "files" attribute
+                                that contains an array of image URLs.
+                            </div>
+
+                            <div class="row">
+                                <div class="label">Sensor Entity</div>
+                                <div class="value">
+                                    <ha-select
+                                        label="Entity"
+                                        .value=${this._config.imageConfig?.entity || ''}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Ensure imageConfig exists
+                                            if (!newConfig.imageConfig) {
+                                                newConfig.imageConfig = {};
+                                            }
+
+                                            // Update the entity
+                                            newConfig.imageConfig.entity = target.value || '';
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                    >
+                                        ${entities.filter(entity => entity.startsWith('sensor.')).map(
+                                            (entity) => html`
+                                                <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
+                                        )}
+                                    </ha-select>
+                                </div>
+                            </div>
+
+                            <div class="info-text">
+                                The sensor should have a "files" attribute that contains an array of image URLs.
+                                Images will be automatically categorized by weather condition and time of day based on their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
+                            </div>
+                        </div>
+                    </ha-expansion-panel>
+                ` : ''}
 
                 <!-- Sensors Section -->
                 <ha-expansion-panel outlined>

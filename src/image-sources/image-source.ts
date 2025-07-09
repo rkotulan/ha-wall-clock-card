@@ -11,6 +11,53 @@ export enum TimeOfDay {
 }
 
 /**
+ * Valid weather conditions
+ */
+export const ValidWeather = [
+  'all',
+  'clear sky',
+  'clouds',
+  'rain',
+  'snow',
+  'mist',
+  'thunderstorm',
+  'drizzle',
+  'fog'
+];
+
+/**
+ * Valid time of day values
+ */
+export const ValidTimeOfDay = [
+  TimeOfDay.Unspecified,
+  TimeOfDay.SunriseSunset,
+  TimeOfDay.Day,
+  TimeOfDay.Night
+];
+
+/**
+ * Find an attribute in a path
+ * @param path The path to search in
+ * @param validValues Array of valid values to look for
+ * @returns The found attribute, or undefined if not found
+ */
+export function FindAttributeInPath(path: string, validValues: string[]): string | undefined {
+  if (!path) return undefined;
+
+  // Convert path to lowercase for case-insensitive comparison
+  const lowerPath = path.toLowerCase();
+
+  // Look for each valid value in the path
+  for (const value of validValues) {
+    if (lowerPath.includes(value.toLowerCase())) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Background image interface
  */
 export interface BackgroundImage {
