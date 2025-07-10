@@ -1025,6 +1025,8 @@
         font-weight: 300;
         margin-right: 8px;
         opacity: 0.8;
+        width: 2rem;
+        text-align: right;
       }
 
       .forecast-icon {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.9
+
+- Fixed alignment issue in weather forecast table
+  - Added fixed width to day name elements to ensure consistent alignment
+  - Improved layout when day names have different lengths (e.g., "Mon" vs "Fri")
+  
 ## 1.19.8
 
 - Enhanced language handling with integrated locale information
