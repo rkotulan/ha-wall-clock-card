@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.19.3
+
+- Improved 12-hour time format display
+  - Fixed AM/PM indicator display when hour12=true is set
+  - AM/PM indicator now appears under the seconds
+  - Properly converts hours to 12-hour format (e.g., 16:00 → 04:00pm)
+  - Added lowercase styling for am/pm text
+
 ## 1.19.2
 
 - Added configurable content filter for Unsplash image source

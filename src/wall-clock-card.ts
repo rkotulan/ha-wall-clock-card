@@ -86,6 +86,7 @@ export class WallClockCard extends LitElement {
   @property({ type: String }) hours = '';
   @property({ type: String }) minutes = '';
   @property({ type: String }) seconds = '';
+  @property({ type: String }) ampm = ''; // AM/PM indicator for 12-hour format
   @property({ type: Number }) consecutiveFailures = 0; // Track consecutive image loading failures
   @property({ type: Boolean }) isRetrying = false; // Flag to track if we're in retry mode
   @property({ type: Object }) weatherData?: WeatherData; // Weather data from provider
@@ -109,7 +110,7 @@ export class WallClockCard extends LitElement {
 
     // Display styled console info with version
     console.info(
-      "%c WALL-CLOCK-CARD %c 1.18.6 ", 
+      "%c WALL-CLOCK-CARD %c 1.19.3 ", 
       "color: white; background: #3498db; font-weight: 700;", 
       "color: #3498db; background: white; font-weight: 700;"
     );
@@ -991,7 +992,20 @@ export class WallClockCard extends LitElement {
     this.currentTime = now.toLocaleTimeString([], this.config.timeFormat);
 
     // Set hours, minutes, and seconds separately
-    this.hours = now.getHours().toString().padStart(2, '0');
+    let hours = now.getHours();
+
+    // Handle 12-hour format if configured
+    if (this.config.timeFormat?.hour12) {
+      // Convert to 12-hour format
+      const isPM = hours >= 12;
+      hours = hours % 12;
+      hours = hours ? hours : 12; // Convert 0 to 12 for 12 AM
+      this.ampm = isPM ? 'pm' : 'am';
+    } else {
+      this.ampm = ''; // Clear AM/PM for 24-hour format
+    }
+
+    this.hours = hours.toString().padStart(2, '0');
     this.minutes = now.getMinutes().toString().padStart(2, '0');
     this.seconds = now.getSeconds().toString().padStart(2, '0');
 
@@ -1076,13 +1090,27 @@ export class WallClockCard extends LitElement {
         line-height: 1;
       }
 
+      .seconds-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 0.1em;
+        margin-top: 0.1em;
+      }
+
       .seconds {
         font-size: 0.5em;
         font-weight: 400;
         line-height: 1;
         vertical-align: top;
-        margin-left: 0.1em;
-        margin-top: 0.1em;
+      }
+
+      .ampm {
+        font-size: 0.3em;
+        font-weight: 400;
+        line-height: 1;
+        text-transform: lowercase;
+        margin-top: 0.2em;
       }
 
       .date {
@@ -1500,7 +1528,10 @@ export class WallClockCard extends LitElement {
         }
         <div class="clock" style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
           <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
-          <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
+          <div class="seconds-container">
+            <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
+            ${this.ampm ? html`<span class="ampm" style="color: ${this.config.fontColor};">${this.ampm}</span>` : ''}
+          </div>
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
         ${this.config.transportation && this.config.enableTransportation !== false ? 
