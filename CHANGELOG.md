@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.19.2
+
+- Added configurable content filter for Unsplash image source
+  - New UI option to select content filter level (low, medium, high)
+  - Controls the level of potentially sensitive content in the images
+  - Default value is set to 'high' for the most restrictive filtering
+  - Added to the Unsplash Configuration section in the editor
+
+## 1.19.1
+
+- Enhanced Unsplash image source with improved logging
+  - Added detailed logging for API requests and parameters
+  - Added logging for search categories and weather conditions
+  - Added secure logging that hides API keys in log messages
+  - Improved direct URL method logging with collection IDs and generated URLs
+  - Enhanced error reporting for API requests
+  - Better debugging information for image search queries
+
 ## 1.19.0
 
 - Refactored image providers for better performance and reliability

@@ -122,9 +122,13 @@ export class WallClockCard extends LitElement {
     }, 1000);
   }
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
 
+    this.initConnectCallback();
+  }
+
+  async initConnectCallback(): Promise<void> {
     // Load translations for all supported languages
     try {
       await loadTranslations();
@@ -763,10 +767,15 @@ export class WallClockCard extends LitElement {
     };
   }
 
-  async setConfig(config: WallClockConfig): Promise<void> {
+  setConfig(config: WallClockConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
     }
+
+    this.initAfterSetConfig(config);
+  }
+
+  async initAfterSetConfig(config: WallClockConfig): Promise<void> {
 
     // Handle legacy properties
     // If useOnlineImages is set but imageSource is not, convert it to imageSource
@@ -792,8 +801,8 @@ export class WallClockCard extends LitElement {
     let imageConfig: ImageSourceConfig = config.imageConfig || config.onlineImageConfig || {};
 
     // Convert legacy string array backgroundImages to the new structure if needed
-    if (Array.isArray(config.backgroundImages) && 
-        config.backgroundImages.length > 0 && 
+    if (Array.isArray(config.backgroundImages) &&
+        config.backgroundImages.length > 0 &&
         typeof config.backgroundImages[0] === 'string') {
       // Create a new array of BackgroundImage objects
       const backgroundImages: BackgroundImage[] = [];
@@ -811,9 +820,9 @@ export class WallClockCard extends LitElement {
     }
 
     // Ensure timeFormat is properly processed
-    let timeFormat: Intl.DateTimeFormatOptions = { 
-      hour: '2-digit' as const, 
-      minute: '2-digit' as const, 
+    let timeFormat: Intl.DateTimeFormatOptions = {
+      hour: '2-digit' as const,
+      minute: '2-digit' as const,
       second: '2-digit' as const,
       hour12: false
     };

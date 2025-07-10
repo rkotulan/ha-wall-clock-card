@@ -13,6 +13,9 @@ export interface UnsplashSourceConfig extends ImageSourceConfig {
   // Note: This property is kept for backward compatibility but is no longer used
   // as the API is always used when an API key is provided
   useApi?: boolean;
+  // Content filter for Unsplash API (low, medium, high)
+  // Controls the level of potentially sensitive content in the images
+  contentFilter?: 'low' | 'medium' | 'high';
 }
 
 /**
@@ -85,20 +88,8 @@ export class UnsplashSource implements ImageSource {
     // If weather data is available, add weather condition to the category
     if (weatherData && weatherData.current) {
       const weatherCondition = weatherData.current.condition.toLowerCase();
+
       console.log(`[unsplash-source] Current weather condition: ${weatherCondition}`);
-
-      // Add weather condition and time of day to the category if not already included
-      if (category) {
-        if (!category.toLowerCase().includes(weatherCondition)) {
-          category += `,${weatherCondition}`;
-        }
-        if (!category.toLowerCase().includes(currentTimeOfDay)) {
-          category += `,${currentTimeOfDay}`;
-        }
-      } else {
-        category = `${weatherCondition},${currentTimeOfDay}`;
-      }
-
       console.log(`[unsplash-source] Using category with weather and time: ${category}`);
     }
 
@@ -106,7 +97,7 @@ export class UnsplashSource implements ImageSource {
     if (apiKey) {
       try {
         console.log('[unsplash-source] Using official Unsplash API');
-        return await this.fetchImagesFromApi(apiKey, category, count, weatherData);
+        return await this.fetchImagesFromApi(apiKey, category, count, weatherData, config);
       } catch (error) {
         console.error('[unsplash-source] Error fetching images from Unsplash API:', error);
         console.log('[unsplash-source] Falling back to direct URL method');
@@ -119,6 +110,7 @@ export class UnsplashSource implements ImageSource {
 
     // Parse the category string to get individual categories
     const categories = category.split(',').map(c => c.trim().toLowerCase());
+    console.log(`[unsplash-source] Categories for direct URL method: ${categories.join(', ')}`);
 
     // Get collection IDs for the specified categories
     let collectionIds: string[] = [];
@@ -130,7 +122,10 @@ export class UnsplashSource implements ImageSource {
 
     // If no matching collections found, use default
     if (collectionIds.length === 0) {
+      console.log('[unsplash-source] No matching collections found, using default collections');
       collectionIds = this.defaultCollections;
+    } else {
+      console.log(`[unsplash-source] Using collection IDs: ${collectionIds.join(', ')}`);
     }
 
     // Generate direct image URLs using Unsplash's photo API
@@ -148,6 +143,8 @@ export class UnsplashSource implements ImageSource {
         // Using a more reliable format with source parameter and fit=crop
         // This format is more stable and less likely to be rejected
         const imageUrl = `https://source.unsplash.com/collection/${collectionId}/1920x1080/?sig=${randomSeed}`;
+
+        console.log(`[unsplash-source] Generated direct URL (${i+1}/${count}): ${imageUrl}`);
 
         fetchedImages.push(imageUrl);
       } catch (err) {
@@ -167,8 +164,11 @@ export class UnsplashSource implements ImageSource {
    * @param weatherData Optional weather data to enhance image queries
    * @returns Promise that resolves to an array of image URLs
    */
-  private async fetchImagesFromApi(apiKey: string, category: string, count: number, weatherData?: WeatherData): Promise<string[]> {
+  private async fetchImagesFromApi(apiKey: string, category: string, count: number, weatherData?: WeatherData, config?: UnsplashSourceConfig): Promise<string[]> {
     const fetchedImages: string[] = [];
+
+    // Get content filter from config or use default
+    const contentFilter = config?.contentFilter || 'high';
 
     // Prepare the search query from categories
     let query = '';
@@ -184,6 +184,9 @@ export class UnsplashSource implements ImageSource {
         const additionalKeywords = categories.slice(1).join(' ');
         query += ` ${additionalKeywords}`;
       }
+
+      // Log the categories being used
+      console.log(`[unsplash-source] Using categories: ${categories.join(', ')}`);
     }
 
     // If weather data is available, enhance the query with more specific weather details
@@ -206,12 +209,13 @@ export class UnsplashSource implements ImageSource {
       if (currentTimeOfDay === 'sunrise-sunset') {
         query += ' sunrise sunset dawn dusk';
       } else if (currentTimeOfDay === 'day') {
-        query += ' daylight bright midday afternoon';
+        query += ' daylight midday day';
       } else if (currentTimeOfDay === 'night') {
         query += ' night dark stars moonlight';
       }
 
       console.log(`[unsplash-source] Enhanced query with weather data: ${query}`);
+      console.log(`[unsplash-source] Weather condition: ${weatherCondition}, Temperature: ${temperature}°C, Time of day: ${currentTimeOfDay}`);
     }
 
     try {
@@ -221,7 +225,7 @@ export class UnsplashSource implements ImageSource {
         client_id: apiKey,
         count: count.toString(),
         orientation: 'landscape',
-        content_filter: 'high'
+        content_filter: contentFilter
       });
 
       // Add query if provided
@@ -229,16 +233,30 @@ export class UnsplashSource implements ImageSource {
         params.append('query', query);
       }
 
+      // Log the API parameters (excluding the API key for security)
+      const logParams = new URLSearchParams(params);
+      logParams.delete('client_id');
+      logParams.append('client_id', '***API_KEY_HIDDEN***');
+      console.log(`[unsplash-source] API parameters: ${logParams.toString()}`);
+
       apiUrl += params.toString();
+
+      // Log the API request URL (with API key hidden)
+      const logUrl = apiUrl.replace(/client_id=[^&]+/, 'client_id=***API_KEY_HIDDEN***');
+      console.log(`[unsplash-source] Making API request to: ${logUrl}`);
 
       // Make the API request
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
+        console.error(`[unsplash-source] API error: ${response.status} ${response.statusText}`);
         throw new Error(`Unsplash API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+
+      // Log the API response summary
+      console.log(`[unsplash-source] API response received with ${Array.isArray(data) ? data.length : 0} images`);
 
       // Extract image URLs from the response
       if (Array.isArray(data)) {
@@ -267,7 +285,8 @@ export class UnsplashSource implements ImageSource {
       count: 5,
       category: 'nature',
       apiKey: '',
-      useApi: true
+      useApi: true,
+      contentFilter: 'high'
     };
   }
 
@@ -313,18 +332,6 @@ export class UnsplashSource implements ImageSource {
     if (!this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
       // Create a category string from weather and timeOfDay
       let category = config.category || '';
-
-      // Add weather and timeOfDay to the category if not already included
-      if (category) {
-        if (!category.toLowerCase().includes(weather.toString().toLowerCase())) {
-          category += `,${weather}`;
-        }
-        if (!category.toLowerCase().includes(timeOfDay.toString().toLowerCase())) {
-          category += `,${timeOfDay}`;
-        }
-      } else {
-        category = `${weather},${timeOfDay}`;
-      }
 
       // Create a weather data object to pass to fetchImages
       const weatherData = {

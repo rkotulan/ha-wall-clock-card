@@ -544,7 +544,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 flex: 0 0 40px;
                 text-align: center;
             }
-            
+
             .image-weather {
                 flex: 1 1 45%;
             }
@@ -1303,6 +1303,45 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                     fireEvent(this, 'config-changed', {config: newConfig});
                                                 }}
                                         ></ha-textfield>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="label">Content Filter</div>
+                                    <div class="value">
+                                        <ha-select
+                                                label="Content Filter"
+                                                .value=${this._config.imageConfig?.contentFilter || 'high'}
+                                                @click=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @closed=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target || !this._config) return;
+
+                                                    // Create a deep copy of the config
+                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                    // Ensure imageConfig exists
+                                                    if (!newConfig.imageConfig) {
+                                                        newConfig.imageConfig = {};
+                                                    }
+
+                                                    // Update the content filter
+                                                    newConfig.imageConfig.contentFilter = target.value || 'high';
+
+                                                    // Update the local config reference
+                                                    this._config = newConfig;
+
+                                                    // Fire the config-changed event with the new config
+                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                }}
+                                        >
+                                            <mwc-list-item .value=${'low'}>Low</mwc-list-item>
+                                            <mwc-list-item .value=${'high'}>High</mwc-list-item>
+                                        </ha-select>
                                     </div>
                                 </div>
                             ` : ''}
