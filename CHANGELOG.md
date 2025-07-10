@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.19.5
+
+- Added 50% transparency to the AM/PM indicator for improved visual appearance
+  - Modified the CSS for the AM/PM text to have 50% opacity
+  - Maintains readability while making the indicator less visually dominant
+
+## 1.19.4
+
+- Added time zone support for the clock
+  - Fixed issue where clock was not honoring time zone settings
+  - Added new `timeZone` configuration option
+  - Automatically uses Home Assistant's time zone if available
+  - Falls back to browser's local time zone if not specified
+  - Supports all IANA time zone names (e.g., 'America/New_York', 'Europe/London')
+
 ## 1.19.3
 
 - Improved 12-hour time format display

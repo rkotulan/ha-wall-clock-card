@@ -41,6 +41,7 @@ export interface WallClockConfig {
   sensors?: SensorConfig[]; // Multiple sensors
   fontColor?: string; // Font color for all text elements
   language?: string; // Language for translations
+  timeZone?: string; // Time zone for clock (e.g., 'America/New_York')
 
   // New unified background images structure
   backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
@@ -110,7 +111,7 @@ export class WallClockCard extends LitElement {
 
     // Display styled console info with version
     console.info(
-      "%c WALL-CLOCK-CARD %c 1.19.3 ", 
+      "%c WALL-CLOCK-CARD %c 1.19.4 ", 
       "color: white; background: #3498db; font-weight: 700;", 
       "color: #3498db; background: white; font-weight: 700;"
     );
@@ -856,6 +857,12 @@ export class WallClockCard extends LitElement {
       }
     }
 
+    // Try to get time zone from config, then from Home Assistant, then default to browser's time zone
+    let timeZone = config.timeZone;
+    if (!timeZone && this.hass && this.hass.config && this.hass.config.time_zone) {
+      timeZone = this.hass.config.time_zone;
+    }
+
     this.config = {
       ...config,
       timeFormat,
@@ -870,7 +877,8 @@ export class WallClockCard extends LitElement {
       sensors: config.sensors || [],
       sensorEntity: config.sensorEntity || '',
       sensorLabel: config.sensorLabel || '',
-      fontColor: config.fontColor || '#FFFFFF' // Default to white
+      fontColor: config.fontColor || '#FFFFFF', // Default to white
+      timeZone: timeZone
     };
 
     // For backward compatibility: if sensorEntity is set but no sensors array,
@@ -988,11 +996,40 @@ export class WallClockCard extends LitElement {
   updateTime(): void {
     const now = new Date();
 
+    // Create time format options with time zone if available
+    const timeFormatOptions = { ...this.config.timeFormat };
+    if (this.config.timeZone) {
+      timeFormatOptions.timeZone = this.config.timeZone;
+    }
+
     // Format time with configurable format
-    this.currentTime = now.toLocaleTimeString([], this.config.timeFormat);
+    this.currentTime = now.toLocaleTimeString([], timeFormatOptions);
 
     // Set hours, minutes, and seconds separately
-    let hours = now.getHours();
+    // Use the time in the specified time zone
+    let hours, minutes, seconds;
+
+    if (this.config.timeZone) {
+      // Get time components in the specified time zone
+      const timeString = now.toLocaleString('en-US', { 
+        hour: 'numeric', 
+        minute: 'numeric', 
+        second: 'numeric', 
+        hour12: false,
+        timeZone: this.config.timeZone 
+      });
+
+      // Parse the time string (format: HH:MM:SS)
+      const timeParts = timeString.split(':');
+      hours = parseInt(timeParts[0], 10);
+      minutes = parseInt(timeParts[1], 10);
+      seconds = parseInt(timeParts[2], 10);
+    } else {
+      // Use local time if no time zone is specified
+      hours = now.getHours();
+      minutes = now.getMinutes();
+      seconds = now.getSeconds();
+    }
 
     // Handle 12-hour format if configured
     if (this.config.timeFormat?.hour12) {
@@ -1006,11 +1043,17 @@ export class WallClockCard extends LitElement {
     }
 
     this.hours = hours.toString().padStart(2, '0');
-    this.minutes = now.getMinutes().toString().padStart(2, '0');
-    this.seconds = now.getSeconds().toString().padStart(2, '0');
+    this.minutes = minutes.toString().padStart(2, '0');
+    this.seconds = seconds.toString().padStart(2, '0');
+
+    // Create date format options with time zone if available
+    const dateFormatOptions = { ...this.config.dateFormat };
+    if (this.config.timeZone) {
+      dateFormatOptions.timeZone = this.config.timeZone;
+    }
 
     // Format date with configurable format
-    let formattedDate = now.toLocaleDateString([], this.config.dateFormat);
+    let formattedDate = now.toLocaleDateString([], dateFormatOptions);
 
     // Add comma after the day if it's not already there
     // This regex looks for a number (the day) followed by a space and then a letter (start of month)
@@ -1111,6 +1154,7 @@ export class WallClockCard extends LitElement {
         line-height: 1;
         text-transform: lowercase;
         margin-top: 0.2em;
+        opacity: 0.5;
       }
 
       .date {

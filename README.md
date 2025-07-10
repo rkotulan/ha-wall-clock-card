@@ -20,6 +20,7 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Automatically updates every second
   - Uses Home Assistant's theme colors
   - Configurable date and time formats
+  - Configurable time zone (defaults to Home Assistant's time zone)
   - Configurable font color (default: white)
 
 - **Sensor integration**:
@@ -155,6 +156,8 @@ timeFormat:
   minute: '2-digit'
   second: '2-digit'
   hour12: false  # Set to true for 12-hour format with AM/PM
+# Optional: Time zone for the clock
+timeZone: 'America/New_York'  # IANA time zone name (e.g., 'Europe/London', 'Asia/Tokyo')
 # Optional: Custom date format
 dateFormat:
   weekday: 'long'  # 'long', 'short', or 'narrow'
