@@ -1,4 +1,4 @@
-import { ImageSource, ImageSourceConfig, BackgroundImage, TimeOfDay, FindAttributeInPath, ValidWeather, ValidTimeOfDay } from './image-source';
+import { ImageSource, ImageSourceConfig, BackgroundImage, TimeOfDay, FindAttributeInPath, ValidWeather, ValidTimeOfDay, Weather, getCurrentTimeOfDay } from './image-source';
 import { WeatherData } from '../weather-providers';
 
 /**
@@ -27,6 +27,83 @@ export class SensorSource implements ImageSource {
   private cachedImages: string[] = [];
   private readonly refreshInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
 
+  // Cache for GetNextImageUrl
+  private imageUrlCache: Map<string, string[]> = new Map();
+  private lastWeather: Weather | null = null;
+  private lastTimeOfDay: TimeOfDay | null = null;
+  private currentIndex: number = 0;
+
+  // Entity tracking
+  private entityId: string | null = null;
+
+  // Helper method to shuffle an array (Fisher-Yates algorithm)
+  private shuffleArray(array: any[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  /**
+   * Check entity and update cache if needed
+   * @param entityId The entity ID to check
+   * @returns Promise that resolves when the entity is checked
+   */
+  private async checkEntity(entityId: string): Promise<void> {
+    try {
+      // Get the Home Assistant instance
+      const hass = (window as any).document.querySelector('home-assistant').hass;
+
+      // If we can't get the Home Assistant instance, return
+      if (!hass) {
+        console.warn('[sensor-source] Could not get Home Assistant instance');
+        return;
+      }
+
+      // Get the entity state
+      const state = hass.states[entityId];
+
+      // If the entity doesn't exist, return
+      if (!state) {
+        console.warn(`[sensor-source] Entity ${entityId} not found`);
+        return;
+      }
+
+      // Update the cache from the entity
+      this.updateCacheFromEntity(state);
+
+      // Store the entity ID
+      this.entityId = entityId;
+      console.log(`[sensor-source] Checked entity ${entityId}`);
+    } catch (error) {
+      console.error('[sensor-source] Error checking entity:', error);
+    }
+  }
+
+  /**
+   * Update the cache from an entity
+   * @param entity The entity to update the cache from
+   */
+  private updateCacheFromEntity(entity: any): void {
+    // Get the files attribute
+    const files = entity.attributes.files;
+
+    // If the files attribute doesn't exist or is not an array, return
+    if (!files || !Array.isArray(files)) {
+      console.warn(`[sensor-source] Entity ${this.entityId} does not have a valid files attribute`);
+      return;
+    }
+
+    // Update the cache
+    this.cachedImages = files;
+    this.lastFetchTime = Date.now();
+
+    // Clear the image URL cache to force re-filtering
+    this.imageUrlCache.clear();
+
+    console.log(`[sensor-source] Updated cache with ${files.length} images from entity ${this.entityId}`);
+  }
+
   /**
    * Fetch images from the sensor
    * @param config Configuration for the Sensor image source
@@ -34,15 +111,6 @@ export class SensorSource implements ImageSource {
    * @returns Promise that resolves to an array of image URLs
    */
   async fetchImages(config: SensorSourceConfig, weatherData?: WeatherData): Promise<string[]> {
-    // Get the current time
-    const now = Date.now();
-
-    // If we have cached images and it's been less than the refresh interval, use the cached images
-    if (this.cachedImages.length > 0 && (now - this.lastFetchTime) < this.refreshInterval) {
-      console.log(`[sensor-source] Using cached images (${this.cachedImages.length} images)`);
-      return this.filterImagesByWeatherAndTime(this.cachedImages, weatherData);
-    }
-
     // Get the entity ID from the configuration
     const entityId = config.entity;
 
@@ -50,6 +118,18 @@ export class SensorSource implements ImageSource {
     if (!entityId) {
       console.warn('[sensor-source] No entity ID provided for Sensor image source');
       return [];
+    }
+
+    // Check entity and update cache if needed
+    await this.checkEntity(entityId);
+
+    // Get the current time
+    const now = Date.now();
+
+    // If we have cached images and it's been less than the refresh interval, use the cached images
+    if (this.cachedImages.length > 0 && (now - this.lastFetchTime) < this.refreshInterval) {
+      console.log(`[sensor-source] Using cached images (${this.cachedImages.length} images)`);
+      return this.filterImagesByWeatherAndTime(this.cachedImages, weatherData);
     }
 
     try {
@@ -71,23 +151,11 @@ export class SensorSource implements ImageSource {
         return [];
       }
 
-      // Get the files attribute
-      const files = state.attributes.files;
-
-      // If the files attribute doesn't exist or is not an array, return an empty array
-      if (!files || !Array.isArray(files)) {
-        console.warn(`[sensor-source] Sensor ${entityId} does not have a valid files attribute`);
-        return [];
-      }
-
-      // Update the cache
-      this.cachedImages = files;
-      this.lastFetchTime = now;
-
-      console.log(`[sensor-source] Fetched ${files.length} images from sensor ${entityId}`);
+      // Update the cache from the entity
+      this.updateCacheFromEntity(state);
 
       // Filter the images by weather and time of day
-      return this.filterImagesByWeatherAndTime(files, weatherData);
+      return this.filterImagesByWeatherAndTime(this.cachedImages, weatherData);
     } catch (error) {
       console.error('[sensor-source] Error fetching images from sensor:', error);
       return [];
@@ -110,9 +178,9 @@ export class SensorSource implements ImageSource {
     const currentTimeOfDay = this.getCurrentTimeOfDay();
     console.log(`[sensor-source] Current time of day: ${currentTimeOfDay}`);
 
-    // If we have weather data, filter by weather condition and time of day
-    if (weatherData && weatherData.current) {
-      const currentCondition = this.mapWeatherCondition(weatherData.current.condition.toLowerCase());
+    // Check if we have valid weather data with current condition
+    if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
+      const currentCondition = weatherData.current.conditionUnified;
       console.log(`[sensor-source] Current weather condition: ${currentCondition}`);
 
       // Create an array to store the filtered images
@@ -123,7 +191,7 @@ export class SensorSource implements ImageSource {
         const weather = FindAttributeInPath(url, ValidWeather);
         const timeOfDay = FindAttributeInPath(url, ValidTimeOfDay);
 
-        return (weather === currentCondition || weather === 'all' || !weather) &&
+        return (weather === currentCondition || weather === Weather.All || !weather) &&
                (timeOfDay === currentTimeOfDay || !timeOfDay);
       });
 
@@ -131,6 +199,15 @@ export class SensorSource implements ImageSource {
       if (filteredImages.length > 0) {
         console.log(`[sensor-source] Found ${filteredImages.length} images matching current conditions`);
         return filteredImages;
+      }
+    } else {
+      // Log that we don't have valid weather data
+      if (!weatherData) {
+        console.log(`[sensor-source] No weather data available, skipping weather-based filtering`);
+      } else if (!weatherData.current) {
+        console.log(`[sensor-source] Weather data has no current condition, skipping weather-based filtering`);
+      } else {
+        console.log(`[sensor-source] Weather data has no unified condition, skipping weather-based filtering`);
       }
     }
 
@@ -144,56 +221,77 @@ export class SensorSource implements ImageSource {
    * @returns The current time of day
    */
   private getCurrentTimeOfDay(): TimeOfDay {
-    const hour = new Date().getHours();
-
-    if ((hour >= 5 && hour < 9) || (hour >= 17 && hour < 21)) {
-      return TimeOfDay.SunriseSunset;
-    } else if (hour >= 9 && hour < 17) {
-      return TimeOfDay.Day;
-    } else if (hour >= 21 || hour < 5) {
-      return TimeOfDay.Night;
-    }
-
-    return TimeOfDay.Unspecified;
+    return getCurrentTimeOfDay();
   }
 
-  /**
-   * Map legacy weather condition to the new OpenWeatherMap-based condition
-   * @param condition The weather condition to map
-   * @returns The mapped weather condition
-   */
-  private mapWeatherCondition(condition: string): string {
-    // Convert to lowercase for case-insensitive comparison
-    const lowerCondition = condition.toLowerCase();
 
-    // Map legacy conditions to new ones
-    switch (lowerCondition) {
-      case 'clear':
-        return 'clear sky';
-      // Map all cloud conditions to 'clouds'
-      case 'few clouds':
-      case 'scattered clouds':
-      case 'broken clouds':
-        return 'clouds';
-      case 'clouds':
-        return 'clouds'; // Now maps directly to 'clouds'
-      case 'fog':
-      case 'haze':
-      case 'dust':
-      case 'smoke':
-        return 'mist'; // Map all these to mist
-      // Map all rain-related conditions to 'rain'
-      case 'drizzle':
-      case 'shower rain':
-      case 'thunderstorm':
-      case 'light rain':
-        return 'rain';
-      case 'tornado':
-      case 'windy':
-        return 'all'; // No direct mapping, use 'all'
-      default:
-        return lowerCondition; // Keep as is for 'rain', 'snow', 'mist', 'all'
+  /**
+   * Get the next image URL from this source
+   * @param config Configuration for this image source
+   * @param weather Current weather condition
+   * @param timeOfDay Current time of day
+   * @returns Promise that resolves to an image URL
+   */
+  async GetNextImageUrl(config: SensorSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+    console.log(`[sensor-source] GetNextImageUrl called with weather: ${weather}, timeOfDay: ${timeOfDay}`);
+
+    // Check if weather or timeOfDay has changed
+    if (this.lastWeather !== weather || this.lastTimeOfDay !== timeOfDay) {
+      console.log(`[sensor-source] Weather or timeOfDay changed, clearing cache`);
+      this.imageUrlCache.clear();
+      this.currentIndex = 0;
+      this.lastWeather = weather;
+      this.lastTimeOfDay = timeOfDay;
     }
+
+    // Create a cache key from weather and timeOfDay
+    const cacheKey = `${weather}_${timeOfDay}`;
+
+    // Check if we have cached images for this weather and timeOfDay
+    if (!this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
+      // Fetch images from the sensor
+      const allImages = await this.fetchImages(config);
+
+      // Filter images by weather and timeOfDay
+      const filteredImages = allImages.filter(url => {
+        const imgWeather = FindAttributeInPath(url, ValidWeather);
+        const imgTimeOfDay = FindAttributeInPath(url, ValidTimeOfDay);
+
+        return (imgWeather === weather || imgWeather === Weather.All || !imgWeather) &&
+               (imgTimeOfDay === timeOfDay || !imgTimeOfDay);
+      });
+
+      // If no matching images, use all images
+      const imagesToCache = filteredImages.length > 0 ? filteredImages : allImages;
+
+      // Shuffle the images before caching
+      this.shuffleArray(imagesToCache);
+      console.log(`[sensor-source] Shuffled ${imagesToCache.length} images for random order`);
+
+      // Cache the shuffled images
+      this.imageUrlCache.set(cacheKey, imagesToCache);
+      console.log(`[sensor-source] Cached ${imagesToCache.length} images for weather: ${weather}, timeOfDay: ${timeOfDay}`);
+    }
+
+    // Get the cached images
+    const cachedImages = this.imageUrlCache.get(cacheKey) || [];
+
+    // If no images, return empty string
+    if (cachedImages.length === 0) {
+      console.warn(`[sensor-source] No images available for weather: ${weather}, timeOfDay: ${timeOfDay}`);
+      return '';
+    }
+
+    // Get the next image URL
+    const imageUrl = cachedImages[this.currentIndex];
+
+    // Increment the index for next time
+    this.currentIndex = (this.currentIndex + 1) % cachedImages.length;
+
+    // Log the parameters for which the image is returned
+    console.log(`[sensor-source] Returning image for weather: ${weather}, timeOfDay: ${timeOfDay}, URL: ${imageUrl}`);
+
+    return imageUrl;
   }
 
   /**

@@ -1,6 +1,6 @@
 import { LitElement, html, css, property, customElement, CSSResult, TemplateResult } from 'lit-element';
 import { HomeAssistant } from 'custom-card-helpers';
-import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay } from './image-sources';
+import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay, Weather, getCurrentTimeOfDay } from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
 import { 
   TransportationConfig, 
@@ -207,35 +207,66 @@ export class WallClockCard extends LitElement {
       const urls: string[] = [];
 
       // Get the image source from config
-      const imageSource = this.config.imageSource || 'picsum';
+      const imageSourceId = this.config.imageSource || 'picsum';
 
       // Skip image fetching if imageSource is 'none'
-      if (imageSource === 'none') {
+      if (imageSourceId === 'none') {
         console.log('[wall-clock] Image source is set to none, skipping image fetching');
         this.imageUrls = [];
         this.imageStatuses = [];
         return;
       }
 
-      // Fetch online image URLs if imageSource is not 'local'
-      if (imageSource !== 'local') {
-        const onlineUrls = await this.fetchOnlineImageUrls();
-        urls.push(...onlineUrls);
+      // Get the image source plugin
+      const imageSource = getImageSource(imageSourceId);
+
+      if (!imageSource) {
+        console.error(`[wall-clock] Image source '${imageSourceId}' not found.`);
+        return;
       }
 
-      // Fetch local image URLs if available
-      const localImages = this.config.backgroundImages;
+      // Prepare the configuration for the image source
+      const sourceConfig: ImageSourceConfig = {
+        ...imageSource.getDefaultConfig(),
+        ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
+      };
 
-      // Call fetchLocalImageUrls if we have backgroundImages
-      if (localImages && localImages.length > 0) {
-        const localUrls = await this.fetchLocalImageUrls();
-        urls.push(...localUrls);
+      // If we have backgroundImages, add them to the config
+      if (this.config.backgroundImages && this.config.backgroundImages.length > 0) {
+        sourceConfig.backgroundImages = this.config.backgroundImages;
+      }
+
+      // Get the current weather condition and time of day
+      let currentWeather: Weather = Weather.ClearSky;
+      let currentTimeOfDay: TimeOfDay = TimeOfDay.Day;
+
+      if (this.weatherData && this.weatherData.current) {
+        // Use the conditionUnified property if available, otherwise use a default value
+        currentWeather = this.weatherData.current.conditionUnified || Weather.ClearSky;
+
+        // Determine time of day using the utility function
+        currentTimeOfDay = getCurrentTimeOfDay();
+      }
+
+      console.log(`[wall-clock] Current weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
+
+      // Get a single image URL - no retry or fallback
+      try {
+        const imageUrl = await imageSource.GetNextImageUrl(sourceConfig, currentWeather, currentTimeOfDay);
+        if (imageUrl) {
+          urls.push(imageUrl);
+          console.log(`[wall-clock] Got image URL: ${imageUrl}`);
+        } else {
+          console.log('[wall-clock] No image URL returned, will try again in next cycle');
+        }
+      } catch (err) {
+        console.warn('[wall-clock] Failed to get image URL, will try again in next cycle', err);
       }
 
       // If using local or sensor image source, shuffle the array to randomize the order
-      if ((imageSource === 'local' || imageSource === 'sensor') && urls.length > 0) {
+      if ((imageSourceId === 'local' || imageSourceId === 'sensor') && urls.length > 0) {
         this.shuffleArray(urls);
-        console.log(`[wall-clock] Shuffled ${imageSource} image URLs for random starting order`);
+        console.log(`[wall-clock] Shuffled ${imageSourceId} image URLs for random starting order`);
       }
 
       // Store the URLs and initialize image statuses
@@ -261,91 +292,6 @@ export class WallClockCard extends LitElement {
     }
   }
 
-  private async fetchOnlineImageUrls(): Promise<string[]> {
-    try {
-      // Get the image source ID from config, default to 'picsum'
-      // Use imageSource if available, fall back to onlineImageSource for backward compatibility
-      const sourceId = this.config.imageSource || this.config.onlineImageSource || 'picsum';
-
-      // Get the image source plugin
-      const imageSource = getImageSource(sourceId);
-
-      if (!imageSource) {
-        console.error(`[wall-clock] Image source '${sourceId}' not found.`);
-        return [];
-      }
-
-      // Prepare the configuration for the image source
-      // Use imageConfig if available, fall back to onlineImageConfig for backward compatibility
-      const sourceConfig: ImageSourceConfig = {
-        ...imageSource.getDefaultConfig(),
-        ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
-      };
-
-      // Fetch image URLs from the image source
-      console.log(`[wall-clock] Fetching image URLs from ${imageSource.name} with config:`, sourceConfig);
-      // Always pass weather data if available, the image source will decide how to use it
-      const fetchedUrls = this.weatherData
-        ? await imageSource.fetchImages(sourceConfig, this.weatherData)
-        : await imageSource.fetchImages(sourceConfig);
-
-      if (fetchedUrls.length > 0) {
-        console.log(`[wall-clock] Successfully fetched ${fetchedUrls.length} image URLs from ${imageSource.name}`);
-        return fetchedUrls;
-      } else {
-        console.warn(`[wall-clock] Could not fetch any image URLs from ${imageSource.name}.`);
-        return [];
-      }
-    } catch (error) {
-      console.error('[wall-clock] Error in fetchOnlineImageUrls:', error);
-      return [];
-    }
-  }
-
-  private async fetchLocalImageUrls(): Promise<string[]> {
-    try {
-      // Get the local image source plugin
-      const imageSource = getImageSource('local');
-
-      if (!imageSource) {
-        console.error('[wall-clock] Local image source not found. This should not happen.');
-        return [];
-      }
-
-      // Prepare the configuration for the local image source
-      const sourceConfig: ImageSourceConfig = {
-        ...imageSource.getDefaultConfig(),
-      };
-
-      // If we have backgroundImages structure, use it
-      if (this.config.backgroundImages && this.config.backgroundImages.length > 0) {
-        sourceConfig.backgroundImages = this.config.backgroundImages;
-      } else {
-        // No background images configured
-        sourceConfig.images = [];
-      }
-
-
-      // Fetch image URLs from the local image source
-      console.log('[wall-clock] Fetching image URLs from Local Images source with config:', sourceConfig);
-
-      // Always pass weather data if available, the image source will decide how to use it
-      const fetchedUrls = this.weatherData
-        ? await imageSource.fetchImages(sourceConfig, this.weatherData)
-        : await imageSource.fetchImages(sourceConfig);
-
-      if (fetchedUrls.length > 0) {
-        console.log(`[wall-clock] Successfully fetched ${fetchedUrls.length} image URLs from Local Images source`);
-        return fetchedUrls;
-      } else {
-        console.warn('[wall-clock] No local image URLs found in configuration.');
-        return [];
-      }
-    } catch (error) {
-      console.error('[wall-clock] Error in fetchLocalImageUrls:', error);
-      return [];
-    }
-  }
 
   // Helper method to shuffle an array (Fisher-Yates algorithm)
   private shuffleArray(array: any[]): void {
@@ -354,6 +300,7 @@ export class WallClockCard extends LitElement {
       [array[i], array[j]] = [array[j], array[i]];
     }
   }
+
 
   private setupImageRotation(): void {
     // Clear any existing timers
@@ -404,30 +351,31 @@ export class WallClockCard extends LitElement {
       // Prepare the configuration for the Unsplash image source
       const sourceConfig: ImageSourceConfig = {
         ...imageSource.getDefaultConfig(),
-        ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
-        // Set count to 1 to fetch just one new image
-        count: 1
+        ...(this.config.imageConfig || this.config.onlineImageConfig || {})
       };
 
-      // Log the image fetch with weather information if available
+      // Get the current weather condition and time of day
+      let currentWeather: Weather = Weather.ClearSky;
+      let currentTimeOfDay: TimeOfDay = TimeOfDay.Day;
+
       if (this.weatherData && this.weatherData.current) {
-        console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig, 
-          'Weather:', {
-            condition: this.weatherData.current.condition,
-            temperature: Math.round(this.weatherData.current.temperature) + '°'
-          });
-      } else {
-        console.log('[wall-clock] Fetching new image from Unsplash with config:', sourceConfig);
+        // Use the conditionUnified property if available, otherwise use a default value
+        currentWeather = this.weatherData.current.conditionUnified || Weather.ClearSky;
+
+        // Determine time of day using the utility function
+        currentTimeOfDay = getCurrentTimeOfDay();
       }
 
-      // Fetch a single new image from Unsplash
-      const fetchedUrls = await imageSource.fetchImages(sourceConfig, this.weatherData);
+      // Log the image fetch with weather information
+      console.log(`[wall-clock] Fetching new image from Unsplash with weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
 
-      if (fetchedUrls.length > 0) {
-        console.log('[wall-clock] Successfully fetched new image from Unsplash');
+      // Get a single new image URL from Unsplash using GetNextImageUrl
+      const newImageUrl = await imageSource.GetNextImageUrl(sourceConfig, currentWeather, currentTimeOfDay);
+
+      if (newImageUrl) {
+        console.log(`[wall-clock] Successfully fetched new image from Unsplash: ${newImageUrl}`);
 
         // Create a new image status for the fetched image
-        const newImageUrl = fetchedUrls[0];
         const newImageStatus: ImageStatus = {
           url: newImageUrl,
           loaded: false,
@@ -853,7 +801,7 @@ export class WallClockCard extends LitElement {
         if (typeof img === 'string') {
           backgroundImages.push({
             url: img,
-            weather: 'all',
+            weather: Weather.All,
             timeOfDay: TimeOfDay.Unspecified
           });
         }
@@ -1300,7 +1248,7 @@ export class WallClockCard extends LitElement {
       }
 
       .transportation-on-demand-button:hover {
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(255, 255, 255, 0.4);
         transform: scale(1.1);
       }
 

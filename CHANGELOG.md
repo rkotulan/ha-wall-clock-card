@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.19.0
+
+- Refactored image providers for better performance and reliability
+  - Added GetNextImageUrl method to all image providers that takes weather and timeOfDay parameters
+  - Implemented caching in providers where appropriate
+  - Added cache clearing when weather or timeOfDay changes
+  - Added detailed logging for image parameters
+  - Modified sensor source to use direct entity state checking instead of subscriptions
+  - Improved image selection based on weather conditions and time of day
+  - Removed retry logic for image retrieval
+  - Removed fallback logic for image retrieval
+  - Images will now be retried in the next cycle according to the configured rotation interval
+  - Changed weather parameter from string to enum for better type safety and consistency
+  - Simplified Weather enum to include only the supported weather conditions: all, clear sky, clouds, rain, snow, mist
+  - Updated mapWeatherCondition methods to map thunderstorm and drizzle to rain
+  - Moved mapWeatherCondition method to be only inside the OpenWeatherMapProvider
+  - Extended WeatherData interface to include current.conditionUnified of type Weather
+  - Added image shuffling for local-source and sensor-source to display images in random order
+  - Centralized time of day determination logic into a single utility function
+  - Fixed issue with undefined weather data in sensor-source image filtering
+  - Added more detailed logging for weather data availability in sensor-source
+  - Added UI controls for setting weather conditions and time of day for local background images
+
 ## 1.18.6
 
 - Added support for additional European languages:

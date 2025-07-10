@@ -1,4 +1,4 @@
-import { ImageSource, ImageSourceConfig } from './image-source';
+import { ImageSource, ImageSourceConfig, TimeOfDay, Weather, getCurrentTimeOfDay } from './image-source';
 import { WeatherData } from '../weather-providers';
 
 /**
@@ -23,6 +23,12 @@ export class UnsplashSource implements ImageSource {
   readonly id = 'unsplash';
   readonly name = 'Unsplash';
   readonly description = 'Beautiful, free photos from Unsplash collections';
+
+  // Cache for GetNextImageUrl
+  private imageUrlCache: Map<string, string[]> = new Map();
+  private lastWeather: Weather | null = null;
+  private lastTimeOfDay: TimeOfDay | null = null;
+  private currentIndex: number = 0;
 
   // Collection IDs for different categories (these are popular collections on Unsplash)
   private readonly collections: Record<string, string[]> = {
@@ -277,18 +283,89 @@ export class UnsplashSource implements ImageSource {
    * Get the current time of day based on the current hour
    * @returns The current time of day
    */
-  private getCurrentTimeOfDay(): string {
-    const hour = new Date().getHours();
+  private getCurrentTimeOfDay(): TimeOfDay {
+    return getCurrentTimeOfDay();
+  }
 
-    if ((hour >= 5 && hour < 9) || (hour >= 17 && hour < 21)) {
-      return 'sunrise-sunset';
-    } else if (hour >= 9 && hour < 17) {
-      return 'day';
-    } else if (hour >= 21 || hour < 5) {
-      return 'night';
+  /**
+   * Get the next image URL from this source
+   * @param config Configuration for this image source
+   * @param weather Current weather condition
+   * @param timeOfDay Current time of day
+   * @returns Promise that resolves to an image URL
+   */
+  async GetNextImageUrl(config: UnsplashSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+    console.log(`[unsplash-source] GetNextImageUrl called with weather: ${weather}, timeOfDay: ${timeOfDay}`);
+
+    // Check if weather or timeOfDay has changed
+    if (this.lastWeather !== weather || this.lastTimeOfDay !== timeOfDay) {
+      console.log(`[unsplash-source] Weather or timeOfDay changed, clearing cache`);
+      this.imageUrlCache.clear();
+      this.currentIndex = 0;
+      this.lastWeather = weather;
+      this.lastTimeOfDay = timeOfDay;
     }
 
-    return 'day';
+    // Create a cache key from weather and timeOfDay
+    const cacheKey = `${weather}_${timeOfDay}`;
+
+    // Check if we have cached images for this weather and timeOfDay
+    if (!this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
+      // Create a category string from weather and timeOfDay
+      let category = config.category || '';
+
+      // Add weather and timeOfDay to the category if not already included
+      if (category) {
+        if (!category.toLowerCase().includes(weather.toString().toLowerCase())) {
+          category += `,${weather}`;
+        }
+        if (!category.toLowerCase().includes(timeOfDay.toString().toLowerCase())) {
+          category += `,${timeOfDay}`;
+        }
+      } else {
+        category = `${weather},${timeOfDay}`;
+      }
+
+      // Create a weather data object to pass to fetchImages
+      const weatherData = {
+        current: {
+          condition: weather.toString(),
+          temperature: 20 // Default temperature
+        }
+      };
+
+      // Fetch images using the existing method
+      const configWithCategory: UnsplashSourceConfig = {
+        ...config,
+        category
+      };
+
+      const fetchedUrls = await this.fetchImages(configWithCategory, weatherData as any);
+
+      // Cache the fetched images
+      this.imageUrlCache.set(cacheKey, fetchedUrls);
+      console.log(`[unsplash-source] Cached ${fetchedUrls.length} images for weather: ${weather}, timeOfDay: ${timeOfDay}`);
+    }
+
+    // Get the cached images
+    const cachedImages = this.imageUrlCache.get(cacheKey) || [];
+
+    // If no images, return empty string
+    if (cachedImages.length === 0) {
+      console.warn(`[unsplash-source] No images available for weather: ${weather}, timeOfDay: ${timeOfDay}`);
+      return '';
+    }
+
+    // Get the next image URL
+    const imageUrl = cachedImages[this.currentIndex];
+
+    // Increment the index for next time
+    this.currentIndex = (this.currentIndex + 1) % cachedImages.length;
+
+    // Log the parameters for which the image is returned
+    console.log(`[unsplash-source] Returning image for weather: ${weather}, timeOfDay: ${timeOfDay}, URL: ${imageUrl}`);
+
+    return imageUrl;
   }
 }
 

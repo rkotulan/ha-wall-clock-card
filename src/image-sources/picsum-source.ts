@@ -1,4 +1,4 @@
-import { ImageSource, ImageSourceConfig } from './image-source';
+import { ImageSource, ImageSourceConfig, TimeOfDay, Weather } from './image-source';
 
 /**
  * Configuration for the Picsum image source
@@ -35,6 +35,27 @@ export class PicsumSource implements ImageSource {
 
     console.log(`[picsum-source] Generated Picsum image URL: ${imageUrl}`);
     return [imageUrl];
+  }
+
+  /**
+   * Get the next image URL from this source
+   * @param config Configuration for this image source
+   * @param weather Current weather condition
+   * @param timeOfDay Current time of day
+   * @returns Promise that resolves to an image URL
+   */
+  async GetNextImageUrl(_config: PicsumSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+    console.log(`[picsum-source] GetNextImageUrl called with weather: ${weather}, timeOfDay: ${timeOfDay}`);
+
+    // Generate a URL with a timestamp to avoid caching
+    const timestamp = Date.now();
+    const seed = timestamp;
+    const imageUrl = `https://picsum.photos/seed/${seed}/1920/1080`;
+
+    // Log the parameters for which the image is returned
+    console.log(`[picsum-source] Returning image for weather: ${weather}, timeOfDay: ${timeOfDay}, URL: ${imageUrl}`);
+
+    return imageUrl;
   }
 
   /**

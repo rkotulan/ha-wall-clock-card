@@ -1,3 +1,5 @@
+import { Weather } from '../image-sources/image-source';
+
 /**
  * Interface for weather provider plugins
  * All weather provider plugins must implement this interface
@@ -17,6 +19,7 @@ export interface WeatherData {
   current: {
     temperature: number;
     condition: string;
+    conditionUnified?: Weather;
     icon: string;
     humidity?: number;
     windSpeed?: number;

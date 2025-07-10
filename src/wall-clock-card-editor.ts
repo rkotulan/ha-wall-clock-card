@@ -1,7 +1,7 @@
 import {LitElement, html, customElement, property, TemplateResult, CSSResult, css} from 'lit-element';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
-import {BackgroundImage, TimeOfDay} from './image-sources/image-source';
+import {BackgroundImage, TimeOfDay, Weather, FindAttributeInPath, ValidWeather, ValidTimeOfDay} from './image-sources/image-source';
 import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
@@ -150,7 +150,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 if (typeof img === 'string') {
                     backgroundImages.push({
                         url: img,
-                        weather: 'all',
+                        weather: Weather.All,
                         timeOfDay: TimeOfDay.Unspecified
                     });
                 }
@@ -407,7 +407,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             ...this._backgroundImages,
             {
                 url: '',
-                weather: 'all',
+                weather: Weather.All,
                 timeOfDay: TimeOfDay.Unspecified
             }
         ];
@@ -422,7 +422,31 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     private _updateBackgroundImage(index: number, updatedImage: Partial<BackgroundImage>): void {
         this._backgroundImages = this._backgroundImages.map((img, i) => {
             if (i === index) {
-                return {...img, ...updatedImage};
+                const updatedImg = {...img, ...updatedImage};
+
+                // If URL was updated and weather or timeOfDay are set to "all" or "unspecified",
+                // try to auto-detect them from the URL
+                if (updatedImage.url && updatedImg.url) {
+                    // Auto-detect weather if it's set to "all"
+                    if (updatedImg.weather === Weather.All) {
+                        const detectedWeather = FindAttributeInPath(updatedImg.url, ValidWeather);
+                        if (detectedWeather) {
+                            updatedImg.weather = detectedWeather as Weather;
+                            console.log(`[editor] Auto-detected weather: ${updatedImg.weather} from URL: ${updatedImg.url}`);
+                        }
+                    }
+
+                    // Auto-detect timeOfDay if it's set to "unspecified"
+                    if (updatedImg.timeOfDay === TimeOfDay.Unspecified) {
+                        const detectedTimeOfDay = FindAttributeInPath(updatedImg.url, ValidTimeOfDay);
+                        if (detectedTimeOfDay) {
+                            updatedImg.timeOfDay = detectedTimeOfDay as TimeOfDay;
+                            console.log(`[editor] Auto-detected timeOfDay: ${updatedImg.timeOfDay} from URL: ${updatedImg.url}`);
+                        }
+                    }
+                }
+
+                return updatedImg;
             }
             return img;
         });
@@ -506,19 +530,29 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
             .image-row {
                 display: flex;
-                margin-bottom: 8px;
+                margin-bottom: 16px;
                 align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
             }
 
             .image-url {
-                flex: 1;
-                margin-right: 8px;
+                flex: 1 1 calc(100% - 60px);
             }
 
             .image-actions {
                 flex: 0 0 40px;
                 text-align: center;
             }
+            
+            .image-weather {
+                flex: 1 1 45%;
+            }
+
+            .image-time {
+                flex: 1 1 45%;
+            }
+
 
             .weather-conditions {
                 margin-top: 10px;
@@ -1133,6 +1167,52 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 .path=${'M19,13H5V11H19V13Z'}
                                                 @click=${() => this._removeBackgroundImage(index)}
                                         ></ha-icon-button>
+                                    </div>
+                                    <div class="image-weather">
+                                        <ha-select
+                                                label="Weather Condition"
+                                                .value=${image.weather}
+                                                @click=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @closed=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @selected=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+                                                    this._updateBackgroundImage(index, {weather: target.value as Weather});
+                                                }}
+                                        >
+                                            ${Object.values(Weather).map(weather => html`
+                                                <mwc-list-item .value=${weather}>${weather}</mwc-list-item>
+                                            `)}
+                                        </ha-select>
+                                    </div>
+                                    <div class="image-time">
+                                        <ha-select
+                                                label="Time of Day"
+                                                .value=${image.timeOfDay}
+                                                @click=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @closed=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                }}
+                                                @selected=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+                                                    this._updateBackgroundImage(index, {timeOfDay: target.value as TimeOfDay});
+                                                }}
+                                        >
+                                            ${Object.values(TimeOfDay).map(timeOfDay => html`
+                                                <mwc-list-item .value=${timeOfDay}>${timeOfDay}</mwc-list-item>
+                                            `)}
+                                        </ha-select>
                                     </div>
                                 </div>
                             `)}

@@ -1,4 +1,5 @@
 import { WeatherProvider, WeatherProviderConfig, WeatherData } from './weather-provider';
+import { Weather } from '../image-sources/image-source';
 
 /**
  * Configuration for the OpenWeatherMap weather provider
@@ -53,9 +54,11 @@ export class OpenWeatherMapProvider implements WeatherProvider {
 
       // Process current weather data from the first forecast item
       const firstForecast = data.list[0];
+      const weatherCondition = firstForecast.weather[0].description;
       const current = {
         temperature: firstForecast.main.temp,
-        condition: firstForecast.weather[0].description,
+        condition: weatherCondition,
+        conditionUnified: this.mapWeatherCondition(weatherCondition),
         icon: this.getIconUrl(firstForecast.weather[0].icon),
         humidity: firstForecast.main.humidity,
         windSpeed: firstForecast.wind.speed,
@@ -150,6 +153,55 @@ export class OpenWeatherMapProvider implements WeatherProvider {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const index = Math.round(degrees / 45) % 8;
     return directions[index];
+  }
+
+  /**
+   * Map legacy weather condition to the new Weather enum
+   * @param condition The weather condition to map
+   * @returns The mapped weather condition
+   */
+  public mapWeatherCondition(condition: string): Weather {
+    // Convert to lowercase for case-insensitive comparison
+    const lowerCondition = condition.toLowerCase();
+
+    // Map legacy conditions to new ones
+    switch (lowerCondition) {
+      case 'clear':
+        return Weather.ClearSky;
+      // Map all cloud conditions to 'clouds'
+      case 'few clouds':
+      case 'scattered clouds':
+      case 'broken clouds':
+        return Weather.Clouds;
+      case 'clouds':
+        return Weather.Clouds; // Now maps directly to 'clouds'
+      case 'fog':
+      case 'haze':
+      case 'dust':
+      case 'smoke':
+        return Weather.Mist; // Map all these to mist
+      // Map all rain-related conditions to 'rain'
+      case 'drizzle':
+      case 'shower rain':
+      case 'thunderstorm':
+      case 'light rain':
+        return Weather.Rain;
+      case 'tornado':
+      case 'windy':
+        return Weather.All; // No direct mapping, use 'all'
+      case 'snow':
+        return Weather.Snow;
+      case 'mist':
+        return Weather.Mist;
+      case 'clear sky':
+        return Weather.ClearSky;
+      case 'rain':
+        return Weather.Rain;
+      case 'all':
+        return Weather.All;
+      default:
+        return Weather.All; // Default to 'all' for unknown conditions
+    }
   }
 }
 
