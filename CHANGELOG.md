@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.19.8
+
+- Enhanced language handling with integrated locale information
+  - Added `locale` property to the `LanguageDefinition` interface
+  - Updated `SUPPORTED_LANGUAGES` to include locale information for each language
+  - Simplified `getLocaleForLanguage` function to use the locale property from `SUPPORTED_LANGUAGES`
+  - Improved code maintainability with a single source of truth for language-related data
+  - Reduced code complexity by eliminating the switch statement
+
+## 1.19.7
+
+- Consolidated date and time formatting functions
+  - Added `getLocaleForLanguage` function to map language codes to locale codes
+  - Added explicit 'en' case to language-to-locale mapping
+  - Created new helper functions for date and time formatting
+  - Improved consistency of date and time formatting across the application
+  - Enhanced internationalization support
+
+## 1.19.6
+
+- Added English language support for weather conditions
+  - Added translations for all weather conditions in English
+  - Updated language selection to include English option
+  - Enhanced internationalization support
+
 ## 1.19.5
 
 - Added 60% transparency to the AM/PM indicator for improved visual appearance

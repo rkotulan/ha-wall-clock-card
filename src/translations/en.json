@@ -1,0 +1,38 @@
+{
+  "common": {
+    "title": "Weather",
+    "description": "Current weather and forecast",
+    "settings": "Weather settings"
+  },
+  "conditions": {
+    "all": "All weather conditions",
+    "clouds": "Clouds",
+    "clear_sky": "Clear sky",
+    "few_clouds": "Few clouds",
+    "scattered_clouds": "Scattered clouds",
+    "broken_clouds": "Broken clouds",
+    "shower_rain": "Shower rain",
+    "rain": "Rain",
+    "thunderstorm": "Thunderstorm",
+    "snow": "Snow",
+    "mist": "Mist",
+    "light_rain": "Light rain"
+  },
+  "forecast": {
+    "title": "Forecast",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "next_days": "Next days"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

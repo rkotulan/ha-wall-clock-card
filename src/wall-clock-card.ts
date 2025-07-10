@@ -8,7 +8,7 @@ import {
   TransportationDeparture,
   getTransportationProvider 
 } from './transportation-providers';
-import { translate, loadTranslations } from './lokalify';
+import { translate, loadTranslations, formatDate, formatTime, formatDateTime } from './lokalify';
 import './wall-clock-card-editor';
 
 // Interface for sensor configuration
@@ -997,29 +997,24 @@ export class WallClockCard extends LitElement {
 
   updateTime(): void {
     const now = new Date();
-
-    // Create time format options with time zone if available
-    const timeFormatOptions = { ...this.config.timeFormat };
-    if (this.config.timeZone) {
-      timeFormatOptions.timeZone = this.config.timeZone;
-    }
+    const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+    const timeZone = this.config.timeZone;
 
     // Format time with configurable format
-    this.currentTime = now.toLocaleTimeString(this.config.language || [], timeFormatOptions);
+    this.currentTime = formatTime(now, language, this.config.timeFormat || {}, timeZone);
 
     // Set hours, minutes, and seconds separately
     // Use the time in the specified time zone
     let hours, minutes, seconds;
 
-    if (this.config.timeZone) {
+    if (timeZone) {
       // Get time components in the specified time zone
-      const timeString = now.toLocaleString(this.config.language || [], { 
+      const timeString = formatDateTime(now, language, { 
         hour: 'numeric', 
         minute: 'numeric', 
         second: 'numeric', 
-        hour12: false,
-        timeZone: this.config.timeZone 
-      });
+        hour12: false
+      }, timeZone);
 
       // Parse the time string (format: HH:MM:SS)
       const timeParts = timeString.split(':');
@@ -1048,14 +1043,8 @@ export class WallClockCard extends LitElement {
     this.minutes = minutes.toString().padStart(2, '0');
     this.seconds = seconds.toString().padStart(2, '0');
 
-    // Create date format options with time zone if available
-    const dateFormatOptions = { ...this.config.dateFormat };
-    if (this.config.timeZone) {
-      dateFormatOptions.timeZone = this.config.timeZone;
-    }
-
     // Format date with configurable format
-    let formattedDate = now.toLocaleDateString(this.config.language || [], dateFormatOptions);
+    let formattedDate = formatDate(now, language, this.config.dateFormat || {}, timeZone);
 
     // Add comma after the day if it's not already there
     // This regex looks for a number (the day) followed by a space and then a letter (start of month)
@@ -1803,21 +1792,8 @@ export class WallClockCard extends LitElement {
     // Get language from config, or Home Assistant language, or default to Czech
     const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
 
-    // Map language code to locale for toLocaleDateString
-    let locale: string;
-    switch (language) {
-      case 'cs': locale = 'cs-CZ'; break; // Czech
-      case 'de': locale = 'de-DE'; break; // German
-      case 'sk': locale = 'sk-SK'; break; // Slovak
-      case 'pl': locale = 'pl-PL'; break; // Polish
-      case 'es': locale = 'es-ES'; break; // Spanish
-      case 'fr': locale = 'fr-FR'; break; // French
-      case 'ru': locale = 'ru-RU'; break; // Russian
-      default: locale = 'en-US'; break;   // Default to English
-    }
-
     // Format: "Mon", "Tue", etc.
-    return date.toLocaleDateString(locale, { weekday: 'short' });
+    return formatDate(date, language, { weekday: 'short' });
   }
 }
 

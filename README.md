@@ -36,7 +36,7 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Customizable weather section title
   - Weather data automatically updates at configurable intervals (default: 30 minutes)
   - Supports OpenWeatherMap API (free tier)
-  - Localization for weather conditions in multiple languages (Czech, German, Slovak, Polish, Spanish, French, Russian)
+  - Localization for weather conditions in multiple languages (English, Czech, German, Slovak, Polish, Spanish, French, Russian)
   - Simplified weather categories for better readability
 
 - **Background images**:
