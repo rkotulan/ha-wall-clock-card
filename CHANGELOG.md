@@ -2,7 +2,7 @@
 
 ## 1.19.5
 
-- Added 50% transparency to the AM/PM indicator for improved visual appearance
+- Added 60% transparency to the AM/PM indicator for improved visual appearance
   - Modified the CSS for the AM/PM text to have 50% opacity
   - Maintains readability while making the indicator less visually dominant
 
