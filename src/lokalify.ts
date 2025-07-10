@@ -28,26 +28,38 @@ import elTranslations from './translations/el.json';
 import huTranslations from './translations/hu.json';
 import roTranslations from './translations/ro.json';
 
-// Map of language codes to translations
-const embeddedTranslations: { [language: string]: Translations } = {
-  cs: csTranslations,
-  de: deTranslations,
-  sk: skTranslations,
-  pl: plTranslations,
-  es: esTranslations,
-  fr: frTranslations,
-  ru: ruTranslations,
-  it: itTranslations,
-  pt: ptTranslations,
-  nl: nlTranslations,
-  sv: svTranslations,
-  no: noTranslations,
-  da: daTranslations,
-  fi: fiTranslations,
-  el: elTranslations,
-  hu: huTranslations,
-  ro: roTranslations
-};
+// Unified language definition with code, label, and translations
+export interface LanguageDefinition {
+  code: string;
+  label: string;
+  translations: Translations;
+}
+
+// Single source of truth for all language-related data
+export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
+  { code: 'cs', label: 'Czech (Čeština)', translations: csTranslations },
+  { code: 'da', label: 'Danish (Dansk)', translations: daTranslations },
+  { code: 'de', label: 'German (Deutsch)', translations: deTranslations },
+  { code: 'el', label: 'Greek (Ελληνικά)', translations: elTranslations },
+  { code: 'es', label: 'Spanish (Español)', translations: esTranslations },
+  { code: 'fi', label: 'Finnish (Suomi)', translations: fiTranslations },
+  { code: 'fr', label: 'French (Français)', translations: frTranslations },
+  { code: 'hu', label: 'Hungarian (Magyar)', translations: huTranslations },
+  { code: 'it', label: 'Italian (Italiano)', translations: itTranslations },
+  { code: 'nl', label: 'Dutch (Nederlands)', translations: nlTranslations },
+  { code: 'no', label: 'Norwegian (Norsk)', translations: noTranslations },
+  { code: 'pl', label: 'Polish (Polski)', translations: plTranslations },
+  { code: 'pt', label: 'Portuguese (Português)', translations: ptTranslations },
+  { code: 'ro', label: 'Romanian (Română)', translations: roTranslations },
+  { code: 'ru', label: 'Russian (Русский)', translations: ruTranslations },
+  { code: 'sk', label: 'Slovak (Slovenčina)', translations: skTranslations },
+  { code: 'sv', label: 'Swedish (Svenska)', translations: svTranslations },
+];
+
+// Map of language codes to translations (derived from SUPPORTED_LANGUAGES)
+const embeddedTranslations: { [language: string]: Translations } = Object.fromEntries(
+  SUPPORTED_LANGUAGES.map(lang => [lang.code, lang.translations])
+);
 
 // Cache for loaded translations by language
 let loadedTranslations: { [language: string]: Translations } = {};
@@ -76,6 +88,7 @@ export async function loadLanguageTranslations(language: string): Promise<void> 
  * @returns A promise that resolves when all translations are loaded
  */
 export async function loadTranslations(): Promise<void> {
+  console.log(`[lokalify] Loading all translations`);
   const languages = getSupportedLanguages();
   const promises = languages.map(lang => loadLanguageTranslations(lang));
   await Promise.all(promises);
@@ -138,7 +151,7 @@ export function translate(key: string, language: string, defaultValue: string | 
  * @returns An array of language codes
  */
 export function getSupportedLanguages(): string[] {
-  return ['cs', 'de', 'sk', 'pl', 'es', 'fr', 'ru', 'it', 'pt', 'nl', 'sv', 'no', 'da', 'fi', 'el', 'hu', 'ro'];
+  return SUPPORTED_LANGUAGES.map(lang => lang.code);
 }
 
 /**
@@ -146,23 +159,8 @@ export function getSupportedLanguages(): string[] {
  * @returns An array of language options with value and label
  */
 export function getLanguageOptions(): { value: string, label: string }[] {
-  return [
-    {value: 'cs', label: 'Czech (Čeština)'},
-    {value: 'da', label: 'Danish (Dansk)'},
-    {value: 'de', label: 'German (Deutsch)'},
-    {value: 'el', label: 'Greek (Ελληνικά)'},
-    {value: 'es', label: 'Spanish (Español)'},
-    {value: 'fi', label: 'Finnish (Suomi)'},
-    {value: 'fr', label: 'French (Français)'},
-    {value: 'hu', label: 'Hungarian (Magyar)'},
-    {value: 'it', label: 'Italian (Italiano)'},
-    {value: 'nl', label: 'Dutch (Nederlands)'},
-    {value: 'no', label: 'Norwegian (Norsk)'},
-    {value: 'pl', label: 'Polish (Polski)'},
-    {value: 'pt', label: 'Portuguese (Português)'},
-    {value: 'ro', label: 'Romanian (Română)'},
-    {value: 'ru', label: 'Russian (Русский)'},
-    {value: 'sk', label: 'Slovak (Slovenčina)'},
-    {value: 'sv', label: 'Swedish (Svenska)'},
-  ];
+  return SUPPORTED_LANGUAGES.map(lang => ({
+    value: lang.code,
+    label: lang.label
+  }));
 }

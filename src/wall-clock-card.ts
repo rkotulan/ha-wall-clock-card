@@ -701,6 +701,8 @@ export class WallClockCard extends LitElement {
   private async fetchWeatherData(): Promise<void> {
     if (this.weatherLoading || !this.config.showWeather) return;
 
+    console.log(`[wall-clock] Begin fetch weather data`);
+
     this.weatherLoading = true;
     this.weatherError = false;
     this.weatherErrorMessage = '';
@@ -1003,7 +1005,7 @@ export class WallClockCard extends LitElement {
     }
 
     // Format time with configurable format
-    this.currentTime = now.toLocaleTimeString([], timeFormatOptions);
+    this.currentTime = now.toLocaleTimeString(this.config.language || [], timeFormatOptions);
 
     // Set hours, minutes, and seconds separately
     // Use the time in the specified time zone
@@ -1011,7 +1013,7 @@ export class WallClockCard extends LitElement {
 
     if (this.config.timeZone) {
       // Get time components in the specified time zone
-      const timeString = now.toLocaleString('en-US', { 
+      const timeString = now.toLocaleString(this.config.language || [], { 
         hour: 'numeric', 
         minute: 'numeric', 
         second: 'numeric', 
@@ -1053,7 +1055,7 @@ export class WallClockCard extends LitElement {
     }
 
     // Format date with configurable format
-    let formattedDate = now.toLocaleDateString([], dateFormatOptions);
+    let formattedDate = now.toLocaleDateString(this.config.language || [], dateFormatOptions);
 
     // Add comma after the day if it's not already there
     // This regex looks for a number (the day) followed by a space and then a letter (start of month)
@@ -1153,8 +1155,7 @@ export class WallClockCard extends LitElement {
         font-weight: 400;
         line-height: 1;
         text-transform: lowercase;
-        margin-top: 0.2em;
-        opacity: 0.5;
+        opacity: 0.6;
       }
 
       .date {
