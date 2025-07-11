@@ -181,18 +181,32 @@ export function getLocaleForLanguage(language: string): string {
   return langDef?.locale || 'en-US';
 }
 
+// Define a custom type that extends Intl.DateTimeFormatOptions to include 'hidden'
+export type ExtendedDateTimeFormatOptions = Omit<
+    Intl.DateTimeFormatOptions,
+    'weekday' | 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second'
+> & {
+  weekday?: 'long' | 'short' | 'narrow' | 'hidden';
+  year?: 'numeric' | '2-digit' | 'hidden';
+  month?: 'numeric' | '2-digit' | 'long' | 'short' | 'narrow' | 'hidden';
+  day?: 'numeric' | '2-digit' | 'hidden';
+  hour?: 'numeric' | '2-digit' | 'hidden';
+  minute?: 'numeric' | '2-digit' | 'hidden';
+  second?: 'numeric' | '2-digit' | 'hidden';
+};
+
 /**
  * Format a date for display using the specified language and options
  * @param date The date to format
  * @param language The language code (cs, de, sk, pl, es, fr, ru, en, etc.)
- * @param options The Intl.DateTimeFormatOptions to use for formatting
+ * @param options The ExtendedDateTimeFormatOptions to use for formatting
  * @param timeZone Optional time zone to use for formatting
  * @returns The formatted date string
  */
 export function formatDate(
-  date: Date, 
-  language: string, 
-  options: Intl.DateTimeFormatOptions = {}, 
+  date: Date,
+  language: string,
+  options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
   // Create a copy of the options to avoid modifying the original
@@ -203,25 +217,74 @@ export function formatDate(
     formatOptions.timeZone = timeZone;
   }
 
+  // Convert 'hidden' values to undefined
+  // Handle each property that might be 'hidden' explicitly
+  if (formatOptions.weekday === 'hidden') formatOptions.weekday = undefined;
+  if (formatOptions.year === 'hidden') formatOptions.year = undefined;
+  if (formatOptions.month === 'hidden') formatOptions.month = undefined;
+  if (formatOptions.day === 'hidden') formatOptions.day = undefined;
+
+  // Check if all date components are hidden or undefined
+  const allDateComponentsHidden = 
+    (formatOptions.weekday === undefined ) &&
+    (formatOptions.year === undefined) &&
+    (formatOptions.month === undefined ) &&
+    (formatOptions.day === undefined);
+
+  // If all date components are hidden, return an empty string
+  if (allDateComponentsHidden) {
+    return '';
+  }
+
   // Get the locale for the language
   const locale = getLocaleForLanguage(language);
 
-  // Format the date
-  return date.toLocaleDateString(locale, formatOptions);
+  // Special handling for month: short to ensure it's displayed as a name, not a number
+  if (formatOptions.month === 'short') {
+    // Create a formatter specifically for the month
+    const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short', timeZone });
+    const monthName = monthFormatter.format(date);
+
+    // Create a formatter for the rest of the date parts
+    const otherOptions = { ...formatOptions };
+    delete otherOptions.month; // Remove month from options since we'll handle it separately
+
+    // Format the date without the month
+    let formattedDate = date.toLocaleDateString(locale, otherOptions as Intl.DateTimeFormatOptions);
+
+    // If day is specified as 2-digit, we need to ensure the month is properly placed
+    if (formatOptions.day === '2-digit') {
+      // Replace any numeric month (like "7" in "11.7.") with the short month name
+      formattedDate = formattedDate.replace(/(\d+)[\.\/\-](\d+)\.?/, `$1. ${monthName}`);
+
+      // If the replacement didn't work (no numeric month found), just append the month
+      if (!formattedDate.includes(monthName)) {
+        formattedDate = `${formattedDate} ${monthName}`;
+      }
+    } else {
+      // For other formats, just use the standard formatter
+      formattedDate = date.toLocaleDateString(locale, formatOptions as Intl.DateTimeFormatOptions);
+    }
+
+    return formattedDate;
+  }
+
+  // For all other cases, use the standard formatter
+  return date.toLocaleDateString(locale, formatOptions as Intl.DateTimeFormatOptions);
 }
 
 /**
  * Format a time for display using the specified language and options
  * @param date The date to format
  * @param language The language code (cs, de, sk, pl, es, fr, ru, en, etc.)
- * @param options The Intl.DateTimeFormatOptions to use for formatting
+ * @param options The ExtendedDateTimeFormatOptions to use for formatting
  * @param timeZone Optional time zone to use for formatting
  * @returns The formatted time string
  */
 export function formatTime(
-  date: Date, 
-  language: string, 
-  options: Intl.DateTimeFormatOptions = {}, 
+  date: Date,
+  language: string,
+  options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
   // Create a copy of the options to avoid modifying the original
@@ -230,27 +293,43 @@ export function formatTime(
   // Add time zone if provided
   if (timeZone) {
     formatOptions.timeZone = timeZone;
+  }
+
+  // Convert 'hidden' values to undefined
+  // Handle each property that might be 'hidden' explicitly
+  if (formatOptions.hour === 'hidden') formatOptions.hour = undefined;
+  if (formatOptions.minute === 'hidden') formatOptions.minute = undefined;
+  if (formatOptions.second === 'hidden') formatOptions.second = undefined;
+
+  const allTimeComponentsHidden =
+      (formatOptions.hour === undefined ) &&
+      (formatOptions.minute === undefined) &&
+      (formatOptions.second === undefined );
+
+  // If all date components are hidden, return an empty string
+  if (allTimeComponentsHidden) {
+    return '';
   }
 
   // Get the locale for the language
   const locale = getLocaleForLanguage(language);
 
   // Format the time
-  return date.toLocaleTimeString(locale, formatOptions);
+  return date.toLocaleTimeString(locale, formatOptions as Intl.DateTimeFormatOptions);
 }
 
 /**
  * Format a date and time for display using the specified language and options
  * @param date The date to format
  * @param language The language code (cs, de, sk, pl, es, fr, ru, en, etc.)
- * @param options The Intl.DateTimeFormatOptions to use for formatting
+ * @param options The ExtendedDateTimeFormatOptions to use for formatting
  * @param timeZone Optional time zone to use for formatting
  * @returns The formatted date and time string
  */
 export function formatDateTime(
-  date: Date, 
-  language: string, 
-  options: Intl.DateTimeFormatOptions = {}, 
+  date: Date,
+  language: string,
+  options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
   // Create a copy of the options to avoid modifying the original
@@ -261,9 +340,33 @@ export function formatDateTime(
     formatOptions.timeZone = timeZone;
   }
 
+  // Convert 'hidden' values to undefined
+  // Handle each property that might be 'hidden' explicitly
+  if (formatOptions.weekday === 'hidden') formatOptions.weekday = undefined;
+  if (formatOptions.year === 'hidden') formatOptions.year = undefined;
+  if (formatOptions.month === 'hidden') formatOptions.month = undefined;
+  if (formatOptions.day === 'hidden') formatOptions.day = undefined;
+  if (formatOptions.hour === 'hidden') formatOptions.hour = undefined;
+  if (formatOptions.minute === 'hidden') formatOptions.minute = undefined;
+  if (formatOptions.second === 'hidden') formatOptions.second = undefined;
+
+  const allDateTimeComponentsHidden =
+      (formatOptions.weekday === undefined ) &&
+      (formatOptions.year === undefined) &&
+      (formatOptions.month === undefined ) &&
+      (formatOptions.day === undefined) &&
+      (formatOptions.hour === undefined ) &&
+      (formatOptions.minute === undefined) &&
+      (formatOptions.second === undefined );
+
+  // If all date time components are hidden, return an empty string
+  if (allDateTimeComponentsHidden) {
+    return '';
+  }
+
   // Get the locale for the language
   const locale = getLocaleForLanguage(language);
 
   // Format the date and time
-  return date.toLocaleString(locale, formatOptions);
+  return date.toLocaleString(locale, formatOptions as Intl.DateTimeFormatOptions);
 }

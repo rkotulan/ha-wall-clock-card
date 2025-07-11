@@ -15,7 +15,7 @@ import {
   TransportationDeparture,
   getTransportationProvider 
 } from './transportation-providers';
-import { translate, loadTranslations, formatDate, formatTime, formatDateTime } from './lokalify';
+import { translate, loadTranslations, formatDate, formatTime, formatDateTime, ExtendedDateTimeFormatOptions } from './lokalify';
 import './wall-clock-card-editor';
 
 // Interface for sensor configuration
@@ -39,8 +39,8 @@ interface ImageStatus {
 }
 
 export interface WallClockConfig {
-  timeFormat?: Intl.DateTimeFormatOptions;
-  dateFormat?: Intl.DateTimeFormatOptions;
+  timeFormat?: ExtendedDateTimeFormatOptions;
+  dateFormat?: ExtendedDateTimeFormatOptions;
   backgroundOpacity?: number;
   imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
   imageConfig?: ImageSourceConfig; // Configuration for the image source
@@ -826,7 +826,7 @@ export class WallClockCard extends LitElement {
     }
 
     // Ensure timeFormat is properly processed
-    let timeFormat: Intl.DateTimeFormatOptions = {
+    let timeFormat: ExtendedDateTimeFormatOptions = {
       hour: '2-digit' as const,
       minute: '2-digit' as const,
       second: '2-digit' as const,
@@ -841,10 +841,15 @@ export class WallClockCard extends LitElement {
       if (config.timeFormat.hour12 !== undefined) {
         timeFormat.hour12 = Boolean(config.timeFormat.hour12);
       }
+
+      // Explicitly handle the case when second is undefined
+      if (config.timeFormat.second === undefined) {
+        timeFormat.second = undefined;
+      }
     }
 
     // Ensure dateFormat is properly processed
-    let dateFormat: Intl.DateTimeFormatOptions = {
+    let dateFormat: ExtendedDateTimeFormatOptions = {
       weekday: 'long' as const,
       year: 'numeric' as const,
       month: 'long' as const,
@@ -1041,9 +1046,10 @@ export class WallClockCard extends LitElement {
       this.ampm = ''; // Clear AM/PM for 24-hour format
     }
 
-    this.hours = hours.toString().padStart(2, '0');
-    this.minutes = minutes.toString().padStart(2, '0');
-    this.seconds = seconds.toString().padStart(2, '0');
+    // Only pad with leading zeros if the format is '2-digit'
+    this.hours = this.config.timeFormat?.hour === '2-digit' ? hours.toString().padStart(2, '0') : hours.toString();
+    this.minutes = this.config.timeFormat?.minute === '2-digit' ? minutes.toString().padStart(2, '0') : minutes.toString();
+    this.seconds = this.config.timeFormat?.second === '2-digit' ? seconds.toString().padStart(2, '0') : seconds.toString();
 
     // Format date with configurable format
     let formattedDate = formatDate(now, language, this.config.dateFormat || {}, timeZone);
@@ -1132,6 +1138,7 @@ export class WallClockCard extends LitElement {
         align-items: center;
         margin-left: 0.1em;
         margin-top: 0.1em;
+        justify-content: flex-start;
       }
 
       .seconds {
@@ -1147,6 +1154,11 @@ export class WallClockCard extends LitElement {
         line-height: 1;
         text-transform: lowercase;
         opacity: 0.6;
+      }
+
+      /* Style for AM/PM when seconds are not displayed */
+      .ampm-only {
+        margin-top: 1.6em;
       }
 
       .date {
@@ -1566,10 +1578,16 @@ export class WallClockCard extends LitElement {
         }
         <div class="clock" style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
           <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
-          <div class="seconds-container">
-            <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
-            ${this.ampm ? html`<span class="ampm" style="color: ${this.config.fontColor};">${this.ampm}</span>` : ''}
-          </div>
+          ${this.config.timeFormat?.second !== undefined && this.config.timeFormat?.second !== 'hidden' ? html`
+            <div class="seconds-container">
+              <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
+              ${this.ampm ? html`<span class="ampm" style="color: ${this.config.fontColor};">${this.ampm}</span>` : ''}
+            </div>
+          ` : this.ampm ? html`
+            <div class="seconds-container">
+              <span class="ampm ampm-only" style="color: ${this.config.fontColor};">${this.ampm}</span>
+            </div>
+          ` : ''}
         </div>
         <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
         ${this.config.transportation && this.config.enableTransportation !== false ? 

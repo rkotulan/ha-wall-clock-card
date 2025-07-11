@@ -6,7 +6,7 @@ import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import { getLanguageOptions } from './lokalify';
+import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './lokalify';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -41,7 +41,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         second: [
             {value: 'numeric', label: 'Numeric'},
             {value: '2-digit', label: '2-digit'},
-            {value: undefined, label: 'Hidden'},
+            {value: 'hidden', label: 'Hidden'},
         ],
     };
 
@@ -51,7 +51,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             {value: 'long', label: 'Long (Monday)'},
             {value: 'short', label: 'Short (Mon)'},
             {value: 'narrow', label: 'Narrow (M)'},
-            {value: undefined, label: 'Hidden'},
+            {value: 'hidden', label: 'Hidden'},
         ],
         month: [
             {value: 'long', label: 'Long (January)'},
@@ -59,17 +59,17 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             {value: 'narrow', label: 'Narrow (J)'},
             {value: 'numeric', label: 'Numeric (1)'},
             {value: '2-digit', label: '2-digit (01)'},
-            {value: undefined, label: 'Hidden'},
+            {value: 'hidden', label: 'Hidden'},
         ],
         day: [
             {value: 'numeric', label: 'Numeric (1)'},
             {value: '2-digit', label: '2-digit (01)'},
-            {value: undefined, label: 'Hidden'},
+            {value: 'hidden', label: 'Hidden'},
         ],
         year: [
-            {value: 'numeric', label: 'Numeric (2023)'},
-            {value: '2-digit', label: '2-digit (23)'},
-            {value: undefined, label: 'Hidden'},
+            {value: 'numeric', label: 'Numeric (2025)'},
+            {value: '2-digit', label: '2-digit (25)'},
+            {value: 'hidden', label: 'Hidden'},
         ],
     };
 
@@ -159,14 +159,27 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             wallClockConfig.backgroundImages = backgroundImages;
         }
 
+        // Create a default timeFormat
+        let timeFormat: ExtendedDateTimeFormatOptions = {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+
+        // If timeFormat is provided in the config, merge it with the default
+        if (wallClockConfig.timeFormat) {
+            timeFormat = { ...timeFormat, ...wallClockConfig.timeFormat };
+
+            // Explicitly handle the case when second is undefined
+            if (wallClockConfig.timeFormat.second === undefined) {
+                timeFormat.second = undefined;
+            }
+        }
+
         this._config = {
             ...wallClockConfig,
-            timeFormat: wallClockConfig.timeFormat || {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            },
+            timeFormat,
             dateFormat: wallClockConfig.dateFormat || {
                 weekday: 'long',
                 year: 'numeric',
@@ -811,7 +824,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <div class="value">
                                 <ha-select
                                         label="Second Display"
-                                        .value=${this._config.timeFormat?.second || '2-digit'}
+                                        .value=${this._config.timeFormat?.second === undefined ? 'undefined' : this._config.timeFormat?.second}
                                         @click=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
                                         }}
@@ -827,7 +840,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             // Update the new config
                                             newConfig.timeFormat = {
                                                 ...newConfig.timeFormat,
-                                                second: (target.value === 'undefined' ? undefined : target.value) as "numeric" | "2-digit" | undefined
+                                                second: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
                                             };
 
                                             // Update the local config reference
@@ -875,7 +888,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             // Update the new config
                                             newConfig.dateFormat = {
                                                 ...newConfig.dateFormat,
-                                                weekday: (target.value === 'undefined' ? undefined : target.value) as "long" | "short" | "narrow" | undefined
+                                                weekday: (target.value === 'undefined' ? 'hidden' : target.value) as "long" | "short" | "narrow" | "hidden"
                                             };
 
                                             // Update the local config reference
@@ -917,7 +930,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             // Update the new config
                                             newConfig.dateFormat = {
                                                 ...newConfig.dateFormat,
-                                                month: (target.value === 'undefined' ? undefined : target.value) as "numeric" | "2-digit" | "long" | "short" | "narrow" | undefined
+                                                month: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "long" | "short" | "narrow" | "hidden"
                                             };
 
                                             // Update the local config reference
@@ -943,7 +956,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <div class="value">
                                 <ha-select
                                         label="Day Display"
-                                        .value=${this._config.dateFormat?.day || 'numeric'}
+                                        .value=${this._config.dateFormat?.day === undefined ? 'undefined' : this._config.dateFormat?.day}
                                         @click=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
                                         }}
@@ -959,7 +972,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             // Update the new config
                                             newConfig.dateFormat = {
                                                 ...newConfig.dateFormat,
-                                                day: (target.value === 'undefined' ? undefined : target.value) as "numeric" | "2-digit" | undefined
+                                                day: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
                                             };
 
                                             // Update the local config reference
@@ -1001,7 +1014,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             // Update the new config
                                             newConfig.dateFormat = {
                                                 ...newConfig.dateFormat,
-                                                year: (target.value === 'undefined' ? undefined : target.value) as "numeric" | "2-digit" | undefined
+                                                year: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
                                             };
 
                                             // Update the local config reference

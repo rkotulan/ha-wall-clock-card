@@ -1,5 +1,23 @@
 # Changelog
 
+
+## 1.21.0
+
+### Breaking Changes
+- **Refactored date and time formatting system**: The date and time formatting system has been completely overhauled to improve reliability and consistency across different languages and locales. This may require adjustments to your existing configuration.
+
+### What's Changed
+- Improved date and time formatting system
+  - Fixed issue where seconds were displayed when set to 'hidden'
+  - Improved handling of 'hidden' format in the date and time formatting system
+  - Ensured consistent behavior across all date and time formats
+- Added Jest testing framework for improved code quality and reliability
+  - Implemented comprehensive tests for date and time formatting functions
+  - Added test configuration with TypeScript support
+  - Created test files for lokalify module
+  - Added npm test script for easy test execution
+  - Improved development workflow with automated testing
+
 ## 1.20.0
 
 - Refactored image source system for better maintainability and extensibility

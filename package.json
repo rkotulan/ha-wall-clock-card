@@ -1,13 +1,14 @@
 {
   "name": "wall-clock-card",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "A Wall Clock Card for Home Assistant's Lovelace UI that displays a clock with seconds and date",
   "main": "dist/wall-clock-card.js",
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch --mode=development",
     "update-card-tools": "npm uninstall card-tools && npm install thomasloven/lovelace-card-tools",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "jest"
   },
   "keywords": [
     "home-assistant",
@@ -27,6 +28,9 @@
     "ts-loader": "^9.4.2",
     "@types/node": "^18.15.0",
     "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "webpack-cli": "^4.9.2",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "@types/jest": "^29.5.0"
   }
 }

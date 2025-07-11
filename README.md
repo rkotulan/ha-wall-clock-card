@@ -497,6 +497,22 @@ When `imageSource` is set to an online source like 'picsum', the component will 
 - `npm run build` - Build the component
 - `npm run watch` - Watch for changes and rebuild automatically
 - `npm run type-check` - Run TypeScript type checking without building
+- `npm test` - Run Jest tests
+
+### Testing
+
+This project uses Jest for testing. The test files are in the `tests` directory with `.test.ts` extension. The Jest configuration is in `jest.config.js`.
+
+To run the tests:
+
+```bash
+npm test
+```
+
+The tests cover various aspects of the code, including:
+- Date and time formatting functions
+- Localization functionality
+- Basic component functionality
 
 ### TypeScript
 
