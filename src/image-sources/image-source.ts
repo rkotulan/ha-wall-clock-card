@@ -1,5 +1,3 @@
-import { WeatherData } from '../weather-providers';
-
 /**
  * Time of day enumeration
  */
@@ -125,10 +123,11 @@ export interface ImageSource {
   /**
    * Fetch images from this source
    * @param config Configuration for this image source
-   * @param weatherData Optional weather data to use for selecting images
+   * @param weather Optional weather data to use for selecting images
+   * @param timeOfDay Optional time of day to use for selecting images
    * @returns Promise that resolves to an array of image URLs
    */
-  fetchImages(config: ImageSourceConfig, weatherData?: WeatherData): Promise<string[]>;
+  fetchImages(config: ImageSourceConfig,  weather: Weather, timeOfDay: TimeOfDay): Promise<string[]>;
 
   /**
    * Get the next image URL from this source

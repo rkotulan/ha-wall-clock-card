@@ -2,6 +2,8 @@
 
 A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
 
+**Current Version: 1.20.0**
+
 ![Wall Clock Card](images/showcase-01.png)
 
 ## Our Story
@@ -48,6 +50,11 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Automatic preloading for smooth transitions
 
 - **Image sources**:
+  - **Extensible image source system**:
+    - Abstract base class for easy creation of custom image sources
+    - Factory pattern for image source instantiation
+    - Registry for managing image sources
+    - Comprehensive documentation in [image-source-documentation.md](image-source-documentation.md)
   - **Local images**:
     - Support for your own image collection
     - Weather and time-of-day based image selection
@@ -380,15 +387,15 @@ The Wall Clock Card can fetch background images from online sources, which means
 You can create your own image source plugins to fetch images from other sources. To create a custom image source:
 
 1. Create a new TypeScript file in the `src/image-sources` directory
-2. Implement the `ImageSource` interface
-3. Register your image source with the registry
-4. Import your image source in the main component
+2. Extend the `AbstractImageSource` class
+3. Implement the required abstract properties and methods
+4. Register your image source with the registry
 
 Example:
 
 ```typescript
 // src/image-sources/my-custom-source.ts
-import { ImageSource, ImageSourceConfig, registerImageSource } from './image-sources';
+import { AbstractImageSource, ImageSourceConfig, TimeOfDay, Weather, registerImageSource } from './image-sources';
 
 // Define your custom configuration interface
 export interface MyCustomSourceConfig extends ImageSourceConfig {
@@ -396,18 +403,21 @@ export interface MyCustomSourceConfig extends ImageSourceConfig {
   // Add any other configuration options you need
 }
 
-// Implement the ImageSource interface
-export class MyCustomSource implements ImageSource {
+// Extend the AbstractImageSource class
+export class MyCustomSource extends AbstractImageSource {
   readonly id = 'my-custom';
   readonly name = 'My Custom Source';
   readonly description = 'Custom image source for my specific needs';
 
-  async fetchImages(config: MyCustomSourceConfig): Promise<string[]> {
-    // Implement your logic to fetch images
+  // Implement the fetchImagesInternal method
+  protected async fetchImagesInternal(config: MyCustomSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
+    // Implement your logic to fetch images based on config, weather, and timeOfDay
     // Return an array of image URLs
+    console.log(`[my-custom] Fetching images for weather: ${weather}, time of day: ${timeOfDay}`);
     return ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'];
   }
 
+  // Implement the getDefaultConfig method
   getDefaultConfig(): MyCustomSourceConfig {
     return {
       apiKey: ''
@@ -419,6 +429,8 @@ export class MyCustomSource implements ImageSource {
 const myCustomSource = new MyCustomSource();
 registerImageSource(myCustomSource);
 ```
+
+For more detailed information about the image source system, see the [Image Source Documentation](image-source-documentation.md).
 
 ### Weather Configuration
 

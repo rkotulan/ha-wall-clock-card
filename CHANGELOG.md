@@ -1,11 +1,21 @@
 # Changelog
 
+## 1.20.0
+
+- Refactored image source system for better maintainability and extensibility
+  - Created AbstractImageSource base class to reduce code duplication
+  - Improved image source factory pattern implementation
+  - Enhanced registry pattern for better image source management
+  - Standardized interfaces across all image sources
+  - Added comprehensive documentation for the image source system
+  - Simplified creation of custom image sources
+
 ## 1.19.9
 
 - Fixed alignment issue in weather forecast table
   - Added fixed width to day name elements to ensure consistent alignment
   - Improved layout when day names have different lengths (e.g., "Mon" vs "Fri")
-  
+
 ## 1.19.8
 
 - Enhanced language handling with integrated locale information

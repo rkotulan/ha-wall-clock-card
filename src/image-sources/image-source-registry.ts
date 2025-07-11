@@ -35,6 +35,14 @@ export class ImageSourceRegistry {
   }
 
   /**
+   * Register multiple image sources at once
+   * @param sources Array of image sources to register
+   */
+  public registerAll(sources: ImageSource[]): void {
+    sources.forEach(source => this.register(source));
+  }
+
+  /**
    * Get an image source plugin by ID
    * @param id The ID of the image source plugin
    * @returns The image source plugin, or undefined if not found

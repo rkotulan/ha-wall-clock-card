@@ -1,6 +1,13 @@
 import { LitElement, html, css, property, customElement, CSSResult, TemplateResult } from 'lit-element';
 import { HomeAssistant } from 'custom-card-helpers';
-import { ImageSourceConfig, getImageSource, BackgroundImage, TimeOfDay, Weather, getCurrentTimeOfDay } from './image-sources';
+import { 
+  ImageSourceConfig, 
+  getImageSource, 
+  BackgroundImage, 
+  TimeOfDay, 
+  Weather, 
+  getCurrentTimeOfDay
+} from './image-sources';
 import { WeatherProviderConfig, WeatherData, getWeatherProvider } from './weather-providers';
 import { 
   TransportationConfig, 
@@ -223,17 +230,12 @@ export class WallClockCard extends LitElement {
         return;
       }
 
-      // Get the image source plugin
+      // Get the image source using the factory function
       const imageSource = getImageSource(imageSourceId);
-
-      if (!imageSource) {
-        console.error(`[wall-clock] Image source '${imageSourceId}' not found.`);
-        return;
-      }
 
       // Prepare the configuration for the image source
       const sourceConfig: ImageSourceConfig = {
-        ...imageSource.getDefaultConfig(),
+        ...(imageSource ? imageSource.getDefaultConfig() : {}),
         ...(this.config.imageConfig || this.config.onlineImageConfig || {}),
       };
 
@@ -256,17 +258,17 @@ export class WallClockCard extends LitElement {
 
       console.log(`[wall-clock] Current weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
 
-      // Get a single image URL - no retry or fallback
+      // Get images using the new simplified interface
       try {
-        const imageUrl = await imageSource.GetNextImageUrl(sourceConfig, currentWeather, currentTimeOfDay);
-        if (imageUrl) {
-          urls.push(imageUrl);
-          console.log(`[wall-clock] Got image URL: ${imageUrl}`);
+        const imageUrls = await imageSource.fetchImages(sourceConfig, currentWeather, currentTimeOfDay);
+        if (imageUrls && imageUrls.length > 0) {
+          urls.push(...imageUrls);
+          console.log(`[wall-clock] Got ${imageUrls.length} image URLs`);
         } else {
-          console.log('[wall-clock] No image URL returned, will try again in next cycle');
+          console.log('[wall-clock] No image URLs returned, will try again in next cycle');
         }
       } catch (err) {
-        console.warn('[wall-clock] Failed to get image URL, will try again in next cycle', err);
+        console.warn('[wall-clock] Failed to get image URLs, will try again in next cycle', err);
       }
 
       // If using local or sensor image source, shuffle the array to randomize the order

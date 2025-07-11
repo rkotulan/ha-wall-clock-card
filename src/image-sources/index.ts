@@ -1,38 +1,32 @@
 import { ImageSource } from './image-source';
 import { ImageSourceRegistry } from './image-source-registry';
-import { picsumSource } from './picsum-source';
-import { localSource } from './local-source';
-import { unsplashSource } from './unsplash-source';
-import { sensorSource } from './sensor-source';
+import { picsumSource, localSource, unsplashSource, sensorSource } from './image-source-factory';
 
 // Get the registry instance
 const registry = ImageSourceRegistry.getInstance();
 
-// Register the built-in image sources
-registry.register(picsumSource);
-registry.register(localSource);
-registry.register(unsplashSource);
-registry.register(sensorSource);
+// Register all built-in image sources at once
+registry.registerAll([picsumSource, localSource, unsplashSource, sensorSource]);
 
 // Export everything for external use
 export * from './image-source';
+export * from './abstract-image-source';
 export * from './image-source-registry';
 export * from './picsum-source';
 export * from './local-source';
 export * from './unsplash-source';
 export * from './sensor-source';
+export * from './image-source-factory';
 
-// Export a function to register custom image sources
+// Export registry helper functions
 export function registerImageSource(source: ImageSource): void {
   registry.register(source);
 }
 
-// Export a function to get all registered image sources
 export function getAllImageSources(): ImageSource[] {
   return registry.getAllSources();
 }
 
-// Export a function to get an image source by ID
-export function getImageSource(id: string): ImageSource | undefined {
+export function getImageSourceById(id: string): ImageSource | undefined {
   return registry.getSource(id);
 }
