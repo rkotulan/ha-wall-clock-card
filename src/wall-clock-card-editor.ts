@@ -118,46 +118,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
-        const wallClockConfig = config as unknown as WallClockConfig;
+        const wallClockConfig = config as WallClockConfig;
 
-        // Handle legacy properties
-        // If useOnlineImages is set but imageSource is not, convert it to imageSource
-        let imageSource = wallClockConfig.imageSource;
-        if (imageSource === undefined) {
-            if (wallClockConfig.useOnlineImages === true) {
-                imageSource = wallClockConfig.onlineImageSource || 'picsum';
-            } else if (wallClockConfig.useOnlineImages === false) {
-                // If useOnlineImages is false and there are backgroundImages, use 'local'
-                // Otherwise, use 'none'
-                if (wallClockConfig.backgroundImages && wallClockConfig.backgroundImages.length > 0) {
-                    imageSource = 'local';
-                } else {
-                    imageSource = 'none';
-                }
-            } else {
-                // Default to 'none' if neither is set
-                imageSource = 'none';
-            }
-        }
-
-        // Convert legacy string array backgroundImages to the new structure if needed
-        if (Array.isArray(wallClockConfig.backgroundImages) &&
-            wallClockConfig.backgroundImages.length > 0 &&
-            typeof wallClockConfig.backgroundImages[0] === 'string') {
-            // Create a new array of BackgroundImage objects
-            const backgroundImages: BackgroundImage[] = [];
-            for (const img of wallClockConfig.backgroundImages) {
-                if (typeof img === 'string') {
-                    backgroundImages.push({
-                        url: img,
-                        weather: Weather.All,
-                        timeOfDay: TimeOfDay.Unspecified
-                    });
-                }
-            }
-            // Update the config with the new structure
-            wallClockConfig.backgroundImages = backgroundImages;
-        }
+        // Set default imageSource if not provided
+        const imageSource = wallClockConfig.imageSource || 'none';
 
         // Create a default timeFormat
         let timeFormat: ExtendedDateTimeFormatOptions = {
@@ -188,8 +152,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             },
             backgroundOpacity: wallClockConfig.backgroundOpacity !== undefined ? wallClockConfig.backgroundOpacity : 0.3,
             imageSource: imageSource,
-            imageConfig: wallClockConfig.imageConfig || wallClockConfig.onlineImageConfig || {},
-            useOnlineImages: imageSource !== 'none' && imageSource !== 'local',
+            imageConfig: wallClockConfig.imageConfig || {},
             backgroundRotationInterval: wallClockConfig.backgroundRotationInterval || 90,
             sensors: wallClockConfig.sensors || [],
             fontColor: wallClockConfig.fontColor || '#FFFFFF',
@@ -216,12 +179,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     private _loadSensors(): void {
         if (this._config?.sensors && this._config.sensors.length > 0) {
             this._sensors = [...this._config.sensors];
-        } else if (this._config?.sensorEntity) {
-            // For backward compatibility
-            this._sensors = [{
-                entity: this._config.sensorEntity,
-                label: this._config.sensorLabel || ''
-            }];
         } else {
             this._sensors = [];
         }
@@ -624,9 +581,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         return html`
             <div class="form-container">
-                <!-- Appearance Section -->
+                <!-- General Section -->
                 <ha-expansion-panel outlined>
-                    <h3 slot="header">Appearance</h3>
+                    <h3 slot="header">General</h3>
                     <div class="content">
                         <div class="row">
                             <div class="label">Font Color</div>
@@ -691,6 +648,43 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 <mwc-list-item .value=${option.value}>${option.label}
                                                 </mwc-list-item>`
                                     )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Log Level</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Log Level"
+                                        .value=${this._config.logLevel || 'warn'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.logLevel = target.value || 'warn';
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    <mwc-list-item value="debug">Debug</mwc-list-item>
+                                    <mwc-list-item value="info">Info</mwc-list-item>
+                                    <mwc-list-item value="warn">Warning</mwc-list-item>
+                                    <mwc-list-item value="error">Error</mwc-list-item>
+                                    <mwc-list-item value="none">None</mwc-list-item>
                                 </ha-select>
                             </div>
                         </div>

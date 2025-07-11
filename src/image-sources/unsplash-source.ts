@@ -1,21 +1,24 @@
 import { ImageSourceConfig, TimeOfDay, Weather } from './image-source';
 import { AbstractImageSource } from './abstract-image-source';
+import { createLogger } from '../utils/logger';
 
 /**
  * Configuration for the Unsplash image source
  */
 export interface UnsplashSourceConfig extends ImageSourceConfig {
-    // Category for Unsplash images (e.g., 'nature,water')
-    category?: string;
     // API key for Unsplash API (required for API mode)
     apiKey?: string;
+
     // Whether to use the official Unsplash API (requires apiKey)
     // Note: This property is kept for backward compatibility but is no longer used
     // as the API is always used when an API key is provided
     useApi?: boolean;
-    // Content filter for Unsplash API (low, medium, high)
+
+    // Content filter for Unsplash API (low, high)
     // Controls the level of potentially sensitive content in the images
     contentFilter?: 'low' | 'high';
+
+    // Note: category and count are inherited from ImageSourceConfig
 }
 
 /**
@@ -26,6 +29,7 @@ export class UnsplashSource extends AbstractImageSource {
     readonly id = 'unsplash';
     readonly name = 'Unsplash';
     readonly description = 'Beautiful, free photos from Unsplash collections';
+    private logger = createLogger('unsplash-source');
 
     // Collection IDs for different categories (these are popular collections on Unsplash)
     private readonly collections: Record<string, string[]> = {
@@ -79,28 +83,28 @@ export class UnsplashSource extends AbstractImageSource {
 
 
         // Log the current weather and time of day
-        console.log(`[unsplash-source] Current weather: ${weather}, time of day: ${timeOfDay}`);
+        this.logger.info(`Current weather: ${weather}, time of day: ${timeOfDay}`);
 
-        console.log(`[unsplash-source] Using category with weather and time: ${category}`);
+        this.logger.info(`Using category with weather and time: ${category}`);
 
         // If apiKey is provided, use the official Unsplash API (always use API when possible)
         if (apiKey) {
             try {
-                console.log('[unsplash-source] Using official Unsplash API');
+                this.logger.info('Using official Unsplash API');
                 return await this.fetchImagesFromApi(apiKey, category, count, weather, timeOfDay, config);
             } catch (error) {
-                console.error('[unsplash-source] Error fetching images from Unsplash API:', error);
-                console.log('[unsplash-source] Falling back to direct URL method');
+                this.logger.error('Error fetching images from Unsplash API:', error);
+                this.logger.info('Falling back to direct URL method');
                 // Fall back to the direct URL method if the API fails
             }
         }
 
         // Direct URL method (fallback or default if useApi is false)
-        console.log('[unsplash-source] Using direct URL method for Unsplash images');
+        this.logger.info('Using direct URL method for Unsplash images');
 
         // Parse the category string to get individual categories
         const categories = category.split(',').map(c => c.trim().toLowerCase());
-        console.log(`[unsplash-source] Categories for direct URL method: ${categories.join(', ')}`);
+        this.logger.info(`Categories for direct URL method: ${categories.join(', ')}`);
 
         // Get collection IDs for the specified categories
         let collectionIds: string[] = [];
@@ -112,10 +116,10 @@ export class UnsplashSource extends AbstractImageSource {
 
         // If no matching collections found, use default
         if (collectionIds.length === 0) {
-            console.log('[unsplash-source] No matching collections found, using default collections');
+            this.logger.info('No matching collections found, using default collections');
             collectionIds = this.defaultCollections;
         } else {
-            console.log(`[unsplash-source] Using collection IDs: ${collectionIds.join(', ')}`);
+            this.logger.info(`Using collection IDs: ${collectionIds.join(', ')}`);
         }
 
         // Generate direct image URLs using Unsplash's photo API
@@ -134,11 +138,11 @@ export class UnsplashSource extends AbstractImageSource {
                 // This format is more stable and less likely to be rejected
                 const imageUrl = `https://source.unsplash.com/collection/${collectionId}/1920x1080/?sig=${randomSeed}`;
 
-                console.log(`[unsplash-source] Generated direct URL (${i + 1}/${count}): ${imageUrl}`);
+                this.logger.info(`Generated direct URL (${i + 1}/${count}): ${imageUrl}`);
 
                 fetchedImages.push(imageUrl);
             } catch (err) {
-                console.warn(`[unsplash-source] Failed to generate Unsplash image URL (attempt ${i + 1}/${count})`, err);
+                this.logger.warn(`Failed to generate Unsplash image URL (attempt ${i + 1}/${count})`, err);
                 // Continue with next attempt
             }
         }
@@ -178,7 +182,7 @@ export class UnsplashSource extends AbstractImageSource {
             }
 
             // Log the categories being used
-            console.log(`[unsplash-source] Using categories: ${categories.join(', ')}`);
+            this.logger.info(`Using categories: ${categories.join(', ')}`);
         }
 
 
@@ -197,8 +201,8 @@ export class UnsplashSource extends AbstractImageSource {
             query += ' night dark stars moonlight';
         }
 
-        console.log(`[unsplash-source] Enhanced query with weather data: ${query}`);
-        console.log(`[unsplash-source] Weather condition: ${weatherCondition}, Time of day: ${timeOfDay}`);
+        this.logger.info(`Enhanced query with weather data: ${query}`);
+        this.logger.info(`Weather condition: ${weatherCondition}, Time of day: ${timeOfDay}`);
 
 
         try {
@@ -220,26 +224,26 @@ export class UnsplashSource extends AbstractImageSource {
             const logParams = new URLSearchParams(params);
             logParams.delete('client_id');
             logParams.append('client_id', '***API_KEY_HIDDEN***');
-            console.log(`[unsplash-source] API parameters: ${logParams.toString()}`);
+            this.logger.info(`API parameters: ${logParams.toString()}`);
 
             apiUrl += params.toString();
 
             // Log the API request URL (with API key hidden)
             const logUrl = apiUrl.replace(/client_id=[^&]+/, 'client_id=***API_KEY_HIDDEN***');
-            console.log(`[unsplash-source] Making API request to: ${logUrl}`);
+            this.logger.info(`Making API request to: ${logUrl}`);
 
             // Make the API request
             const response = await fetch(apiUrl);
 
             if (!response.ok) {
-                console.error(`[unsplash-source] API error: ${response.status} ${response.statusText}`);
+                this.logger.error(`API error: ${response.status} ${response.statusText}`);
                 throw new Error(`Unsplash API error: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
 
             // Log the API response summary
-            console.log(`[unsplash-source] API response received with ${Array.isArray(data) ? data.length : 0} images`);
+            this.logger.info(`API response received with ${Array.isArray(data) ? data.length : 0} images`);
 
             // Extract image URLs from the response
             if (Array.isArray(data)) {
@@ -250,9 +254,9 @@ export class UnsplashSource extends AbstractImageSource {
                 });
             }
 
-            console.log(`[unsplash-source] Fetched ${fetchedImages.length} images from Unsplash API`);
+            this.logger.info(`Fetched ${fetchedImages.length} images from Unsplash API`);
         } catch (error) {
-            console.error('[unsplash-source] Error fetching from Unsplash API:', error);
+            this.logger.error('Error fetching from Unsplash API:', error);
             throw error; // Re-throw to allow fallback
         }
 

@@ -100,8 +100,18 @@ export interface BackgroundImage {
  */
 export interface ImageSourceConfig {
   // Common configuration properties for all image sources
+
+  // Category for images (e.g., 'nature,water')
   category?: string;
-  [key: string]: any; // Allow additional source-specific properties
+
+  // Number of images to fetch (used by sources that support multiple images)
+  count?: number;
+
+  // Array of background images with weather and time-of-day information
+  backgroundImages?: BackgroundImage[];
+
+  // Allow additional source-specific properties
+  [key: string]: any;
 }
 
 export interface ImageSource {

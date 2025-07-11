@@ -17,6 +17,7 @@ export * from './local-source';
 export * from './unsplash-source';
 export * from './sensor-source';
 export * from './image-source-factory';
+export * from './background-image-manager';
 
 // Export registry helper functions
 export function registerImageSource(source: ImageSource): void {

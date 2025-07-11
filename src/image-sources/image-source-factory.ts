@@ -3,6 +3,7 @@ import { localSource } from './local-source';
 import { picsumSource } from './picsum-source';
 import { unsplashSource } from './unsplash-source';
 import { sensorSource } from './sensor-source';
+import { createLogger } from '../utils/logger';
 
 /**
  * Null image source implementation that returns no images
@@ -11,14 +12,15 @@ class NullImageSource implements ImageSource {
   readonly id = 'null';
   readonly name = 'Null Source';
   readonly description = 'A placeholder source that returns no images';
+  private logger = createLogger('null-source');
 
   async fetchImages(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string[]> {
-    console.log('[null-source] Returning empty image list');
+    this.logger.info('Returning empty image list');
     return [];
   }
 
   async GetNextImageUrl(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string> {
-    console.log('[null-source] Returning empty image URL');
+    this.logger.info('Returning empty image URL');
     return '';
   }
 

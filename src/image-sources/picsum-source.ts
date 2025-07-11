@@ -1,11 +1,13 @@
 import { ImageSourceConfig, TimeOfDay, Weather } from './image-source';
 import { AbstractImageSource } from './abstract-image-source';
+import { createLogger } from '../utils/logger';
 
 /**
  * Configuration for the Picsum image source
  */
 export interface PicsumSourceConfig extends ImageSourceConfig {
   // No additional configuration needed for Picsum
+  // Note: All properties are inherited from ImageSourceConfig
 }
 
 /**
@@ -16,6 +18,7 @@ export class PicsumSource extends AbstractImageSource {
   readonly id = 'picsum';
   readonly name = 'Picsum Photos';
   readonly description = 'Random high-quality images from Picsum Photos';
+  private logger = createLogger('picsum-source');
 
   /**
    * Fetch images from Picsum Photos
@@ -30,7 +33,7 @@ export class PicsumSource extends AbstractImageSource {
     const seed = timestamp;
     const imageUrl = `https://picsum.photos/seed/${seed}/1920/1080`;
 
-    console.log(`[picsum-source] Generated Picsum image URL: ${imageUrl}`);
+    this.logger.info(`Generated Picsum image URL: ${imageUrl}`);
     return [imageUrl];
   }
 

@@ -8,9 +8,10 @@ The image source system consists of several key components:
 
 1. **ImageSource Interface**: Defines the contract that all image sources must implement
 2. **AbstractImageSource Class**: Provides common functionality for all image sources
-3. **Concrete Image Sources**: Implementations for specific image providers (Picsum, Unsplash, Local, Sensor)
+3. **Concrete Image Sources**: Implementations for specific image providers (Picsum, Unsplash, Local, Sensor, Null)
 4. **Image Source Factory**: Creates instances of image sources based on configuration
 5. **Image Source Registry**: Manages registration and retrieval of image sources
+6. **Background Image Manager**: Simplifies the process of working with image sources
 
 ## ImageSource Interface
 
@@ -85,13 +86,94 @@ export enum Weather {
 }
 
 /**
+ * Valid weather conditions
+ */
+export const ValidWeather = [
+  Weather.All,
+  Weather.ClearSky,
+  Weather.Clouds,
+  Weather.Rain,
+  Weather.Snow,
+  Weather.Mist
+];
+
+/**
+ * Valid time of day values
+ */
+export const ValidTimeOfDay = [
+  TimeOfDay.Unspecified,
+  TimeOfDay.SunriseSunset,
+  TimeOfDay.Day,
+  TimeOfDay.Night
+];
+
+/**
  * Interface for image source plugins
  * All image source plugins must implement this interface
  */
 export interface ImageSourceConfig {
   // Common configuration properties for all image sources
+
+  // Category for images (e.g., 'nature,water')
   category?: string;
-  [key: string]: any; // Allow additional source-specific properties
+
+  // Number of images to fetch (used by sources that support multiple images)
+  count?: number;
+
+  // Array of background images with weather and time-of-day information
+  backgroundImages?: BackgroundImage[];
+
+  // ID of the image source to use
+  imageSourceId?: string;
+
+  // Allow additional source-specific properties
+  [key: string]: any;
+}
+
+/**
+ * Background image interface
+ */
+export interface BackgroundImage {
+  // URL of the image
+  url: string;
+  // Weather condition, or Weather.All for all weather conditions
+  weather: Weather;
+  // Time of day, or "unspecified" for all times of day
+  timeOfDay: TimeOfDay;
+}
+```
+
+## Helper Functions
+
+The image source system includes several helper functions:
+
+```typescript
+/**
+ * Get the current time of day based on the current hour
+ * @returns The current time of day
+ */
+export function getCurrentTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours();
+
+  if ((hour >= 5 && hour < 9) || (hour >= 17 && hour < 21)) {
+    return TimeOfDay.SunriseSunset;
+  } else if (hour >= 9 && hour < 17) {
+    return TimeOfDay.Day;
+  } else if (hour >= 21 || hour < 5) {
+    return TimeOfDay.Night;
+  }
+
+  return TimeOfDay.Unspecified;
+}
+
+/**
+ * Find an attribute in a path
+ * @param path The path to search in
+ * @param validValues Array of valid values to look for
+ * @returns The found attribute, or undefined if not found
+ */
+export function FindAttributeInPath(path: string, validValues: string[]): string | undefined {
+  // Implementation...
 }
 ```
 
@@ -129,6 +211,30 @@ export abstract class AbstractImageSource implements ImageSource {
     // Implementation...
   }
 
+  /**
+   * Filter background images by weather condition and time of day
+   * @param images Array of background images
+   * @param weather Current weather condition
+   * @param timeOfDay Current time of day
+   * @returns Filtered array of image URLs
+   */
+  protected filterImagesByWeatherAndTime(
+    images: BackgroundImage[], 
+    weather: Weather, 
+    timeOfDay: TimeOfDay
+  ): string[] {
+    // Implementation...
+  }
+
+  /**
+   * Convert an array of image URLs to an array of BackgroundImage objects
+   * @param images Array of image URLs
+   * @returns Array of BackgroundImage objects
+   */
+  protected convertUrlsToBackgroundImages(images: string[]): BackgroundImage[] {
+    // Implementation...
+  }
+
   abstract getDefaultConfig(): ImageSourceConfig;
 }
 ```
@@ -138,6 +244,8 @@ Key features of the `AbstractImageSource` class:
 - Implements caching of image URLs based on weather and time of day
 - Provides image shuffling functionality
 - Handles the logic for cycling through images
+- Provides methods for filtering images by weather and time of day
+- Provides methods for converting URLs to BackgroundImage objects
 - Requires concrete classes to implement only the specific parts needed for their source
 
 ## Built-in Image Sources
@@ -151,6 +259,7 @@ Fetches random high-quality images from [Picsum Photos](https://picsum.photos/).
 ```typescript
 export interface PicsumSourceConfig extends ImageSourceConfig {
   // No additional configuration needed for Picsum
+  // Note: All properties are inherited from ImageSourceConfig
 }
 ```
 
@@ -160,14 +269,30 @@ Fetches images from [Unsplash](https://unsplash.com/), either using their API or
 
 ```typescript
 export interface UnsplashSourceConfig extends ImageSourceConfig {
-  // Category for Unsplash images (e.g., 'nature,water')
-  category?: string;
   // API key for Unsplash API (required for API mode)
   apiKey?: string;
-  // Content filter for Unsplash API (low, medium, high)
+
+  // Whether to use the official Unsplash API (requires apiKey)
+  // Note: This property is kept for backward compatibility but is no longer used
+  // as the API is always used when an API key is provided
+  useApi?: boolean;
+
+  // Content filter for Unsplash API (low, high)
+  // Controls the level of potentially sensitive content in the images
   contentFilter?: 'low' | 'high';
+
+  // Note: category and count are inherited from ImageSourceConfig
 }
 ```
+
+The UnsplashSource includes:
+- Support for both API and direct URL methods
+- Automatic fallback from API to direct URL if API fails
+- Enhanced queries with weather and time of day information
+- Predefined collections for various categories
+- Content filtering options
+
+Available categories include: nature, water, architecture, city, landscape, animals, food, travel, people, technology, abstract, space, interior, flowers, dark, light, minimal, colorful, and various colors.
 
 ### 3. LocalSource
 
@@ -175,21 +300,11 @@ Uses images specified in the configuration.
 
 ```typescript
 export interface LocalSourceConfig extends ImageSourceConfig {
-  // Array of background images with weather and time-of-day information
-  backgroundImages?: BackgroundImage[];
-  // Simple list of image URLs (used when no backgroundImages are provided)
-  images?: string[];
-}
-
-export interface BackgroundImage {
-  // URL of the image
-  url: string;
-  // Weather condition, or Weather.All for all weather conditions
-  weather: Weather;
-  // Time of day, or "unspecified" for all times of day
-  timeOfDay: TimeOfDay;
+  // Note: backgroundImages is inherited from ImageSourceConfig
 }
 ```
+
+The LocalSource uses the `backgroundImages` property from the configuration to provide images. Each image can be associated with specific weather conditions and times of day.
 
 ### 4. SensorSource
 
@@ -199,8 +314,177 @@ Uses images from a Home Assistant sensor with a "files" attribute.
 export interface SensorSourceConfig extends ImageSourceConfig {
   // Entity ID of the sensor that provides the image list
   entity?: string;
-  // Array of background images with weather and time-of-day information
-  backgroundImages?: BackgroundImage[];
+
+  // Note: backgroundImages is inherited from ImageSourceConfig
+}
+```
+
+The SensorSource includes:
+- Caching mechanism with a refresh interval of 10 minutes
+- Entity tracking to monitor changes to the sensor
+- Automatic conversion of image URLs to BackgroundImage objects
+- Weather and time of day filtering
+
+### 5. NullSource
+
+A placeholder source that returns no images. Used as a fallback when an invalid source type is specified.
+
+```typescript
+class NullImageSource implements ImageSource {
+  readonly id = 'null';
+  readonly name = 'Null Source';
+  readonly description = 'A placeholder source that returns no images';
+
+  // Implementation...
+}
+```
+
+## Background Image Manager
+
+The `BackgroundImageManager` class simplifies the process of working with image sources:
+
+```typescript
+export class BackgroundImageManager {
+  private imageSource: ImageSource | null = null;
+  private sourceConfig: ImageSourceConfig = {};
+  private imageSourceId: string = 'picsum';
+
+  /**
+   * Initialize the BackgroundImageManager with the given image source ID and configuration
+   * @param config The configuration for the image source
+   * @returns True if initialization was successful, false otherwise
+   */
+  public initialize(config: ImageSourceConfig = {}): boolean {
+    // Implementation...
+  }
+
+  /**
+   * Get the next image URL from the image source
+   * @param weather Current weather condition
+   * @param timeOfDay Current time of day
+   * @returns Promise that resolves to an image URL, or empty string if no image is available
+   */
+  public async getNextImageUrl(weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+    // Implementation...
+  }
+
+  /**
+   * Get the current image source ID
+   * @returns The current image source ID
+   */
+  public getImageSourceId(): string {
+    // Implementation...
+  }
+}
+```
+
+The BackgroundImageManager:
+- Initializes an image source with a given configuration
+- Provides a method to get the next image URL from the source
+- Handles error cases and provides fallbacks
+- Defaults to the Picsum image source if none is specified
+
+## Image Source Factory
+
+The image source factory provides a way to create instances of image sources based on their ID:
+
+```typescript
+/**
+ * Factory function to get the appropriate image source
+ * @param sourceType The type of image source to create
+ * @returns An instance of the specified image source
+ */
+export function getImageSource(sourceType: string): ImageSource {
+  return sourceMap[sourceType] || nullSource;
+}
+```
+
+## Image Source Registry
+
+The image source registry manages the registration and retrieval of image sources:
+
+```typescript
+export class ImageSourceRegistry {
+  private static instance: ImageSourceRegistry;
+  private sources: Map<string, ImageSource> = new Map();
+
+  /**
+   * Get the singleton instance of the registry
+   */
+  public static getInstance(): ImageSourceRegistry {
+    // Implementation...
+  }
+
+  /**
+   * Register an image source plugin
+   * @param source The image source plugin to register
+   */
+  public register(source: ImageSource): void {
+    // Implementation...
+  }
+
+  /**
+   * Register multiple image sources at once
+   * @param sources Array of image sources to register
+   */
+  public registerAll(sources: ImageSource[]): void {
+    // Implementation...
+  }
+
+  /**
+   * Get an image source plugin by ID
+   * @param id The ID of the image source plugin
+   * @returns The image source plugin, or undefined if not found
+   */
+  public getSource(id: string): ImageSource | undefined {
+    // Implementation...
+  }
+
+  /**
+   * Get all registered image source plugins
+   * @returns Array of all registered image source plugins
+   */
+  public getAllSources(): ImageSource[] {
+    // Implementation...
+  }
+
+  /**
+   * Check if an image source plugin is registered
+   * @param id The ID of the image source plugin
+   * @returns True if the plugin is registered, false otherwise
+   */
+  public hasSource(id: string): boolean {
+    // Implementation...
+  }
+}
+```
+
+The registry also provides helper functions for easier usage:
+
+```typescript
+/**
+ * Register an image source with the registry
+ * @param source The image source to register
+ */
+export function registerImageSource(source: ImageSource): void {
+  // Implementation...
+}
+
+/**
+ * Get all registered image sources
+ * @returns Array of all registered image sources
+ */
+export function getAllImageSources(): ImageSource[] {
+  // Implementation...
+}
+
+/**
+ * Get an image source by ID
+ * @param id The ID of the image source
+ * @returns The image source, or undefined if not found
+ */
+export function getImageSourceById(id: string): ImageSource | undefined {
+  // Implementation...
 }
 ```
 
@@ -233,10 +517,10 @@ export class MyCustomSource extends AbstractImageSource {
   protected async fetchImagesInternal(config: MyCustomSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
     // Your implementation to fetch images based on config, weather, and timeOfDay
     const images: string[] = [];
-    
+
     // Example: Add logic to fetch images from your custom source
     // This could be an API call, local file system, etc.
-    
+
     return images;
   }
 
@@ -256,44 +540,6 @@ export const myCustomSource = new MyCustomSource();
 registerImageSource(myCustomSource);
 ```
 
-## Using the Image Source Factory
-
-The image source factory provides a way to create instances of image sources based on their ID:
-
-```typescript
-import { getImageSource } from './image-sources';
-
-// Get an image source by ID
-const imageSource = getImageSource('picsum');
-
-// Use the image source
-const config = imageSource.getDefaultConfig();
-const images = await imageSource.fetchImages(config, Weather.ClearSky, TimeOfDay.Day);
-```
-
-## Image Source Registry
-
-The image source registry manages the registration and retrieval of image sources:
-
-```typescript
-import { ImageSourceRegistry, ImageSource } from './image-sources';
-
-// Get the registry instance
-const registry = ImageSourceRegistry.getInstance();
-
-// Register a custom image source
-registry.register(myCustomSource);
-
-// Get all registered image sources
-const allSources = registry.getAllSources();
-
-// Check if a source is registered
-const hasSource = registry.hasSource('picsum');
-
-// Get a specific source
-const picsumSource = registry.getSource('picsum');
-```
-
 ## Configuration in Wall Clock Card
 
 To use an image source in the Wall Clock Card configuration:
@@ -304,6 +550,7 @@ imageSource: 'picsum'  # ID of the image source to use
 imageConfig:
   # Configuration specific to the selected image source
   category: 'nature'
+  count: 10
 ```
 
 Available image sources:
@@ -312,6 +559,7 @@ Available image sources:
 - `unsplash`: Beautiful, free photos from Unsplash collections
 - `local`: Images from local paths or URLs specified in the configuration
 - `sensor`: Images from a Home Assistant sensor with a "files" attribute
+- `null`: A placeholder source that returns no images (used as fallback)
 - Any custom image sources that have been registered
 
 ## Weather and Time of Day Integration
@@ -322,3 +570,8 @@ Image sources can provide different images based on the current weather and time
 - Time of day: day, night, sunrise-sunset
 
 This allows for dynamic backgrounds that change with the weather and time of day, creating a more immersive experience.
+
+The `getCurrentTimeOfDay()` function automatically determines the current time of day based on the hour:
+- Sunrise/Sunset: 5-9 AM or 5-9 PM
+- Day: 9 AM - 5 PM
+- Night: 9 PM - 5 AM
