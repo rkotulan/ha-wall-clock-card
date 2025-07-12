@@ -19,11 +19,10 @@ import {
     translate,
     loadTranslationsAsync,
     formatDate,
-    formatTime,
-    formatDateTime,
     ExtendedDateTimeFormatOptions
 } from './lokalify';
 import { configureLogger, logger, getLogLevelFromString } from './utils/logger';
+import { ClockComponent } from './components/clock-component';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
@@ -79,17 +78,11 @@ export interface WallClockConfig {
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
-    @property({type: String}) currentTime = '';
-    @property({type: String}) currentDate = '';
     @property({type: Object}) config: WallClockConfig = {};
     @property({type: String}) currentImageUrl = ''; // Currently displayed image URL
     @property({type: String}) previousImageUrl = ''; // Previously displayed image URL
     @property({type: Boolean}) isTransitioning = false; // Flag to track if image transition is in progress
     @property({type: Array}) sensorValues: { entity: string, label?: string, value: string }[] = [];
-    @property({type: String}) hours = '';
-    @property({type: String}) minutes = '';
-    @property({type: String}) seconds = '';
-    @property({type: String}) ampm = ''; // AM/PM indicator for 12-hour format
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
     @property({type: Object}) weatherData?: WeatherData; // Weather data from provider
@@ -100,11 +93,11 @@ export class WallClockCard extends LitElement {
     @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
     @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
 
-    private timeTimer?: number;
     private imageRotationTimer?: number;
     private fetchingImageUrls = false;
 
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
+    private clockComponent: ClockComponent = new ClockComponent();
     private weatherUpdateTimer?: number;
     private transportationUpdateTimer?: number;
     private transportationAutoHideTimer?: number;
@@ -120,22 +113,27 @@ export class WallClockCard extends LitElement {
             "color: #3498db; background: white; font-weight: 700;"
         );
 
-        // Initial time update
-        this.updateTime();
+        // Initialize the clock component
+        this.clockComponent.initialize({
+            timeFormat: this.config.timeFormat,
+            dateFormat: this.config.dateFormat,
+            language: this.config.language,
+            timeZone: this.config.timeZone,
+            fontColor: this.config.fontColor
+        });
     }
 
     connectedCallback(): void {
         super.connectedCallback();
 
-        // Set up the clock timeTimer when the component is connected to the DOM
-        // This ensures the timeTimer is re-established if the component is re-rendered
-        if (!this.timeTimer) {
-            this.updateTime();
-            this.timeTimer = window.setInterval(() => {
-                this.updateTime();
-            }, 1000);
-            logger.debug('Clock timeTimer started');
-        }
+        // Initialize the clock component with the latest configuration
+        this.clockComponent.initialize({
+            timeFormat: this.config.timeFormat,
+            dateFormat: this.config.dateFormat,
+            language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
+            timeZone: this.config.timeZone,
+            fontColor: this.config.fontColor
+        });
 
         this.initConnectCallbackAsync();
     }
@@ -355,9 +353,8 @@ export class WallClockCard extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Clear all timers when the component is removed
-        if (this.timeTimer) {
-            clearInterval(this.timeTimer);
-        }
+        this.clockComponent.disconnect();
+
         if (this.imageRotationTimer) {
             clearInterval(this.imageRotationTimer);
         }
@@ -588,8 +585,14 @@ export class WallClockCard extends LitElement {
         // Fetch new image URLs
         await this.initBackgroundImageManagerAsync();
 
-        // Update the time
-        this.updateTime();
+        // Initialize the clock component with the new configuration
+        this.clockComponent.initialize({
+            timeFormat: this.config.timeFormat,
+            dateFormat: this.config.dateFormat,
+            language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
+            timeZone: this.config.timeZone,
+            fontColor: this.config.fontColor
+        });
 
         // Update sensor value if entity is configured
         if (this.hass && this.config.sensorEntity) {
@@ -644,65 +647,6 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    updateTime(): void {
-        const now = new Date();
-        const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
-        const timeZone = this.config.timeZone;
-
-        // Format time with configurable format
-        this.currentTime = formatTime(now, language, this.config.timeFormat || {}, timeZone);
-
-        // Set hours, minutes, and seconds separately
-        // Use the time in the specified time zone
-        let hours, minutes, seconds;
-
-        if (timeZone) {
-            // Get time components in the specified time zone
-            const timeString = formatDateTime(now, language, {
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: false
-            }, timeZone);
-
-            // Parse the time string (format: HH:MM:SS)
-            const timeParts = timeString.split(':');
-            hours = parseInt(timeParts[0], 10);
-            minutes = parseInt(timeParts[1], 10);
-            seconds = parseInt(timeParts[2], 10);
-        } else {
-            // Use local time if no time zone is specified
-            hours = now.getHours();
-            minutes = now.getMinutes();
-            seconds = now.getSeconds();
-        }
-
-        // Handle 12-hour format if configured
-        if (this.config.timeFormat?.hour12) {
-            // Convert to 12-hour format
-            const isPM = hours >= 12;
-            hours = hours % 12;
-            hours = hours ? hours : 12; // Convert 0 to 12 for 12 AM
-            this.ampm = isPM ? 'pm' : 'am';
-        } else {
-            this.ampm = ''; // Clear AM/PM for 24-hour format
-        }
-
-        // Only pad with leading zeros if the format is '2-digit'
-        this.hours = this.config.timeFormat?.hour === '2-digit' ? hours.toString().padStart(2, '0') : hours.toString();
-        this.minutes = this.config.timeFormat?.minute === '2-digit' ? minutes.toString().padStart(2, '0') : minutes.toString();
-        this.seconds = this.config.timeFormat?.second === '2-digit' ? seconds.toString().padStart(2, '0') : seconds.toString();
-
-        // Format date with configurable format
-        let formattedDate = formatDate(now, language, this.config.dateFormat || {}, timeZone);
-
-        // Add comma after the day if it's not already there
-        // This regex looks for a number (the day) followed by a space and then a letter (start of month)
-        // and replaces it with the day, a comma, a space, and then the month
-        formattedDate = formattedDate.replace(/(\d+)(\s+)([A-Za-z])/, '$1,$2$3');
-
-        this.currentDate = formattedDate;
-    }
 
     static get styles(): CSSResult {
         return css`
@@ -1256,22 +1200,9 @@ export class WallClockCard extends LitElement {
                             </div>` :
                         ''
                 }
-                <div class="clock"
-                     style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
-                    <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
-                    ${this.config.timeFormat?.second !== undefined && this.config.timeFormat?.second !== 'hidden' ? html`
-                        <div class="seconds-container">
-                            <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
-                            ${this.ampm ? html`<span class="ampm"
-                                                     style="color: ${this.config.fontColor};">${this.ampm}</span>` : ''}
-                        </div>
-                    ` : this.ampm ? html`
-                        <div class="seconds-container">
-                            <span class="ampm ampm-only" style="color: ${this.config.fontColor};">${this.ampm}</span>
-                        </div>
-                    ` : ''}
+                <div style="${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
+                    ${this.clockComponent.render()}
                 </div>
-                <div class="date" style="color: ${this.config.fontColor};">${this.currentDate}</div>
                 ${this.config.transportation && this.config.enableTransportation !== false ?
                         this.config.transportation?.onDemand && !this.transportationDataLoaded ?
                                 html`
