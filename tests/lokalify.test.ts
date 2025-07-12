@@ -188,10 +188,10 @@ describe('formatTime function', () => {
       expect(secondsHiddenResult).not.toContain('45');
     });
 
-    test('should return empty string when all components are hidden', () => {
+    test('should return empty string when all components are undefined or hidden', () => {
       const allHiddenResult = formatTime(date, 'en', { 
-        hour: 'hidden', 
-        minute: 'hidden', 
+        hour: undefined, 
+        minute: undefined, 
         second: 'hidden' 
       });
       expect(allHiddenResult).toBe('');
@@ -243,14 +243,14 @@ describe('formatDateTime function', () => {
       expect(partialResult).not.toContain('45');
     });
 
-    test('should return empty string when all components are hidden', () => {
+    test('should return empty string when all components are undefined or hidden', () => {
       const allHiddenResult = formatDateTime(date, 'en', { 
         weekday: 'hidden', 
         year: 'hidden', 
         month: 'hidden', 
         day: 'hidden',
-        hour: 'hidden', 
-        minute: 'hidden', 
+        hour: undefined, 
+        minute: undefined, 
         second: 'hidden' 
       });
       expect(allHiddenResult).toBe('');

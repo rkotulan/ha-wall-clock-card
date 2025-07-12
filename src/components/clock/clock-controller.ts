@@ -1,6 +1,7 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
-import { formatDateTime, formatDate, ExtendedDateTimeFormatOptions } from '../../lokalify';
+import { formatDate, ExtendedDateTimeFormatOptions } from '../../lokalify';
 import { createLogger } from '../../utils/logger';
+import { DateTime } from 'luxon';
 
 export interface ClockControllerConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
@@ -76,7 +77,7 @@ export class ClockController implements ReactiveController {
         const timeZone = this.config.timeZone;
 
         // Update time
-        this.updateTime(now, language, timeZone);
+        this.updateTime(now, timeZone);
 
         // Always update date when config changes, regardless of seconds
         this.updateDate(now, language, timeZone);
@@ -94,7 +95,7 @@ export class ClockController implements ReactiveController {
         const timeZone = this.config.timeZone;
 
         // Update time
-        this.updateTime(now, language, timeZone);
+        this.updateTime(now, timeZone);
 
         // Update date - we only need to update the date once per minute
         // Check if seconds is 0 to update the date once per minute
@@ -109,51 +110,27 @@ export class ClockController implements ReactiveController {
 
     /**
      * Update the time based on current configuration
+     * @param now The current date
+     * @param timeZone Optional time zone to use for formatting
      */
-    private updateTime(now: Date, language: string, timeZone?: string): void {
+    private updateTime(
+        now: Date,
+        timeZone?: string
+    ): void {
+        // Check for hidden format options
+        const secondHidden = this.config.timeFormat?.second === 'hidden';
+
+        // Determine if 12-hour format is configured
+        const hour12 = this.config.timeFormat?.hour12 === true;
+
         // Get time components
         let hours: number, minutes: number, seconds: number;
 
         if (timeZone) {
-            // Use the specified time zone
-            const hour12 = this.config.timeFormat?.hour12 !== undefined ? this.config.timeFormat.hour12 : false;
-
-            const timeString = formatDateTime(now, language, {
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: hour12
-            }, timeZone);
-
-            // Parse the time string
-            const timeParts = timeString.split(':');
-
-            if (hour12) {
-                // For 12-hour format, handle AM/PM
-                const lastPart = timeParts[timeParts.length - 1];
-                const hasAmPm = lastPart.toLowerCase().includes('am') || lastPart.toLowerCase().includes('pm');
-
-                if (hasAmPm) {
-                    // Extract seconds and AM/PM
-                    const secondsAndAmPm = lastPart.split(' ');
-                    seconds = parseInt(secondsAndAmPm[0], 10);
-                    this._ampm = secondsAndAmPm[1].toUpperCase();
-
-                    // Parse hours and minutes
-                    hours = parseInt(timeParts[0], 10);
-                    minutes = parseInt(timeParts[1], 10);
-                } else {
-                    // No AM/PM in the string, parse normally
-                    hours = parseInt(timeParts[0], 10);
-                    minutes = parseInt(timeParts[1], 10);
-                    seconds = parseInt(timeParts[2], 10);
-                }
-            } else {
-                // For 24-hour format, parse normally
-                hours = parseInt(timeParts[0], 10);
-                minutes = parseInt(timeParts[1], 10);
-                seconds = parseInt(timeParts[2], 10);
-            }
+            const timeWithZone = DateTime.fromJSDate(now, timeZone ? { zone: timeZone } : undefined);
+            hours = timeWithZone.hour;
+            minutes = timeWithZone.minute;
+            seconds = timeWithZone.second;
         } else {
             // Use local time if no time zone is specified
             hours = now.getHours();
@@ -161,8 +138,13 @@ export class ClockController implements ReactiveController {
             seconds = now.getSeconds();
         }
 
+        // Handle hidden seconds
+        if (secondHidden) {
+            this._seconds = '';
+        }
+
         // Handle 12-hour format if configured
-        if (this.config.timeFormat?.hour12) {
+        if (hour12) {
             // Convert to 12-hour format
             const isPM = hours >= 12;
             hours = hours % 12;
@@ -172,10 +154,19 @@ export class ClockController implements ReactiveController {
             this._ampm = ''; // Clear AM/PM for 24-hour format
         }
 
-        // Format with leading zeros
-        this._hours = hours.toString().padStart(2, '0');
-        this._minutes = minutes.toString().padStart(2, '0');
-        this._seconds = seconds.toString().padStart(2, '0');
+        // Format time components according to configuration
+        // Always format hours and minutes, they can't be hidden anymore
+        const shouldPadHours = this.config.timeFormat?.hour !== 'numeric';
+        this._hours = shouldPadHours ? hours.toString().padStart(2, '0') : hours.toString();
+
+        const shouldPadMinutes = this.config.timeFormat?.minute !== 'numeric';
+        this._minutes = shouldPadMinutes ? minutes.toString().padStart(2, '0') : minutes.toString();
+
+        // Only format seconds if they're not hidden
+        if (!secondHidden) {
+            const shouldPadSeconds = this.config.timeFormat?.second !== 'numeric';
+            this._seconds = shouldPadSeconds ? seconds.toString().padStart(2, '0') : seconds.toString();
+        }
 
         // Log the current time for debugging
         this.logger.debug(`Time updated - H:${this._hours} M:${this._minutes} S:${this._seconds}`);
@@ -186,7 +177,7 @@ export class ClockController implements ReactiveController {
      */
     private updateDate(now: Date, language: string, timeZone?: string): void {
         // Log the date format options for debugging
-        this.logger.debug(`Updating date with format: ${JSON.stringify(this.config.dateFormat)}, language: ${language}, timeZone: ${timeZone || 'default'}`);
+        // this.logger.debug(`Updating date with format: ${JSON.stringify(this.config.dateFormat)}, language: ${language}, timeZone: ${timeZone || 'default'}`);
 
         // Format date with configurable format
         let formattedDate = formatDate(now, language, this.config.dateFormat || {

@@ -137,6 +137,7 @@ export class ClockComponent extends LitElement {
                 this.logger.debug(`DateFormat changed: ${JSON.stringify(oldDateFormat)} -> ${JSON.stringify(this.dateFormat)}`);
             }
 
+
             // Update unified ClockController with new configuration
             this.clockController.updateConfig({
                 timeFormat: this.timeFormat,

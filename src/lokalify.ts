@@ -185,14 +185,12 @@ export function getLocaleForLanguage(language: string): string {
 // Define a custom type that extends Intl.DateTimeFormatOptions to include 'hidden'
 export type ExtendedDateTimeFormatOptions = Omit<
     Intl.DateTimeFormatOptions,
-    'weekday' | 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second'
+    'weekday' | 'year' | 'month' | 'day' | 'second'
 > & {
   weekday?: 'long' | 'short' | 'narrow' | 'hidden';
   year?: 'numeric' | '2-digit' | 'hidden';
   month?: 'numeric' | '2-digit' | 'long' | 'short' | 'narrow' | 'hidden';
   day?: 'numeric' | '2-digit' | 'hidden';
-  hour?: 'numeric' | '2-digit' | 'hidden';
-  minute?: 'numeric' | '2-digit' | 'hidden';
   second?: 'numeric' | '2-digit' | 'hidden';
 };
 
@@ -298,8 +296,6 @@ export function formatTime(
 
   // Convert 'hidden' values to undefined
   // Handle each property that might be 'hidden' explicitly
-  if (formatOptions.hour === 'hidden') formatOptions.hour = undefined;
-  if (formatOptions.minute === 'hidden') formatOptions.minute = undefined;
   if (formatOptions.second === 'hidden') formatOptions.second = undefined;
 
   const allTimeComponentsHidden =
@@ -347,8 +343,6 @@ export function formatDateTime(
   if (formatOptions.year === 'hidden') formatOptions.year = undefined;
   if (formatOptions.month === 'hidden') formatOptions.month = undefined;
   if (formatOptions.day === 'hidden') formatOptions.day = undefined;
-  if (formatOptions.hour === 'hidden') formatOptions.hour = undefined;
-  if (formatOptions.minute === 'hidden') formatOptions.minute = undefined;
   if (formatOptions.second === 'hidden') formatOptions.second = undefined;
 
   const allDateTimeComponentsHidden =
