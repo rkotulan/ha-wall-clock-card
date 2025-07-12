@@ -1,4 +1,5 @@
-import {LitElement, html, css, property, customElement, CSSResult, TemplateResult, unsafeCSS} from 'lit-element';
+import {LitElement, html, css, unsafeCSS, CSSResult, TemplateResult} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {
     ImageSourceConfig,
@@ -97,7 +98,7 @@ export class WallClockCard extends LitElement {
     private fetchingImageUrls = false;
 
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
-    private clockComponent: ClockComponent = new ClockComponent();
+    private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
     private weatherUpdateTimer?: number;
     private transportationUpdateTimer?: number;
     private transportationAutoHideTimer?: number;
@@ -114,28 +115,22 @@ export class WallClockCard extends LitElement {
         );
 
         // Initialize the clock component
-        this.clockComponent.initialize({
-            timeFormat: this.config.timeFormat,
-            dateFormat: this.config.dateFormat,
-            language: this.config.language,
-            timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor,
-            onTimeUpdate: () => this.requestUpdate()
-        });
+        this.clockComponent.timeFormat = this.config.timeFormat;
+        this.clockComponent.dateFormat = this.config.dateFormat;
+        this.clockComponent.language = this.config.language;
+        this.clockComponent.timeZone = this.config.timeZone;
+        this.clockComponent.fontColor = this.config.fontColor;
     }
 
     connectedCallback(): void {
         super.connectedCallback();
 
         // Initialize the clock component with the latest configuration
-        this.clockComponent.initialize({
-            timeFormat: this.config.timeFormat,
-            dateFormat: this.config.dateFormat,
-            language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
-            timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor,
-            onTimeUpdate: () => this.requestUpdate()
-        });
+        this.clockComponent.timeFormat = this.config.timeFormat;
+        this.clockComponent.dateFormat = this.config.dateFormat;
+        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.clockComponent.timeZone = this.config.timeZone;
+        this.clockComponent.fontColor = this.config.fontColor;
 
         this.initConnectCallbackAsync();
     }
@@ -355,7 +350,7 @@ export class WallClockCard extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Clear all timers when the component is removed
-        this.clockComponent.disconnect();
+        // The ClockComponent will clean up itself when removed from the DOM
 
         if (this.imageRotationTimer) {
             clearInterval(this.imageRotationTimer);
@@ -588,14 +583,11 @@ export class WallClockCard extends LitElement {
         await this.initBackgroundImageManagerAsync();
 
         // Initialize the clock component with the new configuration
-        this.clockComponent.initialize({
-            timeFormat: this.config.timeFormat,
-            dateFormat: this.config.dateFormat,
-            language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
-            timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor,
-            onTimeUpdate: () => this.requestUpdate()
-        });
+        this.clockComponent.timeFormat = this.config.timeFormat;
+        this.clockComponent.dateFormat = this.config.dateFormat;
+        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.clockComponent.timeZone = this.config.timeZone;
+        this.clockComponent.fontColor = this.config.fontColor;
 
         // Update sensor value if entity is configured
         if (this.hass && this.config.sensorEntity) {
@@ -1076,7 +1068,7 @@ export class WallClockCard extends LitElement {
         `;
     }
 
-    render(): TemplateResult {
+    render() {
         return html`
             <ha-card style="color: ${this.config.fontColor};" class="${this.isTransitioning ? 'transitioning' : ''}">
                 ${this.currentImageUrl ?
@@ -1131,7 +1123,7 @@ export class WallClockCard extends LitElement {
                         ''
                 }
                 <div style="${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
-                    ${this.clockComponent.render()}
+                    ${this.clockComponent}
                 </div>
                 ${this.config.transportation && this.config.enableTransportation !== false ?
                         this.config.transportation?.onDemand && !this.transportationDataLoaded ?

@@ -1,8 +1,8 @@
-import { html, TemplateResult, css, CSSResult } from 'lit-element';
+import { LitElement, html, css, PropertyValues } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 import { ExtendedDateTimeFormatOptions } from '../../lokalify';
 import { createLogger } from '../../utils/logger';
-import { TimeModel, TimeModelConfig } from './time-model';
-import { ClockTimer } from './clock-timer';
+import { ClockController } from './clock-controller';
 
 export interface ClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
@@ -10,166 +10,184 @@ export interface ClockConfig {
     fontColor?: string;
     language?: string;
     timeZone?: string;
-    onTimeUpdate?: () => void; // Callback when time is updated
 }
 
-export class ClockComponent {
-    private timeModel: TimeModel;
-    private clockTimer: ClockTimer;
-    private config: ClockConfig = {};
+@customElement('ha-clock')
+export class ClockComponent extends LitElement {
+    @property({ type: Object }) timeFormat?: ExtendedDateTimeFormatOptions;
+    @property({ type: Object }) dateFormat?: ExtendedDateTimeFormatOptions;
+    @property({ type: String }) fontColor?: string;
+    @property({ type: String }) language?: string;
+    @property({ type: String }) timeZone?: string;
+
     private logger = createLogger('clock-component');
+    private clockController: ClockController;
 
     constructor() {
-        this.timeModel = new TimeModel();
-        this.clockTimer = new ClockTimer({
-            onTick: () => this.timeModel.updateTime()
+        super();
+        // Initialize the unified controller with the host (this component)
+        this.clockController = new ClockController(this, {
+            timeFormat: this.timeFormat,
+            dateFormat: this.dateFormat,
+            language: this.language,
+            timeZone: this.timeZone
         });
     }
 
-    static get styles(): CSSResult {
-        return css`
+    static styles = css`
+        .clock {
+            font-size: 12rem;
+            line-height: 10rem;
+            font-weight: 300;
+            text-align: center;
+            z-index: 2;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .hours-minutes {
+            font-size: 1em;
+            line-height: 1;
+        }
+
+        .seconds-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: 0.1em;
+            margin-top: 0.1em;
+            justify-content: flex-start;
+        }
+
+        .seconds {
+            font-size: 0.5em;
+            font-weight: 400;
+            line-height: 1;
+            vertical-align: top;
+        }
+
+        .ampm {
+            font-size: 0.3em;
+            font-weight: 400;
+            line-height: 1;
+            text-transform: lowercase;
+            opacity: 0.6;
+        }
+
+        /* Style for AM/PM when seconds are not displayed */
+        .ampm-only {
+            margin-top: 1.6em;
+        }
+
+        .date {
+            font-size: 4rem;
+            font-weight: 400;
+            text-align: center;
+            margin-top: 0.2rem;
+            opacity: 1;
+            z-index: 2;
+            position: relative;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 900px) {
             .clock {
-                font-size: 12rem;
-                line-height: 10rem;
-                font-weight: 300;
-                text-align: center;
-                z-index: 2;
-                position: relative;
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-            }
-
-            .hours-minutes {
-                font-size: 1em;
-                line-height: 1;
-            }
-
-            .seconds-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-left: 0.1em;
-                margin-top: 0.1em;
-                justify-content: flex-start;
-            }
-
-            .seconds {
-                font-size: 0.5em;
-                font-weight: 400;
-                line-height: 1;
-                vertical-align: top;
-            }
-
-            .ampm {
-                font-size: 0.3em;
-                font-weight: 400;
-                line-height: 1;
-                text-transform: lowercase;
-                opacity: 0.6;
-            }
-
-            /* Style for AM/PM when seconds are not displayed */
-            .ampm-only {
-                margin-top: 1.6em;
+                font-size: 16rem;
+                line-height: 14rem;
             }
 
             .date {
-                font-size: 4rem;
-                font-weight: 400;
-                text-align: center;
-                margin-top: 0.2rem;
-                opacity: 1;
-                z-index: 2;
-                position: relative;
+                font-size: 6rem;
+                line-height: 5rem;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .clock {
+                font-size: 18rem;
+                line-height: 14rem;
             }
 
-            /* Responsive adjustments */
-            @media (min-width: 900px) {
-                .clock {
-                    font-size: 16rem;
-                    line-height: 14rem;
-                }
+            .date {
+                font-size: 6rem;
+            }
+        }
+    `;
 
-                .date {
-                    font-size: 6rem;
-                    line-height: 5rem;
-                }
+    updated(changedProperties: PropertyValues): void {
+        super.updated(changedProperties);
+
+        if (changedProperties.has('timeFormat') || 
+            changedProperties.has('dateFormat') || 
+            changedProperties.has('language') || 
+            changedProperties.has('timeZone')) {
+
+            this.logger.debug('Clock properties changed, updating ClockController');
+
+            // Log the changed properties for debugging
+            if (changedProperties.has('timeFormat')) {
+                const oldTimeFormat = changedProperties.get('timeFormat');
+                this.logger.debug(`TimeFormat changed: ${JSON.stringify(oldTimeFormat)} -> ${JSON.stringify(this.timeFormat)}`);
             }
 
-            @media (min-width: 1280px) {
-                .clock {
-                    font-size: 18rem;
-                    line-height: 14rem;
-                }
-
-                .date {
-                    font-size: 6rem;
-                }
+            if (changedProperties.has('dateFormat')) {
+                const oldDateFormat = changedProperties.get('dateFormat');
+                this.logger.debug(`DateFormat changed: ${JSON.stringify(oldDateFormat)} -> ${JSON.stringify(this.dateFormat)}`);
             }
-        `;
-    }
 
-    initialize(config: ClockConfig): void {
-        this.logger.debug('Initializing ClockComponent');
-        this.config = config;
-
-        // Configure the TimeModel
-        const timeModelConfig: TimeModelConfig = {
-            timeFormat: config.timeFormat,
-            dateFormat: config.dateFormat,
-            language: config.language,
-            timeZone: config.timeZone,
-            onTimeUpdate: config.onTimeUpdate
-        };
-        this.timeModel.updateConfig(timeModelConfig);
-        this.timeModel.updateTime();
-
-        // Start the timer
-        this.clockTimer.startTimer();
-    }
-
-    disconnect(): void {
-        this.logger.debug('Disconnecting ClockComponent');
-        this.clockTimer.stopTimer();
+            // Update unified ClockController with new configuration
+            this.clockController.updateConfig({
+                timeFormat: this.timeFormat,
+                dateFormat: this.dateFormat,
+                language: this.language,
+                timeZone: this.timeZone
+            });
+        }
     }
 
     getHours(): string {
-        return this.timeModel.getHours();
+        return this.clockController.hours;
     }
 
     getMinutes(): string {
-        return this.timeModel.getMinutes();
+        return this.clockController.minutes;
     }
 
     getSeconds(): string {
-        return this.timeModel.getSeconds();
+        return this.clockController.seconds;
     }
 
     getAmPm(): string {
-        return this.timeModel.getAmPm();
+        return this.clockController.ampm;
     }
 
     getCurrentDate(): string {
-        return this.timeModel.getCurrentDate();
+        return this.clockController.currentDate;
     }
 
-    render(): TemplateResult {
+    render() {
+        // Log rendering information for debugging
+        const seconds = this.getSeconds();
+        const shouldShowSeconds = this.timeFormat?.second !== undefined && this.timeFormat?.second !== 'hidden';
+        this.logger.debug(`Rendering clock - Seconds: ${seconds}, Show seconds: ${shouldShowSeconds}, TimeFormat: ${JSON.stringify(this.timeFormat)}`);
+
         return html`
-            <div class="clock" style="color: ${this.config.fontColor};">
-                <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
-                ${this.config.timeFormat?.second !== undefined && this.config.timeFormat?.second !== 'hidden' ? html`
+            <div class="clock" style="color: ${this.fontColor};">
+                <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
+                ${shouldShowSeconds ? html`
                     <div class="seconds-container">
-                        <span class="seconds" style="color: ${this.config.fontColor};">${this.getSeconds()}</span>
-                        ${this.getAmPm() ? html`<span class="ampm" style="color: ${this.config.fontColor};">${this.getAmPm()}</span>` : ''}
+                        <span class="seconds" style="color: ${this.fontColor};">${seconds}</span>
+                        ${this.getAmPm() ? html`<span class="ampm" style="color: ${this.fontColor};">${this.getAmPm()}</span>` : ''}
                     </div>
                 ` : this.getAmPm() ? html`
                     <div class="seconds-container">
-                        <span class="ampm ampm-only" style="color: ${this.config.fontColor};">${this.getAmPm()}</span>
+                        <span class="ampm ampm-only" style="color: ${this.fontColor};">${this.getAmPm()}</span>
                     </div>
                 ` : ''}
             </div>
-            <div class="date" style="color: ${this.config.fontColor};">${this.getCurrentDate()}</div>
+            <div class="date" style="color: ${this.fontColor};">${this.getCurrentDate()}</div>
         `;
     }
 }

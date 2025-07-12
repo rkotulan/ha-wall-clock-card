@@ -105,8 +105,8 @@ export class IDSJMKProvider implements TransportationProvider {
           const maxDepartures = _config.maxDepartures || 2;
 
           const departures = post.Departures.slice(0, Math.min(maxDepartures, 5)).map((dep: any) => ({
-            lineId: dep.LineId,
-            lineName: dep.LineName,
+            lineId: dep.LineId || dep.Line,
+            lineName: dep.Line || dep.LineName,
             finalStop: dep.FinalStop,
             isLowFloor: dep.IsLowFloor,
             timeMark: dep.TimeMark,
