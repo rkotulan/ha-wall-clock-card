@@ -66,7 +66,7 @@ export class SensorSource extends AbstractImageSource {
 
             // Store the entity ID
             this.entityId = entityId;
-            this.logger.info(`Checked entity ${entityId}`);
+            this.logger.debug(`Checked entity ${entityId}`);
         } catch (error) {
             this.logger.error('Error checking entity:', error);
         }
@@ -93,7 +93,7 @@ export class SensorSource extends AbstractImageSource {
         // Clear the image URL cache to force re-filtering
         this.imageUrlCache.clear();
 
-        this.logger.info(`Updated cache with ${files.length} images from entity ${this.entityId}`);
+        this.logger.debug(`Updated cache with ${files.length} images from entity ${this.entityId}`);
     }
 
     /**
@@ -121,7 +121,7 @@ export class SensorSource extends AbstractImageSource {
 
         // If we have cached images and it's been less than the refresh interval, use the cached images
         if (this.cachedImages.length > 0 && (now - this.lastFetchTime) < this.refreshInterval) {
-            this.logger.info(`Using cached images (${this.cachedImages.length} images)`);
+            this.logger.debug(`Using cached images (${this.cachedImages.length} images)`);
             return this.filterImagesByWeatherAndTime(this.cachedImages, weather, timeOfDay);
         }
 

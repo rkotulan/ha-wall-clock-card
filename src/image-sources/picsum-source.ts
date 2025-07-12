@@ -33,7 +33,7 @@ export class PicsumSource extends AbstractImageSource {
     const seed = timestamp;
     const imageUrl = `https://picsum.photos/seed/${seed}/1920/1080`;
 
-    this.logger.info(`Generated Picsum image URL: ${imageUrl}`);
+    this.logger.debug(`Generated Picsum image URL: ${imageUrl}`);
     return [imageUrl];
   }
 

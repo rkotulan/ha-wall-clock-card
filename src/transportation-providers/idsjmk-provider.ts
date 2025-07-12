@@ -5,6 +5,7 @@ import {
   TransportationData, 
   TransportationDeparture 
 } from './transportation-provider';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration for the IDSJMK transportation provider
@@ -79,7 +80,7 @@ export class IDSJMKProvider implements TransportationProvider {
           const post = data.PostList.find((p: any) => p.PostID === postId);
 
           if (!post) {
-            console.warn(`No platform found with postId ${postId} for stopId ${stopId}`);
+            logger.warn(`No platform found with postId ${postId} for stopId ${stopId}`);
             continue;
           }
 
@@ -117,7 +118,7 @@ export class IDSJMKProvider implements TransportationProvider {
         loading: false
       };
     } catch (error) {
-      console.error('Error fetching transportation data:', error);
+      logger.error('Error fetching transportation data:', error);
       return {
         departures: [],
         error: error instanceof Error ? error.message : String(error),

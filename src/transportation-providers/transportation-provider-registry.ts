@@ -1,4 +1,5 @@
 import { TransportationProvider } from './transportation-provider';
+import { logger } from '../utils/logger';
 
 /**
  * Registry for transportation provider plugins
@@ -29,7 +30,7 @@ export class TransportationProviderRegistry {
    */
   public register(provider: TransportationProvider): void {
     if (this.providers.has(provider.id)) {
-      console.warn(`Transportation provider with ID ${provider.id} is already registered. Overwriting.`);
+      logger.warn(`Transportation provider with ID ${provider.id} is already registered. Overwriting.`);
     }
     this.providers.set(provider.id, provider);
   }

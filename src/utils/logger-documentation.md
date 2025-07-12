@@ -52,7 +52,7 @@ import { logger } from './utils/logger';
 
 // Log messages at different levels
 logger.debug('Detailed information for debugging');
-logger.info('General information about application operation');
+logger.debug('General information about application operation');
 logger.warn('Warning about potential issues');
 logger.error('Error information', new Error('Something went wrong'));
 ```
@@ -65,7 +65,7 @@ import { createLogger } from './utils/logger';
 // Create a logger for a specific component
 const logger = createLogger('background-image-manager');
 
-logger.info('Initializing with image source ID: picsum');
+logger.debug('Initializing with image source ID: picsum');
 logger.warn('No image URL returned from source');
 ```
 
@@ -118,7 +118,7 @@ import { createLogger } from './utils/logger';
 
 const logger = createLogger('background-image-manager');
 
-logger.info('Initializing with image source ID: picsum');
+logger.debug('Initializing with image source ID: picsum');
 logger.warn('No image URL returned from source');
 logger.error('Error getting next image URL:', error);
 ```

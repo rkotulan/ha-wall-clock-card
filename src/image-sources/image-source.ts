@@ -146,7 +146,7 @@ export interface ImageSource {
    * @param timeOfDay Current time of day
    * @returns Promise that resolves to an image URL
    */
-  GetNextImageUrlAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string>;
+  getNextImageUrlAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string>;
 
   /**
    * Get the default configuration for this image source

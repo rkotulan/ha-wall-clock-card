@@ -37,7 +37,7 @@ The `BackgroundImageManager` class has been refactored to use the new logger:
 
 - Added logger import
 - Created a component-specific logger instance
-- Replaced console.log calls with logger.info
+- Replaced console.log calls with logger.debug
 - Replaced console.warn calls with logger.warn
 - Replaced console.error calls with logger.error
 - Removed redundant source prefixes from log messages
@@ -210,7 +210,7 @@ if (process.env.NODE_ENV !== 'production') {
 // You can also create a custom logger wrapper that conditionally includes debug logs
 const productionLogger = {
   debug: () => {}, // No-op function in production
-  info: (message, ...args) => logger.info(message, ...args),
+  info: (message, ...args) => logger.debug(message, ...args),
   warn: (message, ...args) => logger.warn(message, ...args),
   error: (message, ...args) => logger.error(message, ...args)
 };

@@ -23,7 +23,7 @@ import {
     formatDateTime,
     ExtendedDateTimeFormatOptions
 } from './lokalify';
-import { configureLogger, LogLevel } from './utils/logger';
+import { configureLogger, logger, getLogLevelFromString } from './utils/logger';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
@@ -82,9 +82,6 @@ export class WallClockCard extends LitElement {
     @property({type: String}) currentTime = '';
     @property({type: String}) currentDate = '';
     @property({type: Object}) config: WallClockConfig = {};
-    // @property({type: Number}) currentImageIndex = 0;
-    // @property({ type: Array }) imageUrls: string[] = []; // All image URLs
-    // @property({ type: Array }) imageStatuses: ImageStatus[] = []; // Status of each image
     @property({type: String}) currentImageUrl = ''; // Currently displayed image URL
     @property({type: Array}) sensorValues: { entity: string, label?: string, value: string }[] = [];
     @property({type: String}) hours = '';
@@ -113,8 +110,9 @@ export class WallClockCard extends LitElement {
     constructor() {
         super();
 
-        // Display styled console info with version
-        console.info(
+        // Display version info
+        //logger.info(`WALL-CLOCK-CARD ${PACKAGE_VERSION}`);
+        logger.info(
             "%c WALL-CLOCK-CARD %c " + PACKAGE_VERSION + " ",
             "color: white; background: #3498db; font-weight: 700;",
             "color: #3498db; background: white; font-weight: 700;"
@@ -136,28 +134,8 @@ export class WallClockCard extends LitElement {
 
     async initConnectCallbackAsync(): Promise<void> {
         // Configure the logger based on the configured log level
-        const logLevelString = this.config.logLevel || 'warn';
-        let logLevel: LogLevel;
-
-        switch (logLevelString.toLowerCase()) {
-            case 'debug':
-                logLevel = LogLevel.DEBUG;
-                break;
-            case 'info':
-                logLevel = LogLevel.INFO;
-                break;
-            case 'warn':
-                logLevel = LogLevel.WARN;
-                break;
-            case 'error':
-                logLevel = LogLevel.ERROR;
-                break;
-            case 'none':
-                logLevel = LogLevel.NONE;
-                break;
-            default:
-                logLevel = LogLevel.WARN; // Default to WARN
-        }
+        const logLevelString = this.config.logLevel || 'info';
+        const logLevel = getLogLevelFromString(logLevelString);
 
         configureLogger({
             level: logLevel,
@@ -171,9 +149,9 @@ export class WallClockCard extends LitElement {
         // Load translations for all supported languages
         try {
             await loadTranslationsAsync();
-            console.log('[wall-clock] Loaded translations for all languages');
+            logger.debug('Loaded translations for all languages');
         } catch (error) {
-            console.error('[wall-clock] Error loading translations:', error);
+            logger.error('Error loading translations:', error);
         }
 
         // Fetch weather data first if enabled
@@ -189,7 +167,7 @@ export class WallClockCard extends LitElement {
             // Convert to milliseconds
             const weatherIntervalMs = weatherInterval * 1000;
 
-            console.log(`[wall-clock] Setting weather update interval to ${weatherInterval} seconds`);
+            logger.debug(`Setting weather update interval to ${weatherInterval} seconds`);
 
             // Update weather data at the configured interval
             this.weatherUpdateTimer = window.setInterval(() => {
@@ -198,7 +176,7 @@ export class WallClockCard extends LitElement {
                     try {
                         await this.fetchWeatherDataAsync();
                     } catch (error) {
-                        console.error('[wall-clock] Error in weather update interval:', error);
+                        logger.error('Error in weather update interval:', error);
                     }
                 })();
             }, weatherIntervalMs);
@@ -223,7 +201,7 @@ export class WallClockCard extends LitElement {
                 // Convert to milliseconds
                 const transportationIntervalMs = transportationInterval * 1000;
 
-                console.log(`[wall-clock] Setting transportation update interval to ${transportationInterval} seconds`);
+                logger.info(`Setting transportation update interval to ${transportationInterval} seconds`);
 
                 // Update transportation data at the configured interval
                 this.transportationUpdateTimer = window.setInterval(() => {
@@ -232,12 +210,12 @@ export class WallClockCard extends LitElement {
                         try {
                             await this.fetchTransportationDataAsync();
                         } catch (error) {
-                            console.error('[wall-clock] Error in transportation update interval:', error);
+                            logger.error('Error in transportation update interval:', error);
                         }
                     })();
                 }, transportationIntervalMs);
             } else {
-                console.log('[wall-clock] Transportation on-demand loading is enabled. Data will be loaded when requested.');
+                logger.debug('Transportation on-demand loading is enabled. Data will be loaded when requested.');
             }
         }
     }
@@ -254,7 +232,7 @@ export class WallClockCard extends LitElement {
             let currentWeather: Weather = this.weatherData?.current?.conditionUnified || Weather.All;
             let currentTimeOfDay: TimeOfDay = getCurrentTimeOfDay();
 
-            console.log(`[wall-clock] Current weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
+            logger.debug(`Current weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
 
             // Prepare the configuration for the BackgroundImageManager
             const imageConfig = {
@@ -263,7 +241,7 @@ export class WallClockCard extends LitElement {
                 imageSourceId: this.config.imageSource
             };
 
-            console.log(`[wall-clock] Initializing BackgroundImageManager with imageSourceId: ${this.config.imageSource || 'not set (will use default picsum)'}`);
+            logger.debug(`Initializing BackgroundImageManager with imageSourceId: ${this.config.imageSource || 'not set (will use default picsum)'}`);
 
             // Initialize the BackgroundImageManager
             const initialized = this.backgroundImageManager.initialize(
@@ -271,14 +249,14 @@ export class WallClockCard extends LitElement {
             );
 
             if (!initialized) {
-                console.warn('[wall-clock] Failed to initialize BackgroundImageManager');
+                logger.warn('Failed to initialize BackgroundImageManager');
                 return;
             }
 
             this.setupImageRotation();
             await this.fetchNewImageAsync();
         } catch (error) {
-            console.error('[wall-clock] Error fetching image URLs:', error);
+            logger.error('Error fetching image URLs:', error);
         } finally {
             this.fetchingImageUrls = false;
         }
@@ -294,7 +272,7 @@ export class WallClockCard extends LitElement {
         // Get the configured rotation interval or default to 90 seconds
         const rotationInterval = (this.config.backgroundRotationInterval || 90) * 1000;
 
-        console.log(`[wall-clock] Setting up image rotation with interval: ${rotationInterval / 1000} seconds`);
+        logger.info(`Setting up image rotation with interval: ${rotationInterval / 1000} seconds`);
 
         // Set up rotation with the configured interval
         this.imageRotationTimer = window.setInterval(() => {
@@ -305,7 +283,7 @@ export class WallClockCard extends LitElement {
                 try {
                     await this.fetchNewImageAsync();
                 } catch (error) {
-                    console.error(`[wall-clock] Error in image rotation interval for ${this.config.imageSource}:`, error);
+                    logger.error(`Error in image rotation interval for ${this.config.imageSource}:`, error);
                 }
             })();
         }, rotationInterval);
@@ -328,13 +306,13 @@ export class WallClockCard extends LitElement {
           );
 
             if (newImageUrl) {
-                console.log(`[wall-clock] Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
+                logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
 
                 // Load the new image
-                console.log(`[wall-clock] Loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
+                logger.debug(`Loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
                 const img = new Image();
                 img.onload = () => {
-                    console.log(`[wall-clock] New image loaded successfully: ${newImageUrl}`);
+                    logger.info(`New image loaded successfully: ${newImageUrl}`);
 
                     // Update the current image URL
                     this.currentImageUrl = newImageUrl;
@@ -342,15 +320,15 @@ export class WallClockCard extends LitElement {
                     this.requestUpdate();
                 };
                 img.onerror = () => {
-                    console.error(`[wall-clock] Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
+                    logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
                 };
 
                 img.src = newImageUrl;
             } else {
-                console.warn(`[wall-clock] Could not fetch new image from ${this.backgroundImageManager.getImageSourceId()}.`);
+                logger.warn(`Could not fetch new image from ${this.backgroundImageManager.getImageSourceId()}.`);
             }
         } catch (error) {
-            console.error('[wall-clock] Error fetching new dynamic image:', error);
+            logger.error('Error fetching new dynamic image:', error);
         }
     }
 
@@ -420,9 +398,9 @@ export class WallClockCard extends LitElement {
             // Update the last update timestamp
             this.lastTransportationUpdate = new Date();
 
-            console.log(`[wall-clock] Fetched transportation data from ${provider.name}:`, this.transportationData);
+            logger.debug(`Fetched transportation data from ${provider.name}:`, this.transportationData);
         } catch (error) {
-            console.error('[wall-clock] Error fetching transportation data:', error);
+            logger.error('Error fetching transportation data:', error);
             this.transportationData = {
                 departures: [],
                 error: error instanceof Error ? error.message : String(error),
@@ -437,7 +415,7 @@ export class WallClockCard extends LitElement {
     private async fetchWeatherDataAsync(): Promise<void> {
         if (this.weatherLoading || !this.config.showWeather) return;
 
-        console.log(`[wall-clock] Begin fetch weather data`);
+        logger.debug(`Begin fetch weather data`);
 
         this.weatherLoading = true;
         this.weatherError = false;
@@ -462,18 +440,18 @@ export class WallClockCard extends LitElement {
                 // Ensure units is properly set if specified
                 if (this.config.weatherConfig.units) {
                     weatherConfig.units = this.config.weatherConfig.units;
-                    console.log(`[wall-clock] Using weather units: ${weatherConfig.units}`);
+                    logger.debug(`Using weather units: ${weatherConfig.units}`);
                 }
             }
 
             // Fetch weather data from the provider
             this.weatherData = await provider.fetchWeatherAsync(weatherConfig);
 
-            console.log(`[wall-clock] Fetched weather data from ${provider.name}:`, this.weatherData);
+            logger.info(`Fetched weather data from ${provider.name}:`, this.weatherData);
         } catch (error) {
             this.weatherError = true;
             this.weatherErrorMessage = error instanceof Error ? error.message : String(error);
-            console.error('[wall-clock] Error fetching weather data:', error);
+            logger.error('Error fetching weather data:', error);
         } finally {
             this.weatherLoading = false;
         }
@@ -1193,8 +1171,8 @@ export class WallClockCard extends LitElement {
                             <img
                                     class="background-image"
                                     src="${this.currentImageUrl}"
-                                    @load="${() => console.log('[wall-clock] Background image rendered successfully:', this.currentImageUrl)}"
-                                    @error="${(e: Event) => console.error('[wall-clock] Error rendering background image:', this.currentImageUrl, e)}"
+                                    @load="${() => logger.debug('Background image rendered successfully:', this.currentImageUrl)}"
+                                    @error="${(e: Event) => logger.error('Error rendering background image:', this.currentImageUrl, e)}"
                             >
                             <div
                                     class="background-overlay"
@@ -1395,7 +1373,7 @@ export class WallClockCard extends LitElement {
      * This is called when the user clicks the bus icon to load transportation data on demand
      */
     private async _handleTransportationClickAsync(): Promise<void> {
-        console.log('[wall-clock] Transportation button clicked, loading data on demand');
+        logger.debug('Transportation button clicked, loading data on demand');
 
         // Fetch transportation data
         await this.fetchTransportationDataAsync();
@@ -1414,7 +1392,7 @@ export class WallClockCard extends LitElement {
             // Convert to milliseconds
             const transportationIntervalMs = transportationInterval * 1000;
 
-            console.log(`[wall-clock] Setting transportation update interval to ${transportationInterval} seconds`);
+            logger.debug(`Setting transportation update interval to ${transportationInterval} seconds`);
 
             // Clear any existing timer
             if (this.transportationUpdateTimer) {
@@ -1428,7 +1406,7 @@ export class WallClockCard extends LitElement {
                     try {
                         await this.fetchTransportationDataAsync();
                     } catch (error) {
-                        console.error('[wall-clock] Error in transportation update interval:', error);
+                        logger.error('Error in transportation update interval:', error);
                     }
                 })();
             }, transportationIntervalMs);
@@ -1450,11 +1428,11 @@ export class WallClockCard extends LitElement {
             // Convert to milliseconds
             const autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
 
-            console.log(`[wall-clock] Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
+            logger.debug(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
 
             // Set timer to hide departures and show bus button again after timeout
             this.transportationAutoHideTimer = window.setTimeout(() => {
-                console.log(`[wall-clock] Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
+                logger.debug(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
                 this.transportationDataLoaded = false;
             }, autoHideTimeoutMs);
         }

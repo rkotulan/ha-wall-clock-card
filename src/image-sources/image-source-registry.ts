@@ -1,4 +1,5 @@
 import { ImageSource } from './image-source';
+import { logger } from '../utils/logger';
 
 /**
  * Registry for image source plugins
@@ -29,7 +30,7 @@ export class ImageSourceRegistry {
    */
   public register(source: ImageSource): void {
     if (this.sources.has(source.id)) {
-      console.warn(`Image source with ID ${source.id} is already registered. Overwriting.`);
+      logger.warn(`Image source with ID ${source.id} is already registered. Overwriting.`);
     }
     this.sources.set(source.id, source);
   }

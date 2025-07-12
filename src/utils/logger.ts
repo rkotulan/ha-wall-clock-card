@@ -183,5 +183,27 @@ export function createLogger(source: string) {
   };
 }
 
+/**
+ * Convert a string representation of a log level to the corresponding LogLevel enum value
+ * @param logLevelString String representation of a log level ('debug', 'info', 'warn', 'error', 'none')
+ * @returns The corresponding LogLevel enum value, or LogLevel.WARN if the string doesn't match any known log level
+ */
+export function getLogLevelFromString(logLevelString: string): LogLevel {
+  switch (logLevelString.toLowerCase()) {
+    case 'debug':
+      return LogLevel.DEBUG;
+    case 'info':
+      return LogLevel.INFO;
+    case 'warn':
+      return LogLevel.WARN;
+    case 'error':
+      return LogLevel.ERROR;
+    case 'none':
+      return LogLevel.NONE;
+    default:
+      return LogLevel.WARN; // Default to WARN
+  }
+}
+
 // Create a default logger
 export const logger = createLogger('wall-clock');

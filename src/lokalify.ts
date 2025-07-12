@@ -2,6 +2,7 @@
  * Lokalify - A simple localization system for the Wall Clock Card
  * Provides translations directly embedded in the JS file
  */
+import { logger } from './utils/logger';
 
 // Define the structure of the translations
 // This allows for both flat key-value pairs and nested objects
@@ -77,12 +78,12 @@ export async function loadLanguageTranslationsAsync(language: string): Promise<v
     // Use embedded translations instead of fetching from external files
     if (embeddedTranslations[language]) {
       loadedTranslations[language] = embeddedTranslations[language];
-      console.log(`[lokalify] Loaded translations for ${language}`);
+      logger.debug(`Loaded translations for ${language}`);
     } else {
-      console.warn(`[lokalify] No embedded translations found for ${language}`);
+      logger.warn(`No embedded translations found for ${language}`);
     }
   } catch (error) {
-    console.error(`[lokalify] Error loading translations for ${language}: ${error}`);
+    logger.error(`Error loading translations for ${language}: ${error}`);
   }
 }
 
@@ -91,7 +92,7 @@ export async function loadLanguageTranslationsAsync(language: string): Promise<v
  * @returns A promise that resolves when all translations are loaded
  */
 export async function loadTranslationsAsync(): Promise<void> {
-  console.log(`[lokalify] Loading all translations`);
+  logger.debug(`Loading all translations`);
   const languages = getSupportedLanguages();
   const promises = languages.map(lang => loadLanguageTranslationsAsync(lang));
   await Promise.all(promises);

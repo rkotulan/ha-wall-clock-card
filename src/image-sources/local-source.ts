@@ -32,15 +32,15 @@ export class LocalSource extends AbstractImageSource {
 
         // If we have backgroundImages structure, use it
         if (config.backgroundImages && config.backgroundImages.length > 0) {
-            this.logger.info(`Using backgroundImages structure with ${config.backgroundImages.length} images`);
-            this.logger.info(`First image URL: ${config.backgroundImages[0].url}`);
+            this.logger.debug(`Using backgroundImages structure with ${config.backgroundImages.length} images`);
+            this.logger.debug(`First image URL: ${config.backgroundImages[0].url}`);
 
             // Use the common filtering method from AbstractImageSource
             return this.filterImagesByWeatherAndTime(config.backgroundImages, weather, timeOfDay);
         }
 
         // No images found
-        this.logger.info(`No images found in configuration`);
+        this.logger.debug(`No images found in configuration`);
         return [];
     }
 

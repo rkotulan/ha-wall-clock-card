@@ -1,5 +1,6 @@
 import { WeatherProvider, WeatherProviderConfig, WeatherData } from './weather-provider';
 import { Weather } from '../image-sources/image-source';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration for the OpenWeatherMap weather provider
@@ -37,7 +38,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       // Fetch data from OpenWeatherMap Forecast API (5 day / 3 hour forecast)
       const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=${units}&lang=${language}&appid=${config.apiKey}`;
 
-      console.log("[OpenWeatherMap] " + url);
+      logger.debug("[OpenWeatherMap] " + url);
 
       const response = await fetch(url);
 
@@ -116,7 +117,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
 
       return { current, daily };
     } catch (error) {
-      console.error('Error fetching weather data from OpenWeatherMap:', error);
+      logger.error('Error fetching weather data from OpenWeatherMap:', error);
       throw error;
     }
   }

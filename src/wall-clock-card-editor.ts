@@ -7,6 +7,7 @@ import {
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
 import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './lokalify';
+import { logger } from './utils/logger';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -402,7 +403,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         const detectedWeather = FindAttributeInPath(updatedImg.url, ValidWeather);
                         if (detectedWeather) {
                             updatedImg.weather = detectedWeather as Weather;
-                            console.log(`[editor] Auto-detected weather: ${updatedImg.weather} from URL: ${updatedImg.url}`);
+                            logger.debug(`Auto-detected weather: ${updatedImg.weather} from URL: ${updatedImg.url}`);
                         }
                     }
 
@@ -411,7 +412,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         const detectedTimeOfDay = FindAttributeInPath(updatedImg.url, ValidTimeOfDay);
                         if (detectedTimeOfDay) {
                             updatedImg.timeOfDay = detectedTimeOfDay as TimeOfDay;
-                            console.log(`[editor] Auto-detected timeOfDay: ${updatedImg.timeOfDay} from URL: ${updatedImg.url}`);
+                            logger.debug(`Auto-detected timeOfDay: ${updatedImg.timeOfDay} from URL: ${updatedImg.url}`);
                         }
                     }
                 }
@@ -657,7 +658,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <div class="value">
                                 <ha-select
                                         label="Log Level"
-                                        .value=${this._config.logLevel || 'warn'}
+                                        .value=${this._config.logLevel || 'info'}
                                         @click=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
                                         }}

@@ -1,4 +1,5 @@
 import { WeatherProvider } from './weather-provider';
+import { logger } from '../utils/logger';
 
 /**
  * Registry for weather provider plugins
@@ -29,7 +30,7 @@ export class WeatherProviderRegistry {
    */
   public register(provider: WeatherProvider): void {
     if (this.providers.has(provider.id)) {
-      console.warn(`Weather provider with ID ${provider.id} is already registered. Overwriting.`);
+      logger.warn(`Weather provider with ID ${provider.id} is already registered. Overwriting.`);
     }
     this.providers.set(provider.id, provider);
   }

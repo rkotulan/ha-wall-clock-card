@@ -20,11 +20,11 @@ export class BackgroundImageManager {
     public initialize(config: ImageSourceConfig = {}): boolean {
         // Default to 'picsum' if not provided
         const imageSourceId = config.imageSourceId || 'picsum';
-        this.logger.info(`Initializing with image source ID: ${imageSourceId}`);
+        this.logger.debug(`Initializing with image source ID: ${imageSourceId}`);
 
         // Skip initialization if imageSource is 'none'
         if (imageSourceId === 'none') {
-            this.logger.info('Image source is set to none, skipping initialization');
+            this.logger.debug('Image source is set to none, skipping initialization');
             return false;
         }
 
@@ -47,7 +47,7 @@ export class BackgroundImageManager {
             ...config,
         };
 
-        this.logger.info(`Initialized with image source: ${this.imageSourceId}`);
+        this.logger.debug(`Initialized with image source: ${this.imageSourceId}`);
         return true;
     }
 
@@ -64,11 +64,11 @@ export class BackgroundImageManager {
       }
 
     try {
-          this.logger.info(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
-          const imageUrl = await this.imageSource.GetNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
+          this.logger.debug(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
+          const imageUrl = await this.imageSource.getNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
 
           if (imageUrl) {
-              this.logger.info(`Got image URL: ${imageUrl}`);
+              this.logger.debug(`Got image URL: ${imageUrl}`);
               return imageUrl;
           } else {
               this.logger.warn('No image URL returned from source');

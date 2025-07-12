@@ -10,7 +10,7 @@ import { logger } from './logger';
 
 function basicExample() {
   // Use the default logger
-  logger.info('This is an info message');
+  logger.debug('This is an info message');
   logger.warn('This is a warning message');
   logger.error('This is an error message', new Error('Example error'));
   
@@ -23,13 +23,13 @@ function componentExample() {
   // Create a logger for a specific component
   const backgroundLogger = createLogger('background-image-manager');
   
-  backgroundLogger.info('Initializing with image source ID: picsum');
+  backgroundLogger.debug('Initializing with image source ID: picsum');
   backgroundLogger.warn('No image URL returned from source');
   backgroundLogger.error('Error getting next image URL:', new Error('Failed to fetch'));
   
   // You can also create a new logger with a different source
   const imageSourceLogger = backgroundLogger.withSource('picsum-source');
-  imageSourceLogger.info('Generated Picsum image URL: https://picsum.photos/1920/1080');
+  imageSourceLogger.debug('Generated Picsum image URL: https://picsum.photos/1920/1080');
 }
 
 // Example 3: Configuring the logger
@@ -48,7 +48,7 @@ function configurationExample() {
   
   // Create a component logger with the new configuration
   const componentLogger = createLogger('unsplash-source');
-  componentLogger.info('Using collection IDs: 123, 456, 789');
+  componentLogger.debug('Using collection IDs: 123, 456, 789');
   
   // The log message will now include timestamp, level, prefix, and source:
   // [2023-04-15T12:34:56.789Z] [INFO] [wall-clock] [unsplash-source] Using collection IDs: 123, 456, 789
@@ -63,7 +63,7 @@ function migrationExample() {
   
   // After:
   const logger = createLogger('background-image-manager');
-  logger.info('Initializing with image source ID: picsum');
+  logger.debug('Initializing with image source ID: picsum');
   logger.warn('No image URL returned from source');
   logger.error('Error getting next image URL:', new Error('Failed to fetch'));
 }
@@ -73,13 +73,13 @@ class ExampleComponent {
   private logger = createLogger('example-component');
   
   constructor() {
-    this.logger.info('Component initialized');
+    this.logger.debug('Component initialized');
   }
   
   doSomething() {
     try {
       // Some operation
-      this.logger.info('Operation completed successfully');
+      this.logger.debug('Operation completed successfully');
     } catch (error) {
       this.logger.error('Operation failed:', error);
     }

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.0.0
+
+### Breaking Changes
+- **Major refactoring of the entire codebase**: Improved architecture, code organization, and maintainability
+- **Enhanced logging system**: Completely redesigned logging system with better error reporting and debugging capabilities
+
+### What's Changed
+- Comprehensive refactoring of all major components:
+  - Image sources system
+  - Weather providers
+  - Transportation providers
+  - Logger utilities
+- Improved error handling and reporting throughout the application
+- Enhanced type safety with better TypeScript usage
+- Optimized performance for background image loading and rotation
+- Better code organization with clearer separation of concerns
+- Updated dependencies to latest versions
+- Improved documentation for developers
+
 
 ## 1.21.0
 
