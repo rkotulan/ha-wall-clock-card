@@ -1,4 +1,6 @@
 const path = require('path');
+const webpack = require('webpack');
+const packageJson = require('./package.json');
 
 module.exports = {
   entry: './src/wall-clock-card.ts',
@@ -10,6 +12,11 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.js']
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      PACKAGE_VERSION: JSON.stringify(packageJson.version)
+    })
+  ],
   module: {
     rules: [
       {

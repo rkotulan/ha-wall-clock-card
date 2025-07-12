@@ -26,6 +26,9 @@ import {
 import { configureLogger, LogLevel } from './utils/logger';
 import './wall-clock-card-editor';
 
+// Global constant injected by webpack.DefinePlugin
+declare const PACKAGE_VERSION: string;
+
 // Interface for sensor configuration
 export interface SensorConfig {
     entity: string;
@@ -112,7 +115,7 @@ export class WallClockCard extends LitElement {
 
         // Display styled console info with version
         console.info(
-            "%c WALL-CLOCK-CARD %c 1.19.4 ",
+            "%c WALL-CLOCK-CARD %c " + PACKAGE_VERSION + " ",
             "color: white; background: #3498db; font-weight: 700;",
             "color: #3498db; background: white; font-weight: 700;"
         );
