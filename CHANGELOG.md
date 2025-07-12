@@ -18,7 +18,11 @@
 - Better code organization with clearer separation of concerns
 - Updated dependencies to latest versions
 - Improved documentation for developers
-
+- Added background image transition effects for smoother visual experience
+- Fixed issue where clock would sometimes stop updating
+  - Moved timer setup from constructor to connectedCallback for better lifecycle management
+  - Added check to prevent duplicate timers
+  - Improved reliability of clock updates when component is re-rendered
 
 ## 1.21.0
 

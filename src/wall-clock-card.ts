@@ -83,6 +83,8 @@ export class WallClockCard extends LitElement {
     @property({type: String}) currentDate = '';
     @property({type: Object}) config: WallClockConfig = {};
     @property({type: String}) currentImageUrl = ''; // Currently displayed image URL
+    @property({type: String}) previousImageUrl = ''; // Previously displayed image URL
+    @property({type: Boolean}) isTransitioning = false; // Flag to track if image transition is in progress
     @property({type: Array}) sensorValues: { entity: string, label?: string, value: string }[] = [];
     @property({type: String}) hours = '';
     @property({type: String}) minutes = '';
@@ -98,7 +100,7 @@ export class WallClockCard extends LitElement {
     @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
     @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
 
-    private timer?: number;
+    private timeTimer?: number;
     private imageRotationTimer?: number;
     private fetchingImageUrls = false;
 
@@ -118,16 +120,22 @@ export class WallClockCard extends LitElement {
             "color: #3498db; background: white; font-weight: 700;"
         );
 
+        // Initial time update
         this.updateTime();
-
-        // Update the time every second
-        this.timer = window.setInterval(() => {
-            this.updateTime();
-        }, 1000);
     }
 
     connectedCallback(): void {
         super.connectedCallback();
+
+        // Set up the clock timeTimer when the component is connected to the DOM
+        // This ensures the timeTimer is re-established if the component is re-rendered
+        if (!this.timeTimer) {
+            this.updateTime();
+            this.timeTimer = window.setInterval(() => {
+                this.updateTime();
+            }, 1000);
+            logger.debug('Clock timeTimer started');
+        }
 
         this.initConnectCallbackAsync();
     }
@@ -314,6 +322,18 @@ export class WallClockCard extends LitElement {
                 img.onload = () => {
                     logger.info(`New image loaded successfully: ${newImageUrl}`);
 
+                    // Save the current image URL as the previous one before updating
+                    if (this.currentImageUrl) {
+                        this.previousImageUrl = this.currentImageUrl;
+                        this.isTransitioning = true;
+
+                        // After transition completes, clear the previous image URL
+                        setTimeout(() => {
+                            this.isTransitioning = false;
+                            this.requestUpdate();
+                        }, 1000); // Match the transition duration in CSS
+                    }
+
                     // Update the current image URL
                     this.currentImageUrl = newImageUrl;
 
@@ -335,8 +355,8 @@ export class WallClockCard extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Clear all timers when the component is removed
-        if (this.timer) {
-            clearInterval(this.timer);
+        if (this.timeTimer) {
+            clearInterval(this.timeTimer);
         }
         if (this.imageRotationTimer) {
             clearInterval(this.imageRotationTimer);
@@ -723,6 +743,25 @@ export class WallClockCard extends LitElement {
                 object-fit: cover;
                 z-index: 0;
                 border-radius: var(--ha-card-border-radius, 4px);
+                transition: opacity 1s ease-in-out;
+                opacity: 1; /* Default state: fully visible */
+            }
+
+            /* During transition, previous image starts visible and fades out */
+            .transitioning .background-image.previous {
+                opacity: 0; /* End state: fully transparent */
+                z-index: 0.5; /* Between the background and the overlay */
+            }
+
+            /* New image starts invisible and fades in */
+            .transitioning .background-image:not(.previous) {
+                opacity: 0; /* Start state: fully transparent */
+                animation: fadeIn 1s forwards; /* Use animation to ensure it ends at opacity 1 */
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
 
             .background-overlay {
@@ -1165,9 +1204,18 @@ export class WallClockCard extends LitElement {
 
     render(): TemplateResult {
         return html`
-            <ha-card style="color: ${this.config.fontColor};">
+            <ha-card style="color: ${this.config.fontColor};" class="${this.isTransitioning ? 'transitioning' : ''}">
                 ${this.currentImageUrl ?
                         html`
+                            ${this.isTransitioning && this.previousImageUrl ?
+                                html`
+                                    <img
+                                            class="background-image previous"
+                                            src="${this.previousImageUrl}"
+                                            @error="${(e: Event) => logger.error('Error rendering previous background image:', this.previousImageUrl, e)}"
+                                    >
+                                ` : ''
+                            }
                             <img
                                     class="background-image"
                                     src="${this.currentImageUrl}"
@@ -1210,8 +1258,7 @@ export class WallClockCard extends LitElement {
                 }
                 <div class="clock"
                      style="color: ${this.config.fontColor}; ${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
-                    <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}
-                        :${this.minutes}</span>
+                    <span class="hours-minutes" style="color: ${this.config.fontColor};">${this.hours}:${this.minutes}</span>
                     ${this.config.timeFormat?.second !== undefined && this.config.timeFormat?.second !== 'hidden' ? html`
                         <div class="seconds-container">
                             <span class="seconds" style="color: ${this.config.fontColor};">${this.seconds}</span>
@@ -1394,7 +1441,7 @@ export class WallClockCard extends LitElement {
 
             logger.debug(`Setting transportation update interval to ${transportationInterval} seconds`);
 
-            // Clear any existing timer
+            // Clear any existing timeTimer
             if (this.transportationUpdateTimer) {
                 clearInterval(this.transportationUpdateTimer);
             }
@@ -1412,9 +1459,9 @@ export class WallClockCard extends LitElement {
             }, transportationIntervalMs);
         }
 
-        // Set up auto-hide timer if configured
+        // Set up auto-hide timeTimer if configured
         if (this.config.transportation?.autoHideTimeout) {
-            // Clear any existing auto-hide timer
+            // Clear any existing auto-hide timeTimer
             if (this.transportationAutoHideTimer) {
                 clearTimeout(this.transportationAutoHideTimer);
             }
@@ -1430,7 +1477,7 @@ export class WallClockCard extends LitElement {
 
             logger.debug(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
 
-            // Set timer to hide departures and show bus button again after timeout
+            // Set timeTimer to hide departures and show bus button again after timeout
             this.transportationAutoHideTimer = window.setTimeout(() => {
                 logger.debug(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
                 this.transportationDataLoaded = false;
