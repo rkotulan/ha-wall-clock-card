@@ -1,4 +1,4 @@
-import { html, TemplateResult } from 'lit-element';
+import { html, TemplateResult, css, CSSResult } from 'lit-element';
 import { formatDate, formatDateTime, ExtendedDateTimeFormatOptions } from '../lokalify';
 import { createLogger } from '../utils/logger';
 
@@ -8,6 +8,7 @@ export interface ClockConfig {
     fontColor?: string;
     language?: string;
     timeZone?: string;
+    onTimeUpdate?: () => void; // Callback when time is updated
 }
 
 export class ClockComponent {
@@ -19,6 +20,90 @@ export class ClockComponent {
     private timeTimer?: number;
     private config: ClockConfig = {};
     private logger = createLogger('clock-component');
+
+    static get styles(): CSSResult {
+        return css`
+            .clock {
+                font-size: 12rem;
+                line-height: 10rem;
+                font-weight: 300;
+                text-align: center;
+                z-index: 2;
+                position: relative;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+            }
+
+            .hours-minutes {
+                font-size: 1em;
+                line-height: 1;
+            }
+
+            .seconds-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-left: 0.1em;
+                margin-top: 0.1em;
+                justify-content: flex-start;
+            }
+
+            .seconds {
+                font-size: 0.5em;
+                font-weight: 400;
+                line-height: 1;
+                vertical-align: top;
+            }
+
+            .ampm {
+                font-size: 0.3em;
+                font-weight: 400;
+                line-height: 1;
+                text-transform: lowercase;
+                opacity: 0.6;
+            }
+
+            /* Style for AM/PM when seconds are not displayed */
+            .ampm-only {
+                margin-top: 1.6em;
+            }
+
+            .date {
+                font-size: 4rem;
+                font-weight: 400;
+                text-align: center;
+                margin-top: 0.2rem;
+                opacity: 1;
+                z-index: 2;
+                position: relative;
+            }
+
+            /* Responsive adjustments */
+            @media (min-width: 900px) {
+                .clock {
+                    font-size: 16rem;
+                    line-height: 14rem;
+                }
+
+                .date {
+                    font-size: 6rem;
+                    line-height: 5rem;
+                }
+            }
+
+            @media (min-width: 1280px) {
+                .clock {
+                    font-size: 18rem;
+                    line-height: 14rem;
+                }
+
+                .date {
+                    font-size: 6rem;
+                }
+            }
+        `;
+    }
 
     initialize(config: ClockConfig): void {
         this.logger.debug('Initializing ClockComponent');
@@ -90,16 +175,39 @@ export class ClockComponent {
         formattedDate = formattedDate.replace(/(\d+)(\s+)([A-Za-z])/, '$1,$2$3');
 
         this.currentDate = formattedDate;
+
+        // Call the onTimeUpdate callback if provided
+        if (this.config.onTimeUpdate) {
+            this.config.onTimeUpdate();
+        }
     }
 
     private startTimer(): void {
-        this.timeTimer = window.setInterval(() => this.updateTime(), 1000);
-        this.logger.debug('Clock timer started');
+        // Use a more precise timer mechanism with requestAnimationFrame
+        let lastUpdateTime = Date.now();
+
+        const updateFrame = () => {
+            const now = Date.now();
+            const elapsed = now - lastUpdateTime;
+
+            // Update time if at least 1000ms have passed
+            if (elapsed >= 1000) {
+                this.updateTime();
+                lastUpdateTime = now - (elapsed % 1000); // Adjust for any extra time
+            }
+
+            // Continue the animation loop
+            this.timeTimer = window.requestAnimationFrame(updateFrame);
+        };
+
+        // Start the animation loop
+        this.timeTimer = window.requestAnimationFrame(updateFrame);
+        this.logger.debug('Clock timer started with requestAnimationFrame');
     }
 
     private stopTimer(): void {
         if (this.timeTimer) {
-            window.clearInterval(this.timeTimer);
+            window.cancelAnimationFrame(this.timeTimer);
             this.timeTimer = undefined;
             this.logger.debug('Clock timer stopped');
         }

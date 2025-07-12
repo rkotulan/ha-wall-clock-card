@@ -1,4 +1,4 @@
-import {LitElement, html, css, property, customElement, CSSResult, TemplateResult} from 'lit-element';
+import {LitElement, html, css, property, customElement, CSSResult, TemplateResult, unsafeCSS} from 'lit-element';
 import {HomeAssistant} from 'custom-card-helpers';
 import {
     ImageSourceConfig,
@@ -119,7 +119,8 @@ export class WallClockCard extends LitElement {
             dateFormat: this.config.dateFormat,
             language: this.config.language,
             timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor
+            fontColor: this.config.fontColor,
+            onTimeUpdate: () => this.requestUpdate()
         });
     }
 
@@ -132,7 +133,8 @@ export class WallClockCard extends LitElement {
             dateFormat: this.config.dateFormat,
             language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
             timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor
+            fontColor: this.config.fontColor,
+            onTimeUpdate: () => this.requestUpdate()
         });
 
         this.initConnectCallbackAsync();
@@ -591,7 +593,8 @@ export class WallClockCard extends LitElement {
             dateFormat: this.config.dateFormat,
             language: this.config.language || (this.hass ? this.hass.language : null) || 'cs',
             timeZone: this.config.timeZone,
-            fontColor: this.config.fontColor
+            fontColor: this.config.fontColor,
+            onTimeUpdate: () => this.requestUpdate()
         });
 
         // Update sensor value if entity is configured
@@ -650,6 +653,8 @@ export class WallClockCard extends LitElement {
 
     static get styles(): CSSResult {
         return css`
+            /* Include ClockComponent styles */
+            ${unsafeCSS(ClockComponent.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -720,62 +725,6 @@ export class WallClockCard extends LitElement {
             }
 
 
-            .clock {
-                font-size: 12rem;
-                line-height: 10rem;
-                font-weight: 300;
-                text-align: center;
-                z-index: 2;
-                position: relative;
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-            }
-
-            .hours-minutes {
-                font-size: 1em;
-                line-height: 1;
-            }
-
-            .seconds-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-left: 0.1em;
-                margin-top: 0.1em;
-                justify-content: flex-start;
-            }
-
-            .seconds {
-                font-size: 0.5em;
-                font-weight: 400;
-                line-height: 1;
-                vertical-align: top;
-            }
-
-            .ampm {
-                font-size: 0.3em;
-                font-weight: 400;
-                line-height: 1;
-                text-transform: lowercase;
-                opacity: 0.6;
-            }
-
-            /* Style for AM/PM when seconds are not displayed */
-
-            .ampm-only {
-                margin-top: 1.6em;
-            }
-
-            .date {
-                font-size: 4rem;
-                font-weight: 400;
-                text-align: center;
-                margin-top: 0.2rem;
-                opacity: 1;
-                z-index: 2;
-                position: relative;
-            }
 
             .sensor-container {
                 position: absolute;
@@ -1098,16 +1047,6 @@ export class WallClockCard extends LitElement {
 
             /* Responsive adjustments */
             @media (min-width: 900px) {
-                .clock {
-                    font-size: 16rem;
-                    line-height: 14rem;
-                }
-
-                .date {
-                    font-size: 6rem;
-                    line-height: 5rem;
-                }
-
                 .weather-temp {
                     font-size: 3rem;
                     line-height: 3rem;
@@ -1120,15 +1059,6 @@ export class WallClockCard extends LitElement {
             }
 
             @media (min-width: 1280px) {
-                .clock {
-                    font-size: 18rem;
-                    line-height: 14rem;
-                }
-
-                .date {
-                    font-size: 6rem;
-                }
-
                 .weather-temp {
                     font-size: 3rem;
                     line-height: 3rem;
