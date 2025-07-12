@@ -137,7 +137,7 @@ export interface ImageSource {
    * @param timeOfDay Optional time of day to use for selecting images
    * @returns Promise that resolves to an array of image URLs
    */
-  fetchImages(config: ImageSourceConfig,  weather: Weather, timeOfDay: TimeOfDay): Promise<string[]>;
+  fetchImagesAsync(config: ImageSourceConfig,  weather: Weather, timeOfDay: TimeOfDay): Promise<string[]>;
 
   /**
    * Get the next image URL from this source
@@ -146,7 +146,7 @@ export interface ImageSource {
    * @param timeOfDay Current time of day
    * @returns Promise that resolves to an image URL
    */
-  GetNextImageUrl(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string>;
+  GetNextImageUrlAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string>;
 
   /**
    * Get the default configuration for this image source

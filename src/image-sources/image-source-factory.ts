@@ -14,12 +14,12 @@ class NullImageSource implements ImageSource {
   readonly description = 'A placeholder source that returns no images';
   private logger = createLogger('null-source');
 
-  async fetchImages(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string[]> {
+  async fetchImagesAsync(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string[]> {
     this.logger.info('Returning empty image list');
     return [];
   }
 
-  async GetNextImageUrl(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string> {
+  async GetNextImageUrlAsync(_config: ImageSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string> {
     this.logger.info('Returning empty image URL');
     return '';
   }

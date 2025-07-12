@@ -26,16 +26,16 @@ export abstract class AbstractImageSource implements ImageSource {
   }
 
   // Abstract method that concrete classes must implement
-  protected abstract fetchImagesInternal(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]>;
+  protected abstract fetchImagesInternalAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]>;
 
   // Common implementation of fetchImages
-  async fetchImages(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
+  async fetchImagesAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
     this.getLogger().info(`Fetching images with weather: ${weather}, timeOfDay: ${timeOfDay}`);
-    return this.fetchImagesInternal(config, weather, timeOfDay);
+    return this.fetchImagesInternalAsync(config, weather, timeOfDay);
   }
 
   // Common implementation of GetNextImageUrl
-  async GetNextImageUrl(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+  async GetNextImageUrlAsync(config: ImageSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
     this.getLogger().info(`GetNextImageUrl called with weather: ${weather}, timeOfDay: ${timeOfDay}`);
 
     // Check if weather or timeOfDay has changed
@@ -52,7 +52,7 @@ export abstract class AbstractImageSource implements ImageSource {
 
     // Check if we have cached images for this weather and timeOfDay
     if (!this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
-      const fetchedUrls = await this.fetchImages(config, weather, timeOfDay);
+      const fetchedUrls = await this.fetchImagesAsync(config, weather, timeOfDay);
 
       // Shuffle the images before caching
       const imagesToCache = [...fetchedUrls];

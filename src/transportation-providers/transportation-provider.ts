@@ -74,7 +74,7 @@ export interface TransportationProvider {
    * @param stops Array of stop configurations
    * @returns Promise that resolves to transportation data
    */
-  fetchTransportation(config: TransportationProviderConfig, stops: StopConfig[]): Promise<TransportationData>;
+  fetchTransportationAsync(config: TransportationProviderConfig, stops: StopConfig[]): Promise<TransportationData>;
 
   /**
    * Get the default configuration for this transportation provider

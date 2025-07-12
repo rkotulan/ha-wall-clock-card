@@ -75,7 +75,7 @@ export class UnsplashSource extends AbstractImageSource {
      * @timeOfDay Current time of day to use for selecting images
      * @returns Promise that resolves to an array of image URLs
      */
-    protected async fetchImagesInternal(config: UnsplashSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
+    protected async fetchImagesInternalAsync(config: UnsplashSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
         const count = config.count || 5;
         let category = config.category || '';
         const apiKey = config.apiKey || '';
@@ -91,7 +91,7 @@ export class UnsplashSource extends AbstractImageSource {
         if (apiKey) {
             try {
                 this.logger.info('Using official Unsplash API');
-                return await this.fetchImagesFromApi(apiKey, category, count, weather, timeOfDay, config);
+                return await this.fetchImagesFromApiAsync(apiKey, category, count, weather, timeOfDay, config);
             } catch (error) {
                 this.logger.error('Error fetching images from Unsplash API:', error);
                 this.logger.info('Falling back to direct URL method');
@@ -160,7 +160,7 @@ export class UnsplashSource extends AbstractImageSource {
      * @param config Optional configuration for the Unsplash source
      * @returns Promise that resolves to an array of image URLs
      */
-    private async fetchImagesFromApi(apiKey: string, category: string, count: number, weather: Weather, timeOfDay: TimeOfDay, config?: UnsplashSourceConfig): Promise<string[]> {
+    private async fetchImagesFromApiAsync(apiKey: string, category: string, count: number, weather: Weather, timeOfDay: TimeOfDay, config?: UnsplashSourceConfig): Promise<string[]> {
         const fetchedImages: string[] = [];
 
         // Get content filter from config or use default

@@ -17,7 +17,7 @@ import {
 } from './transportation-providers';
 import {
     translate,
-    loadTranslations,
+    loadTranslationsAsync,
     formatDate,
     formatTime,
     formatDateTime,
@@ -128,10 +128,10 @@ export class WallClockCard extends LitElement {
     connectedCallback(): void {
         super.connectedCallback();
 
-        this.initConnectCallback();
+        this.initConnectCallbackAsync();
     }
 
-    async initConnectCallback(): Promise<void> {
+    async initConnectCallbackAsync(): Promise<void> {
         // Configure the logger based on the configured log level
         const logLevelString = this.config.logLevel || 'warn';
         let logLevel: LogLevel;
@@ -167,7 +167,7 @@ export class WallClockCard extends LitElement {
 
         // Load translations for all supported languages
         try {
-            await loadTranslations();
+            await loadTranslationsAsync();
             console.log('[wall-clock] Loaded translations for all languages');
         } catch (error) {
             console.error('[wall-clock] Error loading translations:', error);
@@ -175,7 +175,7 @@ export class WallClockCard extends LitElement {
 
         // Fetch weather data first if enabled
         if (this.config.showWeather) {
-            await this.fetchWeatherData();
+            await this.fetchWeatherDataAsync();
 
             // Get configured weather update interval or default to 30 minutes (1800 seconds)
             let weatherInterval = this.config.weatherUpdateInterval || 1800;
@@ -193,7 +193,7 @@ export class WallClockCard extends LitElement {
                 // Use a self-executing async function to allow await
                 (async () => {
                     try {
-                        await this.fetchWeatherData();
+                        await this.fetchWeatherDataAsync();
                     } catch (error) {
                         console.error('[wall-clock] Error in weather update interval:', error);
                     }
@@ -208,7 +208,7 @@ export class WallClockCard extends LitElement {
         if (this.config.transportation) {
             // Only fetch data automatically if on-demand loading is not enabled
             if (!this.config.transportation?.onDemand) {
-                await this.fetchTransportationData();
+                await this.fetchTransportationDataAsync();
                 this.transportationDataLoaded = true;
 
                 // Get configured transportation update interval or default to 60 seconds
@@ -227,7 +227,7 @@ export class WallClockCard extends LitElement {
                     // Use a self-executing async function to allow await
                     (async () => {
                         try {
-                            await this.fetchTransportationData();
+                            await this.fetchTransportationDataAsync();
                         } catch (error) {
                             console.error('[wall-clock] Error in transportation update interval:', error);
                         }
@@ -319,7 +319,7 @@ export class WallClockCard extends LitElement {
           let currentTimeOfDay: TimeOfDay = getCurrentTimeOfDay();
 
           // Use the BackgroundImageManager to fetch a new image
-          const newImageUrl = await this.backgroundImageManager.getNextImageUrl(
+          const newImageUrl = await this.backgroundImageManager.getNextImageUrlAsync(
               currentWeather,
               currentTimeOfDay
           );
@@ -374,7 +374,7 @@ export class WallClockCard extends LitElement {
     /**
      * Fetch transportation data from the configured provider
      */
-    private async fetchTransportationData(): Promise<void> {
+    private async fetchTransportationDataAsync(): Promise<void> {
         if (!this.config.transportation || this.config.enableTransportation === false) return;
 
         // Mark as loading
@@ -412,7 +412,7 @@ export class WallClockCard extends LitElement {
             if (transportationConfig.maxDepartures !== undefined) {
                 providerConfig.maxDepartures = transportationConfig.maxDepartures;
             }
-            this.transportationData = await provider.fetchTransportation(providerConfig, stops);
+            this.transportationData = await provider.fetchTransportationAsync(providerConfig, stops);
 
             // Update the last update timestamp
             this.lastTransportationUpdate = new Date();
@@ -431,7 +431,7 @@ export class WallClockCard extends LitElement {
     /**
      * Fetch weather data from the configured provider
      */
-    private async fetchWeatherData(): Promise<void> {
+    private async fetchWeatherDataAsync(): Promise<void> {
         if (this.weatherLoading || !this.config.showWeather) return;
 
         console.log(`[wall-clock] Begin fetch weather data`);
@@ -464,7 +464,7 @@ export class WallClockCard extends LitElement {
             }
 
             // Fetch weather data from the provider
-            this.weatherData = await provider.fetchWeather(weatherConfig);
+            this.weatherData = await provider.fetchWeatherAsync(weatherConfig);
 
             console.log(`[wall-clock] Fetched weather data from ${provider.name}:`, this.weatherData);
         } catch (error) {
@@ -509,10 +509,10 @@ export class WallClockCard extends LitElement {
             throw new Error('Invalid configuration');
         }
 
-        this.initAfterSetConfig(config);
+        this.initAfterSetConfigAsync(config);
     }
 
-    async initAfterSetConfig(config: WallClockConfig): Promise<void> {
+    async initAfterSetConfigAsync(config: WallClockConfig): Promise<void> {
         // Set default imageSource if not provided
         const imageSource = config.imageSource || 'none';
 
@@ -581,7 +581,7 @@ export class WallClockCard extends LitElement {
 
         // Fetch weather data first if enabled
         if (this.config.showWeather) {
-            await this.fetchWeatherData();
+            await this.fetchWeatherDataAsync();
         }
 
         // Fetch new image URLs
@@ -1248,7 +1248,7 @@ export class WallClockCard extends LitElement {
                         this.config.transportation?.onDemand && !this.transportationDataLoaded ?
                                 html`
                                     <div class="transportation-on-demand-button"
-                                         @click=${this._handleTransportationClick}>
+                                         @click=${this._handleTransportationClickAsync}>
                                         <svg viewBox="0 0 24 24">
                                             <path d="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1.78c0.61-0.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8,0.5-8,4v10zm3.5,1c-0.83,0-1.5-0.67-1.5-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zm9,0c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5 1.5-1.5 1.5,0.67 1.5,1.5-0.67,1.5-1.5,1.5zm1.5-6H6V6h12v5z"/>
                                         </svg>
@@ -1391,11 +1391,11 @@ export class WallClockCard extends LitElement {
      * Handle click on the transportation button
      * This is called when the user clicks the bus icon to load transportation data on demand
      */
-    private async _handleTransportationClick(): Promise<void> {
+    private async _handleTransportationClickAsync(): Promise<void> {
         console.log('[wall-clock] Transportation button clicked, loading data on demand');
 
         // Fetch transportation data
-        await this.fetchTransportationData();
+        await this.fetchTransportationDataAsync();
 
         // Mark as loaded so the button is replaced with the data
         this.transportationDataLoaded = true;
@@ -1423,7 +1423,7 @@ export class WallClockCard extends LitElement {
                 // Use a self-executing async function to allow await
                 (async () => {
                     try {
-                        await this.fetchTransportationData();
+                        await this.fetchTransportationDataAsync();
                     } catch (error) {
                         console.error('[wall-clock] Error in transportation update interval:', error);
                     }

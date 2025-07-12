@@ -28,7 +28,7 @@ export class IDSJMKProvider implements TransportationProvider {
    * @param stops Array of stop configurations
    * @returns Promise that resolves to transportation data
    */
-  async fetchTransportation(_config: IDSJMKProviderConfig, stops: StopConfig[]): Promise<TransportationData> {
+  async fetchTransportationAsync(_config: IDSJMKProviderConfig, stops: StopConfig[]): Promise<TransportationData> {
     try {
       if (stops.length === 0) {
         throw new Error('No stops configured');

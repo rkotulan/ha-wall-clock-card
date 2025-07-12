@@ -41,7 +41,7 @@ export class SensorSource extends AbstractImageSource {
      * @param entityId The entity ID to check
      * @returns Promise that resolves when the entity is checked
      */
-    private async checkEntity(entityId: string): Promise<void> {
+    private async checkEntityAsync(entityId: string): Promise<void> {
         try {
             // Get the Home Assistant instance
             const hass = (window as any).document.querySelector('home-assistant').hass;
@@ -103,7 +103,7 @@ export class SensorSource extends AbstractImageSource {
      * @param timeOfDay Optional time of day to use for selecting images
      * @returns Promise that resolves to an array of image URLs
      */
-    protected async fetchImagesInternal(config: SensorSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
+    protected async fetchImagesInternalAsync(config: SensorSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
         // Get the entity ID from the configuration
         const entityId = config.entity;
 
@@ -114,7 +114,7 @@ export class SensorSource extends AbstractImageSource {
         }
 
         // Check entity and update cache if needed
-        await this.checkEntity(entityId);
+        await this.checkEntityAsync(entityId);
 
         // Get the current time
         const now = Date.now();

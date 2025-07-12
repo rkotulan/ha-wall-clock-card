@@ -27,7 +27,7 @@ export class PicsumSource extends AbstractImageSource {
    * @param timeOfDay Current time of day
    * @returns Promise that resolves to an array of image URLs
    */
-  protected async fetchImagesInternal(_config: PicsumSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string[]> {
+  protected async fetchImagesInternalAsync(_config: PicsumSourceConfig, _weather: Weather, _timeOfDay: TimeOfDay): Promise<string[]> {
     // Generate a URL with a timestamp to avoid caching
     const timestamp = Date.now();
     const seed = timestamp;

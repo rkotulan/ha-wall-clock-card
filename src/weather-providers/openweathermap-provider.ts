@@ -23,7 +23,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
    * @param config Configuration for the OpenWeatherMap provider
    * @returns Promise that resolves to weather data
    */
-  async fetchWeather(config: OpenWeatherMapConfig): Promise<WeatherData> {
+  async fetchWeatherAsync(config: OpenWeatherMapConfig): Promise<WeatherData> {
     if (!config.apiKey) {
       throw new Error('OpenWeatherMap API key is required');
     }

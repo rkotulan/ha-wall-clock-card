@@ -62,7 +62,7 @@ export interface WeatherProvider {
    * @param config Configuration for this weather provider
    * @returns Promise that resolves to weather data
    */
-  fetchWeather(config: WeatherProviderConfig): Promise<WeatherData>;
+  fetchWeatherAsync(config: WeatherProviderConfig): Promise<WeatherData>;
 
   /**
    * Get the default configuration for this weather provider

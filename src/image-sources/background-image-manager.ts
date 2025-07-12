@@ -57,27 +57,27 @@ export class BackgroundImageManager {
      * @param timeOfDay Current time of day
      * @returns Promise that resolves to an image URL, or empty string if no image is available
      */
-    public async getNextImageUrl(weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
-        if (!this.imageSource) {
-            this.logger.error('No image source initialized');
-            return '';
-        }
+    public async getNextImageUrlAsync(weather: Weather, timeOfDay: TimeOfDay): Promise<string> {
+      if (!this.imageSource) {
+        this.logger.error('No image source initialized');
+        return '';
+      }
 
-      try {
-            this.logger.info(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
-            const imageUrl = await this.imageSource.GetNextImageUrl(this.sourceConfig, weather, timeOfDay);
+    try {
+          this.logger.info(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
+          const imageUrl = await this.imageSource.GetNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
 
-            if (imageUrl) {
-                this.logger.info(`Got image URL: ${imageUrl}`);
-                return imageUrl;
-            } else {
-                this.logger.warn('No image URL returned from source');
-                return '';
-            }
-        } catch (error) {
-            this.logger.error('Error getting next image URL:', error);
-            return '';
-        }
+          if (imageUrl) {
+              this.logger.info(`Got image URL: ${imageUrl}`);
+              return imageUrl;
+          } else {
+              this.logger.warn('No image URL returned from source');
+              return '';
+          }
+      } catch (error) {
+          this.logger.error('Error getting next image URL:', error);
+          return '';
+      }
     }
 
     public getImageSourceId(): string {

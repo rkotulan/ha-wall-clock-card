@@ -72,7 +72,7 @@ let loadedTranslations: { [language: string]: Translations } = {};
  * @param language The language code (cs, de, sk, pl, es, fr, ru)
  * @returns A promise that resolves when the translations are loaded
  */
-export async function loadLanguageTranslations(language: string): Promise<void> {
+export async function loadLanguageTranslationsAsync(language: string): Promise<void> {
   try {
     // Use embedded translations instead of fetching from external files
     if (embeddedTranslations[language]) {
@@ -90,10 +90,10 @@ export async function loadLanguageTranslations(language: string): Promise<void> 
  * Load translations for all supported languages
  * @returns A promise that resolves when all translations are loaded
  */
-export async function loadTranslations(): Promise<void> {
+export async function loadTranslationsAsync(): Promise<void> {
   console.log(`[lokalify] Loading all translations`);
   const languages = getSupportedLanguages();
-  const promises = languages.map(lang => loadLanguageTranslations(lang));
+  const promises = languages.map(lang => loadLanguageTranslationsAsync(lang));
   await Promise.all(promises);
 }
 

@@ -26,7 +26,7 @@ export class LocalSource extends AbstractImageSource {
      * @param timeOfDay Optional time of day to use for selecting images
      * @returns Promise that resolves to an array of image URLs
      */
-    protected async fetchImagesInternal(config: LocalSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
+    protected async fetchImagesInternalAsync(config: LocalSourceConfig, weather: Weather, timeOfDay: TimeOfDay): Promise<string[]> {
         // Log the entire config for debugging
         // this.logger.debug(`fetchImagesInternal called with config:`, JSON.stringify(config, null, 2));
 
