@@ -22,7 +22,7 @@ import {
     ExtendedDateTimeFormatOptions
 } from './lokalify';
 import { configureLogger, logger, getLogLevelFromString } from './utils/logger';
-import { ClockComponent } from './components/clock-component';
+import { ClockComponent } from './components/clock/clock-component';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
