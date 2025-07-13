@@ -1,7 +1,7 @@
-import { ReactiveController, ReactiveControllerHost } from 'lit';
-import { createLogger } from '../../utils/logger';
-import { BackgroundImageManager } from '../../image-sources';
-import { Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig } from '../../image-sources';
+import {ReactiveController, ReactiveControllerHost} from 'lit';
+import {createLogger, logger} from '../../utils/logger';
+import {BackgroundImageManager} from '../../image-sources';
+import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
@@ -53,22 +53,21 @@ export class BackgroundImageController implements ReactiveController {
     /**
      * Update the controller configuration
      */
-    updateConfig(config: Partial<BackgroundImageControllerConfig>): void {
-        const oldConfig = { ...this.config };
-        this.config = { ...this.config, ...config };
+    updateConfig(config: BackgroundImageControllerConfig): void {
+        const oldConfig = {...this.config};
+        this.config = {...this.config, ...config};
+
+        logger.info("Update the BackgroundImageController with new configuration")
 
         // Check if imageSourceConfig changed
         const needsReinitialize = oldConfig.imageSourceConfig !== this.config.imageSourceConfig;
 
-        // If rotation interval changed, update the timer
-        if (oldConfig.backgroundRotationInterval !== this.config.backgroundRotationInterval && 
-            this.backgroundImageManager) {
-            this.setupImageRotation();
-        }
-
         // If imageSourceConfig changed, reinitialize
         if (needsReinitialize) {
             this.initBackgroundImageManagerAsync();
+        } else if (oldConfig.backgroundRotationInterval !== this.config.backgroundRotationInterval &&
+            this.backgroundImageManager) {
+            this.setupImageRotation();
         }
     }
 
@@ -81,7 +80,9 @@ export class BackgroundImageController implements ReactiveController {
 
         try {
             // Get the configuration for the BackgroundImageManager
-            const imageSourceConfig: ImageSourceConfig = this.config.imageSourceConfig || {
+            // Extract only the ImageSourceConfig properties from this.config.imageSourceConfig
+            const { backgroundRotationInterval, ...imageSourceConfigProps } = this.config.imageSourceConfig || {};
+            const imageSourceConfig: ImageSourceConfig = imageSourceConfigProps.imageSourceId ? imageSourceConfigProps : {
                 imageSourceId: 'picsum'
             };
 

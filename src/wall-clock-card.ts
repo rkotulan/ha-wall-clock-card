@@ -103,7 +103,6 @@ export class WallClockCard extends LitElement {
         super();
 
         // Display version info
-        //logger.info(`WALL-CLOCK-CARD ${PACKAGE_VERSION}`);
         logger.info(
             "%c WALL-CLOCK-CARD %c " + PACKAGE_VERSION + " ",
             "color: white; background: #3498db; font-weight: 700;",
@@ -247,10 +246,12 @@ export class WallClockCard extends LitElement {
         };
 
         // Set the properties
-        this.backgroundImageComponent.backgroundRotationInterval = this.config.backgroundRotationInterval;
         this.backgroundImageComponent.backgroundOpacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5;
         this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
-        this.backgroundImageComponent.imageSourceConfig = imageSourceConfig;
+        this.backgroundImageComponent.config = {
+            imageSourceConfig: imageSourceConfig,
+            backgroundRotationInterval: this.config.backgroundRotationInterval
+        };
 
         logger.debug('Background image component initialized');
     }

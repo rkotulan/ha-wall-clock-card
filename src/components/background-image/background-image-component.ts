@@ -1,26 +1,24 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils/logger';
-import { BackgroundImageController } from './background-image-controller';
-import { Weather, ImageSourceConfig } from '../../image-sources';
+import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
+import { Weather } from '../../image-sources';
 
 @customElement('ha-background-image')
 export class BackgroundImageComponent extends LitElement {
-    @property({ type: Number }) backgroundRotationInterval?: number;
+    // @property({ type: Number }) backgroundRotationInterval?: number;
     @property({ type: Number }) backgroundOpacity?: number = 0.5;
     @property({ type: String }) weather?: Weather;
-    @property({ type: Object }) imageSourceConfig?: ImageSourceConfig;
+    @property({ type: Object }) config?: BackgroundImageControllerConfig;
 
     private logger = createLogger('background-image-component');
     private backgroundImageController: BackgroundImageController;
 
     constructor() {
         super();
-        // Initialize the controller with the host (this component)
-        this.backgroundImageController = new BackgroundImageController(this, {
-            backgroundRotationInterval: this.backgroundRotationInterval,
-            imageSourceConfig: this.imageSourceConfig
-        });
+        // Initialize the controller with the host (this component) and an empty config
+        // The actual config will be set later via the config property
+        this.backgroundImageController = new BackgroundImageController(this, {});
     }
 
     static styles = css`
@@ -78,16 +76,11 @@ export class BackgroundImageComponent extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('backgroundRotationInterval') || 
-            changedProperties.has('imageSourceConfig')) {
-
-            this.logger.debug('Background image properties changed, updating BackgroundImageController');
+        if (changedProperties.has('config')) {
+            this.logger.debug('Property config changed, updating BackgroundImageController');
 
             // Update the controller with new configuration
-            this.backgroundImageController.updateConfig({
-                backgroundRotationInterval: this.backgroundRotationInterval,
-                imageSourceConfig: this.imageSourceConfig
-            });
+            this.backgroundImageController.updateConfig(this.config ?? {});
         }
 
         // If weather changed, refresh the image
