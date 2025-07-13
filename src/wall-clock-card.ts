@@ -4,10 +4,7 @@ import {HomeAssistant} from 'custom-card-helpers';
 import {
     ImageSourceConfig,
     BackgroundImage,
-    TimeOfDay,
-    Weather,
-    getCurrentTimeOfDay,
-    BackgroundImageManager
+    Weather
 } from './image-sources';
 import {WeatherProviderConfig, WeatherData, getWeatherProvider} from './weather-providers';
 import {
@@ -22,9 +19,10 @@ import {
     formatDate,
     ExtendedDateTimeFormatOptions
 } from './lokalify';
-import { configureLogger, logger, getLogLevelFromString } from './utils/logger';
-import { ClockComponent } from './components/clock/clock-component';
-import { SensorComponent } from './components/sensor/sensor-component';
+import { configureLogger, logger, getLogLevelFromString, LogLevel } from './utils/logger';
+import { ClockComponent } from './components/clock';
+import { SensorComponent } from './components/sensor';
+import { BackgroundImageComponent } from './components/background-image';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
@@ -81,9 +79,8 @@ export interface WallClockConfig {
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
     @property({type: Object}) config: WallClockConfig = {};
-    @property({type: String}) currentImageUrl = ''; // Currently displayed image URL
-    @property({type: String}) previousImageUrl = ''; // Previously displayed image URL
-    @property({type: Boolean}) isTransitioning = false; // Flag to track if image transition is in progress
+    // Background image component reference
+    private backgroundImageComponent?: BackgroundImageComponent;
     // Sensor values are now handled by the SensorComponent
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
@@ -95,10 +92,7 @@ export class WallClockCard extends LitElement {
     @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
     @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
 
-    private imageRotationTimer?: number;
-    private fetchingImageUrls = false;
 
-    private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
     private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
     private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
     private weatherUpdateTimer?: number;
@@ -201,9 +195,6 @@ export class WallClockCard extends LitElement {
             }, weatherIntervalMs);
         }
 
-        // Fetch image URLs (not the actual images)
-        await this.initBackgroundImageManagerAsync();
-
         // Fetch transportation data if enabled and not on-demand
         if (this.config.transportation) {
             // Only fetch data automatically if on-demand loading is not enabled
@@ -239,138 +230,36 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    private async initBackgroundImageManagerAsync(): Promise<void> {
-        if (this.fetchingImageUrls) {
-            return
+    private initBackgroundImageComponent(): void {
+        if (this.backgroundImageComponent) {
+            return;
         }
 
-        this.fetchingImageUrls = true;
+        // Create the background image component
+        this.backgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
 
-        try {
-            // Get the current weather condition and time of day
-            let currentWeather: Weather = this.weatherData?.current?.conditionUnified || Weather.All;
-            let currentTimeOfDay: TimeOfDay = getCurrentTimeOfDay();
+        // Create the full ImageSourceConfig
+        const imageSourceConfig: ImageSourceConfig = {
+            imageSourceId: this.config.imageSource || 'picsum',
+            backgroundImages: this.config.backgroundImages,
+            entity: this.config.imageConfig?.entity,
+            apiKey: this.config.imageConfig?.apiKey
+        };
 
-            logger.debug(`Current weather: ${currentWeather}, time of day: ${currentTimeOfDay}`);
+        // Set the properties
+        this.backgroundImageComponent.backgroundRotationInterval = this.config.backgroundRotationInterval;
+        this.backgroundImageComponent.backgroundOpacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5;
+        this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
+        this.backgroundImageComponent.imageSourceConfig = imageSourceConfig;
 
-            // Prepare the configuration for the BackgroundImageManager
-            const imageConfig = {
-                ...(this.config.imageConfig || {}),
-                backgroundImages: this.config.backgroundImages,
-                imageSourceId: this.config.imageSource
-            };
-
-            logger.debug(`Initializing BackgroundImageManager with imageSourceId: ${this.config.imageSource || 'not set (will use default picsum)'}`);
-
-            // Initialize the BackgroundImageManager
-            const initialized = this.backgroundImageManager.initialize(
-                imageConfig
-            );
-
-            if (!initialized) {
-                logger.warn('Failed to initialize BackgroundImageManager');
-                return;
-            }
-
-            this.setupImageRotation();
-            await this.fetchNewImageAsync();
-        } catch (error) {
-            logger.error('Error fetching image URLs:', error);
-        } finally {
-            this.fetchingImageUrls = false;
-        }
-    }
-
-
-    private setupImageRotation(): void {
-        // Clear any existing timers
-        if (this.imageRotationTimer) {
-            clearInterval(this.imageRotationTimer);
-        }
-
-        // Get the configured rotation interval or default to 90 seconds
-        const rotationInterval = (this.config.backgroundRotationInterval || 90) * 1000;
-
-        logger.info(`Setting up image rotation with interval: ${rotationInterval / 1000} seconds`);
-
-        // Set up rotation with the configured interval
-        this.imageRotationTimer = window.setInterval(() => {
-            // For dynamic sources like Unsplash, fetch a new image instead of cycling through preloaded ones
-
-            // Use a self-executing async function to allow await
-            (async () => {
-                try {
-                    await this.fetchNewImageAsync();
-                } catch (error) {
-                    logger.error(`Error in image rotation interval for ${this.config.imageSource}:`, error);
-                }
-            })();
-        }, rotationInterval);
-    }
-
-    /**
-     * Fetch a new image from a dynamic image source
-     * This method is used for sources that provide new images on demand (like Unsplash)
-     */
-    private async fetchNewImageAsync(): Promise<void> {
-        try {
-
-          let currentWeather: Weather = this.weatherData?.current?.conditionUnified || Weather.All;
-          let currentTimeOfDay: TimeOfDay = getCurrentTimeOfDay();
-
-          // Use the BackgroundImageManager to fetch a new image
-          const newImageUrl = await this.backgroundImageManager.getNextImageUrlAsync(
-              currentWeather,
-              currentTimeOfDay
-          );
-
-            if (newImageUrl) {
-                logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
-
-                // Load the new image
-                logger.debug(`Loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
-                const img = new Image();
-                img.onload = () => {
-                    logger.info(`New image loaded successfully: ${newImageUrl}`);
-
-                    // Save the current image URL as the previous one before updating
-                    if (this.currentImageUrl) {
-                        this.previousImageUrl = this.currentImageUrl;
-                        this.isTransitioning = true;
-
-                        // After transition completes, clear the previous image URL
-                        setTimeout(() => {
-                            this.isTransitioning = false;
-                            this.requestUpdate();
-                        }, 1000); // Match the transition duration in CSS
-                    }
-
-                    // Update the current image URL
-                    this.currentImageUrl = newImageUrl;
-
-                    this.requestUpdate();
-                };
-                img.onerror = () => {
-                    logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
-                };
-
-                img.src = newImageUrl;
-            } else {
-                logger.warn(`Could not fetch new image from ${this.backgroundImageManager.getImageSourceId()}.`);
-            }
-        } catch (error) {
-            logger.error('Error fetching new dynamic image:', error);
-        }
+        logger.debug('Background image component initialized');
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Clear all timers when the component is removed
-        // The ClockComponent will clean up itself when removed from the DOM
+        // The ClockComponent and BackgroundImageComponent will clean up themselves when removed from the DOM
 
-        if (this.imageRotationTimer) {
-            clearInterval(this.imageRotationTimer);
-        }
         if (this.weatherUpdateTimer) {
             clearInterval(this.weatherUpdateTimer);
         }
@@ -587,16 +476,13 @@ export class WallClockCard extends LitElement {
             timeZone: timeZone
         };
 
-        // Reset image-related properties when config changes
-        this.currentImageUrl = '';
-
         // Fetch weather data first if enabled
         if (this.config.showWeather) {
             await this.fetchWeatherDataAsync();
         }
 
-        // Fetch new image URLs
-        await this.initBackgroundImageManagerAsync();
+        // Initialize the background image component
+        this.initBackgroundImageComponent();
 
         // Initialize the clock component with the new configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
@@ -618,6 +504,34 @@ export class WallClockCard extends LitElement {
         if (changedProperties.has('hass') && this.hass) {
             // Update the sensor component with the new hass
             this.sensorComponent.hass = this.hass;
+
+            // Update the background image component with the new weather condition if available
+            if(this.backgroundImageComponent) {
+                this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
+            }
+        }
+
+        // If weather data changed, update the background image component
+        if (changedProperties.has('weatherData') && this.backgroundImageComponent && this.weatherData?.current?.condition) {
+            this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
+        }
+
+        // If config changed, update the log level
+        if (changedProperties.has('config') && this.config) {
+            // Configure the logger based on the configured log level
+            const logLevelString = this.config.logLevel || 'info';
+            const logLevel = getLogLevelFromString(logLevelString);
+
+            logger.debug(`Updating log level to ${logLevelString} (${LogLevel[logLevel]})`);
+
+            configureLogger({
+                level: logLevel,
+                prefix: 'wall-clock',
+                enableSourceTracking: true,
+                enableTimestamps: true,
+                logToConsole: true,
+                logToStorage: false
+            });
         }
     }
 
@@ -628,6 +542,8 @@ export class WallClockCard extends LitElement {
             ${unsafeCSS(ClockComponent.styles)}
             /* Include SensorComponent styles */
             ${unsafeCSS(SensorComponent.styles)}
+            /* Include BackgroundImageComponent styles */
+            ${unsafeCSS(BackgroundImageComponent.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -656,46 +572,7 @@ export class WallClockCard extends LitElement {
                 position: relative;
             }
 
-            .background-image {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                z-index: 0;
-                border-radius: var(--ha-card-border-radius, 4px);
-                transition: opacity 1s ease-in-out;
-                opacity: 1; /* Default state: fully visible */
-            }
-
-            /* During transition, previous image starts visible and fades out */
-            .transitioning .background-image.previous {
-                opacity: 0; /* End state: fully transparent */
-                z-index: 0.5; /* Between the background and the overlay */
-            }
-
-            /* New image starts invisible and fades in */
-            .transitioning .background-image:not(.previous) {
-                opacity: 0; /* Start state: fully transparent */
-                animation: fadeIn 1s forwards; /* Use animation to ensure it ends at opacity 1 */
-            }
-
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-
-            .background-overlay {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: #000000;
-                z-index: 1;
-                border-radius: var(--ha-card-border-radius, 4px);
-            }
+            /* Background image styles are now in the BackgroundImageComponent */
 
 
 
@@ -1022,32 +899,14 @@ export class WallClockCard extends LitElement {
     }
 
     render() {
+        // Initialize the background image component if it hasn't been initialized yet
+        if (!this.backgroundImageComponent) {
+            this.initBackgroundImageComponent();
+        }
+
         return html`
-            <ha-card style="color: ${this.config.fontColor};" class="${this.isTransitioning ? 'transitioning' : ''}">
-                ${this.currentImageUrl ?
-                        html`
-                            ${this.isTransitioning && this.previousImageUrl ?
-                                html`
-                                    <img
-                                            class="background-image previous"
-                                            src="${this.previousImageUrl}"
-                                            @error="${(e: Event) => logger.error('Error rendering previous background image:', this.previousImageUrl, e)}"
-                                    >
-                                ` : ''
-                            }
-                            <img
-                                    class="background-image"
-                                    src="${this.currentImageUrl}"
-                                    @load="${() => logger.debug('Background image rendered successfully:', this.currentImageUrl)}"
-                                    @error="${(e: Event) => logger.error('Error rendering background image:', this.currentImageUrl, e)}"
-                            >
-                            <div
-                                    class="background-overlay"
-                                    style="opacity: ${this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5};"
-                            ></div>
-                        ` :
-                        ''
-                }
+            <ha-card style="color: ${this.config.fontColor};">
+                ${this.backgroundImageComponent}
                 ${this.sensorComponent}
                 ${this.config.showWeather && this.weatherData ?
                         html`

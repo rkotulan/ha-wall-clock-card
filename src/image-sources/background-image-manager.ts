@@ -64,7 +64,7 @@ export class BackgroundImageManager {
       }
 
     try {
-          this.logger.debug(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
+          this.logger.info(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
           const imageUrl = await this.imageSource.getNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
 
           if (imageUrl) {

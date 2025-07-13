@@ -45,7 +45,14 @@ const storedLogs: string[] = [];
  * @param config Logger configuration
  */
 export function configureLogger(config: Partial<LoggerConfig>): void {
+  const oldLevel = globalConfig.level;
   globalConfig = { ...DEFAULT_CONFIG, ...config };
+
+  // Log the level change if it changed
+  if (oldLevel !== globalConfig.level) {
+    // Use console.log directly to ensure this is always logged regardless of current level
+    console.log(`[LOGGER] Log level changed from ${LogLevel[oldLevel]} to ${LogLevel[globalConfig.level]}`);
+  }
 }
 
 /**

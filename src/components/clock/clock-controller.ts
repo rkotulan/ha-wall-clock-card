@@ -167,18 +167,12 @@ export class ClockController implements ReactiveController {
             const shouldPadSeconds = this.config.timeFormat?.second !== 'numeric';
             this._seconds = shouldPadSeconds ? seconds.toString().padStart(2, '0') : seconds.toString();
         }
-
-        // Log the current time for debugging
-        this.logger.debug(`Time updated - H:${this._hours} M:${this._minutes} S:${this._seconds}`);
     }
 
     /**
      * Update the date based on current configuration
      */
     private updateDate(now: Date, language: string, timeZone?: string): void {
-        // Log the date format options for debugging
-        // this.logger.debug(`Updating date with format: ${JSON.stringify(this.config.dateFormat)}, language: ${language}, timeZone: ${timeZone || 'default'}`);
-
         // Format date with configurable format
         let formattedDate = formatDate(now, language, this.config.dateFormat || {
             weekday: 'long',
@@ -192,9 +186,6 @@ export class ClockController implements ReactiveController {
         formattedDate = formattedDate.replace(/(\d+)(\s+)([A-Za-z])/, '$1,$2$3');
 
         this._currentDate = formattedDate;
-
-        // Log the current date for debugging
-        this.logger.debug(`Date updated: ${this._currentDate}`);
     }
 
     // Getter methods for time

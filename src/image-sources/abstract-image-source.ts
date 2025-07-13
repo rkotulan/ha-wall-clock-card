@@ -60,7 +60,7 @@ export abstract class AbstractImageSource implements ImageSource {
 
       // Cache the shuffled images
       this.imageUrlCache.set(cacheKey, imagesToCache);
-      this.getLogger().debug(`Cached ${imagesToCache.length} images for weather: ${weather}, timeOfDay: ${timeOfDay}`);
+      this.getLogger().info(`Cached ${imagesToCache.length} images for weather: ${weather}, timeOfDay: ${timeOfDay}`);
     }
 
     // Get the cached images

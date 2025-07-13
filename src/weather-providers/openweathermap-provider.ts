@@ -162,47 +162,68 @@ export class OpenWeatherMapProvider implements WeatherProvider {
    * @returns The mapped weather condition
    */
   public mapWeatherCondition(condition: string): Weather {
+    // Log the input condition for debugging
+    logger.debug(`[OpenWeatherMap] Mapping weather condition: ${condition}`);
+
     // Convert to lowercase for case-insensitive comparison
     const lowerCondition = condition.toLowerCase();
 
     // Map legacy conditions to new ones
+    let result: Weather;
     switch (lowerCondition) {
       case 'clear':
-        return Weather.ClearSky;
+        result = Weather.ClearSky;
+        break;
       // Map all cloud conditions to 'clouds'
       case 'few clouds':
       case 'scattered clouds':
       case 'broken clouds':
-        return Weather.Clouds;
+        result = Weather.Clouds;
+        break;
       case 'clouds':
-        return Weather.Clouds; // Now maps directly to 'clouds'
+        result = Weather.Clouds; // Now maps directly to 'clouds'
+        break;
       case 'fog':
       case 'haze':
       case 'dust':
       case 'smoke':
-        return Weather.Mist; // Map all these to mist
+        result = Weather.Mist; // Map all these to mist
+        break;
       // Map all rain-related conditions to 'rain'
       case 'drizzle':
       case 'shower rain':
       case 'thunderstorm':
       case 'light rain':
-        return Weather.Rain;
+        result = Weather.Rain;
+        break;
       case 'tornado':
       case 'windy':
-        return Weather.All; // No direct mapping, use 'all'
+        result = Weather.All; // No direct mapping, use 'all'
+        break;
       case 'snow':
-        return Weather.Snow;
+        result = Weather.Snow;
+        break;
       case 'mist':
-        return Weather.Mist;
+        result = Weather.Mist;
+        break;
       case 'clear sky':
-        return Weather.ClearSky;
+        result = Weather.ClearSky;
+        break;
       case 'rain':
-        return Weather.Rain;
+        result = Weather.Rain;
+        break;
       case 'all':
-        return Weather.All;
+        result = Weather.All;
+        break;
       default:
-        return Weather.All; // Default to 'all' for unknown conditions
+        result = Weather.All; // Default to 'all' for unknown conditions
+        break;
     }
+
+    // Log the mapped weather condition for debugging
+    logger.debug(`[OpenWeatherMap] Mapped to Weather enum: ${result}`);
+
+    return result;
   }
 }
 

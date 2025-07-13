@@ -1,4 +1,6 @@
-import {LitElement, html, customElement, property, TemplateResult, CSSResult, css} from 'lit-element';
+import {LitElement, html, css} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
+import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
 import {BackgroundImage, TimeOfDay, Weather, FindAttributeInPath, ValidWeather, ValidTimeOfDay} from './image-sources/image-source';
