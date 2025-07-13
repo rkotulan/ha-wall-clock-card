@@ -24,6 +24,7 @@ import {
 } from './lokalify';
 import { configureLogger, logger, getLogLevelFromString } from './utils/logger';
 import { ClockComponent } from './components/clock/clock-component';
+import { SensorComponent } from './components/sensor/sensor-component';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
@@ -83,7 +84,7 @@ export class WallClockCard extends LitElement {
     @property({type: String}) currentImageUrl = ''; // Currently displayed image URL
     @property({type: String}) previousImageUrl = ''; // Previously displayed image URL
     @property({type: Boolean}) isTransitioning = false; // Flag to track if image transition is in progress
-    @property({type: Array}) sensorValues: { entity: string, label?: string, value: string }[] = [];
+    // Sensor values are now handled by the SensorComponent
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
     @property({type: Object}) weatherData?: WeatherData; // Weather data from provider
@@ -99,6 +100,7 @@ export class WallClockCard extends LitElement {
 
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
     private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
+    private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
     private weatherUpdateTimer?: number;
     private transportationUpdateTimer?: number;
     private transportationAutoHideTimer?: number;
@@ -120,6 +122,13 @@ export class WallClockCard extends LitElement {
         this.clockComponent.language = this.config.language;
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
+
+        // Initialize the sensor component
+        this.sensorComponent.sensors = this.config.sensors;
+        this.sensorComponent.fontColor = this.config.fontColor;
+        if (this.hass) {
+            this.sensorComponent.hass = this.hass;
+        }
     }
 
     connectedCallback(): void {
@@ -131,6 +140,13 @@ export class WallClockCard extends LitElement {
         this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
+
+        // Initialize the sensor component with the latest configuration
+        this.sensorComponent.sensors = this.config.sensors;
+        this.sensorComponent.fontColor = this.config.fontColor;
+        if (this.hass) {
+            this.sensorComponent.hass = this.hass;
+        }
 
         this.initConnectCallbackAsync();
     }
@@ -589,56 +605,19 @@ export class WallClockCard extends LitElement {
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
 
-        // Update sensor value if entity is configured
-        if (this.hass && this.config.sensorEntity) {
-            this.updateSensorValue();
+        // Initialize the sensor component with the new configuration
+        this.sensorComponent.sensors = this.config.sensors;
+        this.sensorComponent.fontColor = this.config.fontColor;
+        if (this.hass) {
+            this.sensorComponent.hass = this.hass;
         }
     }
 
     // Update when hass changes to get latest sensor values
     updated(changedProperties: Map<string, any>): void {
-        if (changedProperties.has('hass')) {
-            // Check if we have any sensors to update
-            const hasSensors = this.config.sensors && this.config.sensors.length > 0;
-            if (hasSensors) {
-                this.updateSensorValue();
-            }
-        }
-    }
-
-    // Update the sensor values from hass
-    private updateSensorValue(): void {
-        if (!this.hass) return;
-
-        // Clear previous values
-        this.sensorValues = [];
-
-        // Process sensors array
-        if (this.config.sensors && this.config.sensors.length > 0) {
-            this.config.sensors.forEach(sensorConfig => {
-                if (sensorConfig.entity && this.hass!.states[sensorConfig.entity]) {
-                    const state = this.hass!.states[sensorConfig.entity];
-                    let value = state.state;
-
-                    // If the entity has a unit_of_measurement attribute, append it
-                    if (state.attributes && state.attributes.unit_of_measurement) {
-                        value += ` ${state.attributes.unit_of_measurement}`;
-                    }
-
-                    this.sensorValues.push({
-                        entity: sensorConfig.entity,
-                        label: sensorConfig.label,
-                        value: value
-                    });
-                } else if (sensorConfig.entity) {
-                    // Entity not found or unavailable
-                    this.sensorValues.push({
-                        entity: sensorConfig.entity,
-                        label: sensorConfig.label,
-                        value: 'unavailable'
-                    });
-                }
-            });
+        if (changedProperties.has('hass') && this.hass) {
+            // Update the sensor component with the new hass
+            this.sensorComponent.hass = this.hass;
         }
     }
 
@@ -647,6 +626,8 @@ export class WallClockCard extends LitElement {
         return css`
             /* Include ClockComponent styles */
             ${unsafeCSS(ClockComponent.styles)}
+            /* Include SensorComponent styles */
+            ${unsafeCSS(SensorComponent.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -718,35 +699,7 @@ export class WallClockCard extends LitElement {
 
 
 
-            .sensor-container {
-                position: absolute;
-                top: 16px;
-                left: 16px;
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                z-index: 3;
-                max-width: 40%;
-                max-height: 60%;
-                overflow-y: auto;
-                padding-right: 8px;
-            }
-
-            .sensor-item {
-                margin-bottom: 16px;
-                width: 100%;
-            }
-
-            .sensor-label {
-                font-size: 1.5rem;
-                font-weight: 300;
-                opacity: 0.8;
-            }
-
-            .sensor-value {
-                font-size: 2.5rem;
-                font-weight: 400;
-            }
+            /* Sensor styles are now in the SensorComponent */
 
             /* Weather display styles */
 
@@ -1095,26 +1048,7 @@ export class WallClockCard extends LitElement {
                         ` :
                         ''
                 }
-                ${this.sensorValues.length > 0 ?
-                        html`
-                            <div class="sensor-container" style="color: ${this.config.fontColor};">
-                                ${this.sensorValues.map(sensor => html`
-                                    <div class="sensor-item">
-                                        ${sensor.label ?
-                                                html`
-                                                    <div class="sensor-label" style="color: ${this.config.fontColor};">
-                                                        ${sensor.label}
-                                                    </div>` :
-                                                ''
-                                        }
-                                        <div class="sensor-value" style="color: ${this.config.fontColor};">
-                                            ${sensor.value}
-                                        </div>
-                                    </div>
-                                `)}
-                            </div>` :
-                        ''
-                }
+                ${this.sensorComponent}
                 ${this.config.showWeather && this.weatherData ?
                         html`
                             <div class="weather-container" style="color: ${this.config.fontColor};">
