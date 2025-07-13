@@ -108,14 +108,14 @@ export abstract class AbstractImageSource implements ImageSource {
 
     // First try to find images that match both weather and time of day
     filteredImages = images.filter(img => {
-      return (img.weather === weather || img.weather === Weather.All) &&
+      return (img.weather === weather || img.weather === Weather.All || weather === Weather.All) &&
           img.timeOfDay === timeOfDay;
     });
 
     // If no matches, try images that match weather but have unspecified time of day
     if (filteredImages.length === 0) {
       filteredImages = images.filter(img => {
-        return (img.weather === weather || img.weather === Weather.All) &&
+        return (img.weather === weather || img.weather === Weather.All || weather === Weather.All) &&
             img.timeOfDay === TimeOfDay.Unspecified;
       });
     }
@@ -123,7 +123,6 @@ export abstract class AbstractImageSource implements ImageSource {
     // If still no matches, try images with 'all' weather that match time of day
     if (filteredImages.length === 0) {
       filteredImages = images.filter(img =>
-        img.weather === Weather.All &&
         img.timeOfDay === timeOfDay
       );
     }
@@ -131,7 +130,6 @@ export abstract class AbstractImageSource implements ImageSource {
     // If still no matches, try images with 'all' weather and unspecified time of day
     if (filteredImages.length === 0) {
       filteredImages = images.filter(img =>
-        img.weather === Weather.All &&
         img.timeOfDay === TimeOfDay.Unspecified
       );
     }
