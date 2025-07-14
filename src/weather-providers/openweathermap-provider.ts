@@ -177,6 +177,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       // Map all cloud conditions to 'clouds'
       case 'few clouds':
       case 'scattered clouds':
+      case 'overcast clouds':
       case 'broken clouds':
         result = Weather.Clouds;
         break;

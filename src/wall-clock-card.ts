@@ -3,10 +3,9 @@ import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {
     ImageSourceConfig,
-    BackgroundImage,
-    Weather
+    BackgroundImage
 } from './image-sources';
-import {WeatherProviderConfig, WeatherData, getWeatherProvider} from './weather-providers';
+import {WeatherProviderConfig} from './weather-providers';
 import {
     TransportationConfig,
     TransportationData,
@@ -14,15 +13,14 @@ import {
     getTransportationProvider
 } from './transportation-providers';
 import {
-    translate,
     loadTranslationsAsync,
-    formatDate,
     ExtendedDateTimeFormatOptions
 } from './utils/localize/lokalify';
 import { configureLogger, logger, getLogLevelFromString, LogLevel } from './utils/logger/logger';
 import { ClockComponent } from './components/clock';
 import { SensorComponent } from './components/sensor';
 import { BackgroundImageComponent } from './components/background-image';
+import { WeatherComponent } from './components/weather';
 import './wall-clock-card-editor';
 
 // Global constant injected by webpack.DefinePlugin
@@ -84,10 +82,7 @@ export class WallClockCard extends LitElement {
     // Sensor values are now handled by the SensorComponent
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
-    @property({type: Object}) weatherData?: WeatherData; // Weather data from provider
-    @property({type: Boolean}) weatherLoading = false; // Flag to track if weather data is loading
-    @property({type: Boolean}) weatherError = false; // Flag to track if there was an error loading weather data
-    @property({type: String}) weatherErrorMessage = ''; // Error message if weather data loading failed
+    // Weather data is now handled by the WeatherComponent
     @property({type: Object}) transportationData: TransportationData = {departures: [], loading: false}; // Transportation data
     @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
     @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
@@ -95,7 +90,7 @@ export class WallClockCard extends LitElement {
 
     private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
     private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
-    private weatherUpdateTimer?: number;
+    private weatherComponent: WeatherComponent = document.createElement('ha-weather') as WeatherComponent;
     private transportationUpdateTimer?: number;
     private transportationAutoHideTimer?: number;
 
@@ -122,6 +117,17 @@ export class WallClockCard extends LitElement {
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
+
+        // Initialize the weather component
+        this.weatherComponent.showWeather = this.config.showWeather;
+        this.weatherComponent.weatherProvider = this.config.weatherProvider;
+        this.weatherComponent.weatherConfig = this.config.weatherConfig;
+        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
+        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
+        this.weatherComponent.weatherTitle = this.config.weatherTitle;
+        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.fontColor = this.config.fontColor;
+        this.weatherComponent.language = this.config.language;
     }
 
     connectedCallback(): void {
@@ -140,6 +146,17 @@ export class WallClockCard extends LitElement {
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
+
+        // Initialize the weather component with the latest configuration
+        this.weatherComponent.showWeather = this.config.showWeather;
+        this.weatherComponent.weatherProvider = this.config.weatherProvider;
+        this.weatherComponent.weatherConfig = this.config.weatherConfig;
+        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
+        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
+        this.weatherComponent.weatherTitle = this.config.weatherTitle;
+        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.fontColor = this.config.fontColor;
+        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
 
         this.initConnectCallbackAsync();
     }
@@ -166,49 +183,7 @@ export class WallClockCard extends LitElement {
             logger.error('Error loading translations:', error);
         }
 
-        // If weather is enabled, fetch weather data first
-        if (this.config.showWeather) {
-            await this.fetchWeatherDataAsync();
-
-            // Get configured weather update interval or default to 30 minutes (1800 seconds)
-            let weatherInterval = this.config.weatherUpdateInterval || 1800;
-
-            // Ensure minimum interval of 60 seconds
-            weatherInterval = Math.max(weatherInterval, 60);
-
-            // Convert to milliseconds
-            const weatherIntervalMs = weatherInterval * 1000;
-
-            logger.debug(`Setting weather update interval to ${weatherInterval} seconds`);
-
-            // Update weather data at the configured interval
-            this.weatherUpdateTimer = window.setInterval(() => {
-                // Use a self-executing async function to allow await
-                (async () => {
-                    try {
-                        await this.fetchWeatherDataAsync();
-                    } catch (error) {
-                        logger.error('Error in weather update interval:', error);
-                    }
-                })();
-            }, weatherIntervalMs);
-        } else {
-            this.weatherData = {
-                current: {
-                    temperature: 0,
-                    condition: Weather.All,
-                    conditionUnified: Weather.All,
-                    icon: '',
-                    humidity: 0,
-                    windSpeed: 0,
-                    windDirection: '',
-                    pressure: 0,
-                    feelsLike: 0,
-                    uvIndex: 0
-                },
-                daily: []
-            }
-        }
+        // Weather data is now handled by the WeatherComponent
 
         // Fetch transportation data if enabled and not on-demand
         if (this.config.transportation) {
@@ -286,9 +261,7 @@ export class WallClockCard extends LitElement {
         // Clear all timers when the component is removed
         // The ClockComponent and BackgroundImageComponent will clean up themselves when removed from the DOM
 
-        if (this.weatherUpdateTimer) {
-            clearInterval(this.weatherUpdateTimer);
-        }
+        // Weather timer is now handled by the WeatherComponent
         if (this.transportationUpdateTimer) {
             clearInterval(this.transportationUpdateTimer);
         }
@@ -354,53 +327,7 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    /**
-     * Fetch weather data from the configured provider
-     */
-    private async fetchWeatherDataAsync(): Promise<void> {
-        if (this.weatherLoading || !this.config.showWeather) return;
-
-        logger.debug(`Begin fetch weather data`);
-
-        this.weatherLoading = true;
-        this.weatherError = false;
-        this.weatherErrorMessage = '';
-
-        try {
-            // Get the weather provider from config, default to openweathermap
-            const providerId = this.config.weatherProvider || 'openweathermap';
-            const provider = getWeatherProvider(providerId);
-
-            if (!provider) {
-                throw new Error(`Weather provider '${providerId}' not found`);
-            }
-
-            // Get the weather config from the card config and ensure it's properly processed
-            let weatherConfig = provider.getDefaultConfig();
-
-            if (this.config.weatherConfig) {
-                // Create a new object to avoid reference issues
-                weatherConfig = {...weatherConfig, ...this.config.weatherConfig};
-
-                // Ensure units is properly set if specified
-                if (this.config.weatherConfig.units) {
-                    weatherConfig.units = this.config.weatherConfig.units;
-                    logger.debug(`Using weather units: ${weatherConfig.units}`);
-                }
-            }
-
-            // Fetch weather data from the provider
-            this.weatherData = await provider.fetchWeatherAsync(weatherConfig);
-
-            logger.info(`Fetched weather data from ${provider.name}:`, this.weatherData);
-        } catch (error) {
-            this.weatherError = true;
-            this.weatherErrorMessage = error instanceof Error ? error.message : String(error);
-            logger.error('Error fetching weather data:', error);
-        } finally {
-            this.weatherLoading = false;
-        }
-    }
+    // Weather data is now handled by the WeatherComponent
 
     // Required for Home Assistant custom cards
     static getConfigElement() {
@@ -502,10 +429,7 @@ export class WallClockCard extends LitElement {
             timeZone: timeZone
         };
 
-        // Fetch weather data first if enabled
-        if (this.config.showWeather) {
-            await this.fetchWeatherDataAsync();
-        }
+        // Weather data is now handled by the WeatherComponent
 
         // Initialize the background image component
         this.initBackgroundImageComponent();
@@ -523,6 +447,17 @@ export class WallClockCard extends LitElement {
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
+
+        // Initialize the weather component with the new configuration
+        this.weatherComponent.showWeather = this.config.showWeather;
+        this.weatherComponent.weatherProvider = this.config.weatherProvider;
+        this.weatherComponent.weatherConfig = this.config.weatherConfig;
+        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
+        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
+        this.weatherComponent.weatherTitle = this.config.weatherTitle;
+        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.fontColor = this.config.fontColor;
+        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
     }
 
     // Update when hass changes to get latest sensor values
@@ -532,14 +467,21 @@ export class WallClockCard extends LitElement {
             this.sensorComponent.hass = this.hass;
 
             // Update the background image component with the new weather condition if available
-            // if(this.backgroundImageComponent) {
-            //     this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
-            // }
+            if(this.backgroundImageComponent && this.weatherComponent) {
+                const weatherData = this.weatherComponent.weatherData;
+                if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
+                    this.backgroundImageComponent.weather = weatherData.current.conditionUnified;
+                }
+            }
         }
 
-        // If weather data changed, update the background image component
-        if (changedProperties.has('weatherData') && this.backgroundImageComponent && this.weatherData?.current?.condition) {
-            this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
+        // Weather data is now handled by the WeatherComponent
+        if (changedProperties.has('weatherComponent') && this.weatherComponent && this.backgroundImageComponent) {
+            // Update the background image component with the new weather condition if available
+            const weatherData = this.weatherComponent.weatherData;
+            if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
+                this.backgroundImageComponent.weather = weatherData.current.conditionUnified;
+            }
         }
 
         // If config changed, update the log level
@@ -570,6 +512,8 @@ export class WallClockCard extends LitElement {
             ${unsafeCSS(SensorComponent.styles)}
             /* Include BackgroundImageComponent styles */
             ${unsafeCSS(BackgroundImageComponent.styles)}
+            /* Include WeatherComponent styles */
+            ${unsafeCSS(WeatherComponent.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -604,108 +548,7 @@ export class WallClockCard extends LitElement {
 
             /* Sensor styles are now in the SensorComponent */
 
-            /* Weather display styles */
-
-            .weather-container {
-                position: absolute;
-                top: 16px;
-                right: 16px;
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                z-index: 3;
-                max-width: 40%;
-                max-height: 60%;
-                overflow-y: auto;
-                padding-left: 8px;
-            }
-
-            .weather-title {
-                font-size: 1.5rem;
-                font-weight: 300;
-                opacity: 0.8;
-                text-align: right;
-            }
-
-            .weather-current {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                margin-bottom: 16px;
-            }
-
-            .weather-temp-container {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: flex-end;
-            }
-
-            .weather-temp {
-                font-size: 2.5rem;
-                line-height: 2.5rem;
-                font-weight: 400;
-            }
-
-            .weather-condition {
-                font-size: 1.5rem;
-                font-weight: 300;
-                opacity: 0.8;
-            }
-
-            .weather-icon {
-                width: 50px;
-                height: 50px;
-                margin-left: 8px;
-            }
-
-            .weather-forecast {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .forecast-day {
-                display: flex;
-                align-items: center;
-            }
-
-            .forecast-date {
-                font-size: 1.4rem;
-                font-weight: 300;
-                margin-right: 8px;
-                opacity: 0.8;
-                width: 2rem;
-                text-align: right;
-            }
-
-            .forecast-icon {
-                width: 50px;
-                height: 50px;
-                margin: 0 8px;
-            }
-
-            .forecast-temp {
-                font-size: 1.4rem;
-                font-weight: 400;
-                width: 80px;
-                text-align: right;
-            }
-
-            .forecast-condition {
-                font-size: 0.9rem;
-                margin-top: 0.2rem;
-                text-align: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
-            }
-
-            .weather-error {
-                color: #f44336;
-                font-size: 1rem;
-            }
+            /* Weather styles are now in the WeatherComponent */
 
             /* Transportation styles */
 
@@ -894,29 +737,7 @@ export class WallClockCard extends LitElement {
             }
 
             /* Responsive adjustments */
-            @media (min-width: 900px) {
-                .weather-temp {
-                    font-size: 3rem;
-                    line-height: 3rem;
-                }
-
-                .weather-icon {
-                    width: 60px;
-                    height: 60px;
-                }
-            }
-
             @media (min-width: 1280px) {
-                .weather-temp {
-                    font-size: 3rem;
-                    line-height: 3rem;
-                }
-
-                .weather-icon {
-                    width: 60px;
-                    height: 60px;
-                }
-
                 .stop-group {
                     margin-bottom: 16px;
                 }
@@ -931,11 +752,10 @@ export class WallClockCard extends LitElement {
             <ha-card style="color: ${this.config.fontColor};">
                 ${this.backgroundImageComponent}
                 ${this.sensorComponent}
-                ${this.config.showWeather && this.weatherData ?
-                        html`
-                            <div class="weather-container" style="color: ${this.config.fontColor};">
-                                ${this.renderWeatherContent()}
-                            </div>` :
+                ${this.config.showWeather ?
+                        html`<div style="position: absolute; top: 16px; right: 16px; max-width: 40%; max-height: 60%; z-index: 3; padding-left: 8px;">
+                            ${this.weatherComponent}
+                        </div>` :
                         ''
                 }
                 <div style="${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
@@ -1025,64 +845,7 @@ export class WallClockCard extends LitElement {
         `;
     }
 
-    /**
-     * Render weather content based on display mode
-     */
-    private renderWeatherContent(): TemplateResult {
-        if (this.weatherError) {
-            return html`
-                <div class="weather-error">${this.weatherErrorMessage}</div>`;
-        }
-
-        if (!this.weatherData || !this.weatherData.current) {
-            return html`
-                <div class="weather-loading">Loading weather data...</div>`;
-        }
-
-        const displayMode = this.config.weatherDisplayMode || 'both';
-        const forecastDays = this.config.weatherForecastDays || 3;
-        const weatherTitle = this.config.weatherTitle || 'Weather';
-
-        // Limit forecast days to available data (max 7 days)
-        const limitedForecastDays = Math.min(forecastDays, this.weatherData.daily.length);
-
-        return html`
-            <div class="weather-title" style="color: ${this.config.fontColor};">${weatherTitle}</div>
-
-            ${(displayMode === 'current' || displayMode === 'both') ?
-                    html`
-                        <div class="weather-current">
-                            <div class="weather-temp-container">
-                                <img class="weather-icon" src="${this.weatherData.current.icon}"
-                                     alt="${this.weatherData.current.condition}">
-                                <div class="weather-temp">${Math.round(this.weatherData.current.temperature)}°</div>
-                            </div>
-                            <div class="weather-condition">
-                                ${this.translateWeatherCondition(this.weatherData.current.condition)}
-                            </div>
-                        </div>
-                    ` :
-                    ''
-            }
-
-            ${(displayMode === 'forecast' || displayMode === 'both') ?
-                    html`
-                        <div class="weather-forecast">
-                            ${this.weatherData.daily.slice(0, limitedForecastDays).map(day => html`
-                                <div class="forecast-day">
-                                    <div class="forecast-date">${this.formatForecastDate(day.date)}</div>
-                                    <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
-                                    <div class="forecast-temp">${Math.round(day.temperatureMin)}° -
-                                        ${Math.round(day.temperatureMax)}°
-                                    </div>
-                                </div>
-                            `)}
-                        </div>
-                    ` :
-                    ''
-            }
-        `;
-    }
+    // Weather content is now handled by the WeatherComponent
 
     /**
      * Handle click on the transportation button
@@ -1154,40 +917,7 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    /**
-     * Translate a weather condition
-     * @param condition The weather condition to translate
-     * @returns The translated weather condition
-     */
-    private translateWeatherCondition(condition: string): string {
-        // Get language from config, or Home Assistant language, or default to Czech
-        const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
-
-        // Convert condition to a format suitable for path lookup (replace spaces with underscores)
-        const normalizedCondition = condition.toLowerCase().replace(/ /g, '_');
-
-        // Try to get the translation from the conditions section
-        const conditionPath = `conditions.${normalizedCondition}`;
-        const translation = translate(conditionPath, language, null);
-
-        if (translation !== null) {
-            return translation;
-        }
-
-        // Fall back to the original condition if no translation is found
-        return condition;
-    }
-
-    /**
-     * Format a date for display in the forecast
-     */
-    private formatForecastDate(date: Date): string {
-        // Get language from config, or Home Assistant language, or default to Czech
-        const language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
-
-        // Format: "Mon", "Tue", etc.
-        return formatDate(date, language, {weekday: 'short'});
-    }
+    // Weather-related methods are now handled by the WeatherComponent
 }
 
 // Add card to window for type checking
