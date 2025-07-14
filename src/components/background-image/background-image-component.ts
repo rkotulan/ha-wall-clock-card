@@ -46,21 +46,37 @@ export class BackgroundImageComponent extends LitElement {
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            transition: opacity 1s ease-in-out;
+            object-fit: cover;            
+            opacity: 0;
+            /* No default transition - will be added only during explicit transitions */
+        }
+
+        /* Default state - current image is visible */
+        .background-image:not(.previous) {
             opacity: 1;
         }
 
-        .background-image.previous {
-            opacity: 0;
+        /* Transition class with explicit duration */
+        .background-image.transition {
+            transition: opacity 1s ease-in-out;
         }
 
+        /* Initial state for transition - before transition class is added */
         .transitioning .background-image.previous {
             opacity: 1;
         }
 
         .transitioning .background-image:not(.previous) {
             opacity: 0;
+        }
+
+        /* Final state - applied when transition class is added */
+        .transitioning .background-image.previous.transition {
+            opacity: 0;
+        }
+
+        .transitioning .background-image:not(.previous).transition {
+            opacity: 1;
         }
 
         .background-overlay {
@@ -114,6 +130,7 @@ export class BackgroundImageComponent extends LitElement {
             <div class="background-container ${isTransitioning ? 'transitioning' : ''}">
                 ${currentImageUrl ?
                     html`
+
                         ${isTransitioning && previousImageUrl ?
                             html`
                                 <img
@@ -124,10 +141,10 @@ export class BackgroundImageComponent extends LitElement {
                             ` : ''
                         }
                         <img
-                            class="background-image"
-                            src="${currentImageUrl}"
-                            @load="${() => this.logger.debug('Background image rendered successfully:', currentImageUrl)}"
-                            @error="${(e: Event) => this.logger.error('Error rendering background image:', currentImageUrl, e)}"
+                                class="background-image"
+                                src="${currentImageUrl}"
+                                @load="${() => this.logger.debug('Background image rendered successfully:', currentImageUrl)}"
+                                @error="${(e: Event) => this.logger.error('Error rendering background image:', currentImageUrl, e)}"
                         >
                         <div
                             class="background-overlay"

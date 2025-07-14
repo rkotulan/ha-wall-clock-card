@@ -171,17 +171,63 @@ export class BackgroundImageController implements ReactiveController {
                         this._previousImageUrl = this._currentImageUrl;
                         this._isTransitioning = true;
 
-                        // After transition completes, clear the previous image URL
+                        // Request update to apply the transitioning class and show both images
+                        this.host.requestUpdate();
+
+                        // Add a significant delay before applying the transition class
+                        // This ensures the browser has fully rendered the initial state first
                         setTimeout(() => {
-                            this._isTransitioning = false;
-                            this.host.requestUpdate();
-                        }, 1000); // Match the transition duration in CSS
+                            this.logger.debug('Applying transition class after delay');
+
+                            // Force a browser repaint before adding the transition class
+                            // This ensures the initial state is fully applied before starting the transition
+                            if (this.host instanceof HTMLElement) {
+                                // Reading offsetHeight forces a repaint without needing to store the value
+                                this.host.offsetHeight;
+                            }
+
+                            // Add transition class - use the host element to scope the selection to this component instance
+                            if (this.host instanceof HTMLElement && this.host.shadowRoot) {
+                                const images = this.host.shadowRoot.querySelectorAll('.background-image');
+                                this.logger.debug(`Adding transition class to background images`);
+                                let transitionAdded = 0;
+                                images.forEach(img => {
+                                    if (!img.classList.contains('transition')) {
+                                        img.classList.add('transition');
+                                        transitionAdded++;
+                                    }
+                                });
+                                this.logger.debug(`Added transition class to ${transitionAdded} images`);
+                            } else {
+                                this.logger.error('Could not access shadow root to add transition class');
+                            }
+
+                            // After transition completes, clear the previous image URL and remove transition classes
+                            setTimeout(() => {
+                                // Remove transition classes from all images
+                                if (this.host instanceof HTMLElement && this.host.shadowRoot) {
+                                    const images = this.host.shadowRoot.querySelectorAll('.background-image');
+                                    this.logger.debug(`Removing transition class from background images`);
+                                    images.forEach(img => {
+                                        if (img.classList.contains('transition')) {
+                                            img.classList.remove('transition');
+                                        }
+                                    });
+                                }
+
+                                this._isTransitioning = false;
+                                this.host.requestUpdate();
+                            }, 1000); // Match the transition duration in CSS
+                        }, 300); // Increased delay to ensure initial state is fully rendered
                     }
 
                     // Update the current image URL
                     this._currentImageUrl = newImageUrl;
 
-                    this.host.requestUpdate();
+                    if (!this._previousImageUrl) {
+                        // If there's no previous image, just update without transition
+                        this.host.requestUpdate();
+                    }
                 };
                 img.onerror = () => {
                     this.logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
