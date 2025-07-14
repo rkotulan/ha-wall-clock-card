@@ -56,27 +56,30 @@ export class BackgroundImageComponent extends LitElement {
             opacity: 1;
         }
 
-        /* Transition class with explicit duration */
-        .background-image.transition {
-            transition: opacity 1s ease-in-out;
+        /* Initial state for transition */
+        .transitioning .background-image {
+            transition: none; /* Ensure no transition during setup */
         }
 
-        /* Initial state for transition - before transition class is added */
         .transitioning .background-image.previous {
-            opacity: 1;
+            opacity: 1; /* Previous image starts visible */
         }
 
         .transitioning .background-image:not(.previous) {
-            opacity: 0;
+            opacity: 0; /* New image starts invisible */
         }
 
-        /* Final state - applied when transition class is added */
-        .transitioning .background-image.previous.transition {
-            opacity: 0;
+        /* Active transition state - smooth transition between images */
+        .transitioning.active-transition .background-image {
+            transition: opacity 1s ease-in-out; /* Apply transition to all images */
         }
 
-        .transitioning .background-image:not(.previous).transition {
-            opacity: 1;
+        .transitioning.active-transition .background-image.previous {
+            opacity: 0; /* Previous image fades out */
+        }
+
+        .transitioning.active-transition .background-image:not(.previous) {
+            opacity: 1; /* New image fades in */
         }
 
         .background-overlay {
