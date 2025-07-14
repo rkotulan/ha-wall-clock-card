@@ -110,7 +110,6 @@ export class BackgroundImageComponent extends LitElement {
         }
     }
 
-
     // Getters to expose controller state
     get currentImageUrl(): string {
         return this.backgroundImageController.currentImageUrl;
@@ -136,23 +135,11 @@ export class BackgroundImageComponent extends LitElement {
 
                         ${isTransitioning && previousImageUrl ?
                             html`
-                                <img
-                                    class="background-image previous"
-                                    src="${previousImageUrl}"
-                                    @error="${(e: Event) => this.logger.error('Error rendering previous background image:', previousImageUrl, e)}"
-                                >
+                                <img class="background-image previous" src="${previousImageUrl}" >
                             ` : ''
                         }
-                        <img
-                                class="background-image"
-                                src="${currentImageUrl}"
-                                @load="${() => this.logger.debug('Background image rendered successfully:', currentImageUrl)}"
-                                @error="${(e: Event) => this.logger.error('Error rendering background image:', currentImageUrl, e)}"
-                        >
-                        <div
-                            class="background-overlay"
-                            style="opacity: ${this.backgroundOpacity !== undefined ? this.backgroundOpacity : 0.5};"
-                        ></div>
+                        <img class="background-image" src="${currentImageUrl}">
+                        <div class="background-overlay" style="opacity: ${this.backgroundOpacity !== undefined ? this.backgroundOpacity : 0.5};"></div>
                     ` :
                     ''
                 }

@@ -164,22 +164,10 @@
                 ${t?j`
 
                         ${i&&e?j`
-                                <img
-                                    class="background-image previous"
-                                    src="${e}"
-                                    @error="${t=>this.logger.error("Error rendering previous background image:",e,t)}"
-                                >
+                                <img class="background-image previous" src="${e}" >
                             `:""}
-                        <img
-                                class="background-image"
-                                src="${t}"
-                                @load="${()=>this.logger.debug("Background image rendered successfully:",t)}"
-                                @error="${e=>this.logger.error("Error rendering background image:",t,e)}"
-                        >
-                        <div
-                            class="background-overlay"
-                            style="opacity: ${void 0!==this.backgroundOpacity?this.backgroundOpacity:.5};"
-                        ></div>
+                        <img class="background-image" src="${t}">
+                        <div class="background-overlay" style="opacity: ${void 0!==this.backgroundOpacity?this.backgroundOpacity:.5};"></div>
                     `:""}
             </div>
         `}};var vr,yr,wr;pr.styles=o`
