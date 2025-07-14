@@ -166,7 +166,7 @@ export class WallClockCard extends LitElement {
             logger.error('Error loading translations:', error);
         }
 
-        // Fetch weather data first if enabled
+        // If weather is enabled, fetch weather data first
         if (this.config.showWeather) {
             await this.fetchWeatherDataAsync();
 
@@ -192,6 +192,22 @@ export class WallClockCard extends LitElement {
                     }
                 })();
             }, weatherIntervalMs);
+        } else {
+            this.weatherData = {
+                current: {
+                    temperature: 0,
+                    condition: Weather.All,
+                    conditionUnified: Weather.All,
+                    icon: '',
+                    humidity: 0,
+                    windSpeed: 0,
+                    windDirection: '',
+                    pressure: 0,
+                    feelsLike: 0,
+                    uvIndex: 0
+                },
+                daily: []
+            }
         }
 
         // Fetch transportation data if enabled and not on-demand
@@ -229,13 +245,23 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    private initBackgroundImageComponent(): void {
+    private createBackgroundImageComponent(): void {
         if (this.backgroundImageComponent) {
             return;
         }
 
         // Create the background image component
         this.backgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
+
+        this.initBackgroundImageComponent();
+
+        logger.debug('Background image component created and initialized');
+    }
+
+    private initBackgroundImageComponent(): void {
+        if(!this.backgroundImageComponent) {
+            return;
+        }
 
         // Create the full ImageSourceConfig
         const imageSourceConfig: ImageSourceConfig = {
@@ -247,7 +273,6 @@ export class WallClockCard extends LitElement {
 
         // Set the properties
         this.backgroundImageComponent.backgroundOpacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5;
-        this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
         this.backgroundImageComponent.config = {
             imageSourceConfig: imageSourceConfig,
             backgroundRotationInterval: this.config.backgroundRotationInterval
@@ -507,9 +532,9 @@ export class WallClockCard extends LitElement {
             this.sensorComponent.hass = this.hass;
 
             // Update the background image component with the new weather condition if available
-            if(this.backgroundImageComponent) {
-                this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
-            }
+            // if(this.backgroundImageComponent) {
+            //     this.backgroundImageComponent.weather = this.weatherData?.current?.conditionUnified ?? Weather.All;
+            // }
         }
 
         // If weather data changed, update the background image component
@@ -900,10 +925,7 @@ export class WallClockCard extends LitElement {
     }
 
     render() {
-        // Initialize the background image component if it hasn't been initialized yet
-        if (!this.backgroundImageComponent) {
-            this.initBackgroundImageComponent();
-        }
+        this.createBackgroundImageComponent();
 
         return html`
             <ha-card style="color: ${this.config.fontColor};">

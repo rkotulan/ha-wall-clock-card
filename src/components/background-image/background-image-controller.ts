@@ -36,7 +36,7 @@ export class BackgroundImageController implements ReactiveController {
 
         // Lazy inicializace pouze pokud máme konfiguraci
         if (this.config.imageSourceConfig) {
-            this.initBackgroundImageManagerAsync();
+            this.initializeManagerAsync();
         }
     }
 
@@ -59,12 +59,24 @@ export class BackgroundImageController implements ReactiveController {
 
         logger.info("Update the BackgroundImageController with new configuration")
 
+        const needFetchNewImage = this.isInitialized;
+
         // Check if imageSourceConfig changed
         const needsReinitialize = oldConfig.imageSourceConfig !== this.config.imageSourceConfig;
 
         // If imageSourceConfig changed, reinitialize
         if (needsReinitialize) {
-            this.initBackgroundImageManagerAsync();
+            this.initializeManagerAsync().then(
+                () => {
+                    if (needFetchNewImage) {
+                        this.fetchNewImageAsync(this.currentWeather).catch(error =>
+                            this.logger.error('Error fetching image after reinitialization:', error)
+                        );
+                    }
+                }
+            ).catch(error =>
+                this.logger.error('Error during BackgroundImageManager initialization:', error)
+            );
         } else if (oldConfig.backgroundRotationInterval !== this.config.backgroundRotationInterval &&
             this.backgroundImageManager) {
             this.setupImageRotation();
@@ -74,7 +86,7 @@ export class BackgroundImageController implements ReactiveController {
     /**
      * Initialize the background image manager
      */
-    private async initBackgroundImageManagerAsync(): Promise<void> {
+    private async initializeManagerAsync(): Promise<void> {
         if (this._fetchingImageUrls) return;
         this._fetchingImageUrls = true;
 
@@ -99,7 +111,6 @@ export class BackgroundImageController implements ReactiveController {
             }
 
             this.setupImageRotation();
-            await this.fetchNewImageAsync(this.currentWeather);
         } catch (error) {
             this.logger.error('Error fetching image URLs:', error);
         } finally {
@@ -189,7 +200,27 @@ export class BackgroundImageController implements ReactiveController {
      * Update weather condition
      */
     public updateWeather(weather: Weather): void {
-        this.currentWeather = weather;
+        if(!this.isInitialized) {
+            this.logger.info('BackgroundImageController is not initialized yet, run init before updating weather');
+
+            this.initializeManagerAsync().then(() => {
+                this.currentWeather = weather;
+                this.fetchNewImageAsync(weather).catch(error =>
+                    this.logger.error('Error fetching image after initialization:', error)
+                );
+            });
+        } else if (this.currentWeather !== weather) {
+            this.logger.info(`Updating weather condition to: ${weather}`);
+            this.currentWeather = weather;
+
+            this.fetchNewImageAsync(weather).catch(error =>
+                this.logger.error('Error fetching image after weather update:', error)
+            );
+        }
+    }
+
+    get isInitialized(): boolean {
+        return this._currentImageUrl !== '' && this.imageRotationTimer !== undefined;
     }
 
     /**

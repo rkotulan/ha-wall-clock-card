@@ -19,6 +19,7 @@
 - Updated dependencies to latest versions
 - Improved documentation for developers
 - Added background image transition effects for smoother visual experience
+- Remove background image flickering during page reload
 - Fixed issue where clock would sometimes stop updating
   - Moved timer setup from constructor to connectedCallback for better lifecycle management
   - Added check to prevent duplicate timers

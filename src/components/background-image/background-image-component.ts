@@ -77,7 +77,7 @@ export class BackgroundImageComponent extends LitElement {
         super.updated(changedProperties);
 
         if (changedProperties.has('config')) {
-            this.logger.debug('Property config changed, updating BackgroundImageController');
+                this.logger.debug('Property config changed, updating BackgroundImageController');
 
             // Update the controller with new configuration
             this.backgroundImageController.updateConfig(this.config ?? {});
@@ -85,9 +85,9 @@ export class BackgroundImageComponent extends LitElement {
 
         // If weather changed, refresh the image
         if (changedProperties.has('weather')) {
-            const currentWeather = this.weather || Weather.All;
-            this.logger.info('Weather condition changed, refreshing background image for:', currentWeather);
-            this.backgroundImageController.updateWeather(currentWeather);
+            if(this.weather) {
+                this.backgroundImageController.updateWeather(this.weather);
+            }
         }
     }
 
