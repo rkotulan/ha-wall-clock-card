@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { ExtendedDateTimeFormatOptions } from '../../lokalify';
-import { createLogger } from '../../utils/logger';
+import { ExtendedDateTimeFormatOptions } from '../../utils/localize/lokalify';
+import { createLogger } from '../../utils/logger/logger';
 import { ClockController } from './clock-controller';
 
 export interface ClockConfig {

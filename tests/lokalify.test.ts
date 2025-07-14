@@ -10,7 +10,7 @@ import {
   formatTime, 
   formatDateTime, 
   ExtendedDateTimeFormatOptions
-} from '../src/lokalify';
+} from '../src/utils/localize/lokalify';
 
 // Helper function to create a fixed date for testing
 function createTestDate(): Date {

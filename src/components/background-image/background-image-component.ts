@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '../../utils/logger/logger';
 import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
 import { Weather } from '../../image-sources';
 

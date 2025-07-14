@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '../../utils/logger/logger';
 import { SensorController, SensorConfig } from './sensor-controller';
 
 export interface SensorComponentConfig {

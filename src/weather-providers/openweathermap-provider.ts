@@ -1,6 +1,6 @@
 import { WeatherProvider, WeatherProviderConfig, WeatherData } from './weather-provider';
 import { Weather } from '../image-sources/image-source';
-import { logger } from '../utils/logger';
+import { logger } from '../utils';
 
 /**
  * Configuration for the OpenWeatherMap weather provider

@@ -8,7 +8,7 @@ import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './lokalify';
+import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './utils/localize/lokalify';
 import { logger } from './utils/logger';
 
 @customElement('wall-clock-card-editor')

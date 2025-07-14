@@ -1,6 +1,6 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '../../utils/logger/logger';
 
 export interface SensorConfig {
     entity: string;

@@ -1,5 +1,5 @@
 import {ReactiveController, ReactiveControllerHost} from 'lit';
-import {createLogger, logger} from '../../utils/logger';
+import {createLogger, logger} from '../../utils/logger/logger';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
 

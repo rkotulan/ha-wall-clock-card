@@ -2,7 +2,7 @@
  * Lokalify - A simple localization system for the Wall Clock Card
  * Provides translations directly embedded in the JS file
  */
-import { logger } from './utils/logger';
+import { logger } from '../logger';
 
 // Define the structure of the translations
 // This allows for both flat key-value pairs and nested objects
@@ -11,24 +11,24 @@ export interface Translations {
 }
 
 // Import translations directly from JSON files
-import csTranslations from './translations/cs.json';
-import daTranslations from './translations/da.json';
-import deTranslations from './translations/de.json';
-import elTranslations from './translations/el.json';
-import enTranslations from './translations/en.json';
-import esTranslations from './translations/es.json';
-import fiTranslations from './translations/fi.json';
-import frTranslations from './translations/fr.json';
-import huTranslations from './translations/hu.json';
-import itTranslations from './translations/it.json';
-import nlTranslations from './translations/nl.json';
-import noTranslations from './translations/no.json';
-import plTranslations from './translations/pl.json';
-import ptTranslations from './translations/pt.json';
-import roTranslations from './translations/ro.json';
-import ruTranslations from './translations/ru.json';
-import skTranslations from './translations/sk.json';
-import svTranslations from './translations/sv.json';
+import csTranslations from '../../translations/cs.json';
+import daTranslations from '../../translations/da.json';
+import deTranslations from '../../translations/de.json';
+import elTranslations from '../../translations/el.json';
+import enTranslations from '../../translations/en.json';
+import esTranslations from '../../translations/es.json';
+import fiTranslations from '../../translations/fi.json';
+import frTranslations from '../../translations/fr.json';
+import huTranslations from '../../translations/hu.json';
+import itTranslations from '../../translations/it.json';
+import nlTranslations from '../../translations/nl.json';
+import noTranslations from '../../translations/no.json';
+import plTranslations from '../../translations/pl.json';
+import ptTranslations from '../../translations/pt.json';
+import roTranslations from '../../translations/ro.json';
+import ruTranslations from '../../translations/ru.json';
+import skTranslations from '../../translations/sk.json';
+import svTranslations from '../../translations/sv.json';
 
 // Unified language definition with code, label, and translations
 export interface LanguageDefinition {

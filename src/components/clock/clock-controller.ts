@@ -1,6 +1,6 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
-import { formatDate, ExtendedDateTimeFormatOptions } from '../../lokalify';
-import { createLogger } from '../../utils/logger';
+import { formatDate, ExtendedDateTimeFormatOptions } from '../../utils/localize/lokalify';
+import { createLogger } from '../../utils/logger/logger';
 import { DateTime } from 'luxon';
 
 export interface ClockControllerConfig {

@@ -150,4 +150,4 @@ The logger module is implemented in `src/utils/logger.ts` and consists of:
 - `getStoredLogs` and `clearStoredLogs` functions: Manage stored logs
 - Default `logger` instance: Ready-to-use logger with default settings
 
-See the [logger.ts](./logger.ts) file for the complete implementation details.
+See the [logger.ts](logger.ts) file for the complete implementation details.

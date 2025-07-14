@@ -18,8 +18,8 @@ import {
     loadTranslationsAsync,
     formatDate,
     ExtendedDateTimeFormatOptions
-} from './lokalify';
-import { configureLogger, logger, getLogLevelFromString, LogLevel } from './utils/logger';
+} from './utils/localize/lokalify';
+import { configureLogger, logger, getLogLevelFromString, LogLevel } from './utils/logger/logger';
 import { ClockComponent } from './components/clock';
 import { SensorComponent } from './components/sensor';
 import { BackgroundImageComponent } from './components/background-image';
