@@ -1,13 +1,10 @@
-import {css, CSSResult, html, LitElement, TemplateResult, unsafeCSS} from 'lit';
+import {css, CSSResult, html, LitElement, unsafeCSS} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {BackgroundImage, ImageSourceConfig, Weather} from './image-sources';
 import {WeatherProviderConfig} from './weather-providers';
 import {
-    getTransportationProvider,
-    TransportationConfig,
-    TransportationData,
-    TransportationDeparture
+    TransportationConfig
 } from './transportation-providers';
 import {ExtendedDateTimeFormatOptions, loadTranslationsAsync} from './utils/localize/lokalify';
 import {configureLogger, getLogLevelFromString, logger, LogLevel} from './utils/logger/logger';
@@ -15,6 +12,7 @@ import {ClockComponent} from './components/clock';
 import {SensorComponent} from './components/sensor';
 import {BackgroundImageComponent} from './components/background-image';
 import {WeatherComponent} from './components/weather';
+import {TransportationComponent} from './components/transportation';
 import './wall-clock-card-editor';
 import {WeatherSignalProvider} from "./signals/weather-signal";
 
@@ -77,21 +75,17 @@ export class WallClockCard extends LitElement {
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
     // Weather data is now handled by the WeatherComponent
-    @property({type: Object}) transportationData: TransportationData = {departures: [], loading: false}; // Transportation data
-    @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
-    @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
+    // Transportation data is now handled by the TransportationComponent
 
     // Components
     private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
     private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
     private weatherComponent: WeatherComponent = document.createElement('ha-weather') as WeatherComponent;
     private backgroundImageComponent: BackgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
+    private transportationComponent: TransportationComponent = document.createElement('ha-transportation') as TransportationComponent;
 
     // Weather signal provider instance
     private weatherSignalProvider = new WeatherSignalProvider();
-
-    private transportationUpdateTimer?: number;
-    private transportationAutoHideTimer?: number;
 
     constructor() {
         super();
@@ -127,6 +121,12 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language;
+
+        // Initialize the transportation component
+        this.transportationComponent.transportation = this.config.transportation;
+        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.fontColor = this.config.fontColor;
     }
 
     connectedCallback(): void {
@@ -163,6 +163,15 @@ export class WallClockCard extends LitElement {
         // Set the weather signal provider
         this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
 
+        // Initialize the transportation component with the latest configuration
+        this.transportationComponent.transportation = this.config.transportation;
+        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.fontColor = this.config.fontColor;
+        if (this.hass) {
+            this.transportationComponent.hass = this.hass;
+        }
+
         this.initConnectCallbackAsync();
     }
 
@@ -173,6 +182,7 @@ export class WallClockCard extends LitElement {
         await this.backgroundImageComponent.controller.ready;
         await this.clockComponent.controller.ready;
         await this.sensorComponent.controller.ready;
+        await this.transportationComponent.controller.ready;
 
         // Configure the logger based on the configured log level
         const logLevelString = this.config.logLevel || 'info';
@@ -199,39 +209,7 @@ export class WallClockCard extends LitElement {
             this.weatherSignalProvider.updateWeatherSignal(Weather.All);
         }
 
-        // Fetch transportation data if enabled and not on-demand
-        if (this.config.transportation) {
-            // Only fetch data automatically if on-demand loading is not enabled
-            if (!this.config.transportation?.onDemand) {
-                await this.fetchTransportationDataAsync();
-                this.transportationDataLoaded = true;
-
-                // Get configured transportation update interval or default to 60 seconds
-                let transportationInterval = this.config.transportationUpdateInterval || 60;
-
-                // Ensure minimum interval of 60 seconds
-                transportationInterval = Math.max(transportationInterval, 60);
-
-                // Convert to milliseconds
-                const transportationIntervalMs = transportationInterval * 1000;
-
-                logger.info(`Setting transportation update interval to ${transportationInterval} seconds`);
-
-                // Update transportation data at the configured interval
-                this.transportationUpdateTimer = window.setInterval(() => {
-                    // Use a self-executing async function to allow await
-                    (async () => {
-                        try {
-                            await this.fetchTransportationDataAsync();
-                        } catch (error) {
-                            logger.error('Error in transportation update interval:', error);
-                        }
-                    })();
-                }, transportationIntervalMs);
-            } else {
-                logger.debug('Transportation on-demand loading is enabled. Data will be loaded when requested.');
-            }
-        }
+        // Transportation data is now handled by the TransportationComponent
     }
 
     private initBackgroundImageComponent(): void {
@@ -263,73 +241,11 @@ export class WallClockCard extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Clear all timers when the component is removed
-        // The ClockComponent and BackgroundImageComponent will clean up themselves when removed from the DOM
-
-        // Weather timer is now handled by the WeatherComponent
-        if (this.transportationUpdateTimer) {
-            clearInterval(this.transportationUpdateTimer);
-        }
-        if (this.transportationAutoHideTimer) {
-            clearTimeout(this.transportationAutoHideTimer);
-        }
+        // The ClockComponent, BackgroundImageComponent, WeatherComponent, and TransportationComponent 
+        // will clean up themselves when removed from the DOM
     }
 
-    /**
-     * Fetch transportation data from the configured provider
-     */
-    private async fetchTransportationDataAsync(): Promise<void> {
-        if (!this.config.transportation || this.config.enableTransportation === false) return;
-
-        // Mark as loading
-        this.transportationData = {
-            ...this.transportationData,
-            loading: true,
-            error: undefined
-        };
-
-        try {
-            const transportationConfig = this.config.transportation as TransportationConfig;
-
-            // Default to IDSJMK provider if not specified
-            if (!transportationConfig.provider) {
-                transportationConfig.provider = 'idsjmk';
-            }
-
-            // Get the transportation provider
-            const provider = getTransportationProvider(transportationConfig.provider);
-
-            if (!provider) {
-                throw new Error(`Transportation provider '${transportationConfig.provider}' not found`);
-            }
-
-            // Convert stops to the format expected by the provider
-            const stops = transportationConfig.stops.map(stop => ({
-                stopId: stop.stopId,
-                postId: stop.postId,
-                name: stop.name // Pass the custom name if provided
-            }));
-
-            // Fetch transportation data from the provider
-            const providerConfig = transportationConfig.providerConfig || {};
-            // Include maxDepartures in the provider config if it's defined in transportationConfig
-            if (transportationConfig.maxDepartures !== undefined) {
-                providerConfig.maxDepartures = transportationConfig.maxDepartures;
-            }
-            this.transportationData = await provider.fetchTransportationAsync(providerConfig, stops);
-
-            // Update the last update timestamp
-            this.lastTransportationUpdate = new Date();
-
-            logger.debug(`Fetched transportation data from ${provider.name}:`, this.transportationData);
-        } catch (error) {
-            logger.error('Error fetching transportation data:', error);
-            this.transportationData = {
-                departures: [],
-                error: error instanceof Error ? error.message : String(error),
-                loading: false
-            };
-        }
-    }
+    // Transportation data is now handled by the TransportationComponent
 
     // Weather data is now handled by the WeatherComponent
 
@@ -464,6 +380,12 @@ export class WallClockCard extends LitElement {
         // Set the weather signal provider
         this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
 
+        // Initialize the transportation component with the new configuration
+        this.transportationComponent.transportation = this.config.transportation;
+        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.fontColor = this.config.fontColor;
+
         if(!this.config.showWeather) {
             this.backgroundImageComponent.controller.ready.then(() => {
 
@@ -477,6 +399,9 @@ export class WallClockCard extends LitElement {
         if (changedProperties.has('hass') && this.hass) {
             // Update the sensor component with the new hass
             this.sensorComponent.hass = this.hass;
+
+            // Update the transportation component with the new hass
+            this.transportationComponent.hass = this.hass;
         }
 
         // If config changed, update the log level
@@ -509,6 +434,8 @@ export class WallClockCard extends LitElement {
             ${unsafeCSS(BackgroundImageComponent.styles)}
             /* Include WeatherComponent styles */
             ${unsafeCSS(WeatherComponent.styles)}
+            /* Include TransportationComponent styles */
+            ${unsafeCSS(TransportationComponent.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -537,198 +464,6 @@ export class WallClockCard extends LitElement {
                 position: relative;
             }
 
-            /* Transportation styles */
-
-            .transportation-container {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                z-index: 3;
-                padding: 8px 16px;
-                background-color: rgba(0, 0, 0, 0.1);
-                border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
-            }
-
-            .transportation-on-demand-button {
-                position: absolute;
-                bottom: 16px;
-                left: 16px;
-                width: 144px;
-                height: 144px;
-                border-radius: 50%;
-                background-color: rgba(255, 255, 255, 0.25);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                cursor: pointer;
-                z-index: 3;
-                transition: all 0.3s ease;
-            }
-
-            .transportation-on-demand-button:hover {
-                background-color: rgba(255, 255, 255, 0.4);
-                transform: scale(1.1);
-            }
-
-            .transportation-on-demand-button svg {
-                width: 72px;
-                height: 72px;
-                fill: white;
-            }
-
-            .transportation-title {
-                font-size: 1.5rem;
-                font-weight: 300;
-                opacity: 0.8;
-                margin-bottom: 8px;
-            }
-
-            .transportation-departures {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                gap: 16px;
-            }
-
-            .stop-group {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-            }
-
-            /* Responsive layout for transportation stops */
-            @media (max-width: 480px) {
-                /* Force single column on very small screens */
-                .transportation-departures {
-                    flex-direction: column;
-                }
-
-                .stop-group {
-                    width: 100%;
-                }
-            }
-
-            @media (min-width: 481px) and (max-width: 599px) {
-                /* Allow 2 columns on slightly larger screens if they fit */
-                .transportation-departures {
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    justify-content: space-between;
-                }
-
-                .stop-group {
-                    width: calc(50% - 8px);
-                }
-            }
-
-            @media (min-width: 600px) {
-                .transportation-departures {
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    justify-content: space-between;
-                }
-
-                .stop-group {
-                    width: calc(50% - 8px);
-                }
-            }
-
-            /* 3 columns for wider screens */
-            @media (min-width: 900px) and (max-width: 1179px) {
-                .stop-group {
-                    width: calc(33% - 8px);
-                }
-            }
-
-            /* 3 columns for 1180px resolution as requested */
-            @media (min-width: 1180px) and (max-width: 1399px) {
-                .stop-group {
-                    width: calc(33% - 8px);
-                }
-            }
-
-            /* 4 columns for very wide screens */
-            @media (min-width: 1400px) {
-                .stop-group {
-                    width: calc(25% - 8px);
-                }
-            }
-
-            .stop-name {
-                font-size: 1.3rem;
-                font-weight: 500;
-                text-align: left;
-                width: 100%;
-                margin-top: 0;
-                margin-bottom: 8px;
-                margin-left: 12px;
-                opacity: 0.8;
-            }
-
-            .stop-departures {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                gap: 8px;
-            }
-
-            .departure-item {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                background-color: rgba(0, 0, 0, 0.3);
-                padding: 8px 12px;
-                border-radius: 4px;
-                width: calc(100% - 24px);
-            }
-
-            .departure-line {
-                font-size: 1.5rem;
-                font-weight: 700;
-                margin-right: 8px;
-                min-width: 2rem;
-                text-align: center;
-            }
-
-            .departure-destination {
-                font-size: 1.2rem;
-                margin-right: 8px;
-            }
-
-            .departure-time {
-                font-size: 1.2rem;
-                font-weight: 700;
-                color: #4CAF50;
-            }
-
-            .departure-lowfloor {
-                margin-left: 4px;
-                font-size: 1.2rem;
-            }
-
-            .transportation-error {
-                color: #f44336;
-                font-size: 1rem;
-            }
-
-            .transportation-update-time {
-                font-size: 0.8rem;
-                opacity: 0.7;
-                text-align: center;
-                margin-top: 8px;
-                width: 100%;
-            }
-
-            /* Responsive adjustments */
-            @media (min-width: 1280px) {
-                .stop-group {
-                    margin-bottom: 16px;
-                }
-            }
         `;
     }
 
@@ -748,161 +483,16 @@ export class WallClockCard extends LitElement {
                 <div style="${this.config.transportation && this.config.enableTransportation !== false ? `margin-top: -${(this.config.transportation.maxDepartures || 3) * 30 + 80}px;` : ''}">
                     ${this.clockComponent}
                 </div>
-                ${this.config.transportation && this.config.enableTransportation !== false ?
-                        this.config.transportation?.onDemand && !this.transportationDataLoaded ?
-                                html`
-                                    <div class="transportation-on-demand-button"
-                                         @click=${this._handleTransportationClickAsync}>
-                                        <svg viewBox="0 0 24 24">
-                                            <path d="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1.78c0.61-0.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8,0.5-8,4v10zm3.5,1c-0.83,0-1.5-0.67-1.5-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zm9,0c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5 1.5-1.5 1.5,0.67 1.5,1.5-0.67,1.5-1.5,1.5zm1.5-6H6V6h12v5z"/>
-                                        </svg>
-                                    </div>` :
-                                html`
-                                    <div class="transportation-container" style="color: ${this.config.fontColor};">
-                                        ${this.renderTransportationContent()}
-                                    </div>`
-                        : ''
-                }
+                ${this.transportationComponent}
             </ha-card>
         `;
     }
 
-    /**
-     * Render transportation content
-     */
-    private renderTransportationContent(): TemplateResult {
-        if (this.transportationData.loading) {
-            return html`
-                <div>Loading transportation data...</div>`;
-        }
-
-        if (this.transportationData.error) {
-            return html`
-                <div class="transportation-error">${this.transportationData.error}</div>`;
-        }
-
-        if (!this.transportationData.departures || this.transportationData.departures.length === 0) {
-            return html`
-                <div>No departures available</div>`;
-        }
-
-        // Group departures by stop name and postId
-        const departuresByStop: { [key: string]: TransportationDeparture[] } = {};
-
-        for (const departure of this.transportationData.departures) {
-            const key = `${departure.stopName}-${departure.postId}`;
-            if (!departuresByStop[key]) {
-                departuresByStop[key] = [];
-            }
-            departuresByStop[key].push(departure);
-        }
-
-        return html`
-            <div class="transportation-departures">
-                ${Object.entries(departuresByStop).map(([_key, departures]) => {
-                    // Get the stop name from the first departure
-                    const stopName = departures[0].stopName;
-
-                    return html`
-                        <div class="stop-group">
-                            <h3 class="stop-name" style="color: ${this.config.fontColor};">
-                                ${stopName}
-                            </h3>
-                            <div class="stop-departures">
-                                ${departures.map(departure => html`
-                                    <div class="departure-item">
-                                        <div class="departure-line" style="color: ${this.config.fontColor};">
-                                            ${departure.lineName}
-                                        </div>
-                                        <div class="departure-destination" style="color: ${this.config.fontColor};">→
-                                            ${departure.finalStop}
-                                        </div>
-                                        <div class="departure-time" style="color: ${this.config.fontColor};">
-                                            ${departure.timeMark}
-                                        </div>
-                                        ${departure.isLowFloor ? html`
-                                            <div class="departure-lowfloor">♿</div>` : ''}
-                                    </div>
-                                `)}
-                            </div>
-                        </div>
-                    `;
-                })}
-            </div>
-        `;
-    }
+    // Transportation content is now handled by the TransportationComponent
 
     // Weather content is now handled by the WeatherComponent
 
-    /**
-     * Handle click on the transportation button
-     * This is called when the user clicks the bus icon to load transportation data on demand
-     */
-    private async _handleTransportationClickAsync(): Promise<void> {
-        logger.debug('Transportation button clicked, loading data on demand');
-
-        // Fetch transportation data
-        await this.fetchTransportationDataAsync();
-
-        // Mark as loaded so the button is replaced with the data
-        this.transportationDataLoaded = true;
-
-        // Set up an interval to update the data if configured
-        if (this.config.transportationUpdateInterval) {
-            // Get configured transportation update interval or default to 60 seconds
-            let transportationInterval = this.config.transportationUpdateInterval || 60;
-
-            // Ensure minimum interval of 60 seconds
-            transportationInterval = Math.max(transportationInterval, 60);
-
-            // Convert to milliseconds
-            const transportationIntervalMs = transportationInterval * 1000;
-
-            logger.debug(`Setting transportation update interval to ${transportationInterval} seconds`);
-
-            // Clear any existing timeTimer
-            if (this.transportationUpdateTimer) {
-                clearInterval(this.transportationUpdateTimer);
-            }
-
-            // Update transportation data at the configured interval
-            this.transportationUpdateTimer = window.setInterval(() => {
-                // Use a self-executing async function to allow await
-                (async () => {
-                    try {
-                        await this.fetchTransportationDataAsync();
-                    } catch (error) {
-                        logger.error('Error in transportation update interval:', error);
-                    }
-                })();
-            }, transportationIntervalMs);
-        }
-
-        // Set up auto-hide timeTimer if configured
-        if (this.config.transportation?.autoHideTimeout) {
-            // Clear any existing auto-hide timeTimer
-            if (this.transportationAutoHideTimer) {
-                clearTimeout(this.transportationAutoHideTimer);
-            }
-
-            // Get configured auto-hide timeout or default to 5 minutes
-            let autoHideTimeout = this.config.transportation.autoHideTimeout || 5;
-
-            // Ensure timeout is between 1 and 10 minutes
-            autoHideTimeout = Math.max(1, Math.min(10, autoHideTimeout));
-
-            // Convert to milliseconds
-            const autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
-
-            logger.debug(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
-
-            // Set timeTimer to hide departures and show bus button again after timeout
-            this.transportationAutoHideTimer = window.setTimeout(() => {
-                logger.debug(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
-                this.transportationDataLoaded = false;
-            }, autoHideTimeoutMs);
-        }
-    }
+    // Transportation button click is now handled by the TransportationComponent
 
     // Weather-related methods are now handled by the WeatherComponent
 }
