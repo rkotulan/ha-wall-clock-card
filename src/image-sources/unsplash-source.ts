@@ -230,7 +230,7 @@ export class UnsplashSource extends AbstractImageSource {
 
             // Log the API request URL (with API key hidden)
             const logUrl = apiUrl.replace(/client_id=[^&]+/, 'client_id=***API_KEY_HIDDEN***');
-            this.logger.debug(`Making API request to: ${logUrl}`);
+            this.logger.info(`Making API request to: ${logUrl}`);
 
             // Make the API request
             const response = await fetch(apiUrl);

@@ -11,6 +11,7 @@ export abstract class AbstractImageSource implements ImageSource {
   protected lastWeather: Weather | null = null;
   protected lastTimeOfDay: TimeOfDay | null = null;
   protected currentIndex: number = 0;
+  protected cacheFullyCycled: boolean = false;
 
   // Get a logger instance with the correct source identifier
   protected getLogger() {
@@ -43,6 +44,7 @@ export abstract class AbstractImageSource implements ImageSource {
       this.getLogger().debug(`Weather or timeOfDay changed, clearing cache`);
       this.imageUrlCache.clear();
       this.currentIndex = 0;
+      this.cacheFullyCycled = false;
       this.lastWeather = weather;
       this.lastTimeOfDay = timeOfDay;
     }
@@ -50,8 +52,9 @@ export abstract class AbstractImageSource implements ImageSource {
     // Create a cache key from weather and timeOfDay
     const cacheKey = `${weather}_${timeOfDay}`;
 
-    // Check if we have cached images for this weather and timeOfDay
-    if (!this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
+    // If we've gone through all cached images once or we don't have any cached images, fetch new ones
+    if (this.cacheFullyCycled || !this.imageUrlCache.has(cacheKey) || this.imageUrlCache.get(cacheKey)?.length === 0) {
+      this.getLogger().debug(`${this.cacheFullyCycled ? 'Cache fully cycled' : 'No cached images'}, fetching new images`);
       const fetchedUrls = await this.fetchImagesAsync(config, weather, timeOfDay);
 
       // Shuffle the images before caching
@@ -60,6 +63,8 @@ export abstract class AbstractImageSource implements ImageSource {
 
       // Cache the shuffled images
       this.imageUrlCache.set(cacheKey, imagesToCache);
+      this.currentIndex = 0;
+      this.cacheFullyCycled = false;
       this.getLogger().info(`Cached ${imagesToCache.length} images for weather: ${weather}, timeOfDay: ${timeOfDay}`);
     }
 
@@ -77,6 +82,12 @@ export abstract class AbstractImageSource implements ImageSource {
 
     // Increment the index for next time
     this.currentIndex = (this.currentIndex + 1) % cachedImages.length;
+
+    // If we've reached the end of the cache, mark it as fully cycled
+    if (this.currentIndex === 0) {
+      this.cacheFullyCycled = true;
+      this.getLogger().info(`Cache fully cycled, will fetch new images on next call`);
+    }
 
     // Log the parameters for which the image is returned
     this.getLogger().info(`Returning image for weather: ${weather}, timeOfDay: ${timeOfDay}, URL: ${imageUrl}`);
