@@ -1,6 +1,6 @@
-import { ReactiveController, ReactiveControllerHost } from 'lit';
+import { ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { createLogger } from '../../utils/logger/logger';
+import { BaseController } from '../../utils/controllers';
 
 export interface SensorConfig {
     entity: string;
@@ -20,9 +20,7 @@ export interface SensorControllerConfig {
 /**
  * A reactive controller that manages sensor data
  */
-export class SensorController implements ReactiveController {
-    private host: ReactiveControllerHost;
-    private logger = createLogger('sensor-controller');
+export class SensorController extends BaseController {
     private hass?: HomeAssistant;
 
     // Reactive property for sensor values
@@ -32,20 +30,17 @@ export class SensorController implements ReactiveController {
     private config: SensorControllerConfig = {};
 
     constructor(host: ReactiveControllerHost, config: SensorControllerConfig = {}) {
-        this.host = host;
+        super(host, 'sensor-controller');
         this.config = config;
-
-        // Register this controller with the host
-        host.addController(this);
     }
 
-    // ReactiveController lifecycle methods
-    hostConnected(): void {
-        this.logger.debug('SensorController host connected');
+    // Implementation of abstract methods from BaseController
+    protected onHostConnected(): void {
+        // No initialization needed
     }
 
-    hostDisconnected(): void {
-        this.logger.debug('SensorController host disconnected');
+    protected onHostDisconnected(): void {
+        // No cleanup needed
     }
 
     /**

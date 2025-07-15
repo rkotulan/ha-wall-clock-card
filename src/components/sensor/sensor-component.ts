@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { createLogger } from '../../utils/logger/logger';
+import { createLogger } from '../../utils';
 import { SensorController, SensorConfig } from './sensor-controller';
 
 export interface SensorComponentConfig {
@@ -24,6 +24,10 @@ export class SensorComponent extends LitElement {
         this.sensorController = new SensorController(this, {
             sensors: this.sensors
         });
+    }
+
+    get controller(): SensorController {
+        return this.sensorController;
     }
 
     static styles = css`

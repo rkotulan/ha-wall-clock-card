@@ -1,10 +1,9 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
-import { createLogger } from '../../utils/logger/logger';
-import { formatDate } from '../../utils/localize/lokalify';
-import { translate } from '../../utils/localize/lokalify';
+import { createLogger, formatDate, translate } from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
+import { updateWeatherSignal } from '../../signals/weather-signal';
 
 export interface WeatherComponentConfig {
     showWeather?: boolean;
@@ -45,6 +44,10 @@ export class WeatherComponent extends LitElement {
             weatherTitle: this.weatherTitle,
             weatherUpdateInterval: this.weatherUpdateInterval
         });
+    }
+
+    get controller(): WeatherController {
+        return this.weatherController;
     }
 
     static styles = css`
@@ -194,7 +197,8 @@ export class WeatherComponent extends LitElement {
                 weatherTitle: this.weatherTitle,
                 weatherUpdateInterval: this.weatherUpdateInterval
             };
-            this.weatherController.updateConfig(config);
+
+            this.weatherController.updateConfigAsync(config);
         }
     }
 
@@ -235,7 +239,19 @@ export class WeatherComponent extends LitElement {
 
     // Public getter for weather data
     get weatherData(): WeatherData | undefined {
-        return this.weatherController.weatherData;
+        const weatherData = this.weatherController.weatherData;
+
+        // Update the weather signal if we have weather data with a condition
+        if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
+            // Use the controller's provider if available, otherwise use global function
+            if (this.weatherController.weatherSignalProvider) {
+                this.weatherController.weatherSignalProvider.updateWeatherSignal(weatherData.current.conditionUnified);
+            } else {
+                updateWeatherSignal(weatherData.current.conditionUnified);
+            }
+        }
+
+        return weatherData;
     }
 
     render() {

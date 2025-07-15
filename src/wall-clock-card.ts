@@ -1,27 +1,22 @@
-import {LitElement, html, css, unsafeCSS, CSSResult, TemplateResult} from 'lit';
+import {css, CSSResult, html, LitElement, TemplateResult, unsafeCSS} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
-import {
-    ImageSourceConfig,
-    BackgroundImage
-} from './image-sources';
+import {BackgroundImage, ImageSourceConfig, Weather} from './image-sources';
 import {WeatherProviderConfig} from './weather-providers';
 import {
+    getTransportationProvider,
     TransportationConfig,
     TransportationData,
-    TransportationDeparture,
-    getTransportationProvider
+    TransportationDeparture
 } from './transportation-providers';
-import {
-    loadTranslationsAsync,
-    ExtendedDateTimeFormatOptions
-} from './utils/localize/lokalify';
-import { configureLogger, logger, getLogLevelFromString, LogLevel } from './utils/logger/logger';
-import { ClockComponent } from './components/clock';
-import { SensorComponent } from './components/sensor';
-import { BackgroundImageComponent } from './components/background-image';
-import { WeatherComponent } from './components/weather';
+import {ExtendedDateTimeFormatOptions, loadTranslationsAsync} from './utils/localize/lokalify';
+import {configureLogger, getLogLevelFromString, logger, LogLevel} from './utils/logger/logger';
+import {ClockComponent} from './components/clock';
+import {SensorComponent} from './components/sensor';
+import {BackgroundImageComponent} from './components/background-image';
+import {WeatherComponent} from './components/weather';
 import './wall-clock-card-editor';
+import {WeatherSignalProvider} from "./signals/weather-signal";
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
@@ -77,8 +72,7 @@ export interface WallClockConfig {
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
     @property({type: Object}) config: WallClockConfig = {};
-    // Background image component reference
-    private backgroundImageComponent?: BackgroundImageComponent;
+
     // Sensor values are now handled by the SensorComponent
     @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
     @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
@@ -87,10 +81,15 @@ export class WallClockCard extends LitElement {
     @property({type: Date}) lastTransportationUpdate?: Date; // Last time transportation data was updated
     @property({type: Boolean}) transportationDataLoaded = false; // Whether transportation data has been loaded (for on-demand loading)
 
-
+    // Components
     private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
     private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
     private weatherComponent: WeatherComponent = document.createElement('ha-weather') as WeatherComponent;
+    private backgroundImageComponent: BackgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
+
+    // Weather signal provider instance
+    private weatherSignalProvider = new WeatherSignalProvider();
+
     private transportationUpdateTimer?: number;
     private transportationAutoHideTimer?: number;
 
@@ -133,6 +132,9 @@ export class WallClockCard extends LitElement {
     connectedCallback(): void {
         super.connectedCallback();
 
+        // Initialize the background image component
+        this.initBackgroundImageComponent();
+
         // Initialize the clock component with the latest configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
         this.clockComponent.dateFormat = this.config.dateFormat;
@@ -158,10 +160,20 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
 
+        // Set the weather signal provider
+        this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
+
         this.initConnectCallbackAsync();
     }
 
     async initConnectCallbackAsync(): Promise<void> {
+
+        // Wait for the components to be ready
+        await this.weatherComponent.controller.ready;
+        await this.backgroundImageComponent.controller.ready;
+        await this.clockComponent.controller.ready;
+        await this.sensorComponent.controller.ready;
+
         // Configure the logger based on the configured log level
         const logLevelString = this.config.logLevel || 'info';
         const logLevel = getLogLevelFromString(logLevelString);
@@ -183,7 +195,9 @@ export class WallClockCard extends LitElement {
             logger.error('Error loading translations:', error);
         }
 
-        // Weather data is now handled by the WeatherComponent
+        if(!this.config.showWeather) {
+            this.weatherSignalProvider.updateWeatherSignal(Weather.All);
+        }
 
         // Fetch transportation data if enabled and not on-demand
         if (this.config.transportation) {
@@ -220,23 +234,7 @@ export class WallClockCard extends LitElement {
         }
     }
 
-    private createBackgroundImageComponent(): void {
-        if (this.backgroundImageComponent) {
-            return;
-        }
-
-        // Create the background image component
-        this.backgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
-
-        this.initBackgroundImageComponent();
-
-        logger.debug('Background image component created and initialized');
-    }
-
     private initBackgroundImageComponent(): void {
-        if(!this.backgroundImageComponent) {
-            return;
-        }
 
         // Create the full ImageSourceConfig
         const imageSourceConfig: ImageSourceConfig = {
@@ -252,6 +250,9 @@ export class WallClockCard extends LitElement {
             imageSourceConfig: imageSourceConfig,
             backgroundRotationInterval: this.config.backgroundRotationInterval
         };
+
+        // Set the weather signal provider
+        this.backgroundImageComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
 
         logger.debug('Background image component initialized');
     }
@@ -429,8 +430,6 @@ export class WallClockCard extends LitElement {
             timeZone: timeZone
         };
 
-        // Weather data is now handled by the WeatherComponent
-
         // Initialize the background image component
         this.initBackgroundImageComponent();
 
@@ -458,6 +457,16 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+
+        // Set the weather signal provider
+        this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
+
+        if(!this.config.showWeather) {
+            this.backgroundImageComponent.controller.ready.then(() => {
+
+                this.weatherSignalProvider.updateWeatherSignal(Weather.All);
+            });
+        }
     }
 
     // Update when hass changes to get latest sensor values
@@ -465,23 +474,6 @@ export class WallClockCard extends LitElement {
         if (changedProperties.has('hass') && this.hass) {
             // Update the sensor component with the new hass
             this.sensorComponent.hass = this.hass;
-
-            // Update the background image component with the new weather condition if available
-            if(this.backgroundImageComponent && this.weatherComponent) {
-                const weatherData = this.weatherComponent.weatherData;
-                if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
-                    this.backgroundImageComponent.weather = weatherData.current.conditionUnified;
-                }
-            }
-        }
-
-        // Weather data is now handled by the WeatherComponent
-        if (changedProperties.has('weatherComponent') && this.weatherComponent && this.backgroundImageComponent) {
-            // Update the background image component with the new weather condition if available
-            const weatherData = this.weatherComponent.weatherData;
-            if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
-                this.backgroundImageComponent.weather = weatherData.current.conditionUnified;
-            }
         }
 
         // If config changed, update the log level
@@ -541,14 +533,6 @@ export class WallClockCard extends LitElement {
                 align-items: center;
                 position: relative;
             }
-
-            /* Background image styles are now in the BackgroundImageComponent */
-
-
-
-            /* Sensor styles are now in the SensorComponent */
-
-            /* Weather styles are now in the WeatherComponent */
 
             /* Transportation styles */
 
@@ -746,7 +730,7 @@ export class WallClockCard extends LitElement {
     }
 
     render() {
-        this.createBackgroundImageComponent();
+
 
         return html`
             <ha-card style="color: ${this.config.fontColor};">

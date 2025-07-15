@@ -8,3 +8,6 @@ export * from './logger';
 
 // Re-export localization module
 export * from './localize';
+
+// Re-export controllers module
+export * from './controllers';

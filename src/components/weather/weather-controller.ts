@@ -1,6 +1,8 @@
-import { ReactiveController, ReactiveControllerHost } from 'lit';
-import { WeatherProviderConfig, WeatherData, getWeatherProvider } from '../../weather-providers';
-import { createLogger } from '../../utils/logger/logger';
+import {ReactiveControllerHost} from 'lit';
+import {getWeatherProvider, WeatherData, WeatherProviderConfig} from '../../weather-providers';
+import {BaseController} from '../../utils/controllers';
+import {WeatherSignalProvider, updateWeatherSignal} from "../../signals/weather-signal";
+import {Weather} from "../../image-sources";
 
 export interface WeatherControllerConfig {
     showWeather?: boolean;
@@ -15,9 +17,7 @@ export interface WeatherControllerConfig {
 /**
  * A reactive controller that manages weather data
  */
-export class WeatherController implements ReactiveController {
-    private host: ReactiveControllerHost;
-    private logger = createLogger('weather-controller');
+export class WeatherController extends BaseController {
     private updateTimer?: number;
 
     // Reactive properties for weather data
@@ -29,30 +29,33 @@ export class WeatherController implements ReactiveController {
     // Configuration
     private config: WeatherControllerConfig = {};
 
-    constructor(host: ReactiveControllerHost, config: WeatherControllerConfig = {}) {
-        this.host = host;
-        this.config = config;
+    // Weather signal provider
+    private _weatherSignalProvider?: WeatherSignalProvider;
 
-        // Register this controller with the host
-        host.addController(this);
+    constructor(host: ReactiveControllerHost, config: WeatherControllerConfig = {}) {
+        super(host, 'weather-controller');
+        this.config = config;
     }
 
-    // ReactiveController lifecycle methods
-    hostConnected(): void {
-        this.logger.debug('WeatherController host connected');
+    /**
+     * Set the weather signal provider for this controller
+     */
+    setWeatherSignalProvider(provider: WeatherSignalProvider): void {
+        this._weatherSignalProvider = provider;
+    }
 
+    // Implementation of abstract methods from BaseController
+    protected onHostConnected(): void {
         // Fetch weather data immediately if enabled
         if (this.config.showWeather) {
-            this.fetchWeatherDataAsync();
-
             // Set up interval to update weather data
             this.setupUpdateInterval();
+
+            this.fetchWeatherDataAsync();
         }
     }
 
-    hostDisconnected(): void {
-        this.logger.debug('WeatherController host disconnected');
-
+    protected onHostDisconnected(): void {
         // Clear interval when disconnected
         if (this.updateTimer) {
             window.clearInterval(this.updateTimer);
@@ -63,22 +66,29 @@ export class WeatherController implements ReactiveController {
     /**
      * Update the configuration
      */
-    updateConfig(config: WeatherControllerConfig): void {
+    async updateConfigAsync(config: WeatherControllerConfig): Promise<void> {
         this.logger.debug('Updating WeatherController config:', config);
-        
+
         const previousShowWeather = this.config.showWeather;
         const previousUpdateInterval = this.config.weatherUpdateInterval;
-        
-        this.config = { ...this.config, ...config };
 
-        // If weather was disabled and is now enabled, fetch data
-        if (!previousShowWeather && this.config.showWeather) {
-            this.fetchWeatherDataAsync();
-        }
+        this.config = { ...this.config, ...config };
 
         // If update interval changed, reset the interval
         if (previousUpdateInterval !== this.config.weatherUpdateInterval) {
             this.setupUpdateInterval();
+        }
+
+        // If weather was disabled and is now enabled, fetch data
+        if (!previousShowWeather && this.config.showWeather) {
+            await this.fetchWeatherDataAsync();
+        }
+        else if(!this.config.showWeather) {
+            if (this._weatherSignalProvider) {
+                this._weatherSignalProvider.updateWeatherSignal(Weather.All);
+            } else {
+                updateWeatherSignal(Weather.All);
+            }
         }
 
         // Request an update from the host
@@ -161,6 +171,13 @@ export class WeatherController implements ReactiveController {
 
             // Fetch weather data from the provider
             this._weatherData = await provider.fetchWeatherAsync(weatherConfig);
+            if(this._weatherData) {
+                if (this._weatherSignalProvider) {
+                    this._weatherSignalProvider.updateWeatherSignal(this._weatherData.current?.conditionUnified ?? Weather.All);
+                } else {
+                    updateWeatherSignal(this._weatherData.current?.conditionUnified ?? Weather.All);
+                }
+            }
 
             this.logger.info(`Fetched weather data from ${provider.name}:`, this._weatherData);
         } catch (error) {
@@ -189,5 +206,12 @@ export class WeatherController implements ReactiveController {
 
     get errorMessage(): string {
         return this._weatherErrorMessage;
+    }
+
+    /**
+     * Get the weather signal provider
+     */
+    get weatherSignalProvider(): WeatherSignalProvider | undefined {
+        return this._weatherSignalProvider;
     }
 }

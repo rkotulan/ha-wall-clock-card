@@ -1,14 +1,11 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { createLogger } from '../../utils/logger/logger';
+import { createLogger } from '../../utils';
 import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
-import { Weather } from '../../image-sources';
 
 @customElement('ha-background-image')
 export class BackgroundImageComponent extends LitElement {
-    // @property({ type: Number }) backgroundRotationInterval?: number;
     @property({ type: Number }) backgroundOpacity?: number = 0.5;
-    @property({ type: String }) weather?: Weather;
     @property({ type: Object }) config?: BackgroundImageControllerConfig;
 
     private logger = createLogger('background-image-component');
@@ -19,6 +16,18 @@ export class BackgroundImageComponent extends LitElement {
         // Initialize the controller with the host (this component) and an empty config
         // The actual config will be set later via the config property
         this.backgroundImageController = new BackgroundImageController(this, {});
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+    }
+
+    get controller(): BackgroundImageController {
+        return this.backgroundImageController;
     }
 
     static styles = css`
@@ -102,12 +111,21 @@ export class BackgroundImageComponent extends LitElement {
             this.backgroundImageController.updateConfig(this.config ?? {});
         }
 
-        // If weather changed, refresh the image
+        // If weather changed, refresh the image and update the signal
+        // This maintains backward compatibility with direct property setting
+        /*
         if (changedProperties.has('weather')) {
             if(this.weather) {
+                // Update the controller
                 this.backgroundImageController.updateWeather(this.weather);
+
+                // Update the signal to keep it in sync (but don't trigger another update)
+                if (weatherSignal.value !== this.weather) {
+                    updateWeatherSignal(this.weather);
+                }
             }
         }
+        */
     }
 
     // Getters to expose controller state

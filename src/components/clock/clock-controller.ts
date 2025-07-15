@@ -1,6 +1,6 @@
-import { ReactiveController, ReactiveControllerHost } from 'lit';
+import { ReactiveControllerHost } from 'lit';
 import { formatDate, ExtendedDateTimeFormatOptions } from '../../utils/localize/lokalify';
-import { createLogger } from '../../utils/logger/logger';
+import { BaseController } from '../../utils/controllers';
 import { DateTime } from 'luxon';
 
 export interface ClockControllerConfig {
@@ -15,9 +15,7 @@ export interface ClockControllerConfig {
  * This controller replaces the separate TimeController and DateController
  * to use a single timer for efficiency.
  */
-export class ClockController implements ReactiveController {
-    private host: ReactiveControllerHost;
-    private logger = createLogger('clock-controller');
+export class ClockController extends BaseController {
     private intervalId?: number;
 
     // Reactive properties for time components
@@ -33,17 +31,12 @@ export class ClockController implements ReactiveController {
     private config: ClockControllerConfig = {};
 
     constructor(host: ReactiveControllerHost, config: ClockControllerConfig = {}) {
-        this.host = host;
+        super(host, 'clock-controller');
         this.config = config;
-
-        // Register this controller with the host
-        host.addController(this);
     }
 
-    // ReactiveController lifecycle methods
-    hostConnected(): void {
-        this.logger.debug('ClockController host connected');
-
+    // Implementation of abstract methods from BaseController
+    protected onHostConnected(): void {
         // Update time and date immediately
         this.update();
 
@@ -54,9 +47,7 @@ export class ClockController implements ReactiveController {
         }, 1000);
     }
 
-    hostDisconnected(): void {
-        this.logger.debug('ClockController host disconnected');
-
+    protected onHostDisconnected(): void {
         // Clear interval when disconnected
         if (this.intervalId) {
             window.clearInterval(this.intervalId);

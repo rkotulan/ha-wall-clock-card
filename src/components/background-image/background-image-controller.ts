@@ -1,7 +1,10 @@
-import {ReactiveController, ReactiveControllerHost} from 'lit';
-import {createLogger, logger} from '../../utils/logger/logger';
+import {ReactiveControllerHost} from 'lit';
+import {logger} from '../../utils/logger/logger';
+import {BaseController} from '../../utils/controllers';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
+import {Signal} from "@lit-labs/signals";
+import {WeatherSignalProvider, weatherSignal} from "../../signals/weather-signal";
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
@@ -11,9 +14,7 @@ export interface BackgroundImageControllerConfig {
 /**
  * Controller for managing background images
  */
-export class BackgroundImageController implements ReactiveController {
-    private host: ReactiveControllerHost;
-    private logger = createLogger('background-image-controller');
+export class BackgroundImageController extends BaseController {
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
     private imageRotationTimer?: number;
     private config: BackgroundImageControllerConfig;
@@ -25,14 +26,58 @@ export class BackgroundImageController implements ReactiveController {
     private _isTransitioning = false;
     private _fetchingImageUrls = false;
 
+    // Signal watcher for weather updates
+    private weatherWatcher?: Signal.subtle.Watcher;
+    private weatherSignalProvider?: WeatherSignalProvider;
+
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
-        this.host = host;
+        super(host, 'background-image-controller');
         this.config = config;
-        host.addController(this);
+
+        // Default to global signal if no provider is set
+        this.setupWeatherWatcher();
     }
 
-    hostConnected() {
-        this.logger.debug('Host connected');
+    /**
+     * Set the weather signal provider for this controller
+     */
+    setWeatherSignalProvider(provider: WeatherSignalProvider): void {
+        this.weatherSignalProvider = provider;
+
+        // Disconnect from previous signal if any
+        if (this.weatherWatcher) {
+            this.weatherWatcher.unwatch(weatherSignal);
+            if (this.weatherSignalProvider) {
+                this.weatherWatcher.unwatch(this.weatherSignalProvider.weatherSignal);
+            }
+        }
+
+        // Setup watcher with the new provider
+        this.setupWeatherWatcher();
+    }
+
+    /**
+     * Setup the weather watcher with the current provider
+     */
+    private setupWeatherWatcher(): void {
+        this.weatherWatcher = new Signal.subtle.Watcher(async () => {
+            await 0; // nutné kvůli async restrikci
+            const signal = this.weatherSignalProvider ? this.weatherSignalProvider.weatherSignal : weatherSignal;
+            const newValue = signal.get();
+            if(newValue === undefined) {
+                return;
+            }
+
+            this.updateWeather(newValue || Weather.All);
+            this.logger.info('New signal for weather:', newValue);
+            this.weatherWatcher?.watch(signal); // reaktivace watcheru
+        });
+    }
+
+    protected onHostConnected(): void {
+        // Watch the appropriate signal
+        const signal = this.weatherSignalProvider ? this.weatherSignalProvider.weatherSignal : weatherSignal;
+        this.weatherWatcher?.watch(signal);
 
         // Lazy inicializace pouze pokud máme konfiguraci
         if (this.config.imageSourceConfig) {
@@ -40,8 +85,10 @@ export class BackgroundImageController implements ReactiveController {
         }
     }
 
-    hostDisconnected() {
-        this.logger.debug('Host disconnected');
+    protected onHostDisconnected(): void {
+        // Unwatch the appropriate signal
+        const signal = this.weatherSignalProvider ? this.weatherSignalProvider.weatherSignal : weatherSignal;
+        this.weatherWatcher?.unwatch(signal);
 
         // Clean up timers when the host disconnects
         if (this.imageRotationTimer) {

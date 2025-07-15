@@ -1,7 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { ExtendedDateTimeFormatOptions } from '../../utils/localize/lokalify';
-import { createLogger } from '../../utils/logger/logger';
+import { ExtendedDateTimeFormatOptions, createLogger } from '../../utils';
 import { ClockController } from './clock-controller';
 
 export interface ClockConfig {
@@ -32,6 +31,10 @@ export class ClockComponent extends LitElement {
             language: this.language,
             timeZone: this.timeZone
         });
+    }
+
+    get controller(): ClockController {
+        return this.clockController;
     }
 
     static styles = css`
