@@ -6,13 +6,8 @@ import { createLogger } from '../utils/logger';
  * Configuration for the Unsplash image source
  */
 export interface UnsplashSourceConfig extends ImageSourceConfig {
-    // API key for Unsplash API (required for API mode)
-    apiKey?: string;
-
-    // Whether to use the official Unsplash API (requires apiKey)
-    // Note: This property is kept for backward compatibility but is no longer used
-    // as the API is always used when an API key is provided
-    useApi?: boolean;
+    // API key for Unsplash API (required)
+    apiKey: string;
 
     // Content filter for Unsplash API (low, high)
     // Controls the level of potentially sensitive content in the images
@@ -31,42 +26,15 @@ export class UnsplashSource extends AbstractImageSource {
     readonly description = 'Beautiful, free photos from Unsplash collections';
     private logger = createLogger('unsplash-source');
 
-    // Collection IDs for different categories (these are popular collections on Unsplash)
-    private readonly collections: Record<string, string[]> = {
-        'nature': ['3330448', '4378039', '1319040', '3694365'],
-        'water': ['3694365', '1053828', '2411979', '981639'],
-        'architecture': ['3348849', '4468022', '3348849', '922312'],
-        'city': ['3470372', '1079798', '2563', '1110498'],
-        'landscape': ['4466935', '3694365', '827743', '2422483'],
-        'animals': ['3106804', '1242150', '139386', '162213'],
-        'food': ['3687999', '2059134', '2489501', '2252258'],
-        'travel': ['3349809', '3356576', '2476111', '1901880'],
-        'people': ['3641869', '4468022', '181581', '139941'],
-        'technology': ['4587649', '8761738', '2059134', '1263277'],
-        'abstract': ['4587649', '8761738', '2059134', '1263277'],
-        'space': ['2022043', '2159937', '2506084', '531563'],
-        'interior': ['1118894', '4466935', '3330452', '4468022'],
-        'flowers': ['2411979', '827743', '1079798', '3694365'],
-        'dark': ['4466935', '3694365', '827743', '2422483'],
-        'light': ['4466935', '3694365', '827743', '2422483'],
-        'minimal': ['4466935', '3694365', '827743', '2422483'],
-        'colorful': ['4466935', '3694365', '827743', '2422483'],
-        'black': ['4466935', '3694365', '827743', '2422483'],
-        'white': ['4466935', '3694365', '827743', '2422483'],
-        'red': ['4466935', '3694365', '827743', '2422483'],
-        'blue': ['4466935', '3694365', '827743', '2422483'],
-        'green': ['4466935', '3694365', '827743', '2422483'],
-        'yellow': ['4466935', '3694365', '827743', '2422483'],
-        'orange': ['4466935', '3694365', '827743', '2422483'],
-        'purple': ['4466935', '3694365', '827743', '2422483'],
-        'pink': ['4466935', '3694365', '827743', '2422483'],
-        'brown': ['4466935', '3694365', '827743', '2422483'],
-        'gray': ['4466935', '3694365', '827743', '2422483'],
-        'black-and-white': ['4466935', '3694365', '827743', '2422483'],
-    };
-
-    // Default collection IDs if category doesn't match any predefined ones
-    private readonly defaultCollections = ['3694365', '1053828', '4466935', '3348849'];
+    // List of predefined categories for Unsplash API
+    private readonly categories = [
+        'nature', 'water', 'architecture', 'city', 'landscape', 
+        'animals', 'food', 'travel', 'people', 'technology', 
+        'abstract', 'space', 'interior', 'flowers', 'dark', 
+        'light', 'minimal', 'colorful', 'black', 'white', 
+        'red', 'blue', 'green', 'yellow', 'orange', 
+        'purple', 'pink', 'brown', 'gray', 'black-and-white'
+    ];
 
     /**
      * Fetch images from Unsplash
@@ -79,75 +47,20 @@ export class UnsplashSource extends AbstractImageSource {
         const count = config.count || 5;
         let category = config.category || '';
         const apiKey = config.apiKey || '';
-        const fetchedImages: string[] = [];
-
 
         // Log the current weather and time of day
         this.logger.debug(`Current weather: ${weather}, time of day: ${timeOfDay}`);
-
         this.logger.debug(`Using category with weather and time: ${category}`);
 
-        // If apiKey is provided, use the official Unsplash API (always use API when possible)
-        if (apiKey) {
-            try {
-                this.logger.debug('Using official Unsplash API');
-                return await this.fetchImagesFromApiAsync(apiKey, category, count, weather, timeOfDay, config);
-            } catch (error) {
-                this.logger.error('Error fetching images from Unsplash API:', error);
-                this.logger.debug('Falling back to direct URL method');
-                // Fall back to the direct URL method if the API fails
-            }
+        // API key is required
+        if (!apiKey) {
+            this.logger.error('Unsplash API key is required');
+            throw new Error('Unsplash API key is required');
         }
 
-        // Direct URL method (fallback or default if useApi is false)
-        this.logger.debug('Using direct URL method for Unsplash images');
-
-        // Parse the category string to get individual categories
-        const categories = category.split(',').map(c => c.trim().toLowerCase());
-        this.logger.debug(`Categories for direct URL method: ${categories.join(', ')}`);
-
-        // Get collection IDs for the specified categories
-        let collectionIds: string[] = [];
-        categories.forEach(cat => {
-            if (this.collections[cat]) {
-                collectionIds = [...collectionIds, ...this.collections[cat]];
-            }
-        });
-
-        // If no matching collections found, use default
-        if (collectionIds.length === 0) {
-            this.logger.debug('No matching collections found, using default collections');
-            collectionIds = this.defaultCollections;
-        } else {
-            this.logger.debug(`Using collection IDs: ${collectionIds.join(', ')}`);
-        }
-
-        // Generate direct image URLs using Unsplash's photo API
-        // Format: https://images.unsplash.com/photo-{photoId}?w=1920&h=1080
-        // We'll use collection IDs and random photo indices
-        for (let i = 0; i < count; i++) {
-            try {
-                // Select a random collection ID
-                const collectionId = collectionIds[Math.floor(Math.random() * collectionIds.length)];
-
-                // Generate a timestamp-based random seed to avoid caching
-                const randomSeed = Date.now() + i;
-
-                // Create a direct URL to an Unsplash image using their CDN
-                // Using a more reliable format with source parameter and fit=crop
-                // This format is more stable and less likely to be rejected
-                const imageUrl = `https://source.unsplash.com/collection/${collectionId}/1920x1080/?sig=${randomSeed}`;
-
-                this.logger.debug(`Generated direct URL (${i + 1}/${count}): ${imageUrl}`);
-
-                fetchedImages.push(imageUrl);
-            } catch (err) {
-                this.logger.warn(`Failed to generate Unsplash image URL (attempt ${i + 1}/${count})`, err);
-                // Continue with next attempt
-            }
-        }
-
-        return fetchedImages;
+        // Use the official Unsplash API
+        this.logger.debug('Using official Unsplash API');
+        return await this.fetchImagesFromApiAsync(apiKey, category, count, weather, timeOfDay, config);
     }
 
     /**
@@ -271,8 +184,7 @@ export class UnsplashSource extends AbstractImageSource {
         return {
             count: 5,
             category: 'nature',
-            apiKey: '',
-            useApi: true,
+            apiKey: '', // This will need to be set by the user
             contentFilter: 'high'
         };
     }
@@ -282,7 +194,7 @@ export class UnsplashSource extends AbstractImageSource {
      * @returns Array of category names
      */
     getCategories(): string[] {
-        return Object.keys(this.collections);
+        return [...this.categories];
     }
 
 }

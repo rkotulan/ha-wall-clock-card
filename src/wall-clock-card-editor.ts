@@ -1238,9 +1238,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Unsplash Configuration</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure Unsplash image source settings. You can use Unsplash with or without an API
-                                key.
-                                Using an API key provides better image quality and more reliable service.
+                                Configure Unsplash image source settings. An API key is required to use Unsplash.
+                                You can obtain a free API key from the Unsplash Developer portal.
                             </div>
 
                             <div class="row">
@@ -1277,8 +1276,50 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="label">Number of Photos</div>
+                                <div class="value">
+                                    <ha-textfield
+                                            label="Number of Photos"
+                                            type="number"
+                                            min="1"
+                                            max="30"
+                                            .value=${this._config.imageConfig?.count || '5'}
+                                            @input=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                                ev.preventDefault();
+
+                                                const target = ev.target as HTMLElement & { value?: string };
+                                                if (!target || !this._config) return;
+
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                                // Ensure imageConfig exists
+                                                if (!newConfig.imageConfig) {
+                                                    newConfig.imageConfig = {};
+                                                }
+
+                                                // Parse the value as a number and ensure it's within range
+                                                let count = parseInt(target.value || '5', 10);
+                                                if (isNaN(count) || count < 1) count = 1;
+                                                if (count > 30) count = 30;
+
+                                                // Update the count
+                                                newConfig.imageConfig.count = count;
+
+                                                // Update the local config reference
+                                                this._config = newConfig;
+
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
+                                    ></ha-textfield>
+                                </div>
+                            </div>
+
                             <div class="info-text">
-                                An API key is required for Unsplash to work properly.
+                                An API key is required. Without a valid API key, the Unsplash image source will not work.
                             </div>
 
                             ${true ? html`

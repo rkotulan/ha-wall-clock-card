@@ -5,6 +5,7 @@
 ### Breaking Changes
 - **Major refactoring of the entire codebase**: Improved architecture, code organization, and maintainability
 - **Enhanced logging system**: Completely redesigned logging system with better error reporting and debugging capabilities
+- **Removed direct URL method for Unsplash**: The direct URL method for Unsplash has been removed. An API key is now required to use the Unsplash image source.
 
 ### What's Changed
 - Comprehensive refactoring of all major components:
@@ -24,6 +25,7 @@
   - Moved timer setup from constructor to connectedCallback for better lifecycle management
   - Added check to prevent duplicate timers
   - Improved reliability of clock updates when component is re-rendered
+- Simplified Unsplash image source implementation. Removed legacy code related to direct URL method.
 
 ## 1.21.0
 
@@ -120,7 +122,7 @@
   - Added detailed logging for API requests and parameters
   - Added logging for search categories and weather conditions
   - Added secure logging that hides API keys in log messages
-  - Improved direct URL method logging with collection IDs and generated URLs
+  - Removed direct URL method for Unsplash (API key is now required)
   - Enhanced error reporting for API requests
   - Better debugging information for image search queries
 
@@ -324,7 +326,7 @@
 
 - Added Unsplash image source with weather and time-of-day based image selection
 - Enhanced image queries to include current weather conditions and time of day
-- Added support for both direct URL and API methods for Unsplash
+- Added support for Unsplash API (API key required)
 - Added documentation for obtaining an Unsplash API key
 - Improved image relevance by incorporating weather and time context
 - Modified Unsplash image source to always use API when an API key is provided

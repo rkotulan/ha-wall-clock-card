@@ -265,17 +265,12 @@ export interface PicsumSourceConfig extends ImageSourceConfig {
 
 ### 2. UnsplashSource
 
-Fetches images from [Unsplash](https://unsplash.com/), either using their API or direct URLs.
+Fetches images from [Unsplash](https://unsplash.com/) using their official API.
 
 ```typescript
 export interface UnsplashSourceConfig extends ImageSourceConfig {
-  // API key for Unsplash API (required for API mode)
-  apiKey?: string;
-
-  // Whether to use the official Unsplash API (requires apiKey)
-  // Note: This property is kept for backward compatibility but is no longer used
-  // as the API is always used when an API key is provided
-  useApi?: boolean;
+  // API key for Unsplash API (required)
+  apiKey: string;
 
   // Content filter for Unsplash API (low, high)
   // Controls the level of potentially sensitive content in the images
@@ -286,10 +281,8 @@ export interface UnsplashSourceConfig extends ImageSourceConfig {
 ```
 
 The UnsplashSource includes:
-- Support for both API and direct URL methods
-- Automatic fallback from API to direct URL if API fails
+- Official Unsplash API integration
 - Enhanced queries with weather and time of day information
-- Predefined collections for various categories
 - Content filtering options
 
 Available categories include: nature, water, architecture, city, landscape, animals, food, travel, people, technology, abstract, space, interior, flowers, dark, light, minimal, colorful, and various colors.
