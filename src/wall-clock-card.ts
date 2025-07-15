@@ -241,7 +241,9 @@ export class WallClockCard extends LitElement {
             imageSourceId: this.config.imageSource || 'picsum',
             backgroundImages: this.config.backgroundImages,
             entity: this.config.imageConfig?.entity,
-            apiKey: this.config.imageConfig?.apiKey
+            apiKey: this.config.imageConfig?.apiKey,
+            contentFilter: this.config.imageConfig?.contentFilter,
+            category: this.config.imageConfig?.category
         };
 
         // Set the properties
