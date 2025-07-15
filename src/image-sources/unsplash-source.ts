@@ -55,7 +55,7 @@ export class UnsplashSource extends AbstractImageSource {
         // API key is required
         if (!apiKey) {
             this.logger.error('Unsplash API key is required');
-            throw new Error('Unsplash API key is required');
+            return [];
         }
 
         // Use the official Unsplash API
