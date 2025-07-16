@@ -3,13 +3,20 @@ import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
-import {BackgroundImage, TimeOfDay, Weather, FindAttributeInPath, ValidWeather, ValidTimeOfDay} from './image-sources/image-source';
+import {
+    BackgroundImage,
+    TimeOfDay,
+    Weather,
+    FindAttributeInPath,
+    ValidWeather,
+    ValidTimeOfDay
+} from './image-sources/image-source';
 import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './utils/localize/lokalify';
-import { logger } from './utils/logger';
+import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
+import {logger} from './utils/logger';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -25,6 +32,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Initialize language options from lokalify
         this._languageOptions = getLanguageOptions();
+
+        this._languageOptions.forEach(option => {
+            console.log(option);
+        })
     }
 
     // Time format options
@@ -136,7 +147,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // If timeFormat is provided in the config, merge it with the default
         if (wallClockConfig.timeFormat) {
-            timeFormat = { ...timeFormat, ...wallClockConfig.timeFormat };
+            timeFormat = {...timeFormat, ...wallClockConfig.timeFormat};
 
             // Explicitly handle the case when second is undefined
             if (wallClockConfig.timeFormat.second === undefined) {
@@ -441,6 +452,72 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
+    // Get schema for General section
+    // private _getGeneralSchema() {
+    //     return [
+    //         {
+    //             name: 'fontColor',
+    //             label: 'Font Color',
+    //             selector: {
+    //                 color_rgb: {}
+    //             }
+    //         }//,
+    //         // {
+    //         //     name: 'language',
+    //         //     label: 'Language',
+    //         //     selector: {
+    //         //         select: {
+    //         //             options: this._languageOptions
+    //         //         }
+    //         //     }
+    //         // },
+    //         // {
+    //         //     name: 'logLevel',
+    //         //     label: 'Log Level',
+    //         //     selector: {
+    //         //         select: {
+    //         //             options: [
+    //         //                 { value: 'debug', label: 'Debug' },
+    //         //                 { value: 'info', label: 'Info' },
+    //         //                 { value: 'warn', label: 'Warning' },
+    //         //                 { value: 'error', label: 'Error' },
+    //         //                 { value: 'none', label: 'None' }
+    //         //             ],
+    //         //             mode: 'dropdown'
+    //         //         }
+    //         //     }
+    //         // }
+    //     ];
+    // }
+
+    // Compute label for form fields
+    // private _computeLabel(schema: any) {
+    //     return schema.label || schema.name;
+    // }
+
+    // Handle form value changes
+    private _handleFormValueChanged(ev: CustomEvent) {
+        ev.stopPropagation();
+
+        if (!this._config) return;
+
+        // Get the updated data from the event
+        const newData = ev.detail.value;
+
+        // Create a deep copy of the config
+        const newConfig = JSON.parse(JSON.stringify(this._config));
+
+        // Update the config with the new data
+        Object.keys(newData).forEach(key => {
+            newConfig[key] = newData[key];
+        });
+
+        // Update the local config reference
+        this._config = newConfig;
+
+        // Fire the config-changed event with the new config
+        fireEvent(this, 'config-changed', {config: newConfig});
+    };
 
     static get styles(): CSSResult {
         return css`
@@ -568,7 +645,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 margin-right: 8px;
             }
 
-            ha-textfield, ha-select {
+            ha-selector, ha-textfield, ha-select {
                 width: 100%;
             }
         `;
@@ -591,33 +668,14 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <div class="row">
                             <div class="label">Font Color</div>
                             <div class="value">
-                                <ha-textfield
-                                        label="Font Color (hex, rgb, or rgba)"
-                                        .value=${this._config.fontColor || '#FFFFFF'}
-                                        @input=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                            ev.preventDefault();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.fontColor = target.value || '#FFFFFF';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-textfield>
-                                <div style="width: 32px; height: 32px; background-color: ${this._config.fontColor || '#FFFFFF'}; border: 1px solid #000; margin-left: 8px;"></div>
+                                <ha-selector
+                                        .selector=${{ color_rgb: {} }}
+                                        .value=${this._config.fontColor}
+                                        .label=${"Select font color"}
+                                        @value-changed=${this._handleFormValueChanged}
+                                ></ha-selector>
                             </div>
                         </div>
-
                         <div class="row">
                             <div class="label">Language</div>
                             <div class="value">
@@ -691,6 +749,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 </ha-select>
                             </div>
                         </div>
+
                     </div>
                 </ha-expansion-panel>
 
@@ -1150,8 +1209,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Local Background Images</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure local image URLs. Images will be automatically categorized by weather condition and time of day based on their file paths.
-                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
+                                Configure local image URLs. Images will be automatically categorized by weather
+                                condition and time of day based on their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
+                                (sunrise-sunset, day, night) in your file paths.
                             </div>
 
                             <div class="section-subheader">Background Images</div>
@@ -1319,7 +1380,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             </div>
 
                             <div class="info-text">
-                                An API key is required. Without a valid API key, the Unsplash image source will not work.
+                                An API key is required. Without a valid API key, the Unsplash image source will not
+                                work.
                             </div>
 
                             ${true ? html`
@@ -1406,7 +1468,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Sensor Images Configuration</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure the sensor that provides the image list. The sensor should have a "files" attribute
+                                Configure the sensor that provides the image list. The sensor should have a "files"
+                                attribute
                                 that contains an array of image URLs.
                             </div>
 
@@ -1414,38 +1477,38 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 <div class="label">Sensor Entity</div>
                                 <div class="value">
                                     <ha-select
-                                        label="Entity"
-                                        .value=${this._config.imageConfig?.entity || ''}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                                            label="Entity"
+                                            .value=${this._config.imageConfig?.entity || ''}
+                                            @click=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                            }}
+                                            @closed=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
+                                                const target = ev.target as HTMLElement & { value?: string };
+                                                if (!target || !this._config) return;
 
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
 
-                                            // Ensure imageConfig exists
-                                            if (!newConfig.imageConfig) {
-                                                newConfig.imageConfig = {};
-                                            }
+                                                // Ensure imageConfig exists
+                                                if (!newConfig.imageConfig) {
+                                                    newConfig.imageConfig = {};
+                                                }
 
-                                            // Update the entity
-                                            newConfig.imageConfig.entity = target.value || '';
+                                                // Update the entity
+                                                newConfig.imageConfig.entity = target.value || '';
 
-                                            // Update the local config reference
-                                            this._config = newConfig;
+                                                // Update the local config reference
+                                                this._config = newConfig;
 
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
                                     >
                                         ${entities.filter(entity => entity.startsWith('sensor.')).map(
-                                            (entity) => html`
-                                                <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
+                                                (entity) => html`
+                                                    <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
                                         )}
                                     </ha-select>
                                 </div>
@@ -1453,8 +1516,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                             <div class="info-text">
                                 The sensor should have a "files" attribute that contains an array of image URLs.
-                                Images will be automatically categorized by weather condition and time of day based on their file paths.
-                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
+                                Images will be automatically categorized by weather condition and time of day based on
+                                their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
+                                (sunrise-sunset, day, night) in your file paths.
                             </div>
                         </div>
                     </ha-expansion-panel>
@@ -2152,7 +2217,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 For detailed documentation on transportation configuration, see <a
                                     href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
                                     target="_blank">transportation.md</a>
-                            </div>                        
+                            </div>
                         </div>
                     </ha-expansion-panel>
                 ` : ''}
