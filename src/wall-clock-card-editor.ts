@@ -118,6 +118,73 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         ];
     };
 
+    // Get schema for General section
+    private _getGeneralSchema() {
+        return [
+            {
+                name: 'fontColor',
+                label: 'Font Color',
+                selector: {
+                    color_rgb: {}
+                }
+            },
+            {
+                name: 'language',
+                label: 'Language',
+                selector: {
+                    select: {
+                        options: this._languageOptions
+                    }
+                }
+            },
+            {
+                name: 'logLevel',
+                label: 'Log Level',
+                selector: {
+                    select: {
+                        options: [
+                            { value: 'debug', label: 'Debug' },
+                            { value: 'info', label: 'Info' },
+                            { value: 'warn', label: 'Warning' },
+                            { value: 'error', label: 'Error' },
+                            { value: 'none', label: 'None' }
+                        ],
+                        mode: 'dropdown'
+                    }
+                }
+            }
+        ];
+    }
+
+    // Compute label for form fields
+    private _computeLabel(schema: any) {
+        return schema.label || schema.name;
+    }
+
+    // Handle form value changes
+    private _handleFormValueChanged(ev: CustomEvent) {
+        ev.stopPropagation();
+
+        if (!this._config) return;
+
+        // Get the updated data from the event
+        const newData = ev.detail.value;
+
+        // Create a deep copy of the config
+        const newConfig = JSON.parse(JSON.stringify(this._config));
+
+        // Update the config with the new data
+        Object.keys(newData).forEach(key => {
+            newConfig[key] = newData[key];
+        });
+
+        // Update the local config reference
+        this._config = newConfig;
+
+        // Fire the config-changed event with the new config
+        fireEvent(this, 'config-changed', {config: newConfig});
+    };
+
 
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
@@ -588,109 +655,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">General</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Font Color</div>
-                            <div class="value">
-                                <ha-textfield
-                                        label="Font Color (hex, rgb, or rgba)"
-                                        .value=${this._config.fontColor || '#FFFFFF'}
-                                        @input=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                            ev.preventDefault();
+                        <ha-form
+                            .hass=${this.hass}
+                            .data=${this._config}
+                            .schema=${this._getGeneralSchema()}
+                            .computeLabel=${this._computeLabel}
+                            @value-changed=${this._handleFormValueChanged}
+                        ></ha-form>
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.fontColor = target.value || '#FFFFFF';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-textfield>
-                                <div style="width: 32px; height: 32px; background-color: ${this._config.fontColor || '#FFFFFF'}; border: 1px solid #000; margin-left: 8px;"></div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Language</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Language"
-                                        .value=${this._config.language || 'cs'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.language = target.value || 'cs';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._languageOptions.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${option.value}>${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Log Level</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Log Level"
-                                        .value=${this._config.logLevel || 'info'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.logLevel = target.value || 'warn';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    <mwc-list-item value="debug">Debug</mwc-list-item>
-                                    <mwc-list-item value="info">Info</mwc-list-item>
-                                    <mwc-list-item value="warn">Warning</mwc-list-item>
-                                    <mwc-list-item value="error">Error</mwc-list-item>
-                                    <mwc-list-item value="none">None</mwc-list-item>
-                                </ha-select>
-                            </div>
-                        </div>
+                        <!-- Color preview is now handled by the color_rgb selector -->
                     </div>
                 </ha-expansion-panel>
 
