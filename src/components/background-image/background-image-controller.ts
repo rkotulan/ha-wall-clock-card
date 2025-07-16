@@ -15,6 +15,10 @@ export interface BackgroundImageControllerConfig {
  * Controller for managing background images
  */
 export class BackgroundImageController extends BaseController {
+    // Constants for transition timing
+    private static readonly TRANSITION_DELAY_MS = 50;
+    private static readonly TRANSITION_DURATION_MS = 1000;
+
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
     private imageRotationTimer?: number;
     private config: BackgroundImageControllerConfig;
@@ -216,50 +220,17 @@ export class BackgroundImageController extends BaseController {
                     // Save the current image URL as the previous one before updating
                     if (this._currentImageUrl) {
                         this._previousImageUrl = this._currentImageUrl;
-                        this._isTransitioning = true;
-
-                        // Request update to apply the transitioning class and show both images
-                        this.host.requestUpdate();
-
-                        // Add a small delay to ensure the initial state is rendered
-                        setTimeout(() => {
-                            this.logger.debug('Starting transition');
-
-                            // Add transition class to container element
-                            if (this.host instanceof HTMLElement && this.host.shadowRoot) {
-                                const container = this.host.shadowRoot.querySelector('.background-container');
-                                if (container) {
-                                    // Add transition class to all images at once via the container
-                                    container.classList.add('active-transition');
-                                    this.logger.debug('Added active-transition class to container');
-
-                                    // After transition completes, clean up
-                                    setTimeout(() => {
-                                        // Remove transition classes
-                                        if (container.classList.contains('active-transition')) {
-                                            container.classList.remove('active-transition');
-                                        }
-
-                                        this._isTransitioning = false;
-                                        this.host.requestUpdate();
-                                        this.logger.debug('Transition completed');
-                                    }, 1000); // Match the transition duration in CSS
-                                } else {
-                                    this.logger.error('Could not find background container element');
-                                }
-                            } else {
-                                this.logger.error('Could not access shadow root');
-                            }
-                        }, 50); // Small delay is sufficient
+                        this.logger.debug('Starting transition for subsequent image');
+                        this.handleImageTransition();
                     }
 
                     // Update the current image URL
                     this._currentImageUrl = newImageUrl;
 
                     if (!this._previousImageUrl) {
-                        // If there's no previous image (first load), just update without transition
-                        this._isTransitioning = false;
-                        this.host.requestUpdate();
+                        // For first image load, still use a transition effect
+                        this.logger.debug('Starting transition for first image');
+                        this.handleImageTransition();
                     }
                 };
                 img.onerror = () => {
@@ -321,5 +292,57 @@ export class BackgroundImageController extends BaseController {
      */
     get isTransitioning(): boolean {
         return this._isTransitioning;
+    }
+
+    /**
+     * Handle image transition with consistent behavior for both first and subsequent images
+     */
+    private handleImageTransition(): void {
+        this._isTransitioning = true;
+        this.host.requestUpdate();
+
+        // Add a small delay to ensure the initial state is rendered
+        setTimeout(() => {
+            this.applyTransitionEffect();
+        }, BackgroundImageController.TRANSITION_DELAY_MS);
+    }
+
+    /**
+     * Apply transition effect to the container element
+     */
+    private applyTransitionEffect(): void {
+        if (!(this.host instanceof HTMLElement && this.host.shadowRoot)) {
+            this.logger.error('Could not access shadow root');
+            return;
+        }
+
+        const container = this.host.shadowRoot.querySelector('.background-container');
+        if (!container) {
+            this.logger.error('Could not find background container element');
+            return;
+        }
+
+        // Add transition class to all images at once via the container
+        container.classList.add('active-transition');
+        this.logger.debug('Added active-transition class to container');
+
+        // After transition completes, clean up
+        setTimeout(() => {
+            this.cleanupAfterTransition(container);
+        }, BackgroundImageController.TRANSITION_DURATION_MS);
+    }
+
+    /**
+     * Clean up after transition completes
+     */
+    private cleanupAfterTransition(container: Element): void {
+        // Remove transition classes
+        if (container.classList.contains('active-transition')) {
+            container.classList.remove('active-transition');
+        }
+
+        this._isTransitioning = false;
+        this.host.requestUpdate();
+        this.logger.debug('Transition completed');
     }
 }

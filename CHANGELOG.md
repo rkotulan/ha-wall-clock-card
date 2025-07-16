@@ -8,6 +8,13 @@
 - **Removed direct URL method for Unsplash**: The direct URL method for Unsplash has been removed. An API key is now required to use the Unsplash image source.
 
 ### What's Changed
+- Added fade-in transition effect for the first displayed image
+  - Improved visual experience with consistent transitions for all images
+  - Eliminated abrupt appearance of the first image
+- Refactored background image controller for better maintainability:
+  - Added constants for magic numbers (transition delay and duration)
+  - Extracted transition logic into separate methods to eliminate code duplication
+  - Improved code organization with clearer separation of concerns
 - Comprehensive refactoring of all major components:
   - Image sources system
   - Weather providers
