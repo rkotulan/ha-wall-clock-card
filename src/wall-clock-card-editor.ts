@@ -1289,197 +1289,95 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Transportation Departures</h3>
                         <div class="content">
 
-                            <div class="row">
-                                <div class="label">Transportation Provider</div>
-                                <div class="value">
-                                    <ha-select
-                                            label="Provider"
-                                            .value=${this._config.transportation?.provider || 'idsjmk'}
-                                            @click=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                            }}
-                                            @closed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._getTransportationProviderOptions(),
+                                        mode: "dropdown"
+                                    }
+                                }}
+                                .value=${this._config.transportation?.provider || 'idsjmk'}
+                                .label=${"Transportation Provider"}
+                                propertyName="transportation.provider"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config || !this._config.transportation) return;
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    number: {
+                                        min: 1,
+                                        max: 5,
+                                        step: 1,
+                                        mode: "slider"
+                                    }
+                                }}
+                                .value=${this._config.transportation?.maxDepartures || 2}
+                                .label=${"Global Max Departures"}
+                                .helper=${`${this._config.transportation?.maxDepartures || 2} departures`}
+                                propertyName="transportation.maxDepartures"
+                                @value-changed=${(ev: CustomEvent) => {
+                                    this._handleFormValueChanged(ev);
+                                    // Reload stops after the config has been updated
+                                    this._loadStops();
+                                }}
+                            ></ha-row-selector>
 
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.transportation = {
-                                                    ...newConfig.transportation,
-                                                    provider: target.value || 'idsjmk'
-                                                };
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    >
-                                        ${this._getTransportationProviderOptions().map(
-                                                (option) => html`
-                                                    <mwc-list-item .value=${option.value}>${option.label}
-                                                    </mwc-list-item>`
-                                        )}
-                                    </ha-select>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="label">Global Max Departures</div>
-                                <div class="value">
-                                    <ha-slider
-                                            min="1"
-                                            max="5"
-                                            step="1"
-                                            pin
-                                            .value=${this._config.transportation?.maxDepartures || 2}
-                                            @value-changed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                if (!this._config || !this._config.transportation) return;
-
-                                                const value = typeof ev.detail.value === 'string' ? parseInt(ev.detail.value, 10) : ev.detail.value;
-                                                const detail = {
-                                                    value,
-                                                    propertyName: 'transportation.maxDepartures'
-                                                };
-                                                const newEvent = new CustomEvent('value-changed', {detail});
-                                                this._handleFormValueChanged(newEvent);
-
-                                                // Reload stops after the config has been updated
-                                                this._loadStops();
-                                            }}
-                                    ></ha-slider>
-                                    <span>${this._config.transportation?.maxDepartures || 2} departures</span>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="label">Show on Demand</div>
-                                <div class="value">
-                                    <ha-switch
-                                            .checked=${this._config.transportation?.onDemand === true}
-                                            @change=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
-
-                                                const target = ev.target as HTMLElement & {
-                                                    checked?: boolean
-                                                };
-                                                if (!target || !this._config || !this._config.transportation) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.transportation = {
-                                                    ...newConfig.transportation,
-                                                    onDemand: target.checked
-                                                };
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    ></ha-switch>
-                                    <span>Only show departures when clicked</span>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${this._config.transportation?.onDemand === true}
+                                .label=${"Show on Demand"}
+                                .helper=${"Only show departures when clicked"}
+                                propertyName="transportation.onDemand"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             ${this._config.transportation?.onDemand === true ? html`
-                                <div class="row">
-                                    <div class="label">Auto-Hide Timeout</div>
-                                    <div class="value">
-                                        <ha-textfield
-                                                label="Auto-hide timeout in minutes (1-10)"
-                                                type="number"
-                                                min="1"
-                                                max="10"
-                                                .value=${this._config.transportation?.autoHideTimeout || 5}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & {
-                                                        value?: string | number
-                                                    };
-                                                    if (!target || !this._config || !this._config.transportation) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Get the value as a number
-                                                    let timeoutMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
-
-                                                    // Ensure value is between 1 and 10 minutes
-                                                    timeoutMinutes = Math.max(Math.min(timeoutMinutes || 5, 10), 1);
-
-                                                    // Update the new config
-                                                    newConfig.transportation = {
-                                                        ...newConfig.transportation,
-                                                        autoHideTimeout: timeoutMinutes
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        ></ha-textfield>
-                                        <span>minutes</span>
-                                    </div>
-                                </div>
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: 1,
+                                            max: 10,
+                                            step: 1,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${this._config.transportation?.autoHideTimeout || 5}
+                                    .label=${"Auto-Hide Timeout"}
+                                    .helper=${"Auto-hide timeout in minutes (1-10)"}
+                                    propertyName="transportation.autoHideTimeout"
+                                    .transformData=${(value: number) => {
+                                        // Ensure value is between 1 and 10 minutes
+                                        return Math.max(Math.min(value || 5, 10), 1);
+                                    }}
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
                             ` : ''}
 
-                            <div class="row">
-                                <div class="label">Update Interval</div>
-                                <div class="value">
-                                    <ha-textfield
-                                            label="Update interval in minutes (min: 1)"
-                                            type="number"
-                                            min="1"
-                                            .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
-
-                                                const target = ev.target as HTMLElement & {
-                                                    value?: string | number
-                                                };
-                                                if (!target || !this._config || !this._config.transportation) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Get the value as a number
-                                                let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
-
-                                                // Ensure minimum of 1 minute
-                                                intervalMinutes = Math.max(intervalMinutes || 1, 1);
-
-                                                // Convert minutes to seconds for internal storage
-                                                const intervalSeconds = intervalMinutes * 60;
-
-                                                // Update the new config
-                                                newConfig.transportationUpdateInterval = intervalSeconds;
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    ></ha-textfield>
-                                    <span>minutes</span>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    number: {
+                                        min: 1,
+                                        step: 1,
+                                        mode: "box"
+                                    }
+                                }}
+                                .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
+                                .label=${"Update Interval"}
+                                .helper=${"Update interval in minutes (min: 1)"}
+                                propertyName="transportationUpdateInterval"
+                                .transformData=${(value: number) => {
+                                    // Ensure minimum of 1 minute
+                                    const intervalMinutes = Math.max(value || 1, 1);
+                                    // Convert minutes to seconds for internal storage
+                                    return intervalMinutes * 60;
+                                }}
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             <div class="section-subheader">Stops</div>
 
