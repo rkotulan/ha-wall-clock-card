@@ -1,11 +1,8 @@
 import {css, html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
+import {ColorHexSelector} from "./types";
 
-// Define the ColorHexSelector type
-interface ColorHexSelector {
-    color_hex: string;
-}
 
 @customElement("ha-selector-color_hex")
 export class HaColorHexSelector extends LitElement {
