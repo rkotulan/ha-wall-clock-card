@@ -259,14 +259,14 @@ export class WeatherComponent extends LitElement {
 
         if (this.weatherController.hasError) {
             return html`
-                <div class="weather-container" style="color: rgb(${this.fontColor});">
+                <div class="weather-container" style="color: ${this.fontColor};">
                     <div class="weather-error">${this.weatherController.errorMessage}</div>
                 </div>`;
         }
 
         if (this.weatherController.isLoading || !weatherData) {
             return html`
-                <div class="weather-container" style="color: rgb(${this.fontColor});">
+                <div class="weather-container" style="color: ${this.fontColor};">
                     <div class="weather-loading">Loading weather data...</div>
                 </div>`;
         }
@@ -279,8 +279,8 @@ export class WeatherComponent extends LitElement {
         const limitedForecastDays = Math.min(forecastDays, weatherData.daily.length);
 
         return html`
-            <div class="weather-container" style="color: rgb(${this.fontColor});">
-                <div class="weather-title" style="color: rgb(${this.fontColor});">${weatherTitle}</div>
+            <div class="weather-container" style="color: ${this.fontColor};">
+                <div class="weather-title" style="color: ${this.fontColor};">${weatherTitle}</div>
 
                 ${(displayMode === 'current' || displayMode === 'both') ?
                     html`

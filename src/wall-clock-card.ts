@@ -14,6 +14,7 @@ import {BackgroundImageComponent} from './components/background-image';
 import {WeatherComponent} from './components/weather';
 import {TransportationComponent} from './components/transportation';
 import './wall-clock-card-editor';
+import './components/ha-selector'; // Import the ha-selector components
 import {WeatherSignalProvider} from "./signals/weather-signal";
 
 // Global constant injected by webpack.DefinePlugin

@@ -178,20 +178,20 @@ export class ClockComponent extends LitElement {
         this.logger.debug(`Rendering clock - Seconds: ${seconds}, Show seconds: ${shouldShowSeconds}, TimeFormat: ${JSON.stringify(this.timeFormat)}`);
 
         return html`
-            <div class="clock" style="color: rgb(${this.fontColor});">
-                <span class="hours-minutes" style="color: rgb(${this.fontColor});">${this.getHours()}:${this.getMinutes()}</span>
+            <div class="clock" style="color: ${this.fontColor};">
+                <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
                 ${shouldShowSeconds ? html`
                     <div class="seconds-container">
-                        <span class="seconds" style="color: rgb(${this.fontColor});">${seconds}</span>
-                        ${this.getAmPm() ? html`<span class="ampm" style="color: rgb(${this.fontColor});">${this.getAmPm()}</span>` : ''}
+                        <span class="seconds" style="color: ${this.fontColor};">${seconds}</span>
+                        ${this.getAmPm() ? html`<span class="ampm" style="color: ${this.fontColor};">${this.getAmPm()}</span>` : ''}
                     </div>
                 ` : this.getAmPm() ? html`
                     <div class="seconds-container">
-                        <span class="ampm ampm-only" style="color: rgb(${this.fontColor});">${this.getAmPm()}</span>
+                        <span class="ampm ampm-only" style="color: ${this.fontColor};">${this.getAmPm()}</span>
                     </div>
                 ` : ''}
             </div>
-            <div class="date" style="color: rgb(${this.fontColor});">${this.getCurrentDate()}</div>
+            <div class="date" style="color: ${this.fontColor};">${this.getCurrentDate()}</div>
         `;
     }
 }

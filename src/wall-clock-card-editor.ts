@@ -17,6 +17,7 @@ import {
 } from './transportation-providers';
 import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
 import {logger} from './utils/logger';
+import {setPropertyByPath} from './utils';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -496,21 +497,16 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     // }
 
     // Handle form value changes
-    private _handleFormValueChanged(ev: CustomEvent) {
+    private _handleFormValueChanged(ev: CustomEvent, propertyName: string, transformFn?: (value: any) => any) {
         ev.stopPropagation();
 
         if (!this._config) return;
 
-        // Get the updated data from the event
-        const newData = ev.detail.value;
+        // Apply transformation function if provided, otherwise use the original value
+        const value = transformFn ? transformFn(ev.detail.value) : ev.detail.value;
 
-        // Create a deep copy of the config
-        const newConfig = JSON.parse(JSON.stringify(this._config));
-
-        // Update the config with the new data
-        Object.keys(newData).forEach(key => {
-            newConfig[key] = newData[key];
-        });
+        // Create a deep copy of the config and set the property value
+        const newConfig = setPropertyByPath(this._config, propertyName, value);
 
         // Update the local config reference
         this._config = newConfig;
@@ -665,53 +661,33 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">General</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Font Color</div>
-                            <div class="value">
-                                <ha-selector
-                                        .selector=${{ color_rgb: {} }}
-                                        .value=${this._config.fontColor}
-                                        .label=${"Select font color"}
-                                        @value-changed=${this._handleFormValueChanged}
-                                ></ha-selector>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="label">Language</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Language"
-                                        .value=${this._config.language || 'cs'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.language = target.value || 'cs';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._languageOptions.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${option.value}>${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
+                        <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{color_hex: ""}}
+                            .value=${this._config.fontColor}
+                            .label=${"Font Color"}
+                            propertyName="fontColor"
+                            @value-changed=${(ev: CustomEvent) =>
+                                    this._handleFormValueChanged(
+                                            ev,
+                                            ev.detail.propertyName || "fontColor")}
+                        ></ha-row-selector>
+                        <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{
+                                select: {
+                                    options: this._languageOptions,
+                                    mode: 'dropdown'
+                                }
+                            }}
+                            .value=${this._config.language || 'en'}
+                            .label=${"Language"}
+                            propertyName="language"
+                            @value-changed=${(ev: CustomEvent) =>
+                                    this._handleFormValueChanged(
+                                            ev,
+                                            ev.detail.propertyName || "language")}
+                        ></ha-row-selector>
 
                         <div class="row">
                             <div class="label">Log Level</div>
@@ -1346,35 +1322,18 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             min="1"
                                             max="30"
                                             .value=${this._config.imageConfig?.count || '5'}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
+                                            @value-changed=${(ev: CustomEvent) => this._handleFormValueChanged(
+                                                    ev,
+                                                    "imageConfig.count",
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Ensure imageConfig exists
-                                                if (!newConfig.imageConfig) {
-                                                    newConfig.imageConfig = {};
-                                                }
-
-                                                // Parse the value as a number and ensure it's within range
-                                                let count = parseInt(target.value || '5', 10);
-                                                if (isNaN(count) || count < 1) count = 1;
-                                                if (count > 30) count = 30;
-
-                                                // Update the count
-                                                newConfig.imageConfig.count = count;
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
+                                                    (value: any) => {
+                                                        // Parse the value as a number and ensure it's within range
+                                                        let count = parseInt(value || '5', 10);
+                                                        if (isNaN(count) || count < 1) count = 1;
+                                                        if (count > 30) count = 30;
+                                                        return count;
+                                                    }
+                                            )}
                                     ></ha-textfield>
                                 </div>
                             </div>

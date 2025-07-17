@@ -111,17 +111,17 @@ export class SensorComponent extends LitElement {
         }
 
         return html`
-            <div class="sensor-container" style="color: rgb(${this.fontColor});">
+            <div class="sensor-container" style="color: ${this.fontColor};">
                 ${sensorValues.map(sensor => html`
                     <div class="sensor-item">
                         ${sensor.label ?
                             html`
-                                <div class="sensor-label" style="color: rgb(${this.fontColor});">
+                                <div class="sensor-label" style="color: ${this.fontColor};">
                                     ${sensor.label}
                                 </div>` :
                             ''
                         }
-                        <div class="sensor-value" style="color: rgb(${this.fontColor});">
+                        <div class="sensor-value" style="color: ${this.fontColor};">
                             ${sensor.value}
                         </div>
                     </div>
