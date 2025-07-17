@@ -269,7 +269,7 @@ export class TransportationComponent extends LitElement {
                         </svg>
                     </div>` :
                 html`
-                    <div class="transportation-container" style="color: rgb( ${this.fontColor});">
+                    <div class="transportation-container" style="color: ${this.fontColor};">
                         ${this.renderTransportationContent(transportationData)}
                     </div>`
             }
@@ -314,19 +314,19 @@ export class TransportationComponent extends LitElement {
 
                     return html`
                         <div class="stop-group">
-                            <h3 class="stop-name" style="color: rgb( ${this.fontColor});">
+                            <h3 class="stop-name" style="color: ${this.fontColor};">
                                 ${stopName}
                             </h3>
                             <div class="stop-departures">
                                 ${departures.map(departure => html`
                                     <div class="departure-item">
-                                        <div class="departure-line" style="color: rgb( ${this.fontColor});">
+                                        <div class="departure-line" style="color: ${this.fontColor};">
                                             ${departure.lineName}
                                         </div>
-                                        <div class="departure-destination" style="color: rgb( ${this.fontColor});">→
+                                        <div class="departure-destination" style="color: ${this.fontColor};">→
                                             ${departure.finalStop}
                                         </div>
-                                        <div class="departure-time" style="color: rgb( ${this.fontColor});">
+                                        <div class="departure-time" style="color: ${this.fontColor};">
                                             ${departure.timeMark}
                                         </div>
                                         ${departure.isLowFloor ? html`

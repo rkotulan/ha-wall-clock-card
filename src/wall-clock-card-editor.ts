@@ -3,13 +3,21 @@ import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, SensorConfig} from './wall-clock-card';
-import {BackgroundImage, TimeOfDay, Weather, FindAttributeInPath, ValidWeather, ValidTimeOfDay} from './image-sources/image-source';
+import {
+    BackgroundImage,
+    TimeOfDay,
+    Weather,
+    FindAttributeInPath,
+    ValidWeather,
+    ValidTimeOfDay
+} from './image-sources/image-source';
 import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import { getLanguageOptions, ExtendedDateTimeFormatOptions } from './utils/localize/lokalify';
-import { logger } from './utils/logger';
+import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
+import {logger} from './utils/logger';
+import {setPropertyByPath} from './utils';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -25,6 +33,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Initialize language options from lokalify
         this._languageOptions = getLanguageOptions();
+
+        this._languageOptions.forEach(option => {
+            console.log(option);
+        })
     }
 
     // Time format options
@@ -118,220 +130,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         ];
     };
 
-    // Get schema for General section
-    private _getGeneralSchema() {
-        return [
-            {
-                name: 'fontColor',
-                label: 'Font Color',
-                selector: {
-                    color_rgb: {}
-                }
-            },
-            {
-                name: 'language',
-                label: 'Language',
-                selector: {
-                    select: {
-                        options: this._languageOptions
-                    }
-                }
-            },
-            {
-                name: 'logLevel',
-                label: 'Log Level',
-                selector: {
-                    select: {
-                        options: [
-                            { value: 'debug', label: 'Debug' },
-                            { value: 'info', label: 'Info' },
-                            { value: 'warn', label: 'Warning' },
-                            { value: 'error', label: 'Error' },
-                            { value: 'none', label: 'None' }
-                        ],
-                        mode: 'dropdown'
-                    }
-                }
-            }
-        ];
-    }
-
-    // Get schema for Time Format section
-    private _getTimeFormatSchema() {
-        return [
-            {
-                name: 'hour12',
-                label: 'Use 12-Hour Clock',
-                selector: {
-                    boolean: {}
-                }
-            },
-            {
-                name: 'hour',
-                label: 'Hour Display',
-                selector: {
-                    select: {
-                        options: this._timeFormatOptions.hour.map(option => ({
-                            value: option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            },
-            {
-                name: 'minute',
-                label: 'Minute Display',
-                selector: {
-                    select: {
-                        options: this._timeFormatOptions.minute.map(option => ({
-                            value: option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            },
-            {
-                name: 'second',
-                label: 'Second Display',
-                selector: {
-                    select: {
-                        options: this._timeFormatOptions.second.map(option => ({
-                            value: option.value === undefined ? 'undefined' : option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            }
-        ];
-    }
-
-    // Get schema for Date Format section
-    private _getDateFormatSchema() {
-        return [
-            {
-                name: 'weekday',
-                label: 'Weekday Display',
-                selector: {
-                    select: {
-                        options: this._dateFormatOptions.weekday.map(option => ({
-                            value: option.value === undefined ? 'undefined' : option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            },
-            {
-                name: 'month',
-                label: 'Month Display',
-                selector: {
-                    select: {
-                        options: this._dateFormatOptions.month.map(option => ({
-                            value: option.value === undefined ? 'undefined' : option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            },
-            {
-                name: 'day',
-                label: 'Day Display',
-                selector: {
-                    select: {
-                        options: this._dateFormatOptions.day.map(option => ({
-                            value: option.value === undefined ? 'undefined' : option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            },
-            {
-                name: 'year',
-                label: 'Year Display',
-                selector: {
-                    select: {
-                        options: this._dateFormatOptions.year.map(option => ({
-                            value: option.value === undefined ? 'undefined' : option.value,
-                            label: option.label
-                        })),
-                        mode: 'dropdown'
-                    }
-                }
-            }
-        ];
-    }
-
-    // Compute label for form fields
-    private _computeLabel(schema: any) {
-        return schema.label || schema.name;
-    }
-
-    // Handle form value changes
-    private _handleFormValueChanged(ev: CustomEvent) {
-        ev.stopPropagation();
-
-        if (!this._config) return;
-
-        // Get the updated data from the event
-        const newData = ev.detail.value;
-
-        // Create a deep copy of the config
-        const newConfig = JSON.parse(JSON.stringify(this._config));
-
-        // Update the config with the new data
-        Object.keys(newData).forEach(key => {
-            newConfig[key] = newData[key];
-        });
-
-        // Update the local config reference
-        this._config = newConfig;
-
-        // Fire the config-changed event with the new config
-        fireEvent(this, 'config-changed', {config: newConfig});
-    };
-
-    // Handle form value changes for nested sections (timeFormat, dateFormat)
-    private _handleNestedFormValueChanged(section: 'timeFormat' | 'dateFormat', ev: CustomEvent) {
-        ev.stopPropagation();
-
-        if (!this._config || !this._config[section]) return;
-
-        // Get the updated data from the event
-        const newData = ev.detail.value;
-
-        // Create a deep copy of the config
-        const newConfig = JSON.parse(JSON.stringify(this._config));
-
-        // Update the specific section with the new data
-        newConfig[section] = {
-            ...newConfig[section]
-        };
-
-        // Process each property in the new data
-        Object.keys(newData).forEach(key => {
-            const value = newData[key];
-
-            // Handle special values
-            newConfig[section][key] = value === 'hidden' ? 'hidden' : 
-                                      value === 'undefined' ? undefined : 
-                                      value === 'true' ? true : 
-                                      value === 'false' ? false : 
-                                      value;
-        });
-
-        // Update the local config reference
-        this._config = newConfig;
-
-        // Fire the config-changed event with the new config
-        fireEvent(this, 'config-changed', {config: newConfig});
-    };
-
-
 
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
@@ -350,7 +148,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // If timeFormat is provided in the config, merge it with the default
         if (wallClockConfig.timeFormat) {
-            timeFormat = { ...timeFormat, ...wallClockConfig.timeFormat };
+            timeFormat = {...timeFormat, ...wallClockConfig.timeFormat};
 
             // Explicitly handle the case when second is undefined
             if (wallClockConfig.timeFormat.second === undefined) {
@@ -655,6 +453,67 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
+    // Get schema for General section
+    // private _getGeneralSchema() {
+    //     return [
+    //         {
+    //             name: 'fontColor',
+    //             label: 'Font Color',
+    //             selector: {
+    //                 color_rgb: {}
+    //             }
+    //         }//,
+    //         // {
+    //         //     name: 'language',
+    //         //     label: 'Language',
+    //         //     selector: {
+    //         //         select: {
+    //         //             options: this._languageOptions
+    //         //         }
+    //         //     }
+    //         // },
+    //         // {
+    //         //     name: 'logLevel',
+    //         //     label: 'Log Level',
+    //         //     selector: {
+    //         //         select: {
+    //         //             options: [
+    //         //                 { value: 'debug', label: 'Debug' },
+    //         //                 { value: 'info', label: 'Info' },
+    //         //                 { value: 'warn', label: 'Warning' },
+    //         //                 { value: 'error', label: 'Error' },
+    //         //                 { value: 'none', label: 'None' }
+    //         //             ],
+    //         //             mode: 'dropdown'
+    //         //         }
+    //         //     }
+    //         // }
+    //     ];
+    // }
+
+    // Compute label for form fields
+    // private _computeLabel(schema: any) {
+    //     return schema.label || schema.name;
+    // }
+
+    // Handle form value changes
+    private _handleFormValueChanged(ev: CustomEvent, propertyName: string, transformFn?: (value: any) => any) {
+        ev.stopPropagation();
+
+        if (!this._config) return;
+
+        // Apply transformation function if provided, otherwise use the original value
+        const value = transformFn ? transformFn(ev.detail.value) : ev.detail.value;
+
+        // Create a deep copy of the config and set the property value
+        const newConfig = setPropertyByPath(this._config, propertyName, value);
+
+        // Update the local config reference
+        this._config = newConfig;
+
+        // Fire the config-changed event with the new config
+        fireEvent(this, 'config-changed', {config: newConfig});
+    };
 
     static get styles(): CSSResult {
         return css`
@@ -782,7 +641,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 margin-right: 8px;
             }
 
-            ha-textfield, ha-select {
+            ha-selector, ha-textfield, ha-select {
                 width: 100%;
             }
         `;
@@ -802,15 +661,71 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">General</h3>
                     <div class="content">
-                        <ha-form
+                        <ha-row-selector
                             .hass=${this.hass}
-                            .data=${this._config}
-                            .schema=${this._getGeneralSchema()}
-                            .computeLabel=${this._computeLabel}
-                            @value-changed=${this._handleFormValueChanged}
-                        ></ha-form>
+                            .selector=${{color_hex: ""}}
+                            .value=${this._config.fontColor}
+                            .label=${"Font Color"}
+                            propertyName="fontColor"
+                            @value-changed=${(ev: CustomEvent) =>
+                                    this._handleFormValueChanged(
+                                            ev,
+                                            ev.detail.propertyName || "fontColor")}
+                        ></ha-row-selector>
+                        <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{
+                                select: {
+                                    options: this._languageOptions,
+                                    mode: 'dropdown'
+                                }
+                            }}
+                            .value=${this._config.language || 'en'}
+                            .label=${"Language"}
+                            propertyName="language"
+                            @value-changed=${(ev: CustomEvent) =>
+                                    this._handleFormValueChanged(
+                                            ev,
+                                            ev.detail.propertyName || "language")}
+                        ></ha-row-selector>
 
-                        <!-- Color preview is now handled by the color_rgb selector -->
+                        <div class="row">
+                            <div class="label">Log Level</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Log Level"
+                                        .value=${this._config.logLevel || 'info'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.logLevel = target.value || 'warn';
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    <mwc-list-item value="debug">Debug</mwc-list-item>
+                                    <mwc-list-item value="info">Info</mwc-list-item>
+                                    <mwc-list-item value="warn">Warning</mwc-list-item>
+                                    <mwc-list-item value="error">Error</mwc-list-item>
+                                    <mwc-list-item value="none">None</mwc-list-item>
+                                </ha-select>
+                            </div>
+                        </div>
+
                     </div>
                 </ha-expansion-panel>
 
@@ -818,13 +733,165 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Time Format</h3>
                     <div class="content">
-                        <ha-form
-                            .hass=${this.hass}
-                            .data=${this._config.timeFormat || {}}
-                            .schema=${this._getTimeFormatSchema()}
-                            .computeLabel=${this._computeLabel}
-                            @value-changed=${(ev: CustomEvent) => this._handleNestedFormValueChanged('timeFormat', ev)}
-                        ></ha-form>
+                        <div class="row">
+                            <div class="label">Time Format</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Hour Format"
+                                        .value=${this._config.timeFormat?.hour12 ? 'true' : 'false'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.timeFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.timeFormat = {
+                                                ...newConfig.timeFormat,
+                                                hour12: target.value === 'true'
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._timeFormatOptions.hour12.map(
+                                            (option) => html`
+                                                <mwc-list-item .value=${String(option.value)}>${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Hour Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Hour Display"
+                                        .value=${this._config.timeFormat?.hour || '2-digit'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.timeFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.timeFormat = {
+                                                ...newConfig.timeFormat,
+                                                hour: target.value as "numeric" | "2-digit" | undefined
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._timeFormatOptions.hour.map(
+                                            (option) => html`
+                                                <mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Minute Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Minute Display"
+                                        .value=${this._config.timeFormat?.minute || '2-digit'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.timeFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.timeFormat = {
+                                                ...newConfig.timeFormat,
+                                                minute: target.value as "numeric" | "2-digit" | undefined
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._timeFormatOptions.minute.map(
+                                            (option) => html`
+                                                <mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Second Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Second Display"
+                                        .value=${this._config.timeFormat?.second === undefined ? 'undefined' : this._config.timeFormat?.second}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.timeFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.timeFormat = {
+                                                ...newConfig.timeFormat,
+                                                second: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._timeFormatOptions.second.map(
+                                            (option) => html`
+                                                <mwc-list-item
+                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
+                                                    ${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
                     </div>
                 </ha-expansion-panel>
 
@@ -832,13 +899,173 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Date Format</h3>
                     <div class="content">
-                        <ha-form
-                            .hass=${this.hass}
-                            .data=${this._config.dateFormat || {}}
-                            .schema=${this._getDateFormatSchema()}
-                            .computeLabel=${this._computeLabel}
-                            @value-changed=${(ev: CustomEvent) => this._handleNestedFormValueChanged('dateFormat', ev)}
-                        ></ha-form>
+                        <div class="row">
+                            <div class="label">Weekday Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Weekday Display"
+                                        .value=${this._config.dateFormat?.weekday || 'long'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.dateFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.dateFormat = {
+                                                ...newConfig.dateFormat,
+                                                weekday: (target.value === 'undefined' ? 'hidden' : target.value) as "long" | "short" | "narrow" | "hidden"
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._dateFormatOptions.weekday.map(
+                                            (option) => html`
+                                                <mwc-list-item
+                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
+                                                    ${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Month Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Month Display"
+                                        .value=${this._config.dateFormat?.month || 'long'}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.dateFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.dateFormat = {
+                                                ...newConfig.dateFormat,
+                                                month: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "long" | "short" | "narrow" | "hidden"
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._dateFormatOptions.month.map(
+                                            (option) => html`
+                                                <mwc-list-item
+                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
+                                                    ${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Day Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Day Display"
+                                        .value=${this._config.dateFormat?.day === undefined ? 'undefined' : this._config.dateFormat?.day}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.dateFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.dateFormat = {
+                                                ...newConfig.dateFormat,
+                                                day: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._dateFormatOptions.day.map(
+                                            (option) => html`
+                                                <mwc-list-item
+                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
+                                                    ${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Year Display</div>
+                            <div class="value">
+                                <ha-select
+                                        label="Year Display"
+                                        .value=${this._config.dateFormat?.year === undefined ? 'undefined' : this._config.dateFormat?.year}
+                                        @click=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                        }}
+                                        @closed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+
+                                            const target = ev.target as HTMLElement & { value?: string };
+                                            if (!target || !this._config || !this._config.dateFormat) return;
+
+                                            // Create a deep copy of the config
+                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+                                            // Update the new config
+                                            newConfig.dateFormat = {
+                                                ...newConfig.dateFormat,
+                                                year: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
+                                            };
+
+                                            // Update the local config reference
+                                            this._config = newConfig;
+
+                                            // Fire the config-changed event with the new config
+                                            fireEvent(this, 'config-changed', {config: newConfig});
+                                        }}
+                                >
+                                    ${this._dateFormatOptions.year.map(
+                                            (option) => html`
+                                                <mwc-list-item
+                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
+                                                    ${option.label}
+                                                </mwc-list-item>`
+                                    )}
+                                </ha-select>
+                            </div>
+                        </div>
                     </div>
                 </ha-expansion-panel>
 
@@ -958,8 +1185,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Local Background Images</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure local image URLs. Images will be automatically categorized by weather condition and time of day based on their file paths.
-                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
+                                Configure local image URLs. Images will be automatically categorized by weather
+                                condition and time of day based on their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
+                                (sunrise-sunset, day, night) in your file paths.
                             </div>
 
                             <div class="section-subheader">Background Images</div>
@@ -1093,41 +1322,25 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             min="1"
                                             max="30"
                                             .value=${this._config.imageConfig?.count || '5'}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
+                                            @value-changed=${(ev: CustomEvent) => this._handleFormValueChanged(
+                                                    ev,
+                                                    "imageConfig.count",
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Ensure imageConfig exists
-                                                if (!newConfig.imageConfig) {
-                                                    newConfig.imageConfig = {};
-                                                }
-
-                                                // Parse the value as a number and ensure it's within range
-                                                let count = parseInt(target.value || '5', 10);
-                                                if (isNaN(count) || count < 1) count = 1;
-                                                if (count > 30) count = 30;
-
-                                                // Update the count
-                                                newConfig.imageConfig.count = count;
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
+                                                    (value: any) => {
+                                                        // Parse the value as a number and ensure it's within range
+                                                        let count = parseInt(value || '5', 10);
+                                                        if (isNaN(count) || count < 1) count = 1;
+                                                        if (count > 30) count = 30;
+                                                        return count;
+                                                    }
+                                            )}
                                     ></ha-textfield>
                                 </div>
                             </div>
 
                             <div class="info-text">
-                                An API key is required. Without a valid API key, the Unsplash image source will not work.
+                                An API key is required. Without a valid API key, the Unsplash image source will not
+                                work.
                             </div>
 
                             ${true ? html`
@@ -1214,7 +1427,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <h3 slot="header">Sensor Images Configuration</h3>
                         <div class="content">
                             <div class="info-text">
-                                Configure the sensor that provides the image list. The sensor should have a "files" attribute
+                                Configure the sensor that provides the image list. The sensor should have a "files"
+                                attribute
                                 that contains an array of image URLs.
                             </div>
 
@@ -1222,38 +1436,38 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 <div class="label">Sensor Entity</div>
                                 <div class="value">
                                     <ha-select
-                                        label="Entity"
-                                        .value=${this._config.imageConfig?.entity || ''}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                                            label="Entity"
+                                            .value=${this._config.imageConfig?.entity || ''}
+                                            @click=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
+                                            }}
+                                            @closed=${(ev: CustomEvent) => {
+                                                ev.stopPropagation();
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
+                                                const target = ev.target as HTMLElement & { value?: string };
+                                                if (!target || !this._config) return;
 
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+                                                // Create a deep copy of the config
+                                                const newConfig = JSON.parse(JSON.stringify(this._config));
 
-                                            // Ensure imageConfig exists
-                                            if (!newConfig.imageConfig) {
-                                                newConfig.imageConfig = {};
-                                            }
+                                                // Ensure imageConfig exists
+                                                if (!newConfig.imageConfig) {
+                                                    newConfig.imageConfig = {};
+                                                }
 
-                                            // Update the entity
-                                            newConfig.imageConfig.entity = target.value || '';
+                                                // Update the entity
+                                                newConfig.imageConfig.entity = target.value || '';
 
-                                            // Update the local config reference
-                                            this._config = newConfig;
+                                                // Update the local config reference
+                                                this._config = newConfig;
 
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
+                                                // Fire the config-changed event with the new config
+                                                fireEvent(this, 'config-changed', {config: newConfig});
+                                            }}
                                     >
                                         ${entities.filter(entity => entity.startsWith('sensor.')).map(
-                                            (entity) => html`
-                                                <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
+                                                (entity) => html`
+                                                    <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
                                         )}
                                     </ha-select>
                                 </div>
@@ -1261,8 +1475,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                             <div class="info-text">
                                 The sensor should have a "files" attribute that contains an array of image URLs.
-                                Images will be automatically categorized by weather condition and time of day based on their file paths.
-                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day (sunrise-sunset, day, night) in your file paths.
+                                Images will be automatically categorized by weather condition and time of day based on
+                                their file paths.
+                                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
+                                (sunrise-sunset, day, night) in your file paths.
                             </div>
                         </div>
                     </ha-expansion-panel>
@@ -1960,7 +2176,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 For detailed documentation on transportation configuration, see <a
                                     href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
                                     target="_blank">transportation.md</a>
-                            </div>                        
+                            </div>
                         </div>
                     </ha-expansion-panel>
                 ` : ''}
