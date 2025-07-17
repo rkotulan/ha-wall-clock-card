@@ -42,8 +42,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     // Time format options
     private _timeFormatOptions = {
         hour12: [
-            {value: true, label: '12-hour'},
-            {value: false, label: '24-hour'},
+            {value: 'true', label: '12-hour'},
+            {value: 'false', label: '24-hour'},
         ],
         hour: [
             {value: 'numeric', label: 'Numeric'},
@@ -706,165 +706,63 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Time Format</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Time Format</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Hour Format"
-                                        .value=${this._config.timeFormat?.hour12 ? 'true' : 'false'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._timeFormatOptions.hour12,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.timeFormat?.hour12 ? 'true' : 'false'}
+                                .label=${"Hour Format"}
+                                propertyName="timeFormat.hour12"
+                                .transformData=${(value: string) => value === 'true'}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.timeFormat) return;
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._timeFormatOptions.hour,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.timeFormat?.hour || '2-digit'}
+                                .label=${"Hour Display"}
+                                propertyName="timeFormat.hour"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._timeFormatOptions.minute,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.timeFormat?.minute || '2-digit'}
+                                .label=${"Minute Display"}
+                                propertyName="timeFormat.minute"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            // Update the new config
-                                            newConfig.timeFormat = {
-                                                ...newConfig.timeFormat,
-                                                hour12: target.value === 'true'
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._timeFormatOptions.hour12.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${String(option.value)}>${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Hour Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Hour Display"
-                                        .value=${this._config.timeFormat?.hour || '2-digit'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.timeFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.timeFormat = {
-                                                ...newConfig.timeFormat,
-                                                hour: target.value as "numeric" | "2-digit" | undefined
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._timeFormatOptions.hour.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Minute Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Minute Display"
-                                        .value=${this._config.timeFormat?.minute || '2-digit'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.timeFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.timeFormat = {
-                                                ...newConfig.timeFormat,
-                                                minute: target.value as "numeric" | "2-digit" | undefined
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._timeFormatOptions.minute.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Second Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Second Display"
-                                        .value=${this._config.timeFormat?.second === undefined ? 'undefined' : this._config.timeFormat?.second}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.timeFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.timeFormat = {
-                                                ...newConfig.timeFormat,
-                                                second: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._timeFormatOptions.second.map(
-                                            (option) => html`
-                                                <mwc-list-item
-                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
-                                                    ${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._timeFormatOptions.second,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.timeFormat?.second === undefined ? 'undefined' : this._config.timeFormat?.second}
+                                .label=${"Second Display"}
+                                propertyName="timeFormat.second"
+                                .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
                     </div>
                 </ha-expansion-panel>
 
@@ -872,173 +770,65 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Date Format</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Weekday Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Weekday Display"
-                                        .value=${this._config.dateFormat?.weekday || 'long'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._dateFormatOptions.weekday,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.dateFormat?.weekday || 'long'}
+                                .label=${"Weekday Display"}
+                                propertyName="dateFormat.weekday"
+                                .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.dateFormat) return;
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._dateFormatOptions.month,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.dateFormat?.month || 'long'}
+                                .label=${"Month Display"}
+                                propertyName="dateFormat.month"
+                                .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._dateFormatOptions.day,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.dateFormat?.day === undefined ? 'undefined' : this._config.dateFormat?.day}
+                                .label=${"Day Display"}
+                                propertyName="dateFormat.day"
+                                .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            // Update the new config
-                                            newConfig.dateFormat = {
-                                                ...newConfig.dateFormat,
-                                                weekday: (target.value === 'undefined' ? 'hidden' : target.value) as "long" | "short" | "narrow" | "hidden"
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._dateFormatOptions.weekday.map(
-                                            (option) => html`
-                                                <mwc-list-item
-                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
-                                                    ${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Month Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Month Display"
-                                        .value=${this._config.dateFormat?.month || 'long'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.dateFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.dateFormat = {
-                                                ...newConfig.dateFormat,
-                                                month: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "long" | "short" | "narrow" | "hidden"
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._dateFormatOptions.month.map(
-                                            (option) => html`
-                                                <mwc-list-item
-                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
-                                                    ${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Day Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Day Display"
-                                        .value=${this._config.dateFormat?.day === undefined ? 'undefined' : this._config.dateFormat?.day}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.dateFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.dateFormat = {
-                                                ...newConfig.dateFormat,
-                                                day: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._dateFormatOptions.day.map(
-                                            (option) => html`
-                                                <mwc-list-item
-                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
-                                                    ${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Year Display</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Year Display"
-                                        .value=${this._config.dateFormat?.year === undefined ? 'undefined' : this._config.dateFormat?.year}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config || !this._config.dateFormat) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.dateFormat = {
-                                                ...newConfig.dateFormat,
-                                                year: (target.value === 'undefined' ? 'hidden' : target.value) as "numeric" | "2-digit" | "hidden"
-                                            };
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._dateFormatOptions.year.map(
-                                            (option) => html`
-                                                <mwc-list-item
-                                                        .value=${option.value === undefined ? 'undefined' : option.value}>
-                                                    ${option.label}
-                                                </mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._dateFormatOptions.year,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.dateFormat?.year === undefined ? 'undefined' : this._config.dateFormat?.year}
+                                .label=${"Year Display"}
+                                propertyName="dateFormat.year"
+                                .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
                     </div>
                 </ha-expansion-panel>
 
