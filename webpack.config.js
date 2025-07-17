@@ -1,6 +1,10 @@
 const path = require('path');
 const webpack = require('webpack');
 const packageJson = require('./package.json');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+// Check if the --analyze flag is present
+const isAnalyze = process.argv.includes('--analyze');
 
 module.exports = {
   entry: './src/wall-clock-card.ts',
@@ -15,7 +19,8 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       PACKAGE_VERSION: JSON.stringify(packageJson.version)
-    })
+    }),
+    ...(isAnalyze ? [new BundleAnalyzerPlugin()] : [])
   ],
   module: {
     rules: [

@@ -497,16 +497,13 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     // }
 
     // Handle form value changes
-    private _handleFormValueChanged(ev: CustomEvent, propertyName: string, transformFn?: (value: any) => any) {
+    private _handleFormValueChanged(ev: CustomEvent) {
         ev.stopPropagation();
 
         if (!this._config) return;
 
-        // Apply transformation function if provided, otherwise use the original value
-        const value = transformFn ? transformFn(ev.detail.value) : ev.detail.value;
-
         // Create a deep copy of the config and set the property value
-        const newConfig = setPropertyByPath(this._config, propertyName, value);
+        const newConfig = setPropertyByPath(this._config, ev.detail.propertyName, ev.detail.value);
 
         // Update the local config reference
         this._config = newConfig;
@@ -662,70 +659,46 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     <h3 slot="header">General</h3>
                     <div class="content">
                         <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{color_hex: ""}}
-                            .value=${this._config.fontColor}
-                            .label=${"Font Color"}
-                            propertyName="fontColor"
-                            @value-changed=${(ev: CustomEvent) =>
-                                    this._handleFormValueChanged(
-                                            ev,
-                                            ev.detail.propertyName || "fontColor")}
+                                .hass=${this.hass}
+                                .selector=${{color_hex: ""}}
+                                .value=${this._config.fontColor}
+                                .label= ${"Font Color"}
+                                propertyName="fontColor"
+                                @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{
-                                select: {
-                                    options: this._languageOptions,
-                                    mode: 'dropdown'
-                                }
-                            }}
-                            .value=${this._config.language || 'en'}
-                            .label=${"Language"}
-                            propertyName="language"
-                            @value-changed=${(ev: CustomEvent) =>
-                                    this._handleFormValueChanged(
-                                            ev,
-                                            ev.detail.propertyName || "language")}
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._languageOptions,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.language || 'en'}
+                                .label=${"Language"}
+                                propertyName="language"
+                                @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
-                        <div class="row">
-                            <div class="label">Log Level</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Log Level"
-                                        .value=${this._config.logLevel || 'info'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.logLevel = target.value || 'warn';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    <mwc-list-item value="debug">Debug</mwc-list-item>
-                                    <mwc-list-item value="info">Info</mwc-list-item>
-                                    <mwc-list-item value="warn">Warning</mwc-list-item>
-                                    <mwc-list-item value="error">Error</mwc-list-item>
-                                    <mwc-list-item value="none">None</mwc-list-item>
-                                </ha-select>
-                            </div>
-                        </div>
-
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: [
+                                            { value: "debug", label: "Debug" },
+                                            { value: "info", label: "Info" },
+                                            { value: "warn", label: "Warning" },
+                                            { value: "error", label: "Error" },
+                                            { value: "none", label: "None" }
+                                        ],
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.logLevel || 'info'}
+                                .label=${"Log Level"}
+                                propertyName="logLevel"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
                     </div>
                 </ha-expansion-panel>
 
@@ -1313,30 +1286,25 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="label">Number of Photos</div>
-                                <div class="value">
-                                    <ha-textfield
-                                            label="Number of Photos"
-                                            type="number"
-                                            min="1"
-                                            max="30"
-                                            .value=${this._config.imageConfig?.count || '5'}
-                                            @value-changed=${(ev: CustomEvent) => this._handleFormValueChanged(
-                                                    ev,
-                                                    "imageConfig.count",
-
-                                                    (value: any) => {
-                                                        // Parse the value as a number and ensure it's within range
-                                                        let count = parseInt(value || '5', 10);
-                                                        if (isNaN(count) || count < 1) count = 1;
-                                                        if (count > 30) count = 30;
-                                                        return count;
-                                                    }
-                                            )}
-                                    ></ha-textfield>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                    min="1"
+                                    max="30"
+                                    .hass=${this.hass}
+                                    .selector=${{text: {
+                                        type: 'number',
+                                        }}}
+                                    .value=${this._config.imageConfig?.count || '5'}
+                                    .label= ${"Number of Photos"}
+                                    propertyName="imageConfig.count"
+                                    transformData=${(value: any) => {
+                                        // Parse the value as a number and ensure it's within range
+                                        let count = parseInt(value || '5', 10);
+                                        if (isNaN(count) || count < 1) count = 1;
+                                        if (count > 30) count = 30;
+                                        return count;
+                                    }}
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             <div class="info-text">
                                 An API key is required. Without a valid API key, the Unsplash image source will not
