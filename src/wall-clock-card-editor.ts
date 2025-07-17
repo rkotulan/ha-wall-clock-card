@@ -1130,344 +1130,154 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Weather Forecast</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Show Weather</div>
-                            <div class="value">
-                                <ha-switch
-                                        .checked=${this._config.showWeather || false}
-                                        @change=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-
-                                            const target = ev.target as HTMLElement & { checked?: boolean };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.showWeather = target.checked || false;
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-switch>
-                                <span>Display weather forecast</span>
-                            </div>
-                        </div>
+                        <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{boolean: {}}}
+                            .value=${this._config.showWeather || false}
+                            .label=${"Show Weather"}
+                            .helper=${"Display weather forecast"}
+                            propertyName="showWeather"
+                            @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
                         ${this._config.showWeather ? html`
-                            <div class="row">
-                                <div class="label">Weather Title</div>
-                                <div class="value">
-                                    <ha-textfield
-                                            label="Title for weather section"
-                                            .value=${this._config.weatherTitle || 'Weather'}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    text: {
+                                        type: "text"
+                                    }
+                                }}
+                                .value=${this._config.weatherTitle || 'Weather'}
+                                .label=${"Weather Title"}
+                                propertyName="weatherTitle"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.weatherTitle = target.value || 'Weather';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    ></ha-textfield>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="label">Weather Provider</div>
-                                <div class="value">
-                                    <ha-select
-                                            label="Provider"
-                                            .value=${this._config.weatherProvider || 'openweathermap'}
-                                            @click=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                            }}
-                                            @closed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.weatherProvider = target.value || 'openweathermap';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    >
-                                        ${this._weatherProviderOptions.map(
-                                                (option) => html`
-                                                    <mwc-list-item .value=${option.value}>${option.label}
-                                                    </mwc-list-item>`
-                                        )}
-                                    </ha-select>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._weatherProviderOptions,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.weatherProvider || 'openweathermap'}
+                                .label=${"Weather Provider"}
+                                propertyName="weatherProvider"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             ${this._config.weatherProvider === 'openweathermap' ? html`
-                                <div class="row">
-                                    <div class="label">API Key</div>
-                                    <div class="value">
-                                        <ha-textfield
-                                                label="OpenWeatherMap API Key"
-                                                .value=${this._config.weatherConfig?.apiKey || ''}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        text: {
+                                            type: "text"
+                                        }
+                                    }}
+                                    .value=${this._config.weatherConfig?.apiKey || ''}
+                                    .label=${"API Key"}
+                                    .helper=${"OpenWeatherMap API Key"}
+                                    propertyName="weatherConfig.apiKey"
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
 
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target || !this._config) return;
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: -90,
+                                            max: 90,
+                                            step: 0.0001,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${this._config.weatherConfig?.latitude || 50.0755}
+                                    .label=${"Latitude"}
+                                    propertyName="weatherConfig.latitude"
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
 
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: -180,
+                                            max: 180,
+                                            step: 0.0001,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${this._config.weatherConfig?.longitude || 14.4378}
+                                    .label=${"Longitude"}
+                                    propertyName="weatherConfig.longitude"
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
 
-                                                    // Update the new config
-                                                    newConfig.weatherConfig = {
-                                                        ...newConfig.weatherConfig || {},
-                                                        apiKey: target.value || ''
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        ></ha-textfield>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="label">Location</div>
-                                    <div class="value">
-                                        <ha-textfield
-                                                label="Latitude"
-                                                type="number"
-                                                step="0.0001"
-                                                .value=${this._config.weatherConfig?.latitude || 50.0755}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Update the new config
-                                                    newConfig.weatherConfig = {
-                                                        ...newConfig.weatherConfig || {},
-                                                        latitude: parseFloat(target.value || '50.0755')
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        ></ha-textfield>
-                                        <ha-textfield
-                                                label="Longitude"
-                                                type="number"
-                                                step="0.0001"
-                                                .value=${this._config.weatherConfig?.longitude || 14.4378}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Update the new config
-                                                    newConfig.weatherConfig = {
-                                                        ...newConfig.weatherConfig || {},
-                                                        longitude: parseFloat(target.value || '14.4378')
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        ></ha-textfield>
-                                    </div>
-                                </div>
-
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        select: {
+                                            options: this._unitsOptions,
+                                            mode: 'dropdown'
+                                        }
+                                    }}
+                                    .value=${this._config.weatherConfig?.units || 'metric'}
+                                    .label=${"Units"}
+                                    propertyName="weatherConfig.units"
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
                             ` : ''}
 
-                            ${this._config.weatherProvider === 'openweathermap' ? html`
-                                <div class="row">
-                                    <div class="label">Units</div>
-                                    <div class="value">
-                                        <ha-select
-                                                label="Units"
-                                                .value=${this._config.weatherConfig?.units || 'metric'}
-                                                @click=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @closed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Update the new config
-                                                    newConfig.weatherConfig = {
-                                                        ...newConfig.weatherConfig || {},
-                                                        units: target.value || 'metric'
-                                                    };
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        >
-                                            ${this._unitsOptions.map(
-                                                    (option) => html`
-                                                        <mwc-list-item .value=${option.value}>${option.label}
-                                                        </mwc-list-item>`
-                                            )}
-                                        </ha-select>
-                                    </div>
-                                </div>
-                            ` : ''}
-
-                            <div class="row">
-                                <div class="label">Display Mode</div>
-                                <div class="value">
-                                    <ha-select
-                                            label="Display Mode"
-                                            .value=${this._config.weatherDisplayMode || 'both'}
-                                            @click=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                            }}
-                                            @closed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.weatherDisplayMode = target.value as 'current' | 'forecast' | 'both' || 'both';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    >
-                                        ${this._weatherDisplayModeOptions.map(
-                                                (option) => html`
-                                                    <mwc-list-item .value=${option.value}>${option.label}
-                                                    </mwc-list-item>`
-                                        )}
-                                    </ha-select>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._weatherDisplayModeOptions,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.weatherDisplayMode || 'both'}
+                                .label=${"Display Mode"}
+                                propertyName="weatherDisplayMode"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             ${(this._config.weatherDisplayMode === 'forecast' || this._config.weatherDisplayMode === 'both') ? html`
-                                <div class="row">
-                                    <div class="label">Forecast Days</div>
-                                    <div class="value">
-                                        <ha-slider
-                                                min="1"
-                                                max="7"
-                                                step="1"
-                                                pin
-                                                .value=${this._config.weatherForecastDays || 3}
-                                                @value-changed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    const value = typeof ev.detail.value === 'string' ? parseInt(ev.detail.value, 10) : ev.detail.value;
-                                                    const detail = {
-                                                        value,
-                                                        propertyName: 'weatherForecastDays'
-                                                    };
-                                                    const newEvent = new CustomEvent('value-changed', {detail});
-                                                    this._handleFormValueChanged(newEvent);
-                                                }}
-                                        ></ha-slider>
-                                        <span>${this._config.weatherForecastDays || 3} days</span>
-                                    </div>
-                                </div>
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: 1,
+                                            max: 7,
+                                            step: 1,
+                                            mode: "slider"
+                                        }
+                                    }}
+                                    .value=${this._config.weatherForecastDays || 3}
+                                    .label=${"Forecast Days"}
+                                    .helper=${`${this._config.weatherForecastDays || 3} days`}
+                                    propertyName="weatherForecastDays"
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
 
-                                <div class="row">
-                                    <div class="label">Update Interval</div>
-                                    <div class="value">
-                                        <ha-textfield
-                                                label="Update interval in minutes (min: 1)"
-                                                type="number"
-                                                min="1"
-                                                .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & {
-                                                        value?: string | number
-                                                    };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Get the value as a number
-                                                    let intervalMinutes = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
-
-                                                    // Ensure minimum of 1 minute
-                                                    intervalMinutes = Math.max(intervalMinutes || 30, 1);
-
-                                                    // Convert minutes to seconds for internal storage
-                                                    const intervalSeconds = intervalMinutes * 60;
-
-                                                    // Update the new config
-                                                    newConfig.weatherUpdateInterval = intervalSeconds;
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
-                                                }}
-                                        ></ha-textfield>
-                                        <span>minutes</span>
-                                    </div>
-                                </div>
+                                <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: 1,
+                                            step: 1,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
+                                    .label=${"Update Interval"}
+                                    .helper=${"Update interval in minutes (min: 1)"}
+                                    propertyName="weatherUpdateInterval"
+                                    .transformData=${(value: number) => value * 60}
+                                    @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
                             ` : ''}
                         ` : ''}
                     </div>
