@@ -453,49 +453,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
-    // Get schema for General section
-    // private _getGeneralSchema() {
-    //     return [
-    //         {
-    //             name: 'fontColor',
-    //             label: 'Font Color',
-    //             selector: {
-    //                 color_rgb: {}
-    //             }
-    //         }//,
-    //         // {
-    //         //     name: 'language',
-    //         //     label: 'Language',
-    //         //     selector: {
-    //         //         select: {
-    //         //             options: this._languageOptions
-    //         //         }
-    //         //     }
-    //         // },
-    //         // {
-    //         //     name: 'logLevel',
-    //         //     label: 'Log Level',
-    //         //     selector: {
-    //         //         select: {
-    //         //             options: [
-    //         //                 { value: 'debug', label: 'Debug' },
-    //         //                 { value: 'info', label: 'Info' },
-    //         //                 { value: 'warn', label: 'Warning' },
-    //         //                 { value: 'error', label: 'Error' },
-    //         //                 { value: 'none', label: 'None' }
-    //         //             ],
-    //         //             mode: 'dropdown'
-    //         //         }
-    //         //     }
-    //         // }
-    //     ];
-    // }
-
-    // Compute label for form fields
-    // private _computeLabel(schema: any) {
-    //     return schema.label || schema.name;
-    // }
-
     // Handle form value changes
     private _handleFormValueChanged(ev: CustomEvent) {
         ev.stopPropagation();
@@ -663,7 +620,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 .selector=${{color_hex: ""}}
                                 .value=${this._config.fontColor}
                                 .label= ${"Font Color"}
-                                propertyName="fontColor"
+                                .propertyName="fontColor"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector
@@ -676,7 +633,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 }}
                                 .value=${this._config.language || 'en'}
                                 .label=${"Language"}
-                                propertyName="language"
+                                .propertyName="language"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
@@ -696,7 +653,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 }}
                                 .value=${this._config.logLevel || 'info'}
                                 .label=${"Log Level"}
-                                propertyName="logLevel"
+                                .propertyName="logLevel"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                     </div>
@@ -836,109 +793,52 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Background</h3>
                     <div class="content">
-                        <div class="row">
-                            <div class="label">Image Source</div>
-                            <div class="value">
-                                <ha-select
-                                        label="Image Source"
-                                        .value=${this._config.imageSource || 'none'}
-                                        @click=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                        }}
-                                        @closed=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: this._imageSourceOptions,
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.imageSource || 'none'}
+                                .label=${"Image Source"}
+                                propertyName="imageSource"                                
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    number: {
+                                        min: 0,
+                                        max: 1,
+                                        step: 0.05,
+                                        mode: "slider",
+                                        slider_ticks: true
+                                    }
+                                }}
+                                .value=${this._config.backgroundOpacity !== undefined ? this._config.backgroundOpacity : 0.5}
+                                .label=${"Background Opacity"}
+                                propertyName="backgroundOpacity"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
 
-                                            const target = ev.target as HTMLElement & { value?: string };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.imageSource = target.value;
-
-                                            // For backward compatibility
-                                            newConfig.useOnlineImages = target.value !== 'none' && target.value !== 'local';
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                >
-                                    ${this._imageSourceOptions.map(
-                                            (option) => html`
-                                                <mwc-list-item .value=${option.value}>${option.label}</mwc-list-item>`
-                                    )}
-                                </ha-select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="label">Background Opacity</div>
-                            <div class="value">
-                                <ha-slider
-                                        min="0"
-                                        max="1"
-                                        step="0.05"
-                                        pin
-                                        .value=${this._config.backgroundOpacity !== undefined ? this._config.backgroundOpacity : 0.5}
-                                        @change=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                            ev.preventDefault();
-
-                                            const target = ev.target as HTMLElement & { value?: string | number };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.backgroundOpacity = typeof target.value === 'string' ? parseFloat(target.value) : target.value;
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-slider>
-                                <span>${this._config.backgroundOpacity !== undefined ? this._config.backgroundOpacity : 0.5}</span>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="label">Rotation Interval (seconds)</div>
-                            <div class="value">
-                                <ha-slider
-                                        min="30"
-                                        max="300"
-                                        step="10"
-                                        pin
-                                        .value=${this._config.backgroundRotationInterval || 90}
-                                        @change=${(ev: CustomEvent) => {
-                                            ev.stopPropagation();
-                                            ev.preventDefault();
-
-                                            const target = ev.target as HTMLElement & { value?: string | number };
-                                            if (!target || !this._config) return;
-
-                                            // Create a deep copy of the config
-                                            const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                            // Update the new config
-                                            newConfig.backgroundRotationInterval = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
-
-                                            // Update the local config reference
-                                            this._config = newConfig;
-
-                                            // Fire the config-changed event with the new config
-                                            fireEvent(this, 'config-changed', {config: newConfig});
-                                        }}
-                                ></ha-slider>
-                                <span>${this._config.backgroundRotationInterval || 90} seconds</span>
-                            </div>
-                        </div>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    number: {
+                                        min: 30,
+                                        max: 300,
+                                        step: 10,
+                                        mode: "slider",
+                                        slider_ticks: true
+                                    }
+                                }}
+                                .value=${this._config.backgroundRotationInterval || 90}
+                                .label=${"Rotation Interval (sec)"}
+                                propertyName="backgroundRotationInterval"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
                     </div>
                 </ha-expansion-panel>
 
@@ -1582,26 +1482,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                 step="1"
                                                 pin
                                                 .value=${this._config.weatherForecastDays || 3}
-                                                @change=${(ev: CustomEvent) => {
+                                                @value-changed=${(ev: CustomEvent) => {
                                                     ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & {
-                                                        value?: string | number
+                                                    const value = typeof ev.detail.value === 'string' ? parseInt(ev.detail.value, 10) : ev.detail.value;
+                                                    const detail = {
+                                                        value,
+                                                        propertyName: 'weatherForecastDays'
                                                     };
-                                                    if (!target || !this._config) return;
-
-                                                    // Create a deep copy of the config
-                                                    const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                    // Update the new config
-                                                    newConfig.weatherForecastDays = typeof target.value === 'string' ? parseInt(target.value, 10) : target.value;
-
-                                                    // Update the local config reference
-                                                    this._config = newConfig;
-
-                                                    // Fire the config-changed event with the new config
-                                                    fireEvent(this, 'config-changed', {config: newConfig});
+                                                    const newEvent = new CustomEvent('value-changed', { detail });
+                                                    this._handleFormValueChanged(newEvent);
                                                 }}
                                         ></ha-slider>
                                         <span>${this._config.weatherForecastDays || 3} days</span>
@@ -1710,32 +1599,20 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             step="1"
                                             pin
                                             .value=${this._config.transportation?.maxDepartures || 2}
-                                            @change=${(ev: CustomEvent) => {
+                                            @value-changed=${(ev: CustomEvent) => {
                                                 ev.stopPropagation();
-                                                ev.preventDefault();
+                                                if (!this._config || !this._config.transportation) return;
 
-                                                const target = ev.target as HTMLElement & {
-                                                    value?: string | number
+                                                const value = typeof ev.detail.value === 'string' ? parseInt(ev.detail.value, 10) : ev.detail.value;
+                                                const detail = {
+                                                    value,
+                                                    propertyName: 'transportation.maxDepartures'
                                                 };
-                                                if (!target || !this._config || !this._config.transportation) return;
+                                                const newEvent = new CustomEvent('value-changed', { detail });
+                                                this._handleFormValueChanged(newEvent);
 
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Update the new config
-                                                newConfig.transportation = {
-                                                    ...newConfig.transportation,
-                                                    maxDepartures: typeof target.value === 'string' ? parseInt(target.value, 10) : target.value
-                                                };
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Reload stops
+                                                // Reload stops after the config has been updated
                                                 this._loadStops();
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
                                             }}
                                     ></ha-slider>
                                     <span>${this._config.transportation?.maxDepartures || 2} departures</span>

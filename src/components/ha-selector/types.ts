@@ -33,7 +33,7 @@ export type Selector =
     // | LocationSelector
     // | MediaSelector
     // | NavigationSelector
-    // | NumberSelector
+     | NumberSelector
     // | ObjectSelector
     // | AssistPipelineSelector
     // | QRCodeSelector
@@ -108,5 +108,16 @@ export interface StringSelector {
         suffix?: string;
         autocomplete?: string;
         multiple?: true;
+    } | null;
+}
+
+export interface NumberSelector {
+    number: {
+        min?: number;
+        max?: number;
+        step?: number | "any";
+        mode?: "box" | "slider";
+        unit_of_measurement?: string;
+        slider_ticks?: boolean;
     } | null;
 }
