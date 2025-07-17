@@ -1,7 +1,7 @@
 import {css, html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
-import {Selector} from "./types";
+import {LabelPosition, Selector} from "./types";
 
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
@@ -24,10 +24,15 @@ export class HaRowSelector extends LitElement {
     // Add the new transformData property
     @property({attribute: false}) public transformData?: (value: any) => any;
 
+    // Add the labelPosition property
+    @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
+
     protected render() {
         return html`
-            <div class="row">
-                <div class="label">${this.label}</div>
+            <div class="row ${this.labelPosition.toLowerCase()}">
+                ${this.label && this.labelPosition !== LabelPosition.Hidden ? html`
+                    <div class="label">${this.label}</div>
+                ` : ''}
                 <div class="value">
                     <ha-selector
                         .hass=${this.hass}
@@ -66,19 +71,45 @@ export class HaRowSelector extends LitElement {
             align-items: center;
         }
 
-        .label {
+        /* Default style for left position */
+        .row.left {
+            flex-direction: row;
+        }
+
+        .row.left .label {
             flex: 0 0 30%;
             font-weight: 500;
         }
 
+        /* Style for top position */
+        .row.top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .row.top .label {
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .row.top .value {
+            width: 100%;
+        }
+
+        /* Common styles */
         .value {
             flex: 1;
             display: flex;
             align-items: center;
+            overflow: hidden; /* Already present */
+            text-overflow: ellipsis; /* Add this */
+            white-space: nowrap; /* Add this */
         }
 
         ha-selector {
             width: 100%;
+            overflow: hidden; /* Add this */
+            text-overflow: ellipsis; /* Add this */
         }
     `;
 }

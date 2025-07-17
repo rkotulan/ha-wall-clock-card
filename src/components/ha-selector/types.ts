@@ -1,4 +1,3 @@
-
 // https://github.com/elenagalun/front/blob/dev/src/data/selector.ts#L346
 export type Selector =
     // | ActionSelector
@@ -6,8 +5,8 @@ export type Selector =
     // | AreaSelector
     // | AreaFilterSelector
     // | AttributeSelector
-    // | BooleanSelector
-    // | ButtonToggleSelector
+    | BooleanSelector
+    | ButtonToggleSelector
     | ColorRGBSelector
     | ColorHexSelector
     // | ColorTempSelector
@@ -22,7 +21,7 @@ export type Selector =
     // | FloorSelector
     // | LegacyDeviceSelector
     // | DurationSelector
-    // | EntitySelector
+    | EntitySelector
     // | LegacyEntitySelector
     // | FileSelector
     // | IconSelector
@@ -33,17 +32,17 @@ export type Selector =
     // | LocationSelector
     // | MediaSelector
     // | NavigationSelector
-     | NumberSelector
+    | NumberSelector
     // | ObjectSelector
     // | AssistPipelineSelector
     // | QRCodeSelector
-     | SelectSelector
-     | SelectorSelector
+    | SelectSelector
+    | SelectorSelector
     // | StateSelector
     // | StatisticSelector
-     | StringSelector
+    | StringSelector
     // | STTSelector
-    // | TargetSelector
+    | TargetSelector
     // | TemplateSelector
     // | ThemeSelector
     // | TimeSelector
@@ -54,7 +53,7 @@ export type Selector =
     // | UiColorSelector
     // | UiStateContentSelector
     // | BackupLocationSelector;
- ;
+    ;
 
 export interface ColorRGBSelector {
     color_rgb: {} | null;
@@ -120,4 +119,51 @@ export interface NumberSelector {
         unit_of_measurement?: string;
         slider_ticks?: boolean;
     } | null;
+}
+
+interface DeviceSelectorFilter {
+    integration?: string;
+    manufacturer?: string;
+    model?: string;
+}
+
+interface EntitySelectorFilter {
+    integration?: string;
+    domain?: string | readonly string[];
+    device_class?: string | readonly string[];
+    supported_features?: number | [number];
+}
+
+export interface TargetSelector {
+    target: {
+        entity?: EntitySelectorFilter | readonly EntitySelectorFilter[];
+        device?: DeviceSelectorFilter | readonly DeviceSelectorFilter[];
+    } | null;
+}
+
+export interface EntitySelector {
+    entity: {
+        multiple?: boolean;
+        include_entities?: string[];
+        exclude_entities?: string[];
+        filter?: EntitySelectorFilter | readonly EntitySelectorFilter[];
+    } | null;
+}
+
+export interface BooleanSelector {
+    boolean: {} | null;
+}
+
+export interface ButtonToggleSelector {
+    button_toggle: {
+        options: readonly string[] | readonly SelectOption[];
+        translation_key?: string;
+        sort?: boolean;
+    } | null;
+}
+
+export enum LabelPosition {
+    Left = "left",
+    Top = "top",
+    Hidden = "hidden"
 }

@@ -1,4 +1,4 @@
-import {LitElement, html, css} from 'lit';
+import {LitElement, html, css, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
@@ -6,18 +6,15 @@ import {WallClockConfig, SensorConfig} from './wall-clock-card';
 import {
     BackgroundImage,
     TimeOfDay,
-    Weather,
-    FindAttributeInPath,
-    ValidWeather,
-    ValidTimeOfDay
+    Weather
 } from './image-sources/image-source';
 import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
 import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
-import {logger} from './utils/logger';
 import {setPropertyByPath} from './utils';
+import {LabelPosition} from "./components/ha-selector/types";
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -26,6 +23,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Array}) _sensors: SensorConfig[] = [];
     @property({type: Array}) _backgroundImages: BackgroundImage[] = [];
     @property({type: Array}) _stops: TransportationStopConfig[] = [];
+    @property({type: Array}) _sensorsWithFilesAttr: string[] = [];
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -37,6 +35,30 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         this._languageOptions.forEach(option => {
             console.log(option);
         })
+    }
+
+    updated(changedProps: PropertyValues) {
+        super.updated(changedProps);
+
+        // If hass changed, update the list of sensors with files attribute
+        if (changedProps.has('hass') && this.hass) {
+            this._updateSensorsWithFilesAttr();
+        }
+    }
+
+    private _updateSensorsWithFilesAttr() {
+        if (!this.hass) return;
+
+        // Filter sensor entities that have a files attribute
+        this._sensorsWithFilesAttr = Object.keys(this.hass.states)
+            .filter(entityId => {
+                // Check if it's a sensor
+                if (!entityId.startsWith('sensor.')) return false;
+
+                // Check if it has a files attribute
+                const entity = this.hass!.states[entityId];
+                return entity && entity.attributes && entity.attributes.files !== undefined;
+            });
     }
 
     // Time format options
@@ -258,26 +280,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
-    private _sensorChanged(index: number, field: string, value: string): void {
-        this._sensors = this._sensors.map((sensor, i) => {
-            if (i === index) {
-                return {...sensor, [field]: value};
-            }
-            return sensor;
-        });
-        // Update the config with a deep copy
-        if (this._config) {
-            // Create a deep copy of the config
-            const newConfig = JSON.parse(JSON.stringify(this._config));
-            newConfig.sensors = [...this._sensors];
-
-            // Update the local config reference
-            this._config = newConfig;
-
-            // Fire the config-changed event with the new config
-            fireEvent(this, 'config-changed', {config: newConfig});
-        }
-    }
 
     private _addStop(): void {
         this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
@@ -404,39 +406,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         this._updateBackgroundImagesConfig();
     }
 
-    private _updateBackgroundImage(index: number, updatedImage: Partial<BackgroundImage>): void {
-        this._backgroundImages = this._backgroundImages.map((img, i) => {
-            if (i === index) {
-                const updatedImg = {...img, ...updatedImage};
-
-                // If URL was updated and weather or timeOfDay are set to "all" or "unspecified",
-                // try to auto-detect them from the URL
-                if (updatedImage.url && updatedImg.url) {
-                    // Auto-detect weather if it's set to "all"
-                    if (updatedImg.weather === Weather.All) {
-                        const detectedWeather = FindAttributeInPath(updatedImg.url, ValidWeather);
-                        if (detectedWeather) {
-                            updatedImg.weather = detectedWeather as Weather;
-                            logger.debug(`Auto-detected weather: ${updatedImg.weather} from URL: ${updatedImg.url}`);
-                        }
-                    }
-
-                    // Auto-detect timeOfDay if it's set to "unspecified"
-                    if (updatedImg.timeOfDay === TimeOfDay.Unspecified) {
-                        const detectedTimeOfDay = FindAttributeInPath(updatedImg.url, ValidTimeOfDay);
-                        if (detectedTimeOfDay) {
-                            updatedImg.timeOfDay = detectedTimeOfDay as TimeOfDay;
-                            logger.debug(`Auto-detected timeOfDay: ${updatedImg.timeOfDay} from URL: ${updatedImg.url}`);
-                        }
-                    }
-                }
-
-                return updatedImg;
-            }
-            return img;
-        });
-        this._updateBackgroundImagesConfig();
-    }
 
     private _updateBackgroundImagesConfig(): void {
         // Update the config with a deep copy
@@ -492,6 +461,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 flex: 1;
                 display: flex;
                 align-items: center;
+                overflow: hidden;
             }
 
 
@@ -526,6 +496,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             .sensor-actions {
                 flex: 0 0 40px;
                 text-align: center;
+                margin-top: 20px;
             }
 
             .image-row {
@@ -606,8 +577,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             return html``;
         }
 
-        // Get all available entities for dropdown
-        const entities = Object.keys(this.hass.states).sort();
 
         return html`
             <div class="form-container">
@@ -620,7 +589,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 .selector=${{color_hex: ""}}
                                 .value=${this._config.fontColor}
                                 .label= ${"Font Color"}
-                                .propertyName="fontColor"
+                                propertyName="fontColor"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector
@@ -633,7 +602,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 }}
                                 .value=${this._config.language || 'en'}
                                 .label=${"Language"}
-                                .propertyName="language"
+                                propertyName="language"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
@@ -642,18 +611,18 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 .selector=${{
                                     select: {
                                         options: [
-                                            { value: "debug", label: "Debug" },
-                                            { value: "info", label: "Info" },
-                                            { value: "warn", label: "Warning" },
-                                            { value: "error", label: "Error" },
-                                            { value: "none", label: "None" }
+                                            {value: "debug", label: "Debug"},
+                                            {value: "info", label: "Info"},
+                                            {value: "warn", label: "Warning"},
+                                            {value: "error", label: "Error"},
+                                            {value: "none", label: "None"}
                                         ],
                                         mode: 'dropdown'
                                     }
                                 }}
                                 .value=${this._config.logLevel || 'info'}
-                                .label=${"Log Level"}
-                                .propertyName="logLevel"
+                                .label= ${"Log Level"}
+                                propertyName="logLevel"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                     </div>
@@ -672,7 +641,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.timeFormat?.hour12 ? 'true' : 'false'}
-                                .label=${"Hour Format"}
+                                .label= ${"Hour Format"}
                                 propertyName="timeFormat.hour12"
                                 .transformData=${(value: string) => value === 'true'}
                                 @value-changed=${this._handleFormValueChanged}
@@ -687,7 +656,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.timeFormat?.hour || '2-digit'}
-                                .label=${"Hour Display"}
+                                .label= ${"Hour Display"}
                                 propertyName="timeFormat.hour"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -701,7 +670,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.timeFormat?.minute || '2-digit'}
-                                .label=${"Minute Display"}
+                                .label= ${"Minute Display"}
                                 propertyName="timeFormat.minute"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -715,7 +684,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.timeFormat?.second === undefined ? 'undefined' : this._config.timeFormat?.second}
-                                .label=${"Second Display"}
+                                .label= ${"Second Display"}
                                 propertyName="timeFormat.second"
                                 .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
                                 @value-changed=${this._handleFormValueChanged}
@@ -736,7 +705,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.dateFormat?.weekday || 'long'}
-                                .label=${"Weekday Display"}
+                                .label= ${"Weekday Display"}
                                 propertyName="dateFormat.weekday"
                                 .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
                                 @value-changed=${this._handleFormValueChanged}
@@ -751,7 +720,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.dateFormat?.month || 'long'}
-                                .label=${"Month Display"}
+                                .label= ${"Month Display"}
                                 propertyName="dateFormat.month"
                                 .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
                                 @value-changed=${this._handleFormValueChanged}
@@ -766,7 +735,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.dateFormat?.day === undefined ? 'undefined' : this._config.dateFormat?.day}
-                                .label=${"Day Display"}
+                                .label= ${"Day Display"}
                                 propertyName="dateFormat.day"
                                 .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
                                 @value-changed=${this._handleFormValueChanged}
@@ -781,7 +750,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.dateFormat?.year === undefined ? 'undefined' : this._config.dateFormat?.year}
-                                .label=${"Year Display"}
+                                .label= ${"Year Display"}
                                 propertyName="dateFormat.year"
                                 .transformData=${(value: string) => value === 'undefined' ? 'hidden' : value}
                                 @value-changed=${this._handleFormValueChanged}
@@ -802,8 +771,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.imageSource || 'none'}
-                                .label=${"Image Source"}
-                                propertyName="imageSource"                                
+                                .label= ${"Image Source"}
+                                propertyName="imageSource"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector
@@ -818,7 +787,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.backgroundOpacity !== undefined ? this._config.backgroundOpacity : 0.5}
-                                .label=${"Background Opacity"}
+                                .label= ${"Background Opacity"}
                                 propertyName="backgroundOpacity"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -835,7 +804,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.backgroundRotationInterval || 90}
-                                .label=${"Rotation Interval (sec)"}
+                                .label= ${"Rotation Interval (sec)"}
                                 propertyName="backgroundRotationInterval"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -859,18 +828,18 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             ${this._backgroundImages.map((image, index) => html`
                                 <div class="image-row">
                                     <div class="image-url">
-                                        <ha-textfield
-                                                label="Image URL"
-                                                .value=${image.url || ''}
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target) return;
-                                                    this._updateBackgroundImage(index, {url: target.value || ''});
+                                        <ha-row-selector
+                                                .hass=${this.hass}
+                                                .selector=${{
+                                                    text: {
+                                                        type: "text"
+                                                    }
                                                 }}
-                                        ></ha-textfield>
+                                                .value=${image.url || ''}
+                                                .label= ${"Image URL"}
+                                                propertyName="backgroundImages.${index}.url"
+                                                @value-changed=${this._handleFormValueChanged}
+                                        ></ha-row-selector>
                                     </div>
                                     <div class="image-actions">
                                         <ha-icon-button
@@ -879,50 +848,38 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         ></ha-icon-button>
                                     </div>
                                     <div class="image-weather">
-                                        <ha-select
-                                                label="Weather Condition"
+                                        <ha-row-selector
+                                                .hass=${this.hass}
+                                                .selector=${{
+                                                    select: {
+                                                        options: Object.values(Weather).map(weather => ({
+                                                            value: weather,
+                                                            label: weather
+                                                        }))
+                                                    }
+                                                }}
                                                 .value=${image.weather}
-                                                @click=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @closed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @selected=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target) return;
-                                                    this._updateBackgroundImage(index, {weather: target.value as Weather});
-                                                }}
-                                        >
-                                            ${Object.values(Weather).map(weather => html`
-                                                <mwc-list-item .value=${weather}>${weather}</mwc-list-item>
-                                            `)}
-                                        </ha-select>
+                                                .label= ${"Weather Condition"}
+                                                propertyName="backgroundImages.${index}.weather"
+                                                @value-changed=${this._handleFormValueChanged}
+                                        ></ha-row-selector>
                                     </div>
                                     <div class="image-time">
-                                        <ha-select
-                                                label="Time of Day"
+                                        <ha-row-selector
+                                                .hass=${this.hass}
+                                                .selector=${{
+                                                    select: {
+                                                        options: Object.values(TimeOfDay).map(timeOfDay => ({
+                                                            value: timeOfDay,
+                                                            label: timeOfDay
+                                                        }))
+                                                    }
+                                                }}
                                                 .value=${image.timeOfDay}
-                                                @click=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @closed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                }}
-                                                @selected=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target) return;
-                                                    this._updateBackgroundImage(index, {timeOfDay: target.value as TimeOfDay});
-                                                }}
-                                        >
-                                            ${Object.values(TimeOfDay).map(timeOfDay => html`
-                                                <mwc-list-item .value=${timeOfDay}>${timeOfDay}</mwc-list-item>
-                                            `)}
-                                        </ha-select>
+                                                .label= ${"Time of Day"}
+                                                propertyName="backgroundImages.${index}.timeOfDay"
+                                                @value-changed=${this._handleFormValueChanged}
+                                        ></ha-row-selector>
                                     </div>
                                 </div>
                             `)}
@@ -980,9 +937,11 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     min="1"
                                     max="30"
                                     .hass=${this.hass}
-                                    .selector=${{text: {
-                                        type: 'number',
-                                        }}}
+                                    .selector=${{
+                                        text: {
+                                            type: 'number',
+                                        }
+                                    }}
                                     .value=${this._config.imageConfig?.count || '5'}
                                     .label= ${"Number of Photos"}
                                     propertyName="imageConfig.count"
@@ -1090,46 +1049,19 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 that contains an array of image URLs.
                             </div>
 
-                            <div class="row">
-                                <div class="label">Sensor Entity</div>
-                                <div class="value">
-                                    <ha-select
-                                            label="Entity"
-                                            .value=${this._config.imageConfig?.entity || ''}
-                                            @click=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                            }}
-                                            @closed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target || !this._config) return;
-
-                                                // Create a deep copy of the config
-                                                const newConfig = JSON.parse(JSON.stringify(this._config));
-
-                                                // Ensure imageConfig exists
-                                                if (!newConfig.imageConfig) {
-                                                    newConfig.imageConfig = {};
-                                                }
-
-                                                // Update the entity
-                                                newConfig.imageConfig.entity = target.value || '';
-
-                                                // Update the local config reference
-                                                this._config = newConfig;
-
-                                                // Fire the config-changed event with the new config
-                                                fireEvent(this, 'config-changed', {config: newConfig});
-                                            }}
-                                    >
-                                        ${entities.filter(entity => entity.startsWith('sensor.')).map(
-                                                (entity) => html`
-                                                    <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
-                                        )}
-                                    </ha-select>
-                                </div>
-                            </div>
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .labelPosition=${LabelPosition.Top}
+                                    .selector=${{
+                                        entity: {
+                                            include_entities: this._sensorsWithFilesAttr
+                                        }
+                                    }}
+                                    .value=${this._config.imageConfig?.entity || ''}
+                                    .label= ${"Sensor Entity"}
+                                    propertyName="imageConfig.entity"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
 
                             <div class="info-text">
                                 The sensor should have a "files" attribute that contains an array of image URLs.
@@ -1148,42 +1080,39 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     <div class="content">
                         ${this._sensors.map((sensor, index) => html`
                             <div class="sensor-row">
-                                <div class="sensor-entity">
-                                    <ha-select
-                                            label="Entity"
-                                            .value=${sensor.entity || ''}
-                                            @click=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                            }}
-                                            @closed=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target) return;
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            text: {
+                                                type: "text"
+                                            }
+                                        }}
+                                        .value=${sensor.label || ''}
+                                        .label=${"Label"}
+                                        .labelPosition=${LabelPosition.Top}
+                                        propertyName="sensors.${index}.label"
+                                        @value-changed=${this._handleFormValueChanged}
+                                        style="flex: 0 0 30%; margin-right: 8px; overflow: hidden;"
+                                ></ha-row-selector>
 
-                                                this._sensorChanged(index, 'entity', target.value || '');
-                                            }}
-                                    >
-                                        ${entities.map(
-                                                (entity) => html`
-                                                    <mwc-list-item .value=${entity}>${entity}</mwc-list-item>`
-                                        )}
-                                    </ha-select>
-                                </div>
-                                <div class="sensor-label">
-                                    <ha-textfield
-                                            label="Label"
-                                            .value=${sensor.label || ''}
-                                            @input=${(ev: CustomEvent) => {
-                                                ev.stopPropagation();
-                                                ev.preventDefault();
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            entity: {
+                                                filter: {
+                                                    domain: ["sensor", "binary_sensor", "input_text", "input_number", "input_datetime", "sun", "weather"]
+                                                }
+                                            }
+                                        }}
+                                        .value=${sensor.entity || ''}
+                                        .label=${"Entity"}
+                                        .labelPosition=${LabelPosition.Top}
+                                        propertyName="sensors.${index}.entity"
+                                        @value-changed=${this._handleFormValueChanged}
+                                        style="flex: 0 0 60%; overflow: hidden;"
+                                ></ha-row-selector>
 
-                                                const target = ev.target as HTMLElement & { value?: string };
-                                                if (!target) return;
-                                                this._sensorChanged(index, 'label', target.value || '');
-                                            }}
-                                    ></ha-textfield>
-                                </div>
                                 <div class="sensor-actions">
                                     <ha-icon-button
                                             .path=${'M19,13H5V11H19V13Z'}
@@ -1489,7 +1418,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                         value,
                                                         propertyName: 'weatherForecastDays'
                                                     };
-                                                    const newEvent = new CustomEvent('value-changed', { detail });
+                                                    const newEvent = new CustomEvent('value-changed', {detail});
                                                     this._handleFormValueChanged(newEvent);
                                                 }}
                                         ></ha-slider>
@@ -1608,7 +1537,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                                     value,
                                                     propertyName: 'transportation.maxDepartures'
                                                 };
-                                                const newEvent = new CustomEvent('value-changed', { detail });
+                                                const newEvent = new CustomEvent('value-changed', {detail});
                                                 this._handleFormValueChanged(newEvent);
 
                                                 // Reload stops after the config has been updated
