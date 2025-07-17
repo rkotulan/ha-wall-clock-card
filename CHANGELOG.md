@@ -8,6 +8,12 @@
 - **Removed direct URL method for Unsplash**: The direct URL method for Unsplash has been removed. An API key is now required to use the Unsplash image source.
 
 ### What's Changed
+- Refactored slider components to use centralized form value handling:
+  - Updated background opacity slider to use _handleFormValueChanged method
+  - Updated rotation interval slider to use _handleFormValueChanged method
+  - Updated forecast days slider to use _handleFormValueChanged method
+  - Updated max departures slider to use _handleFormValueChanged method
+  - Improved code maintainability with consistent event handling patterns
 - Added fade-in transition effect for the first displayed image
   - Improved visual experience with consistent transitions for all images
   - Eliminated abrupt appearance of the first image
@@ -338,6 +344,7 @@
 - Improved image relevance by incorporating weather and time context
 - Modified Unsplash image source to always use API when an API key is provided
 - Removed "Use API" toggle from the UI editor for Unsplash
+- Removed backward compatibility code for the deprecated `useOnlineImages` property
 
 ## 1.8.0
 
