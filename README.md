@@ -137,6 +137,7 @@ For detailed documentation, please see the following pages:
 - [Image Sources](docs/image-sources.md) - Available image sources and how to configure them
 - [Weather](docs/weather.md) - Weather configuration options
 - [Background Handling](docs/background-handling.md) - How background images are handled
+- [Bundle Analyzer](docs/bundle-analyzer.md) - How to analyze and optimize bundle size
 - [Development](docs/developer/development.md) - Information for developers
 
 ## License

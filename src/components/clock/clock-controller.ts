@@ -1,7 +1,6 @@
 import { ReactiveControllerHost } from 'lit';
 import { formatDate, ExtendedDateTimeFormatOptions } from '../../utils/localize/lokalify';
 import { BaseController } from '../../utils/controllers';
-import { DateTime } from 'luxon';
 
 export interface ClockControllerConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
@@ -118,10 +117,22 @@ export class ClockController extends BaseController {
         let hours: number, minutes: number, seconds: number;
 
         if (timeZone) {
-            const timeWithZone = DateTime.fromJSDate(now, timeZone ? { zone: timeZone } : undefined);
-            hours = timeWithZone.hour;
-            minutes = timeWithZone.minute;
-            seconds = timeWithZone.second;
+            // Use Intl.DateTimeFormat to get time components in the specified time zone
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timeZone,
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                hour12: false // Ensure 24-hour format for internal calculations
+            });
+
+            // Format the date and parse the components
+            const parts = formatter.formatToParts(now);
+
+            // Extract hour, minute, and second from the formatted parts
+            hours = parseInt(parts.find(part => part.type === 'hour')?.value || '0', 10);
+            minutes = parseInt(parts.find(part => part.type === 'minute')?.value || '0', 10);
+            seconds = parseInt(parts.find(part => part.type === 'second')?.value || '0', 10);
         } else {
             // Use local time if no time zone is specified
             hours = now.getHours();

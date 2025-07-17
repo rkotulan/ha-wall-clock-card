@@ -1,5 +1,4 @@
 import { ClockController } from '../src/components/clock/clock-controller';
-import { DateTime } from 'luxon';
 
 describe('ClockController', () => {
   // Mock the ReactiveControllerHost
@@ -127,7 +126,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (9:30:05)
-        const testDate = DateTime.local(2023, 1, 1, 9, 30, 5).toJSDate();
+        const testDate = new Date(2023, 0, 1, 9, 30, 5); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.seconds).toBe('5');
       });
@@ -138,7 +137,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (9:30:05)
-        const testDate = DateTime.local(2023, 1, 1, 9, 30, 5).toJSDate();
+        const testDate = new Date(2023, 0, 1, 9, 30, 5); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.seconds).toBe('05');
       });
@@ -166,13 +165,13 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (9:30:45 AM)
-        var testDate = DateTime.local(2023, 1, 1, 9, 30, 45).toJSDate();
+        var testDate = new Date(2023, 0, 1, 9, 30, 45); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.hours).toBe('09');
         expect(controller.ampm).toBe('AM');
 
         // Test PM hours (15:30:45 = 3:30:45 PM)
-        testDate = DateTime.local(2023, 1, 1, 15, 30, 45).toJSDate();
+        testDate = new Date(2023, 0, 1, 15, 30, 45); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.hours).toBe('03');
         expect(controller.ampm).toBe('PM');
@@ -184,7 +183,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (0:30:45 = 12:30:45 AM)
-        const testDate = DateTime.local(2023, 1, 1, 0, 30, 5).toJSDate();
+        const testDate = new Date(2023, 0, 1, 0, 30, 5); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.hours).toBe('12');
         expect(controller.ampm).toBe('AM');
@@ -196,7 +195,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (12:30:45 = 12:30:45 PM)
-        const testDate = DateTime.local(2023, 1, 1, 12, 30, 45).toJSDate();
+        const testDate = new Date(2023, 0, 1, 12, 30, 45); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
         expect(controller.hours).toBe('12');
         expect(controller.ampm).toBe('PM');
@@ -492,7 +491,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (9:05:12)
-        const testDate = DateTime.local(2023, 1, 1, 9, 5, 12).toJSDate();
+        const testDate = new Date(2023, 0, 1, 9, 5, 12); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, 'Europe/London');
 
         // Check that the time components are formatted correctly
@@ -512,7 +511,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (14:15:12)
-        const testDate = DateTime.local(2023, 1, 1, 14, 15, 12).toJSDate();
+        const testDate = new Date(2023, 0, 1, 14, 15, 12); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, 'Europe/London');
 
         // Check that the time components are formatted correctly
@@ -535,7 +534,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (9:05:12 AM)
-        const testDate = DateTime.local(2023, 1, 1, 9, 5, 12).toJSDate();
+        const testDate = new Date(2023, 0, 1, 9, 5, 12); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate,  undefined);
 
         // Check that the time components are formatted correctly in 12-hour format
@@ -557,7 +556,7 @@ describe('ClockController', () => {
         });
 
         // Call updateTime directly with custom time values (14:15:12 = 2:15:12 PM)
-        const testDate = DateTime.local(2023, 1, 1, 14, 15, 12).toJSDate();
+        const testDate = new Date(2023, 0, 1, 14, 15, 12); // Note: month is 0-indexed in JavaScript Date
         controller['updateTime'](testDate, undefined);
 
         // Check that the time components are formatted correctly in 12-hour format
