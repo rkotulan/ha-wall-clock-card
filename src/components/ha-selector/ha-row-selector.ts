@@ -1,20 +1,13 @@
 import {css, html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
-
-// Define the RowSelector interface
-interface RowSelector {
-    select: {
-        options: any[];
-        mode: string;
-    };
-}
+import {Selector} from "./types";
 
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
     @property({attribute: false}) public hass!: HomeAssistant;
 
-    @property({attribute: false}) public selector!: RowSelector;
+    @property({attribute: false}) public selector!: Selector;
 
     @property() public value?: string;
 
@@ -28,6 +21,9 @@ export class HaRowSelector extends LitElement {
 
     @property() public propertyName?: string;
 
+    // Add the new transformData property
+    @property({attribute: false}) public transformData?: (value: any) => any;
+
     protected render() {
         return html`
             <div class="row">
@@ -35,12 +31,7 @@ export class HaRowSelector extends LitElement {
                 <div class="value">
                     <ha-selector
                         .hass=${this.hass}
-                        .selector=${{
-                            select: {
-                                options: this.selector.select.options,
-                                mode: this.selector.select.mode || 'dropdown'
-                            }
-                        }}
+                        .selector=${this.selector}
                         .value=${this.value || ''}
                         .helper=${this.helper}
                         .disabled=${this.disabled}
@@ -54,13 +45,18 @@ export class HaRowSelector extends LitElement {
 
     private _valueChanged(ev: CustomEvent) {
         ev.stopPropagation();
-        const value = ev.detail.value;
+        let value = ev.detail.value;
+
+        // Apply transformation function if provided
+        if (this.transformData) {
+            value = this.transformData(value);
+        }
 
         // Use type assertion to allow additional properties
         fireEvent(this, "value-changed", {
             value,
             propertyName: this.propertyName
-        } as {value: unknown});
+        } as any);
     }
 
     static styles = css`
@@ -79,6 +75,10 @@ export class HaRowSelector extends LitElement {
             flex: 1;
             display: flex;
             align-items: center;
+        }
+
+        ha-selector {
+            width: 100%;
         }
     `;
 }
