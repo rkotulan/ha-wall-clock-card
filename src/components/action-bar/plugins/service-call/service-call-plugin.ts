@@ -1,5 +1,5 @@
 import { ActionHandler, ModuleActionConfig, ACTION_TYPE } from '../../types';
-import { ActionRegistry } from '../../types';
+import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 
 /**
  * Service Call plugin for the action bar
@@ -13,7 +13,7 @@ export const SERVICE_CALL_ACTION = ACTION_TYPE.CALL_SERVICE;
  * Configuration for a service call action
  */
 export interface ServiceCallActionConfig extends ModuleActionConfig {
-    type: typeof SERVICE_CALL_ACTION;
+    actionId: typeof SERVICE_CALL_ACTION;
     service: string;
     service_data?: Record<string, any>;
     confirmation?: boolean;
@@ -45,11 +45,39 @@ export const serviceCallHandler: ActionHandler<ServiceCallActionConfig> = (actio
 };
 
 /**
- * Register the service call handler with the ActionRegistry
+ * Service Call Plugin class that implements the ActionPlugin interface
+ */
+export class ServiceCallPlugin implements ActionPlugin<ServiceCallActionConfig> {
+    readonly actionId = SERVICE_CALL_ACTION;
+    readonly name = 'Call Service';
+    readonly description = 'Call a Home Assistant service';
+    readonly icon = 'mdi:flash';
+    readonly handler: ActionHandler<ServiceCallActionConfig> = serviceCallHandler;
+
+    readonly editorComponent = 'service-call-editor-plugin';
+
+    createActionConfig(
+        title: string,
+        icon: string,
+        service: string,
+        service_data?: Record<string, any>,
+        confirmation?: boolean,
+        confirmation_text?: string
+    ): ServiceCallActionConfig {
+        return createServiceCallAction(title, icon, service, service_data, confirmation, confirmation_text);
+    }
+
+    register(): void {
+        registerPlugin(this);
+    }
+}
+
+/**
+ * Register the service call handler with the PluginRegistry
  */
 export function registerServiceCallPlugin(): void {
-    const registry = ActionRegistry.getInstance();
-    registry.registerHandler<ServiceCallActionConfig>(SERVICE_CALL_ACTION, serviceCallHandler);
+    const plugin = new ServiceCallPlugin();
+    plugin.register();
 }
 
 /**
@@ -71,7 +99,7 @@ export function createServiceCallAction(
     confirmation_text?: string
 ): ServiceCallActionConfig {
     return {
-        type: SERVICE_CALL_ACTION,
+        actionId: SERVICE_CALL_ACTION,
         title,
         icon,
         service,

@@ -63,7 +63,7 @@ export class ClockController extends BaseController {
 
         // Force an immediate update of both time and date
         const now = new Date();
-        const language = this.config.language || 'cs';
+        const language = this.config.language || 'en';
         const timeZone = this.config.timeZone;
 
         // Update time
@@ -81,7 +81,7 @@ export class ClockController extends BaseController {
      */
     private update(): void {
         const now = new Date();
-        const language = this.config.language || 'cs';
+        const language = this.config.language || 'en';
         const timeZone = this.config.timeZone;
 
         // Update time

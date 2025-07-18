@@ -26,7 +26,7 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
      * Cast the action to ServiceCallActionConfig
      */
     get serviceCallAction(): ServiceCallActionConfig {
-        return this.action as ServiceCallActionConfig;
+        return this.actionConfig as ServiceCallActionConfig;
     }
 
     render() {

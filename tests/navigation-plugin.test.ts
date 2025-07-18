@@ -61,7 +61,7 @@ describe('Navigation Plugin', () => {
     it('should navigate to a path in the current tab', () => {
         // Create a navigation action
         const action: NavigationActionConfig = {
-            type: NAVIGATION_ACTION,
+            actionId: NAVIGATION_ACTION,
             title: 'Test Navigation',
             icon: 'mdi:test',
             path: '/test-path'
@@ -86,7 +86,7 @@ describe('Navigation Plugin', () => {
     it('should open a path in a new tab', () => {
         // Create a navigation action with target _blank
         const action: NavigationActionConfig = {
-            type: NAVIGATION_ACTION,
+            actionId: NAVIGATION_ACTION,
             title: 'Test Navigation',
             icon: 'mdi:test',
             path: '/test-path',
@@ -117,7 +117,7 @@ describe('Navigation Plugin', () => {
 
         // Verify the action configuration
         expect(action).toEqual({
-            type: NAVIGATION_ACTION,
+            actionId: NAVIGATION_ACTION,
             title: 'Test Navigation',
             icon: 'mdi:test',
             path: '/test-path',

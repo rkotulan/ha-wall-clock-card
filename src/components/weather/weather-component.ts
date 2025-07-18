@@ -208,8 +208,8 @@ export class WeatherComponent extends LitElement {
      * @returns The translated weather condition
      */
     private translateWeatherCondition(condition: string): string {
-        // Get language from config or default to Czech
-        const language = this.language || 'cs';
+        // Get language from config or default to English
+        const language = this.language || 'en';
 
         // Convert condition to a format suitable for path lookup (replace spaces with underscores)
         const normalizedCondition = condition.toLowerCase().replace(/ /g, '_');
@@ -230,8 +230,8 @@ export class WeatherComponent extends LitElement {
      * Format a date for display in the forecast
      */
     private formatForecastDate(date: Date): string {
-        // Get language from config or default to Czech
-        const language = this.language || 'cs';
+        // Get language from config or default to English
+        const language = this.language || 'en';
 
         // Format: "Mon", "Tue", etc.
         return formatDate(date, language, {weekday: 'short'});

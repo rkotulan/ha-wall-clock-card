@@ -1,5 +1,5 @@
 import { ActionHandler, ModuleActionConfig, ACTION_TYPE } from '../../types';
-import { ActionRegistry } from '../../types';
+import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 
 /**
  * Navigation plugin for the action bar
@@ -14,7 +14,7 @@ export const NAVIGATION_ACTION = ACTION_TYPE.NAVIGATE;
  * Configuration for a navigation action
  */
 export interface NavigationActionConfig extends ModuleActionConfig {
-    type: typeof NAVIGATION_ACTION;
+    actionId: typeof NAVIGATION_ACTION;
     path: string;
     target?: '_blank' | '_self'; // Optional target for the navigation
 }
@@ -39,11 +39,32 @@ export const navigationHandler: ActionHandler<NavigationActionConfig> = (action)
 };
 
 /**
- * Register the navigation handler with the ActionRegistry
+ * Navigation Plugin class that implements the ActionPlugin interface
+ */
+export class NavigationPlugin implements ActionPlugin<NavigationActionConfig> {
+    readonly actionId = NAVIGATION_ACTION;
+    readonly name = 'Navigate to Page';
+    readonly description = 'Navigate to a different page in Home Assistant';
+    readonly icon = 'mdi:arrow-right';
+    readonly handler: ActionHandler<NavigationActionConfig> = navigationHandler;
+
+    readonly editorComponent = 'navigation-editor-plugin';
+
+    createActionConfig(title: string, icon: string, path: string, target?: '_blank' | '_self'): NavigationActionConfig {
+        return createNavigationAction(title, icon, path, target);
+    }
+
+    register(): void {
+        registerPlugin(this);
+    }
+}
+
+/**
+ * Register the navigation handler with the PluginRegistry
  */
 export function registerNavigationPlugin(): void {
-    const registry = ActionRegistry.getInstance();
-    registry.registerHandler<NavigationActionConfig>(NAVIGATION_ACTION, navigationHandler);
+    const plugin = new NavigationPlugin();
+    plugin.register();
 }
 
 /**
@@ -61,7 +82,7 @@ export function createNavigationAction(
     target?: '_blank' | '_self'
 ): NavigationActionConfig {
     return {
-        type: NAVIGATION_ACTION,
+        actionId: NAVIGATION_ACTION,
         title,
         icon,
         path,
