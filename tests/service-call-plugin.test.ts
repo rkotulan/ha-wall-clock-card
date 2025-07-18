@@ -46,7 +46,7 @@ describe('Service Call Plugin', () => {
     it('should call a service without confirmation', () => {
         // Create a service call action
         const action: ServiceCallActionConfig = {
-            type: SERVICE_CALL_ACTION,
+            actionId: SERVICE_CALL_ACTION,
             title: 'Test Service Call',
             icon: 'mdi:test',
             service: 'light.turn_on',
@@ -73,7 +73,7 @@ describe('Service Call Plugin', () => {
 
         // Create a service call action with confirmation
         const action: ServiceCallActionConfig = {
-            type: SERVICE_CALL_ACTION,
+            actionId: SERVICE_CALL_ACTION,
             title: 'Test Service Call',
             icon: 'mdi:test',
             service: 'script.restart',
@@ -97,7 +97,7 @@ describe('Service Call Plugin', () => {
 
         // Create a service call action with confirmation
         const action: ServiceCallActionConfig = {
-            type: SERVICE_CALL_ACTION,
+            actionId: SERVICE_CALL_ACTION,
             title: 'Test Service Call',
             icon: 'mdi:test',
             service: 'script.restart',
@@ -127,7 +127,7 @@ describe('Service Call Plugin', () => {
 
         // Verify the action configuration
         expect(action).toEqual({
-            type: SERVICE_CALL_ACTION,
+            actionId: SERVICE_CALL_ACTION,
             title: 'Test Service Call',
             icon: 'mdi:test',
             service: 'light.turn_on',

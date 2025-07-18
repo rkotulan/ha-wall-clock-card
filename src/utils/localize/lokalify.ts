@@ -138,13 +138,30 @@ export function translate(key: string, language: string, defaultValue: string | 
   }
 
   // Get the translations for the specified language
-  const translations = loadedTranslations[language];
+  let translations = loadedTranslations[language];
+
+  // If translations for this language aren't loaded yet, load them synchronously
   if (!translations) {
-    return defaultValue !== null ? defaultValue : key;
+    // Use embedded translations directly
+    if (embeddedTranslations[language]) {
+      loadedTranslations[language] = embeddedTranslations[language];
+      translations = loadedTranslations[language];
+      logger.debug(`Loaded translations for ${language} on-demand`);
+    } else {
+      logger.warn(`No embedded translations found for ${language}`);
+      return defaultValue !== null ? defaultValue : key;
+    }
   }
 
   // Try to get the translation using the nested path
   const translation = getNestedValue(translations, key);
+
+  // Log the result for debugging
+  if (typeof translation === 'string') {
+    logger.debug(`Translation found for key "${key}" in language "${language}": "${translation}"`);
+  } else {
+    logger.debug(`No translation found for key "${key}" in language "${language}", using default: "${defaultValue !== null ? defaultValue : key}"`);
+  }
 
   // Return the translation if it exists and is a string, otherwise return the default value
   return typeof translation === 'string' ? translation : (defaultValue !== null ? defaultValue : key);

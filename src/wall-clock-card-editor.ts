@@ -7,19 +7,26 @@ import {
     BackgroundImage,
     TimeOfDay,
     Weather
-} from './image-sources/image-source';
+} from './image-sources';
 import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
-import { ActionType, ActionConfig, ActionBarAlignment } from './components/action-bar';
+import {
+    ActionConfig,
+    ActionBarAlignment,
+    ACTION_TYPE,
+} from './components/action-bar';
+import {PluginRegistry} from './components/action-bar';
+
 // These imports are needed for the custom elements to work
 // even though TypeScript thinks they are unused
 import './components/action-bar/plugins/navigator/navigation-editor-plugin';
 import './components/action-bar/plugins/service-call/service-call-editor-plugin';
-import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
+import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils';
 import {setPropertyByPath} from './utils';
 import {LabelPosition} from "./components/ha-selector/types";
+
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -37,10 +44,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Initialize language options from lokalify
         this._languageOptions = getLanguageOptions();
-
-        this._languageOptions.forEach(option => {
-            console.log(option);
-        })
     }
 
     updated(changedProps: PropertyValues) {
@@ -338,14 +341,111 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
+    /**
+     * Get the list of available action types from the PluginRegistry
+     * @returns An array of action type options for the dropdown
+     */
+    private _getActionTypeOptions(): { value: string, label: string }[] {
+        const registry = PluginRegistry.getInstance();
+        const plugins = registry.getAllPlugins();
+
+        return plugins.map(plugin => ({
+            value: plugin.actionId,
+            label: plugin.name
+        }));
+    }
+
+    /**
+     * Get the editor component tag name for an action type
+     * @param actionId The unique string identifier for the action type
+     * @returns The editor component tag name or null if no editor is available
+     */
+    private _getEditorComponentTagName(actionId: string): string | null {
+        // Use the PluginRegistry to get the plugin metadata
+        const registry = PluginRegistry.getInstance();
+        const plugin = registry.getPlugin(actionId);
+
+        if (!plugin) {
+            return null;
+        }
+
+        // Get the editor component tag name directly from the plugin if available
+        if (plugin.editorComponent) {
+            return plugin.editorComponent;
+        }
+
+        return null;
+    }
+
+    /**
+     * Create an editor component for an action
+     * @param action The action configuration
+     * @param index The index of the action in the actions array
+     * @returns The editor component or an empty string if no editor is available
+     */
+    private _createEditorComponent(action: ActionConfig, index: number) {
+        const tagName = this._getEditorComponentTagName(action.actionId);
+
+        if (!tagName) {
+            return '';
+        }
+
+        // Create the component dynamically using document.createElement
+        try {
+            // Create the element
+            const editorComponent = document.createElement(tagName);
+
+            // Set the properties
+            if (this.hass) {
+                (editorComponent as any).hass = this.hass;
+            }
+            (editorComponent as any).action = action;
+            (editorComponent as any).index = index;
+            (editorComponent as any).actionChanged = this._actionChanged.bind(this);
+
+            // Return the component
+            return editorComponent;
+        } catch (error) {
+            console.error(`Error creating editor component ${tagName}:`, error);
+            return '';
+        }
+    }
+
+
     private _addAction(): void {
-        // Default to a navigation action
-        const newAction: ActionConfig = {
-            type: ActionType.Navigate,
-            path: '/lovelace/0',
-            title: 'Home',
-            icon: 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z' // Home icon
-        };
+        // Get the list of available action types
+        const actionTypes = this._getActionTypeOptions();
+
+        // Default to the first available action type, or Navigate if none are available
+        const defaultType = actionTypes.length > 0 ? actionTypes[0].value : ACTION_TYPE.NAVIGATE;
+
+        // Create a new action with default values based on the type
+        let newAction: ActionConfig;
+
+        if (defaultType === ACTION_TYPE.NAVIGATE) {
+            newAction = {
+                actionId: ACTION_TYPE.NAVIGATE,
+                path: '/lovelace/0',
+                title: 'Home',
+                icon: 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z', // Home icon
+                target: '_self' // Default to current tab
+            };
+        } else if (defaultType === ACTION_TYPE.CALL_SERVICE) {
+            newAction = {
+                actionId: ACTION_TYPE.CALL_SERVICE,
+                service: 'light.toggle',
+                service_data: {entity_id: 'light.living_room'},
+                title: 'Toggle Light',
+                icon: 'mdi:lightbulb'
+            };
+        } else {
+            // Default fallback
+            newAction = {
+                actionId: defaultType,
+                title: 'Action',
+                icon: 'mdi:flash'
+            };
+        }
 
         this._actions = [...this._actions, newAction];
 
@@ -641,6 +741,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             }
 
             /* Action-specific styles */
+
             .action-item {
                 border: 1px solid var(--divider-color, #e0e0e0);
                 border-radius: 4px;
@@ -662,7 +763,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             .action-buttons {
                 flex: 0 0 40px;
                 text-align: center;
-                margin-top: 20px;
             }
 
             .image-row {
@@ -1297,152 +1397,152 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     <h3 slot="header">Weather Forecast</h3>
                     <div class="content">
                         <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${this._config.showWeather || false}
-                            .label=${"Show Weather"}
-                            .helper=${"Display weather forecast"}
-                            propertyName="showWeather"
-                            @value-changed=${this._handleFormValueChanged}
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${this._config.showWeather || false}
+                                .label= ${"Show Weather"}
+                                .helper= ${"Display weather forecast"}
+                                propertyName="showWeather"
+                                @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
                         ${this._config.showWeather ? html`
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    text: {
-                                        type: "text"
-                                    }
-                                }}
-                                .value=${this._config.weatherTitle || 'Weather'}
-                                .label=${"Weather Title"}
-                                propertyName="weatherTitle"
-                                @value-changed=${this._handleFormValueChanged}
-                            ></ha-row-selector>
-
-                            <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    select: {
-                                        options: this._weatherProviderOptions,
-                                        mode: 'dropdown'
-                                    }
-                                }}
-                                .value=${this._config.weatherProvider || 'openweathermap'}
-                                .label=${"Weather Provider"}
-                                propertyName="weatherProvider"
-                                @value-changed=${this._handleFormValueChanged}
-                            ></ha-row-selector>
-
-                            ${this._config.weatherProvider === 'openweathermap' ? html`
-                                <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{
                                         text: {
                                             type: "text"
                                         }
                                     }}
-                                    .value=${this._config.weatherConfig?.apiKey || ''}
-                                    .label=${"API Key"}
-                                    .helper=${"OpenWeatherMap API Key"}
-                                    propertyName="weatherConfig.apiKey"
+                                    .value=${this._config.weatherTitle || 'Weather'}
+                                    .label= ${"Weather Title"}
+                                    propertyName="weatherTitle"
                                     @value-changed=${this._handleFormValueChanged}
-                                ></ha-row-selector>
+                            ></ha-row-selector>
 
-                                <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{
-                                        number: {
-                                            min: -90,
-                                            max: 90,
-                                            step: 0.0001,
-                                            mode: "box"
-                                        }
-                                    }}
-                                    .value=${this._config.weatherConfig?.latitude || 50.0755}
-                                    .label=${"Latitude"}
-                                    propertyName="weatherConfig.latitude"
-                                    @value-changed=${this._handleFormValueChanged}
-                                ></ha-row-selector>
-
-                                <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{
-                                        number: {
-                                            min: -180,
-                                            max: 180,
-                                            step: 0.0001,
-                                            mode: "box"
-                                        }
-                                    }}
-                                    .value=${this._config.weatherConfig?.longitude || 14.4378}
-                                    .label=${"Longitude"}
-                                    propertyName="weatherConfig.longitude"
-                                    @value-changed=${this._handleFormValueChanged}
-                                ></ha-row-selector>
-
-                                <ha-row-selector
+                            <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{
                                         select: {
-                                            options: this._unitsOptions,
+                                            options: this._weatherProviderOptions,
                                             mode: 'dropdown'
                                         }
                                     }}
-                                    .value=${this._config.weatherConfig?.units || 'metric'}
-                                    .label=${"Units"}
-                                    propertyName="weatherConfig.units"
+                                    .value=${this._config.weatherProvider || 'openweathermap'}
+                                    .label= ${"Weather Provider"}
+                                    propertyName="weatherProvider"
                                     @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            ${this._config.weatherProvider === 'openweathermap' ? html`
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            text: {
+                                                type: "text"
+                                            }
+                                        }}
+                                        .value=${this._config.weatherConfig?.apiKey || ''}
+                                        .label= ${"API Key"}
+                                        .helper= ${"OpenWeatherMap API Key"}
+                                        propertyName="weatherConfig.apiKey"
+                                        @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
+
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            number: {
+                                                min: -90,
+                                                max: 90,
+                                                step: 0.0001,
+                                                mode: "box"
+                                            }
+                                        }}
+                                        .value=${this._config.weatherConfig?.latitude || 50.0755}
+                                        .label=${"Latitude"}
+                                        propertyName="weatherConfig.latitude"
+                                        @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
+
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            number: {
+                                                min: -180,
+                                                max: 180,
+                                                step: 0.0001,
+                                                mode: "box"
+                                            }
+                                        }}
+                                        .value=${this._config.weatherConfig?.longitude || 14.4378}
+                                        .label=${"Longitude"}
+                                        propertyName="weatherConfig.longitude"
+                                        @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
+
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            select: {
+                                                options: this._unitsOptions,
+                                                mode: 'dropdown'
+                                            }
+                                        }}
+                                        .value=${this._config.weatherConfig?.units || 'metric'}
+                                        .label=${"Units"}
+                                        propertyName="weatherConfig.units"
+                                        @value-changed=${this._handleFormValueChanged}
                                 ></ha-row-selector>
                             ` : ''}
 
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    select: {
-                                        options: this._weatherDisplayModeOptions,
-                                        mode: 'dropdown'
-                                    }
-                                }}
-                                .value=${this._config.weatherDisplayMode || 'both'}
-                                .label=${"Display Mode"}
-                                propertyName="weatherDisplayMode"
-                                @value-changed=${this._handleFormValueChanged}
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        select: {
+                                            options: this._weatherDisplayModeOptions,
+                                            mode: 'dropdown'
+                                        }
+                                    }}
+                                    .value=${this._config.weatherDisplayMode || 'both'}
+                                    .label= ${"Display Mode"}
+                                    propertyName="weatherDisplayMode"
+                                    @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 
                             ${(this._config.weatherDisplayMode === 'forecast' || this._config.weatherDisplayMode === 'both') ? html`
                                 <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{
-                                        number: {
-                                            min: 1,
-                                            max: 7,
-                                            step: 1,
-                                            mode: "slider"
-                                        }
-                                    }}
-                                    .value=${this._config.weatherForecastDays || 3}
-                                    .label=${"Forecast Days"}
-                                    .helper=${`${this._config.weatherForecastDays || 3} days`}
-                                    propertyName="weatherForecastDays"
-                                    @value-changed=${this._handleFormValueChanged}
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            number: {
+                                                min: 1,
+                                                max: 7,
+                                                step: 1,
+                                                mode: "slider"
+                                            }
+                                        }}
+                                        .value=${this._config.weatherForecastDays || 3}
+                                        .label= ${"Forecast Days"}
+                                        .helper=${`${this._config.weatherForecastDays || 3} days`}
+                                        propertyName="weatherForecastDays"
+                                        @value-changed=${this._handleFormValueChanged}
                                 ></ha-row-selector>
 
                                 <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{
-                                        number: {
-                                            min: 1,
-                                            step: 1,
-                                            mode: "box"
-                                        }
-                                    }}
-                                    .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
-                                    .label=${"Update Interval"}
-                                    .helper=${"Update interval in minutes (min: 1)"}
-                                    propertyName="weatherUpdateInterval"
-                                    .transformData=${(value: number) => value * 60}
-                                    @value-changed=${this._handleFormValueChanged}
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            number: {
+                                                min: 1,
+                                                step: 1,
+                                                mode: "box"
+                                            }
+                                        }}
+                                        .value=${Math.floor((this._config.weatherUpdateInterval || 1800) / 60)}
+                                        .label= ${"Update Interval"}
+                                        .helper= ${"Update interval in minutes (min: 1)"}
+                                        propertyName="weatherUpdateInterval"
+                                        .transformData=${(value: number) => value * 60}
+                                        @value-changed=${this._handleFormValueChanged}
                                 ></ha-row-selector>
                             ` : ''}
                         ` : ''}
@@ -1456,93 +1556,93 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <div class="content">
 
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    select: {
-                                        options: this._getTransportationProviderOptions(),
-                                        mode: "dropdown"
-                                    }
-                                }}
-                                .value=${this._config.transportation?.provider || 'idsjmk'}
-                                .label=${"Transportation Provider"}
-                                propertyName="transportation.provider"
-                                @value-changed=${this._handleFormValueChanged}
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        select: {
+                                            options: this._getTransportationProviderOptions(),
+                                            mode: "dropdown"
+                                        }
+                                    }}
+                                    .value=${this._config.transportation?.provider || 'idsjmk'}
+                                    .label= ${"Transportation Provider"}
+                                    propertyName="transportation.provider"
+                                    @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    number: {
-                                        min: 1,
-                                        max: 5,
-                                        step: 1,
-                                        mode: "slider"
-                                    }
-                                }}
-                                .value=${this._config.transportation?.maxDepartures || 2}
-                                .label=${"Global Max Departures"}
-                                .helper=${`${this._config.transportation?.maxDepartures || 2} departures`}
-                                propertyName="transportation.maxDepartures"
-                                @value-changed=${(ev: CustomEvent) => {
-                                    this._handleFormValueChanged(ev);
-                                    // Reload stops after the config has been updated
-                                    this._loadStops();
-                                }}
-                            ></ha-row-selector>
-
-                            <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{boolean: {}}}
-                                .value=${this._config.transportation?.onDemand === true}
-                                .label=${"Show on Demand"}
-                                .helper=${"Only show departures when clicked"}
-                                propertyName="transportation.onDemand"
-                                @value-changed=${this._handleFormValueChanged}
-                            ></ha-row-selector>
-
-                            ${this._config.transportation?.onDemand === true ? html`
-                                <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{
                                         number: {
                                             min: 1,
-                                            max: 10,
+                                            max: 5,
                                             step: 1,
-                                            mode: "box"
+                                            mode: "slider"
                                         }
                                     }}
-                                    .value=${this._config.transportation?.autoHideTimeout || 5}
-                                    .label=${"Auto-Hide Timeout"}
-                                    .helper=${"Auto-hide timeout in minutes (1-10)"}
-                                    propertyName="transportation.autoHideTimeout"
-                                    .transformData=${(value: number) => {
-                                        // Ensure value is between 1 and 10 minutes
-                                        return Math.max(Math.min(value || 5, 10), 1);
+                                    .value=${this._config.transportation?.maxDepartures || 2}
+                                    .label= ${"Global Max Departures"}
+                                    .helper=${`${this._config.transportation?.maxDepartures || 2} departures`}
+                                    propertyName="transportation.maxDepartures"
+                                    @value-changed=${(ev: CustomEvent) => {
+                                        this._handleFormValueChanged(ev);
+                                        // Reload stops after the config has been updated
+                                        this._loadStops();
                                     }}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{boolean: {}}}
+                                    .value=${this._config.transportation?.onDemand === true}
+                                    .label= ${"Show on Demand"}
+                                    .helper= ${"Only show departures when clicked"}
+                                    propertyName="transportation.onDemand"
                                     @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            ${this._config.transportation?.onDemand === true ? html`
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            number: {
+                                                min: 1,
+                                                max: 10,
+                                                step: 1,
+                                                mode: "box"
+                                            }
+                                        }}
+                                        .value=${this._config.transportation?.autoHideTimeout || 5}
+                                        .label= ${"Auto-Hide Timeout"}
+                                        .helper= ${"Auto-hide timeout in minutes (1-10)"}
+                                        propertyName="transportation.autoHideTimeout"
+                                        .transformData=${(value: number) => {
+                                            // Ensure value is between 1 and 10 minutes
+                                            return Math.max(Math.min(value || 5, 10), 1);
+                                        }}
+                                        @value-changed=${this._handleFormValueChanged}
                                 ></ha-row-selector>
                             ` : ''}
 
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    number: {
-                                        min: 1,
-                                        step: 1,
-                                        mode: "box"
-                                    }
-                                }}
-                                .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
-                                .label=${"Update Interval"}
-                                .helper=${"Update interval in minutes (min: 1)"}
-                                propertyName="transportationUpdateInterval"
-                                .transformData=${(value: number) => {
-                                    // Ensure minimum of 1 minute
-                                    const intervalMinutes = Math.max(value || 1, 1);
-                                    // Convert minutes to seconds for internal storage
-                                    return intervalMinutes * 60;
-                                }}
-                                @value-changed=${this._handleFormValueChanged}
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: 1,
+                                            step: 1,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
+                                    .label= ${"Update Interval"}
+                                    .helper= ${"Update interval in minutes (min: 1)"}
+                                    propertyName="transportationUpdateInterval"
+                                    .transformData=${(value: number) => {
+                                        // Ensure minimum of 1 minute
+                                        const intervalMinutes = Math.max(value || 1, 1);
+                                        // Convert minutes to seconds for internal storage
+                                        return intervalMinutes * 60;
+                                    }}
+                                    @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 
                             <div class="section-subheader">Stops</div>
@@ -1624,127 +1724,109 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     <h3 slot="header">Action Bar</h3>
                     <div class="content">
                         <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${this._config.enableActionBar === true}
-                            .label=${"Enable Action Bar"}
-                            propertyName="enableActionBar"
-                            @value-changed=${this._handleFormValueChanged}
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${this._config.enableActionBar === true}
+                                .label= ${"Enable Action Bar"}
+                                propertyName="enableActionBar"
+                                @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
                         ${this._config.enableActionBar === true ? html`
                             <div class="info-text">
-                                Configure action buttons that will appear at the bottom of the card. 
-                                Action bar and transportation cannot be displayed simultaneously - action bar takes precedence.
+                                Configure action buttons that will appear at the bottom of the card.
+                                Action bar and transportation cannot be displayed simultaneously - action bar takes
+                                precedence.
                             </div>
 
                             <ha-row-selector
-                                .hass=${this.hass}
-                                .selector=${{
-                                    select: {
-                                        options: [
-                                            {value: ActionBarAlignment.Left, label: 'Left'},
-                                            {value: ActionBarAlignment.Center, label: 'Center'},
-                                            {value: ActionBarAlignment.Right, label: 'Right'}
-                                        ],
-                                        mode: 'dropdown'
-                                    }
-                                }}
-                                .value=${this._config.actionBar?.alignment || ActionBarAlignment.Center}
-                                .label=${"Button Alignment"}
-                                .helper=${"Align buttons to the left, center, or right"}
-                                .labelPosition=${LabelPosition.Top}
-                                propertyName="actionBar.alignment"
-                                @value-changed=${this._handleFormValueChanged}
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        select: {
+                                            options: [
+                                                {value: ActionBarAlignment.Left, label: 'Left'},
+                                                {value: ActionBarAlignment.Center, label: 'Center'},
+                                                {value: ActionBarAlignment.Right, label: 'Right'}
+                                            ],
+                                            mode: 'dropdown'
+                                        }
+                                    }}
+                                    .value=${this._config.actionBar?.alignment || ActionBarAlignment.Center}
+                                    .label= ${"Button Alignment"}
+                                    .helper= ${"Align buttons to the left, center, or right"}
+                                    .labelPosition=${LabelPosition.Top}
+                                    propertyName="actionBar.alignment"
+                                    @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 
                             <div class="section-subheader">Actions</div>
 
                             ${this._actions.map((action, index) => html`
-                                <div class="action-item">
-                                    <div class="action-row">
-                                        <div class="action-field" style="flex: 2;">
-                                            <ha-row-selector
-                                                .hass=${this.hass}
-                                                .selector=${{
-                                                    select: {
-                                                        options: [
-                                                            {value: ActionType.Navigate, label: 'Navigate to Page'},
-                                                            {value: ActionType.CallService, label: 'Call Service'}
-                                                        ],
-                                                        mode: 'dropdown'
-                                                    }
-                                                }}
-                                                .value=${action.type}
-                                                .label=${"Action Type"}
-                                                @value-changed=${(ev: CustomEvent) => {
-                                                    this._actionChanged(index, 'type', ev.detail.value);
-                                                }}
-                                            ></ha-row-selector>
-                                        </div>
-                                        <div class="action-buttons">
-                                            <ha-icon-button
-                                                .path=${'M19,13H5V11H19V13Z'}
-                                                @click=${() => this._removeAction(index)}
-                                            ></ha-icon-button>
-                                        </div>
-                                    </div>
 
-                                    <div class="action-row">
-                                        <div class="action-field" style="width: 100%;">
-                                            <ha-textfield
-                                                label="Title"
-                                                .value=${action.title || ''}
-                                                style="width: 100%;"
-                                                @input=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-                                                    const target = ev.target as HTMLElement & { value?: string };
-                                                    if (!target) return;
-                                                    this._actionChanged(index, 'title', target.value || '');
-                                                }}
-                                            ></ha-textfield>
-                                        </div>
-                                    </div>
+                                <ha-row-selector
+                                        style="flex: 2;"
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            select: {
+                                                options: this._getActionTypeOptions(),
+                                                mode: 'dropdown'
+                                            }
+                                        }}
+                                        .value=${action.actionId}
+                                        .label= ${"Action Type"}                                        
+                                        @value-changed=${(ev: CustomEvent) => {
+                                            this._actionChanged(index, 'actionId', ev.detail.value);
+                                        }}
+                                ></ha-row-selector>
 
-                                    <div class="action-row">
-                                        <div class="action-field" style="width: 100%;">
-                                            <ha-row-selector
-                                                .hass=${this.hass}
-                                                .selector=${{
-                                                    icon: {
-                                                        placeholder: "mdi:clock"
-                                                    }
-                                                }}
-                                                .value=${action.icon || ''}
-                                                .label=${"Icon"}
-                                                @value-changed=${(ev: CustomEvent) => {
-                                                    ev.stopPropagation();
-                                                    ev.preventDefault();
-                                                    const value = ev.detail.value;
-                                                    this._actionChanged(index, 'icon', value || '');
-                                                }}
-                                            ></ha-row-selector>
-                                        </div>
-                                    </div>
+                                <div class="action-buttons">
+                                    <ha-icon-button
+                                            .path=${'M19,13H5V11H19V13Z'}
+                                            @click=${() => this._removeAction(index)}
+                                    ></ha-icon-button>
+                                </div>
 
-                                    ${action.type === ActionType.Navigate ? html`
-                                        <navigation-editor-plugin
-                                            .hass=${this.hass}
-                                            .action=${action}
-                                            .index=${index}
-                                            .actionChanged=${this._actionChanged.bind(this)}
-                                        ></navigation-editor-plugin>
-                                    ` : ''}
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            text: {
+                                                type: "text"
+                                            }
+                                        }}
+                                        .value=${action.title || ''}
+                                        .label=${"Title"}
+                                        .helper=${"Title for the action button"}
+                                        .labelPosition=${LabelPosition.Hidden}
+                                        @value-changed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                            ev.preventDefault();
+                                            const value = ev.detail.value;
+                                            this._actionChanged(index, 'title', value || '');
+                                        }}
+                                ></ha-row-selector>
 
-                                    ${action.type === ActionType.CallService ? html`
-                                        <service-call-editor-plugin
-                                            .hass=${this.hass}
-                                            .action=${action}
-                                            .index=${index}
-                                            .actionChanged=${this._actionChanged.bind(this)}
-                                        ></service-call-editor-plugin>
-                                    ` : ''}
+
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{
+                                            icon: {
+                                                placeholder: "mdi:clock"
+                                            }
+                                        }}
+                                        .value=${action.icon || ''}
+                                        .label=${"Icon"}
+                                        .helper=${"Icon for the action button"}
+                                        .labelPosition=${LabelPosition.Hidden}
+                                        @value-changed=${(ev: CustomEvent) => {
+                                            ev.stopPropagation();
+                                            ev.preventDefault();
+                                            const value = ev.detail.value;
+                                            this._actionChanged(index, 'icon', value || '');
+                                        }}
+                                ></ha-row-selector>
+
+                                <!-- Editor components are now dynamically created by the factory pattern -->
+                                ${this._createEditorComponent(action, index)}
 
                                 </div>
                             `)}

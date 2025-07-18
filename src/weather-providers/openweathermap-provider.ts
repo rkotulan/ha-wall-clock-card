@@ -32,7 +32,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
     const latitude = config.latitude || 50.0755; // Default to Prague, Czech Republic
     const longitude = config.longitude || 14.4378;
     const units = config.units || 'metric';
-    const language = config.language || 'cs'; // Default to Czech language
+    const language = config.language || 'en'; // Default to English language
 
     try {
       // Fetch data from OpenWeatherMap Forecast API (5 day / 3 hour forecast)
@@ -132,7 +132,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       latitude: 50.0755, // Prague, Czech Republic
       longitude: 14.4378,
       units: 'metric',
-      language: 'cs'
+      language: 'en'
     };
   }
 

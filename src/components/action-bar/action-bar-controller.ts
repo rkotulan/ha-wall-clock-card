@@ -1,6 +1,6 @@
 import { ReactiveControllerHost } from 'lit';
 import { BaseController } from '../../utils/controllers';
-import { ActionBarConfig, ActionBarControllerConfig, ActionRegistry, ActionHandler, ExtendedActionType } from './types';
+import { ActionBarConfig, ActionBarControllerConfig, ActionRegistry, ActionHandler } from './types';
 
 /**
  * A reactive controller that manages action bar functionality
@@ -58,20 +58,20 @@ export class ActionBarController extends BaseController {
 
     /**
      * Register a handler for an action type
-     * @param actionType The action type to register a handler for
+     * @param actionId The unique string identifier for the action type
      * @param handler The handler function
      */
-    public registerActionHandler(actionType: ExtendedActionType, handler: ActionHandler): void {
-        this.logger.debug(`Registering handler for action type: ${actionType}`);
-        this.registry.registerHandler(actionType, handler);
+    public registerActionHandler(actionId: string, handler: ActionHandler): void {
+        this.logger.debug(`Registering handler for action type: ${actionId}`);
+        this.registry.registerHandler(actionId, handler);
     }
 
     /**
      * Get the handler for an action type
-     * @param actionType The action type to get the handler for
+     * @param actionId The unique string identifier for the action type
      * @returns The handler function, or undefined if no handler is registered
      */
-    public getActionHandler(actionType: ExtendedActionType): ActionHandler | undefined {
-        return this.registry.getHandler(actionType);
+    public getActionHandler(actionId: string): ActionHandler | undefined {
+        return this.registry.getHandler(actionId);
     }
 }

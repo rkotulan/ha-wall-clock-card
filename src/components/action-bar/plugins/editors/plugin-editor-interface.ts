@@ -16,7 +16,7 @@ export interface PluginEditorInterface {
     /**
      * The action configuration
      */
-    action: ActionConfig;
+    actionConfig: ActionConfig;
 
     /**
      * The index of the action in the actions array
@@ -43,7 +43,7 @@ export interface PluginEditorInterface {
  */
 export abstract class BasePluginEditor extends LitElement implements PluginEditorInterface {
     @property({ type: Object }) hass!: HomeAssistant;
-    @property({ type: Object }) action!: ActionConfig;
+    @property({ type: Object }) actionConfig!: ActionConfig;
     @property({ type: Number }) index!: number;
     @property({ type: Function }) actionChanged!: (index: number, property: string, value: any) => void;
 

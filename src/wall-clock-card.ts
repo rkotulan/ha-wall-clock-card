@@ -151,7 +151,7 @@ export class WallClockCard extends LitElement {
         // Initialize the clock component with the latest configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
         this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
 
@@ -171,7 +171,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
 
         // Set the weather signal provider
         this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
@@ -377,7 +377,7 @@ export class WallClockCard extends LitElement {
         // Initialize the clock component with the new configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
         this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
 
@@ -397,7 +397,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'cs';
+        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
 
         // Set the weather signal provider
         this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);

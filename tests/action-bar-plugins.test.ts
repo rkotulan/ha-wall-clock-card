@@ -33,7 +33,7 @@ describe('Action Bar Plugins', () => {
 
         // Create a handler function
         const testActionHandler: ActionHandler = (action, hass) => {
-            expect(action.type).toBe(TEST_ACTION_TYPE);
+            expect(action.actionId).toBe(TEST_ACTION_TYPE);
             expect(hass).toBe(mockHass);
             testActionExecuted = true;
         };
@@ -43,7 +43,7 @@ describe('Action Bar Plugins', () => {
 
         // Create an action config
         const testAction: ModuleActionConfig = {
-            type: TEST_ACTION_TYPE,
+            actionId: TEST_ACTION_TYPE,
             title: 'Test Action',
             icon: 'mdi:test'
         };
@@ -89,7 +89,7 @@ describe('Action Bar Plugins', () => {
         // Execute the action
         const handler = registry.getHandler('navigate');
         expect(handler).toBeDefined();
-        handler!({ type: 'navigate', title: 'Test', icon: 'mdi:test', path: '/test' }, mockHass);
+        handler!({ actionId: 'navigate', title: 'Test', icon: 'mdi:test', path: '/test' }, mockHass);
 
         // Verify the custom handler was executed
         expect(customNavigateExecuted).toBe(true);
