@@ -1,6 +1,6 @@
 // https://github.com/elenagalun/front/blob/dev/src/data/selector.ts#L346
 export type Selector =
-    // | ActionSelector
+    | ActionSelector
     // | AddonSelector
     // | AreaSelector
     // | AreaFilterSelector
@@ -24,12 +24,12 @@ export type Selector =
     | EntitySelector
     // | LegacyEntitySelector
     // | FileSelector
-    // | IconSelector
+    | IconSelector
     // | LabelSelector
     // | ImageSelector
     // | BackgroundSelector
     // | LanguageSelector
-    // | LocationSelector
+    | LocationSelector
     // | MediaSelector
     // | NavigationSelector
     | NumberSelector
@@ -166,4 +166,23 @@ export enum LabelPosition {
     Left = "left",
     Top = "top",
     Hidden = "hidden"
+}
+
+export interface IconSelector {
+    icon: {
+        placeholder?: string;
+        fallbackPath?: string;
+    } | null;
+}
+
+export interface LocationSelector {
+    location: {
+        radius?: boolean;
+        radius_readonly?: boolean;
+        icon?: string;
+    } | null;
+}
+
+export interface ActionSelector {
+    action: {} | null;
 }

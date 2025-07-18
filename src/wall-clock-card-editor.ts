@@ -12,6 +12,11 @@ import {
     getAllTransportationProviders,
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
+import { ActionType, ActionConfig, ActionBarAlignment } from './components/action-bar';
+// These imports are needed for the custom elements to work
+// even though TypeScript thinks they are unused
+import './components/action-bar/plugins/navigator/navigation-editor-plugin';
+import './components/action-bar/plugins/service-call/service-call-editor-plugin';
 import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils/localize/lokalify';
 import {setPropertyByPath} from './utils';
 import {LabelPosition} from "./components/ha-selector/types";
@@ -23,6 +28,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Array}) _sensors: SensorConfig[] = [];
     @property({type: Array}) _backgroundImages: BackgroundImage[] = [];
     @property({type: Array}) _stops: TransportationStopConfig[] = [];
+    @property({type: Array}) _actions: ActionConfig[] = [];
     @property({type: Array}) _sensorsWithFilesAttr: string[] = [];
 
     connectedCallback(): void {
@@ -211,6 +217,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         // Load stops from config
         this._loadStops();
+
+        // Load actions from config
+        this._loadActions();
     }
 
     private _loadSensors(): void {
@@ -233,6 +242,21 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         } else {
             // No stops configured
             this._stops = [];
+        }
+    }
+
+    private _loadActions(): void {
+        if (!this._config?.actionBar) {
+            this._actions = [];
+            return;
+        }
+
+        if (this._config.actionBar.actions && this._config.actionBar.actions.length > 0) {
+            // Load actions from configuration
+            this._actions = [...this._config.actionBar.actions];
+        } else {
+            // No actions configured
+            this._actions = [];
         }
     }
 
@@ -314,6 +338,49 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
+    private _addAction(): void {
+        // Default to a navigation action
+        const newAction: ActionConfig = {
+            type: ActionType.Navigate,
+            path: '/lovelace/0',
+            title: 'Home',
+            icon: 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z' // Home icon
+        };
+
+        this._actions = [...this._actions, newAction];
+
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure actionBar config exists
+            if (!newConfig.actionBar) {
+                newConfig.actionBar = {
+                    enabled: true,
+                    actions: []
+                };
+            }
+
+            // Ensure actions array exists
+            if (!newConfig.actionBar.actions) {
+                newConfig.actionBar.actions = [];
+            }
+
+            // Update actions
+            newConfig.actionBar.actions = [...this._actions];
+
+            // Enable action bar
+            newConfig.enableActionBar = true;
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
     private _removeStop(index: number): void {
         this._stops = this._stops.filter((_, i) => i !== index);
         // Update the config with a deep copy
@@ -341,6 +408,43 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             // If no stops left, remove transportation config
             if (this._stops.length === 0) {
                 newConfig.transportation = undefined;
+            }
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _removeAction(index: number): void {
+        this._actions = this._actions.filter((_, i) => i !== index);
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure actionBar config exists
+            if (!newConfig.actionBar) {
+                newConfig.actionBar = {
+                    enabled: true,
+                    actions: []
+                };
+            }
+
+            // Ensure actions array exists
+            if (!newConfig.actionBar.actions) {
+                newConfig.actionBar.actions = [];
+            }
+
+            // Update actions
+            newConfig.actionBar.actions = [...this._actions];
+
+            // If no actions left, disable action bar
+            if (this._actions.length === 0) {
+                newConfig.enableActionBar = false;
+                newConfig.actionBar = undefined;
             }
 
             // Update the local config reference
@@ -379,6 +483,43 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
             // Update stops
             newConfig.transportation.stops = [...this._stops];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    private _actionChanged(index: number, property: string, value: any): void {
+        this._actions = this._actions.map((action, i) => {
+            if (i === index) {
+                return {...action, [property]: value};
+            }
+            return action;
+        });
+
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure actionBar config exists
+            if (!newConfig.actionBar) {
+                newConfig.actionBar = {
+                    enabled: true,
+                    actions: []
+                };
+            }
+
+            // Ensure actions array exists
+            if (!newConfig.actionBar.actions) {
+                newConfig.actionBar.actions = [];
+            }
+
+            // Update actions
+            newConfig.actionBar.actions = [...this._actions];
 
             // Update the local config reference
             this._config = newConfig;
@@ -494,6 +635,31 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             }
 
             .sensor-actions {
+                flex: 0 0 40px;
+                text-align: center;
+                margin-top: 20px;
+            }
+
+            /* Action-specific styles */
+            .action-item {
+                border: 1px solid var(--divider-color, #e0e0e0);
+                border-radius: 4px;
+                padding: 10px;
+                margin-bottom: 15px;
+            }
+
+            .action-row {
+                display: flex;
+                margin-bottom: 8px;
+                align-items: center;
+            }
+
+            .action-field {
+                flex: 2;
+                margin-right: 8px;
+            }
+
+            .action-buttons {
                 flex: 0 0 40px;
                 text-align: center;
                 margin-top: 20px;
@@ -1452,6 +1618,141 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         </div>
                     </ha-expansion-panel>
                 ` : ''}
+
+                <!-- Action Bar Settings Section -->
+                <ha-expansion-panel outlined>
+                    <h3 slot="header">Action Bar</h3>
+                    <div class="content">
+                        <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{boolean: {}}}
+                            .value=${this._config.enableActionBar === true}
+                            .label=${"Enable Action Bar"}
+                            propertyName="enableActionBar"
+                            @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+
+                        ${this._config.enableActionBar === true ? html`
+                            <div class="info-text">
+                                Configure action buttons that will appear at the bottom of the card. 
+                                Action bar and transportation cannot be displayed simultaneously - action bar takes precedence.
+                            </div>
+
+                            <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: [
+                                            {value: ActionBarAlignment.Left, label: 'Left'},
+                                            {value: ActionBarAlignment.Center, label: 'Center'},
+                                            {value: ActionBarAlignment.Right, label: 'Right'}
+                                        ],
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.actionBar?.alignment || ActionBarAlignment.Center}
+                                .label=${"Button Alignment"}
+                                .helper=${"Align buttons to the left, center, or right"}
+                                .labelPosition=${LabelPosition.Top}
+                                propertyName="actionBar.alignment"
+                                @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <div class="section-subheader">Actions</div>
+
+                            ${this._actions.map((action, index) => html`
+                                <div class="action-item">
+                                    <div class="action-row">
+                                        <div class="action-field" style="flex: 2;">
+                                            <ha-row-selector
+                                                .hass=${this.hass}
+                                                .selector=${{
+                                                    select: {
+                                                        options: [
+                                                            {value: ActionType.Navigate, label: 'Navigate to Page'},
+                                                            {value: ActionType.CallService, label: 'Call Service'}
+                                                        ],
+                                                        mode: 'dropdown'
+                                                    }
+                                                }}
+                                                .value=${action.type}
+                                                .label=${"Action Type"}
+                                                @value-changed=${(ev: CustomEvent) => {
+                                                    this._actionChanged(index, 'type', ev.detail.value);
+                                                }}
+                                            ></ha-row-selector>
+                                        </div>
+                                        <div class="action-buttons">
+                                            <ha-icon-button
+                                                .path=${'M19,13H5V11H19V13Z'}
+                                                @click=${() => this._removeAction(index)}
+                                            ></ha-icon-button>
+                                        </div>
+                                    </div>
+
+                                    <div class="action-row">
+                                        <div class="action-field" style="width: 100%;">
+                                            <ha-textfield
+                                                label="Title"
+                                                .value=${action.title || ''}
+                                                style="width: 100%;"
+                                                @input=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+                                                    const target = ev.target as HTMLElement & { value?: string };
+                                                    if (!target) return;
+                                                    this._actionChanged(index, 'title', target.value || '');
+                                                }}
+                                            ></ha-textfield>
+                                        </div>
+                                    </div>
+
+                                    <div class="action-row">
+                                        <div class="action-field" style="width: 100%;">
+                                            <ha-row-selector
+                                                .hass=${this.hass}
+                                                .selector=${{
+                                                    icon: {
+                                                        placeholder: "mdi:clock"
+                                                    }
+                                                }}
+                                                .value=${action.icon || ''}
+                                                .label=${"Icon"}
+                                                @value-changed=${(ev: CustomEvent) => {
+                                                    ev.stopPropagation();
+                                                    ev.preventDefault();
+                                                    const value = ev.detail.value;
+                                                    this._actionChanged(index, 'icon', value || '');
+                                                }}
+                                            ></ha-row-selector>
+                                        </div>
+                                    </div>
+
+                                    ${action.type === ActionType.Navigate ? html`
+                                        <navigation-editor-plugin
+                                            .hass=${this.hass}
+                                            .action=${action}
+                                            .index=${index}
+                                            .actionChanged=${this._actionChanged.bind(this)}
+                                        ></navigation-editor-plugin>
+                                    ` : ''}
+
+                                    ${action.type === ActionType.CallService ? html`
+                                        <service-call-editor-plugin
+                                            .hass=${this.hass}
+                                            .action=${action}
+                                            .index=${index}
+                                            .actionChanged=${this._actionChanged.bind(this)}
+                                        ></service-call-editor-plugin>
+                                    ` : ''}
+
+                                </div>
+                            `)}
+
+                            <mwc-button @click=${this._addAction}>Add Action</mwc-button>
+                        ` : ''}
+                    </div>
+                </ha-expansion-panel>
         `;
     }
 }

@@ -8,6 +8,13 @@
 - **Removed direct URL method for Unsplash**: The direct URL method for Unsplash has been removed. An API key is now required to use the Unsplash image source.
 
 ### What's Changed
+- Added action bar component for displaying customizable buttons at the bottom of the card:
+  - Support for navigation actions to different pages in Home Assistant
+  - Support for service call actions to control entities
+  - Support for custom actions for future extensibility
+  - Configurable button icons and titles
+  - Automatic adjustment of clock position when action bar is displayed
+  - Action bar takes precedence over transportation display
 - Refactored slider components to use centralized form value handling:
   - Updated background opacity slider to use _handleFormValueChanged method
   - Updated rotation interval slider to use _handleFormValueChanged method
