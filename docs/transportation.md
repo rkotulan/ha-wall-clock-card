@@ -19,6 +19,8 @@ You have to enable public transportation departures in the yaml configuration.
 enableTransportation: true
 ```
 
+> **Note**: Transportation departures and action bar cannot be displayed simultaneously. If both are enabled, the action bar takes precedence. See [Action Bar](action-bar.md) for more information.
+
 ### Stops Configuration
 
 Use an array of stops to configure transportation departures:

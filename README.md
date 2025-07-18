@@ -28,6 +28,13 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
   - Customizable labels for each sensor
   - Automatic updates when sensor values change
 
+- **Action bar**:
+  - Customizable buttons at the bottom of the card
+  - Navigate to different pages in Home Assistant
+  - Call services to control entities
+  - Custom actions for future extensibility
+  - Configurable button icons and titles
+
 - **Weather forecast**:
   - Display current weather and forecast in the top right corner
   - Current temperature and conditions with icon
@@ -136,6 +143,7 @@ For detailed documentation, please see the following pages:
 - [Sensors](docs/sensors.md) - How to configure sensors display
 - [Image Sources](docs/image-sources.md) - Available image sources and how to configure them
 - [Weather](docs/weather.md) - Weather configuration options
+- [Action Bar](docs/action-bar.md) - How to configure the action bar
 - [Background Handling](docs/background-handling.md) - How background images are handled
 - [Bundle Analyzer](docs/bundle-analyzer.md) - How to analyze and optimize bundle size
 - [Development](docs/developer/development.md) - Information for developers
