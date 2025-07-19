@@ -52,6 +52,20 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                     .helper= ${"Choose where to open the link"}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('target', ev)}
             ></ha-row-selector>
+
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{
+                        color: {
+                            type: "rgb",
+                        }
+                    }}
+                    .value=${this.navigationAction.activeColor || '#ffeb3b'}
+                    .label=${"Active Color"}
+                    .helper=${"Color to use when the navigation action is active"}
+                    .labelPosition=${LabelPosition.Hidden}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
+            ></ha-row-selector>
         `;
     }
 }

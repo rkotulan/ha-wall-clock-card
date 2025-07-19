@@ -185,11 +185,21 @@ export class ActionBarComponent extends LitElement {
 
         const activeClass = isActive ? 'active' : '';
 
+        // Use the configured activeColor or default to the CSS-defined color
+        const activeColorStyle = isActive && action.activeColor 
+            ? `--active-icon-color: ${action.activeColor};` 
+            : '';
+
         return html`
-            <div class="action-button ${activeClass}" @click=${() => this._handleActionClick(action)}>
+            <div class="action-button ${activeClass}" 
+                 style="${activeColorStyle}"
+                 @click=${() => this._handleActionClick(action)}>
                 ${iconToUse && iconToUse.startsWith('mdi:') 
-                    ? html`<ha-icon icon="${iconToUse}"></ha-icon>` 
-                    : html`<svg viewBox="0 0 24 24">
+                    ? html`<ha-icon icon="${iconToUse}" 
+                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''}">
+                           </ha-icon>` 
+                    : html`<svg viewBox="0 0 24 24"
+                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''}">
                         <path d="${iconToUse}"></path>
                       </svg>`
                 }
