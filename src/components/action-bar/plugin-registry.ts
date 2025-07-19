@@ -1,10 +1,10 @@
-import { ActionRegistry, ActionHandler, ActionConfig } from './types';
+import {ActionRegistry, ActionHandler, ModuleActionConfig} from './types';
 
 /**
  * Interface for a complete plugin
  * This interface combines metadata, handler function, and editor component
  */
-export interface ActionPlugin<T extends ActionConfig = ActionConfig> {
+export interface ActionPlugin<T extends ModuleActionConfig> {
     /**
      * The unique string identifier for this plugin
      */
@@ -33,12 +33,12 @@ export interface ActionPlugin<T extends ActionConfig = ActionConfig> {
     /**
      * Optional editor component tag name
      */
-    readonly editorComponent?: string;
+    readonly editorTag?: string;
 
     /**
-     * Optional helper function to create action configurations
+     * Optional default configurations for creating an action
      */
-    createActionConfig?: (...args: any[]) => T;
+    defaultActionConfig(): T;
 
     /**
      * Register the plugin with the registry
@@ -52,7 +52,7 @@ export interface ActionPlugin<T extends ActionConfig = ActionConfig> {
  */
 export class PluginRegistry {
     private static instance: PluginRegistry;
-    private plugins: Map<string, ActionPlugin<ActionConfig>> = new Map();
+    private plugins: Map<string, ActionPlugin<ModuleActionConfig>> = new Map();
     private actionRegistry: ActionRegistry;
 
     private constructor() {
@@ -74,16 +74,16 @@ export class PluginRegistry {
      * Register a plugin
      * @param plugin The plugin to register
      */
-    public registerPlugin<T extends ActionConfig>(plugin: ActionPlugin<T>): void {
+    public registerPlugin<T extends ModuleActionConfig>(plugin: ActionPlugin<T>): void {
         const actionId = plugin.actionId;
-        this.plugins.set(actionId, plugin as unknown as ActionPlugin<ActionConfig>);
+        this.plugins.set(actionId, plugin as unknown as ActionPlugin<ModuleActionConfig>);
     }
 
     /**
      * Register a plugin with a handler
      * @param plugin The plugin to register
      */
-    public registerPluginWithHandler<T extends ActionConfig>(plugin: ActionPlugin<T>): void {
+    public registerPluginWithHandler<T extends ModuleActionConfig>(plugin: ActionPlugin<T>): void {
         this.registerPlugin(plugin);
         this.actionRegistry.registerHandler(plugin.actionId, plugin.handler as ActionHandler);
     }
@@ -92,7 +92,7 @@ export class PluginRegistry {
      * Get all registered plugins
      * @returns An array of plugins
      */
-    public getAllPlugins(): ActionPlugin<ActionConfig>[] {
+    public getAllPlugins(): ActionPlugin<ModuleActionConfig>[] {
         return Array.from(this.plugins.values());
     }
 
@@ -101,7 +101,7 @@ export class PluginRegistry {
      * @param actionId The unique string identifier for the action type
      * @returns The plugin, or undefined if not found
      */
-    public getPlugin(actionId: string): ActionPlugin<ActionConfig> | undefined {
+    public getPlugin(actionId: string): ActionPlugin<ModuleActionConfig> | undefined {
         return this.plugins.get(actionId);
     }
 
@@ -118,7 +118,7 @@ export class PluginRegistry {
  * Register a plugin with the PluginRegistry
  * @param plugin The plugin to register
  */
-export function registerPlugin<T extends ActionConfig = ActionConfig>(
+export function registerPlugin<T extends ModuleActionConfig>(
     plugin: ActionPlugin<T>
 ): void {
     const registry = PluginRegistry.getInstance();

@@ -3,6 +3,12 @@ import {customElement, property} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
 import {LabelPosition, Selector} from "./types";
 
+declare global {
+    interface HASSDomEvents {
+        "action-click": {};
+    }
+}
+
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
     @property({attribute: false}) public hass!: HomeAssistant;
@@ -27,6 +33,10 @@ export class HaRowSelector extends LitElement {
     // Add the labelPosition property
     @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
 
+    // Properties for the action button
+    @property({attribute: false}) public actionIcon?: string;
+    @property({attribute: false}) public actionTooltip?: string;
+
     protected render() {
         return html`
             <div class="row ${this.labelPosition.toLowerCase()}">
@@ -44,8 +54,22 @@ export class HaRowSelector extends LitElement {
                         @value-changed=${this._valueChanged}
                     ></ha-selector>
                 </div>
+                ${this.actionIcon ? html`
+                    <div class="action-button">
+                        <ha-icon-button
+                            .path=${this.actionIcon}
+                            .title=${this.actionTooltip || ''}
+                            @click=${this._handleActionClick}
+                        ></ha-icon-button>
+                    </div>
+                ` : ''}
             </div>
         `;
+    }
+
+    private _handleActionClick(ev: MouseEvent) {
+        ev.stopPropagation();
+        fireEvent(this, "action-click", {});
     }
 
     private _valueChanged(ev: CustomEvent) {
@@ -110,6 +134,13 @@ export class HaRowSelector extends LitElement {
             width: 100%;
             overflow: hidden; /* Add this */
             text-overflow: ellipsis; /* Add this */
+        }
+
+        /* Action button styles */
+        .action-button {
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
         }
     `;
 }

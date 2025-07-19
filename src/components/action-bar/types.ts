@@ -1,15 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
-import { NavigateActionConfig } from './plugins';
-import { CallServiceActionConfig } from './plugins';
-
-/**
- * String constants for built-in action types
- * These are unique string identifiers for each action type
- */
-export const ACTION_TYPE = {
-    NAVIGATE: 'action-navigate',
-    CALL_SERVICE: 'call-service'
-} as const;
+import {HomeAssistant} from 'custom-card-helpers';
 
 /**
  * Alignment options for action bar buttons
@@ -40,12 +29,12 @@ export interface ModuleActionConfig extends BaseActionConfig {
 /**
  * Union type for all action configurations
  */
-export type ActionConfig = NavigateActionConfig | CallServiceActionConfig | ModuleActionConfig;
+// export type ActionConfig = NavigateActionConfig | CallServiceActionConfig | ModuleActionConfig;
 
 /**
  * Type for action handler functions
  */
-export type ActionHandler<T extends ActionConfig = ActionConfig> = (action: T, hass: HomeAssistant) => void;
+export type ActionHandler<T extends ModuleActionConfig = ModuleActionConfig> = (action: T, hass: HomeAssistant) => void;
 
 /**
  * Registry for action handlers
@@ -73,7 +62,7 @@ export class ActionRegistry {
      * @param actionId The unique string identifier for the action type
      * @param handler The handler function
      */
-    public registerHandler<T extends ActionConfig = ActionConfig>(
+    public registerHandler<T extends ModuleActionConfig>(
         actionId: string, 
         handler: ActionHandler<T>
     ): void {
@@ -95,7 +84,7 @@ export class ActionRegistry {
  */
 export interface ActionBarConfig {
     enabled?: boolean;
-    actions: ActionConfig[];
+    actions: ModuleActionConfig[];
     alignment?: ActionBarAlignment;
 }
 
@@ -112,7 +101,7 @@ export interface ActionBarControllerConfig {
  * @param action The action configuration
  * @param hass The Home Assistant instance
  */
-export function executeAction(action: ActionConfig, hass: HomeAssistant): void {
+export function executeAction(action: ModuleActionConfig, hass: HomeAssistant): void {
     const registry = ActionRegistry.getInstance();
     const handler = registry.getHandler(action.actionId);
 

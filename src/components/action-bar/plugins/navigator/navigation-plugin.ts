@@ -1,23 +1,6 @@
-import { ActionHandler, ModuleActionConfig, ACTION_TYPE } from '../../types';
+import { ActionHandler } from '../../types';
 import { registerPlugin, ActionPlugin } from '../../plugin-registry';
-
-/**
- * Navigation plugin for the action bar
- * This plugin provides a way to navigate to different pages in Home Assistant
- */
-
-// Use the built-in navigation action type from ACTION_TYPE
-// This is preferred over defining a new constant for built-in action types
-export const NAVIGATION_ACTION = ACTION_TYPE.NAVIGATE;
-
-/**
- * Configuration for a navigation action
- */
-export interface NavigationActionConfig extends ModuleActionConfig {
-    actionId: typeof NAVIGATION_ACTION;
-    path: string;
-    target?: '_blank' | '_self'; // Optional target for the navigation
-}
+import {NAVIGATION_ACTION, NavigationActionConfig} from "./types";
 
 /**
  * Handler for navigation actions
@@ -47,11 +30,15 @@ export class NavigationPlugin implements ActionPlugin<NavigationActionConfig> {
     readonly description = 'Navigate to a different page in Home Assistant';
     readonly icon = 'mdi:arrow-right';
     readonly handler: ActionHandler<NavigationActionConfig> = navigationHandler;
+    readonly editorTag = 'navigation-editor-plugin';
 
-    readonly editorComponent = 'navigation-editor-plugin';
-
-    createActionConfig(title: string, icon: string, path: string, target?: '_blank' | '_self'): NavigationActionConfig {
-        return createNavigationAction(title, icon, path, target);
+    defaultActionConfig(): NavigationActionConfig {
+        return {
+            actionId: NAVIGATION_ACTION,
+            title: 'Navigate',
+            icon: this.icon,
+            path: '/'
+        };
     }
 
     register(): void {

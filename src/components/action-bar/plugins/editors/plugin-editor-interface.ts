@@ -1,7 +1,7 @@
 import { LitElement, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { ActionConfig } from '../../types';
+import {ModuleActionConfig} from "../../types";
 
 /**
  * Interface for plugin editor components
@@ -16,7 +16,7 @@ export interface PluginEditorInterface {
     /**
      * The action configuration
      */
-    actionConfig: ActionConfig;
+    actionConfig: ModuleActionConfig;
 
     /**
      * The index of the action in the actions array
@@ -43,7 +43,7 @@ export interface PluginEditorInterface {
  */
 export abstract class BasePluginEditor extends LitElement implements PluginEditorInterface {
     @property({ type: Object }) hass!: HomeAssistant;
-    @property({ type: Object }) actionConfig!: ActionConfig;
+    @property({ type: Object }) actionConfig!: ModuleActionConfig;
     @property({ type: Number }) index!: number;
     @property({ type: Function }) actionChanged!: (index: number, property: string, value: any) => void;
 
