@@ -7,6 +7,4 @@ import {ModuleActionConfig} from '../../types';
 export interface ServiceCallActionConfig extends ModuleActionConfig {
     service: string;
     service_data?: Record<string, any>;
-    confirmation?: boolean;
-    confirmation_text?: string;
 }
