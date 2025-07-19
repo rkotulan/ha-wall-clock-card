@@ -32,7 +32,7 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                     .label= ${"Navigation Path"}
                     .labelPosition=${LabelPosition.Hidden}
                     .helper= ${"Choose where to open the link"}
-                    @value-changed=${(ev: CustomEvent) => this.handleInputChange('path', ev)}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('path', ev)}
             ></ha-row-selector>
 
             <ha-row-selector
