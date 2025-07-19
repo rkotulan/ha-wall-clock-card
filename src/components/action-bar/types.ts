@@ -86,6 +86,7 @@ export interface ActionBarConfig {
     enabled?: boolean;
     actions: ModuleActionConfig[];
     alignment?: ActionBarAlignment;
+    backgroundOpacity?: number; // Controls the opacity of the action bar background (0-1)
 }
 
 /**

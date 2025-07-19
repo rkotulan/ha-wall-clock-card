@@ -470,7 +470,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             if (!newConfig.actionBar) {
                 newConfig.actionBar = {
                     enabled: true,
-                    actions: []
+                    actions: [],
+                    backgroundOpacity: 0.3 // Default background opacity
                 };
             }
 
@@ -544,7 +545,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             if (!newConfig.actionBar) {
                 newConfig.actionBar = {
                     enabled: true,
-                    actions: []
+                    actions: [],
+                    backgroundOpacity: 0.3 // Default background opacity
                 };
             }
 
@@ -635,7 +637,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             if (!newConfig.actionBar) {
                 newConfig.actionBar = {
                     enabled: true,
-                    actions: []
+                    actions: [],
+                    backgroundOpacity: 0.3 // Default background opacity
                 };
             }
 
@@ -1781,6 +1784,24 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .helper= ${"Align buttons to the left, center, or right"}
                                     .labelPosition=${LabelPosition.Top}
                                     propertyName="actionBar.alignment"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{
+                                        number: {
+                                            min: 0,
+                                            max: 1,
+                                            step: 0.05,
+                                            mode: 'slider'
+                                        }
+                                    }}
+                                    .value=${this._config.actionBar?.backgroundOpacity !== undefined ? this._config.actionBar.backgroundOpacity : 0.3}
+                                    .label= ${"Background Opacity"}
+                                    .helper= ${"Adjust the transparency of the action bar background (0 = fully transparent, 1 = fully opaque)"}
+                                    .labelPosition=${LabelPosition.Top}
+                                    propertyName="actionBar.backgroundOpacity"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 

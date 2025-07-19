@@ -135,8 +135,14 @@ export class ActionBarComponent extends LitElement {
 
         const justifyContent = this.getJustifyContent();
 
+        // Use the configured backgroundOpacity or default to 0.3
+        const opacity = this.actionBar.backgroundOpacity !== undefined ? this.actionBar.backgroundOpacity : 0.3;
+
         return html`
-            <div class="action-bar-container" style="color: ${this.fontColor}; justify-content: ${justifyContent};">
+            <div class="action-bar-container" 
+                style="color: ${this.fontColor}; 
+                       justify-content: ${justifyContent}; 
+                       background-color: rgba(0, 0, 0, ${opacity});">
                 ${this.actionBar.actions.map(action => this.renderActionButton(action))}
             </div>
         `;
