@@ -23,6 +23,11 @@ export interface BaseActionConfig {
  */
 export interface ModuleActionConfig extends BaseActionConfig {
     // actionId is inherited from BaseActionConfig
+    /**
+     * Whether the action is in an active state
+     */
+    active?: boolean;
+
     [key: string]: any; // Allow any additional properties for module-specific configuration
 }
 
