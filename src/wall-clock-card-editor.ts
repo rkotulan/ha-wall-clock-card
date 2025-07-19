@@ -36,6 +36,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Array}) _actions: ModuleActionConfig[] = [];
     @property({type: Array}) _sensorsWithFilesAttr: string[] = [];
 
+    // Cache for editor components to prevent flickering
+    private _editorComponentCache: Map<string, HTMLElement> = new Map();
+
     connectedCallback(): void {
         super.connectedCallback();
         // Color picker and other HA form elements are now automatically loaded
@@ -388,6 +391,22 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             return '';
         }
 
+        // Create a cache key based on the action ID and index
+        const cacheKey = `${actionConfig.actionId}-${index}`;
+
+        // Check if we already have a cached component
+        if (this._editorComponentCache.has(cacheKey)) {
+            const cachedComponent = this._editorComponentCache.get(cacheKey);
+
+            // Update the properties in case they've changed
+            if (this.hass) {
+                (cachedComponent as any).hass = this.hass;
+            }
+            (cachedComponent as any).actionConfig = actionConfig;
+
+            return cachedComponent;
+        }
+
         // Create the component dynamically using document.createElement
         try {
             // Create the element
@@ -400,6 +419,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             (editorComponent as any).actionConfig = actionConfig;
             (editorComponent as any).index = index;
             (editorComponent as any).actionChanged = this._actionChanged.bind(this);
+
+            // Store in cache
+            this._editorComponentCache.set(cacheKey, editorComponent);
 
             // Return the component
             return editorComponent;
@@ -433,6 +455,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 icon: 'mdi:flash'
             };
         }
+
+        // Clear the entire cache since adding an action changes indices
+        this._editorComponentCache.clear();
 
         this._actions = [...this._actions, newAction];
 
@@ -506,6 +531,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     private _removeAction(index: number): void {
+        // Clear the entire cache since removing an action changes indices
+        this._editorComponentCache.clear();
+
         this._actions = this._actions.filter((_, i) => i !== index);
         // Update the config with a deep copy
         if (this._config) {
@@ -580,6 +608,17 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     private _actionChanged(index: number, property: string, value: any): void {
+        // If the action type (actionId) is changing, clear the cache entry for this action
+        if (property === 'actionId') {
+            // Create a cache key based on the old action ID and index
+            const oldAction = this._actions[index];
+            if (oldAction) {
+                const oldCacheKey = `${oldAction.actionId}-${index}`;
+                // Remove the old component from cache
+                this._editorComponentCache.delete(oldCacheKey);
+            }
+        }
+
         this._actions = this._actions.map((action, i) => {
             if (i === index) {
                 return {...action, [property]: value};
