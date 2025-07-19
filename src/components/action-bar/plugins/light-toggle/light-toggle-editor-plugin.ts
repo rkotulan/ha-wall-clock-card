@@ -57,10 +57,10 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{
                         icon: {
-                            placeholder: "mdi:lightbulb-on"
+                            placeholder: "Icon for light on state",
                         }
                     }}
-                    .value=${this.lightToggleAction.icon_on || ''}
+                    .value=${this.lightToggleAction.icon_on || 'mdi:lightbulb-on'}
                     .label=${"Icon (On State)"}
                     .helper=${"Icon to show when light is on"}
                     .labelPosition=${LabelPosition.Hidden}
