@@ -66,7 +66,6 @@ export class ActionBarComponent extends LitElement {
             cursor: pointer;
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 90px;
-            padding: 12px;
             width: 144px;
             height: 144px;
             transition: all 0.3s ease;
@@ -85,7 +84,7 @@ export class ActionBarComponent extends LitElement {
             width: 72px;
             height: 72px;
             fill: currentColor;
-            margin-bottom: 8px;
+            margin-bottom: 0;
         }
 
         .action-button ha-icon {
