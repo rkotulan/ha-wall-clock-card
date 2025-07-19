@@ -28,6 +28,11 @@ export interface ModuleActionConfig extends BaseActionConfig {
      */
     active?: boolean;
 
+    /**
+     * Color to use when the action is in active state
+     */
+    activeColor?: string;
+
     [key: string]: any; // Allow any additional properties for module-specific configuration
 }
 

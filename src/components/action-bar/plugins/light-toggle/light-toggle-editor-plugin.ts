@@ -66,6 +66,16 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('icon_on', ev)}
             ></ha-row-selector>
+
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{ color_hex: "" }}
+                    .value=${this.lightToggleAction.activeColor || '#ffeb3b'}
+                    .label=${"Active Color"}
+                    .helper=${"Color to use when the light is on (active state)"}
+                    .labelPosition=${LabelPosition.Hidden}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
+            ></ha-row-selector>
         `;
     }
 }

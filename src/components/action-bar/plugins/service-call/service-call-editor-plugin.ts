@@ -121,6 +121,20 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
             ></ha-row-selector>
 
             <div class="helper-text">Example: {"entity_id": "light.living_room"} for light.toggle service</div>
+
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{
+                        color: {
+                            type: "rgb",
+                        }
+                    }}
+                    .value=${this.serviceCallAction.activeColor || '#ffeb3b'}
+                    .label=${"Active Color"}
+                    .helper=${"Color to use when the service call action is active"}
+                    .labelPosition=${LabelPosition.Hidden}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
+            ></ha-row-selector>
         `;
     }
 }
