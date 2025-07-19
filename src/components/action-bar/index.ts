@@ -5,9 +5,10 @@ export * from './plugins';
 export * from './plugin-registry';
 
 // Import and register built-in plugins
-import { registerNavigationPlugin, registerServiceCallPlugin, registerLightTogglePlugin } from './plugins';
+import { registerNavigationPlugin, registerServiceCallPlugin, registerLightTogglePlugin, registerSwitchTogglePlugin } from './plugins';
 
 // Register built-in plugins
 registerNavigationPlugin();
 registerServiceCallPlugin();
 registerLightTogglePlugin();
+registerSwitchTogglePlugin();

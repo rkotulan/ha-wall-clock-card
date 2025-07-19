@@ -1,15 +1,15 @@
 import {html, css} from 'lit';
 import {customElement} from 'lit/decorators.js';
 import {BasePluginEditor} from '../editors';
-import {LightToggleActionConfig} from "./types";
+import {SwitchToggleActionConfig} from "./types";
 import {LabelPosition} from "../../../ha-selector/types";
 
 /**
- * Editor component for light toggle actions
- * This component provides the UI for configuring light toggle actions
+ * Editor component for switch toggle actions
+ * This component provides the UI for configuring switch toggle actions
  */
-@customElement('light-toggle-editor-plugin')
-export class LightToggleEditorPlugin extends BasePluginEditor {
+@customElement('switch-toggle-editor-plugin')
+export class SwitchToggleEditorPlugin extends BasePluginEditor {
     static styles = css`
         .row {
             display: flex;
@@ -31,10 +31,10 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
     `;
 
     /**
-     * Cast the action to LightToggleActionConfig
+     * Cast the action to SwitchToggleActionConfig
      */
-    get lightToggleAction(): LightToggleActionConfig {
-        return this.actionConfig as LightToggleActionConfig;
+    get switchToggleAction(): SwitchToggleActionConfig {
+        return this.actionConfig as SwitchToggleActionConfig;
     }
 
     render() {
@@ -43,12 +43,12 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{
                         entity: {
-                            domain: 'light'
+                            domain: 'switch'
                         }
                     }}
-                    .value=${this.lightToggleAction.entity_id || ''}
-                    .label=${"Light Entity"}
-                    .helper=${"Select a light entity to toggle"}
+                    .value=${this.switchToggleAction.entity_id || ''}
+                    .label=${"Switch Entity"}
+                    .helper=${"Select a switch entity to toggle"}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('entity_id', ev)}
             ></ha-row-selector>
@@ -57,12 +57,12 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{
                         icon: {
-                            placeholder: "Icon for light on state",
+                            placeholder: "Icon for switch on state",
                         }
                     }}
-                    .value=${this.lightToggleAction.icon_on || ''}
+                    .value=${this.switchToggleAction.icon_on || ''}
                     .label=${"Icon (On State)"}
-                    .helper=${"Icon to show when light is on"}
+                    .helper=${"Icon to show when switch is on"}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('icon_on', ev)}
             ></ha-row-selector>
@@ -70,9 +70,9 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
             <ha-row-selector
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
-                    .value=${this.lightToggleAction.activeColor || '#ffeb3b'}
+                    .value=${this.switchToggleAction.activeColor || '#4CAF50'}
                     .label=${"Active Color"}
-                    .helper=${"Color to use when the light is on (active state)"}
+                    .helper=${"Color to use when the switch is on (active state)"}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>
@@ -83,6 +83,6 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
 // Define the element in the custom elements registry
 declare global {
     interface HTMLElementTagNameMap {
-        'light-toggle-editor-plugin': LightToggleEditorPlugin;
+        'switch-toggle-editor-plugin': SwitchToggleEditorPlugin;
     }
 }
