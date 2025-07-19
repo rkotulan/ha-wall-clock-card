@@ -260,7 +260,7 @@ export class TransportationComponent extends LitElement {
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
 
         return html`
-            ${this.transportation?.onDemand && !transportationDataLoaded ?
+            ${!transportationDataLoaded ?
                 html`
                     <div class="transportation-on-demand-button"
                          @click=${this._handleTransportationClickAsync}>

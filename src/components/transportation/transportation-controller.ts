@@ -34,15 +34,8 @@ export class TransportationController extends BaseController {
 
     // Implementation of abstract methods from BaseController
     protected onHostConnected(): void {
-        // Only fetch data automatically if on-demand loading is not enabled
-        if (this.config.transportation && this.config.enableTransportation !== false && !this.config.transportation?.onDemand) {
-            // Fetch transportation data immediately
-            this.fetchTransportationDataAsync();
-            this._transportationDataLoaded = true;
-
-            // Set up interval for regular updates
-            this.setupUpdateInterval();
-        }
+        // On-demand loading is always enabled, so we don't fetch data automatically
+        // The data will be fetched when the user clicks the transportation button
     }
 
     protected onHostDisconnected(): void {
@@ -56,34 +49,15 @@ export class TransportationController extends BaseController {
     updateConfig(config: TransportationControllerConfig): void {
         this.logger.debug('Updating TransportationController config:', config);
 
-        // Store old config for comparison
-        const oldConfig = { ...this.config };
-
         // Update config
         this.config = { ...this.config, ...config };
 
         // Clear existing timers
         this.clearTimers();
 
-        // If transportation is enabled and not on-demand, fetch data and set up interval
-        if (this.config.transportation && this.config.enableTransportation !== false && !this.config.transportation?.onDemand) {
-            // Only fetch new data if the configuration has changed significantly
-            const shouldRefetch = 
-                !oldConfig.transportation || 
-                !this.config.transportation ||
-                JSON.stringify(oldConfig.transportation) !== JSON.stringify(this.config.transportation) ||
-                oldConfig.enableTransportation !== this.config.enableTransportation;
-
-            if (shouldRefetch) {
-                this.fetchTransportationDataAsync();
-            }
-
-            this._transportationDataLoaded = true;
-            this.setupUpdateInterval();
-        } else {
-            // Reset data loaded flag if transportation is disabled or set to on-demand
-            this._transportationDataLoaded = false;
-        }
+        // On-demand loading is always enabled, so we don't fetch data automatically
+        // Reset data loaded flag as transportation is always set to on-demand
+        this._transportationDataLoaded = false;
 
         // Request an update from the host
         this.host.requestUpdate();
