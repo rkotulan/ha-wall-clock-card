@@ -8,6 +8,7 @@ import {
     ActionBarAlignment, ModuleActionConfig
 } from './types';
 import { HomeAssistant } from 'custom-card-helpers';
+import { PluginRegistry } from './plugin-registry';
 
 export interface ActionBarComponentConfig {
     actionBar?: ActionBarConfig;
@@ -53,6 +54,8 @@ export class ActionBarComponent extends LitElement {
             background-color: rgba(0, 0, 0, 0.3);
             border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
             gap: 16px;
+            height: auto;
+            min-height: 144px;
         }
 
         .action-button {
@@ -72,6 +75,10 @@ export class ActionBarComponent extends LitElement {
         .action-button:hover {
             background-color: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
+        }
+
+        .action-button.active ha-icon {
+            color: #ffeb3b; /* Yellow color for active state */
         }
 
         .action-button svg, .action-button ha-icon {
@@ -106,6 +113,12 @@ export class ActionBarComponent extends LitElement {
                 actionBar: this.actionBar,
                 enableActionBar: this.enableActionBar
             });
+        }
+
+        // If hass has changed, we need to re-render to update the icon and active state
+        if (changedProperties.has('hass') && this.hass) {
+            this.logger.debug('Home Assistant instance changed, requesting update');
+            this.requestUpdate();
         }
     }
 
@@ -152,12 +165,32 @@ export class ActionBarComponent extends LitElement {
      * Render an action button
      */
     private renderActionButton(action: ModuleActionConfig) {
+        // Get the plugin for this action type
+        const registry = PluginRegistry.getInstance();
+        const plugin = registry.getPlugin(action.actionId);
+
+        let isActive = action.active || false;
+        // Use a local variable for the icon instead of modifying the action object
+        let iconToUse = action.icon;
+
+        // If the plugin has a getIconForState method, use it to get the icon
+        if (plugin && 'getIconForState' in plugin && this.hass) {
+            iconToUse = (plugin as any).getIconForState(action, this.hass);
+        }
+
+        // If the plugin has a getActiveState method, use it to determine active state
+        if (plugin && 'getActiveState' in plugin) {
+            isActive = (plugin as any).getActiveState();
+        }
+
+        const activeClass = isActive ? 'active' : '';
+
         return html`
-            <div class="action-button" @click=${() => this._handleActionClick(action)}>
-                ${action.icon && action.icon.startsWith('mdi:') 
-                    ? html`<ha-icon icon="${action.icon}"></ha-icon>` 
+            <div class="action-button ${activeClass}" @click=${() => this._handleActionClick(action)}>
+                ${iconToUse && iconToUse.startsWith('mdi:') 
+                    ? html`<ha-icon icon="${iconToUse}"></ha-icon>` 
                     : html`<svg viewBox="0 0 24 24">
-                        <path d="${action.icon}"></path>
+                        <path d="${iconToUse}"></path>
                       </svg>`
                 }
                 <div class="action-title">${action.title}</div>
