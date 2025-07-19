@@ -1621,36 +1621,24 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                             <ha-row-selector
                                     .hass=${this.hass}
-                                    .selector=${{boolean: {}}}
-                                    .value=${this._config.transportation?.onDemand === true}
-                                    .label= ${"Show on Demand"}
-                                    .helper= ${"Only show departures when clicked"}
-                                    propertyName="transportation.onDemand"
+                                    .selector=${{
+                                        number: {
+                                            min: 1,
+                                            max: 10,
+                                            step: 1,
+                                            mode: "box"
+                                        }
+                                    }}
+                                    .value=${this._config.transportation?.autoHideTimeout || 5}
+                                    .label= ${"Auto-Hide Timeout"}
+                                    .helper= ${"Auto-hide timeout in minutes (1-10)"}
+                                    propertyName="transportation.autoHideTimeout"
+                                    .transformData=${(value: number) => {
+                                        // Ensure value is between 1 and 10 minutes
+                                        return Math.max(Math.min(value || 5, 10), 1);
+                                    }}
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
-
-                            ${this._config.transportation?.onDemand === true ? html`
-                                <ha-row-selector
-                                        .hass=${this.hass}
-                                        .selector=${{
-                                            number: {
-                                                min: 1,
-                                                max: 10,
-                                                step: 1,
-                                                mode: "box"
-                                            }
-                                        }}
-                                        .value=${this._config.transportation?.autoHideTimeout || 5}
-                                        .label= ${"Auto-Hide Timeout"}
-                                        .helper= ${"Auto-hide timeout in minutes (1-10)"}
-                                        propertyName="transportation.autoHideTimeout"
-                                        .transformData=${(value: number) => {
-                                            // Ensure value is between 1 and 10 minutes
-                                            return Math.max(Math.min(value || 5, 10), 1);
-                                        }}
-                                        @value-changed=${this._handleFormValueChanged}
-                                ></ha-row-selector>
-                            ` : ''}
 
                             <ha-row-selector
                                     .hass=${this.hass}
