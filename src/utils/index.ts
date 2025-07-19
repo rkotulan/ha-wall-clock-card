@@ -14,3 +14,6 @@ export * from './controllers';
 
 // Re-export reflections module
 export * from './reflections';
+
+// Re-export DOM utilities
+export * from './dom';

@@ -21,6 +21,7 @@ import {PluginRegistry} from './components/action-bar';
 // even though TypeScript thinks they are unused
 import './components/action-bar/plugins/navigator/navigation-editor-plugin';
 import './components/action-bar/plugins/service-call/service-call-editor-plugin';
+import './components/action-bar/plugins/weather-update/weather-update-editor-plugin';
 import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils';
 import {setPropertyByPath} from './utils';
 import {LabelPosition} from "./components/ha-selector/types";
