@@ -2,11 +2,10 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils';
 import { ActionBarController } from './action-bar-controller';
-import { 
-    ActionBarConfig, 
-    ActionConfig, 
-    executeAction, 
-    ActionBarAlignment
+import {
+    ActionBarConfig,
+    executeAction,
+    ActionBarAlignment, ModuleActionConfig
 } from './types';
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -146,7 +145,7 @@ export class ActionBarComponent extends LitElement {
     /**
      * Render an action button
      */
-    private renderActionButton(action: ActionConfig) {
+    private renderActionButton(action: ModuleActionConfig) {
         return html`
             <div class="action-button" @click=${() => this._handleActionClick(action)}>
                 ${action.icon && action.icon.startsWith('mdi:') 
@@ -163,7 +162,7 @@ export class ActionBarComponent extends LitElement {
     /**
      * Handle click on an action button
      */
-    private _handleActionClick(action: ActionConfig): void {
+    private _handleActionClick(action: ModuleActionConfig): void {
         if (!this.hass) {
             this.logger.error('Home Assistant instance not available');
             return;

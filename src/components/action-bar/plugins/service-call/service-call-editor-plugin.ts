@@ -1,7 +1,7 @@
 import { html, css } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { BasePluginEditor } from '../editors/plugin-editor-interface';
-import { ServiceCallActionConfig } from './service-call-plugin';
+import { BasePluginEditor } from '../editors';
+import {ServiceCallActionConfig} from "./types";
 
 /**
  * Editor component for service call actions

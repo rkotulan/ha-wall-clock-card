@@ -1,12 +1,12 @@
-import { ActionRegistry } from '../src/components/action-bar/types';
+import { ActionRegistry } from '../src/components/action-bar';
 import { HomeAssistant } from 'custom-card-helpers';
 import { 
     SERVICE_CALL_ACTION, 
     ServiceCallActionConfig, 
     serviceCallHandler, 
-    registerServiceCallPlugin, 
-    createServiceCallAction 
-} from '../src/components/action-bar/plugins/service-call/service-call-plugin';
+    registerServiceCallPlugin
+
+} from '../src/components/action-bar';
 
 // Mock confirm function
 const mockConfirm = jest.fn().mockReturnValue(true);
@@ -114,26 +114,4 @@ describe('Service Call Plugin', () => {
         expect(mockCallService).not.toHaveBeenCalled();
     });
 
-    it('should create a service call action configuration', () => {
-        // Create a service call action
-        const action = createServiceCallAction(
-            'Test Service Call',
-            'mdi:test',
-            'light.turn_on',
-            { entity_id: 'light.living_room', brightness: 255 },
-            true,
-            'Custom confirmation message'
-        );
-
-        // Verify the action configuration
-        expect(action).toEqual({
-            actionId: SERVICE_CALL_ACTION,
-            title: 'Test Service Call',
-            icon: 'mdi:test',
-            service: 'light.turn_on',
-            service_data: { entity_id: 'light.living_room', brightness: 255 },
-            confirmation: true,
-            confirmation_text: 'Custom confirmation message'
-        });
-    });
 });

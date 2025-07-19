@@ -28,6 +28,8 @@ export class HaRowSelector extends LitElement {
   @property() public propertyName?: string;
   @property({attribute: false}) public transformData?: (value: any) => any;
   @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
+  @property({attribute: false}) public actionIcon?: string;
+  @property({attribute: false}) public actionTooltip?: string;
 }
 ```
 
@@ -45,6 +47,8 @@ export class HaRowSelector extends LitElement {
 | `propertyName` | `string` | `undefined` | Name of the property to update when value changes |
 | `transformData` | `(value: any) => any` | `undefined` | Function to transform the value before emitting the event |
 | `labelPosition` | `LabelPosition` | `LabelPosition.Left` | Position of the label relative to the selector |
+| `actionIcon` | `string` | `undefined` | Icon path for the action button. If provided, an action button will be displayed |
+| `actionTooltip` | `string` | `undefined` | Tooltip text for the action button |
 
 ### Label Positions
 
@@ -63,6 +67,7 @@ export enum LabelPosition {
 | Event | Detail | Description |
 |-------|--------|-------------|
 | `value-changed` | `{ value: any, propertyName?: string }` | Fired when the value changes |
+| `action-click` | `{}` | Fired when the action button is clicked |
 
 ### Usage Example
 
@@ -245,6 +250,29 @@ export type Selector =
   .labelPosition=${LabelPosition.Left}
   @value-changed=${this._handleOpacityChanged}
 ></ha-row-selector>
+```
+
+### Example with Action Button
+
+```html
+<ha-row-selector
+  .hass=${this.hass}
+  .selector=${{ select: { options: ["Option 1", "Option 2"] } }}
+  .value=${this.selectedOption}
+  .label=${"Select an option"}
+  .actionIcon=${"M19,13H5V11H19V13Z"}
+  .actionTooltip=${"Remove this option"}
+  @value-changed=${this._handleOptionChanged}
+  @action-click=${this._handleRemoveOption}
+></ha-row-selector>
+```
+
+```typescript
+// Example event handler for the action button
+function _handleRemoveOption(ev: CustomEvent): void {
+  // Handle the action button click
+  this.removeCurrentOption();
+}
 ```
 
 ### Using Data Transformation

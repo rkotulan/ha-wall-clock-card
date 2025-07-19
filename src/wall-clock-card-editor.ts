@@ -13,9 +13,7 @@ import {
     StopConfig as TransportationStopConfig
 } from './transportation-providers';
 import {
-    ActionConfig,
-    ActionBarAlignment,
-    ACTION_TYPE,
+    ActionBarAlignment, ModuleActionConfig, NAVIGATION_ACTION
 } from './components/action-bar';
 import {PluginRegistry} from './components/action-bar';
 
@@ -35,7 +33,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     @property({type: Array}) _sensors: SensorConfig[] = [];
     @property({type: Array}) _backgroundImages: BackgroundImage[] = [];
     @property({type: Array}) _stops: TransportationStopConfig[] = [];
-    @property({type: Array}) _actions: ActionConfig[] = [];
+    @property({type: Array}) _actions: ModuleActionConfig[] = [];
     @property({type: Array}) _sensorsWithFilesAttr: string[] = [];
 
     connectedCallback(): void {
@@ -360,7 +358,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
      * @param actionId The unique string identifier for the action type
      * @returns The editor component tag name or null if no editor is available
      */
-    private _getEditorComponentTagName(actionId: string): string | null {
+    private _getEditorTagName(actionId: string): string | null {
         // Use the PluginRegistry to get the plugin metadata
         const registry = PluginRegistry.getInstance();
         const plugin = registry.getPlugin(actionId);
@@ -370,8 +368,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
 
         // Get the editor component tag name directly from the plugin if available
-        if (plugin.editorComponent) {
-            return plugin.editorComponent;
+        if (plugin.editorTag) {
+            return plugin.editorTag;
         }
 
         return null;
@@ -379,12 +377,12 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
     /**
      * Create an editor component for an action
-     * @param action The action configuration
+     * @param actionConfig The action configuration
      * @param index The index of the action in the actions array
      * @returns The editor component or an empty string if no editor is available
      */
-    private _createEditorComponent(action: ActionConfig, index: number) {
-        const tagName = this._getEditorComponentTagName(action.actionId);
+    private _createEditorTagComponent(actionConfig: ModuleActionConfig, index: number) {
+        const tagName = this._getEditorTagName(actionConfig.actionId);
 
         if (!tagName) {
             return '';
@@ -399,7 +397,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             if (this.hass) {
                 (editorComponent as any).hass = this.hass;
             }
-            (editorComponent as any).action = action;
+            (editorComponent as any).actionConfig = actionConfig;
             (editorComponent as any).index = index;
             (editorComponent as any).actionChanged = this._actionChanged.bind(this);
 
@@ -411,33 +409,22 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
-
     private _addAction(): void {
         // Get the list of available action types
         const actionTypes = this._getActionTypeOptions();
 
         // Default to the first available action type, or Navigate if none are available
-        const defaultType = actionTypes.length > 0 ? actionTypes[0].value : ACTION_TYPE.NAVIGATE;
+        const defaultType = actionTypes.length > 0 ? actionTypes[0].value : NAVIGATION_ACTION;
 
         // Create a new action with default values based on the type
-        let newAction: ActionConfig;
+        let newAction: ModuleActionConfig;
 
-        if (defaultType === ACTION_TYPE.NAVIGATE) {
-            newAction = {
-                actionId: ACTION_TYPE.NAVIGATE,
-                path: '/lovelace/0',
-                title: 'Home',
-                icon: 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z', // Home icon
-                target: '_self' // Default to current tab
-            };
-        } else if (defaultType === ACTION_TYPE.CALL_SERVICE) {
-            newAction = {
-                actionId: ACTION_TYPE.CALL_SERVICE,
-                service: 'light.toggle',
-                service_data: {entity_id: 'light.living_room'},
-                title: 'Toggle Light',
-                icon: 'mdi:lightbulb'
-            };
+
+        // Get the navigation plugin from the registry
+        const plugin = PluginRegistry.getInstance().getPlugin(defaultType);
+        if (plugin && plugin.defaultActionConfig) {
+            // Use the plugin to create the default navigation action
+            newAction = plugin.defaultActionConfig();
         } else {
             // Default fallback
             newAction = {
@@ -705,11 +692,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 overflow: hidden;
             }
 
-
             .section-subheader {
                 font-size: 16px;
                 font-weight: 500;
-                margin: 15px 0 5px 0;
+                margin: 25px 0 5px 0;
             }
 
             .info-text {
@@ -1773,18 +1759,14 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             }
                                         }}
                                         .value=${action.actionId}
-                                        .label= ${"Action Type"}                                        
+                                        .label= ${"Action Type"}
+                                        .actionIcon=${'M19,13H5V11H19V13Z'}
+                                        .actionTooltip= ${"Remove action"}
                                         @value-changed=${(ev: CustomEvent) => {
                                             this._actionChanged(index, 'actionId', ev.detail.value);
                                         }}
+                                        @action-click=${() => this._removeAction(index)}
                                 ></ha-row-selector>
-
-                                <div class="action-buttons">
-                                    <ha-icon-button
-                                            .path=${'M19,13H5V11H19V13Z'}
-                                            @click=${() => this._removeAction(index)}
-                                    ></ha-icon-button>
-                                </div>
 
                                 <ha-row-selector
                                         .hass=${this.hass}
@@ -1795,7 +1777,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         }}
                                         .value=${action.title || ''}
                                         .label=${"Title"}
-                                        .helper=${"Title for the action button"}
+                                        .helper= ${"Title for the action button"}
                                         .labelPosition=${LabelPosition.Hidden}
                                         @value-changed=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
@@ -1804,7 +1786,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             this._actionChanged(index, 'title', value || '');
                                         }}
                                 ></ha-row-selector>
-
 
                                 <ha-row-selector
                                         .hass=${this.hass}
@@ -1815,7 +1796,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         }}
                                         .value=${action.icon || ''}
                                         .label=${"Icon"}
-                                        .helper=${"Icon for the action button"}
+                                        .helper= ${"Icon for the action button"}
                                         .labelPosition=${LabelPosition.Hidden}
                                         @value-changed=${(ev: CustomEvent) => {
                                             ev.stopPropagation();
@@ -1826,7 +1807,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 ></ha-row-selector>
 
                                 <!-- Editor components are now dynamically created by the factory pattern -->
-                                ${this._createEditorComponent(action, index)}
+                                ${this._createEditorTagComponent(action, index)}
 
                                 </div>
                             `)}

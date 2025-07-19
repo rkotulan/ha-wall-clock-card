@@ -1,8 +1,9 @@
 import {html} from 'lit';
 import {customElement} from 'lit/decorators.js';
 import {BasePluginEditor} from '../editors';
-import {NavigationActionConfig} from './navigation-plugin';
+
 import {LabelPosition} from "../../../ha-selector/types";
+import {NavigationActionConfig} from "./types";
 
 /**
  * Editor component for navigation actions

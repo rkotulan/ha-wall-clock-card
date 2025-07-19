@@ -1,12 +1,11 @@
 import { ActionRegistry } from '../src/components/action-bar/types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { 
-    NAVIGATION_ACTION, 
-    NavigationActionConfig, 
-    navigationHandler, 
+    navigationHandler,
     registerNavigationPlugin, 
     createNavigationAction 
 } from '../src/components/action-bar/plugins/navigator/navigation-plugin';
+import {NAVIGATION_ACTION, NavigationActionConfig} from "../src/components/action-bar";
 
 // Mock window.open and window.history.pushState
 const mockOpen = jest.fn();
