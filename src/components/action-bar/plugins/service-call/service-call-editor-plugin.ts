@@ -1,7 +1,8 @@
-import { html, css } from 'lit';
-import { customElement } from 'lit/decorators.js';
-import { BasePluginEditor } from '../editors';
+import {html, css} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {BasePluginEditor} from '../editors';
 import {ServiceCallActionConfig} from "./types";
+import {LabelPosition} from "../../../ha-selector/types";
 
 /**
  * Editor component for service call actions
@@ -20,7 +21,19 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
             flex: 1;
             margin-right: 8px;
         }
+
+        .helper-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
     `;
+
+    /**
+     * State property to store the list of available services
+     */
+    @state() private _services: { value: string, label: string }[] = [];
 
     /**
      * Cast the action to ServiceCallActionConfig
@@ -29,68 +42,85 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
         return this.actionConfig as ServiceCallActionConfig;
     }
 
+    /**
+     * When the component is first updated, load the services
+     */
+    firstUpdated() {
+        this._loadServices();
+    }
+
+    /**
+     * Load the list of available services from Home Assistant
+     */
+    private _loadServices() {
+        if (!this.hass) return;
+
+        const services = this.hass.services;
+        if (!services) return;
+
+        const serviceOptions: { value: string, label: string }[] = [];
+
+        // Iterate through all domains and services
+        Object.keys(services).forEach(domain => {
+            Object.keys(services[domain]).forEach(service => {
+                serviceOptions.push({
+                    value: `${domain}.${service}`,
+                    label: `${domain}.${service}`
+                });
+            });
+        });
+
+        // Sort services alphabetically
+        serviceOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+        this._services = serviceOptions;
+    }
+
     render() {
         return html`
-            <div class="sensor-row">
-                <div class="sensor-entity" style="width: 100%;">
-                    <ha-textfield
-                        label="Service (domain.service)"
-                        .value=${this.serviceCallAction.service || ''}
-                        style="width: 100%;"
-                        @input=${(ev: CustomEvent) => this.handleInputChange('service', ev)}
-                    ></ha-textfield>
-                </div>
-            </div>
 
-            <div class="sensor-row">
-                <div class="sensor-entity" style="width: 100%;">
-                    <ha-textfield
-                        label="Service Data (JSON)"
-                        .value=${this.serviceCallAction.service_data ? JSON.stringify(this.serviceCallAction.service_data) : '{}'}
-                        style="width: 100%;"
-                        @input=${(ev: CustomEvent) => {
-                            ev.stopPropagation();
-                            ev.preventDefault();
-                            const target = ev.target as HTMLElement & { value?: string };
-                            if (!target) return;
-                            try {
-                                const data = JSON.parse(target.value || '{}');
-                                this.actionChanged(this.index, 'service_data', data);
-                            } catch (e) {
-                                // Invalid JSON, don't update
-                            }
-                        }}
-                    ></ha-textfield>
-                </div>
-            </div>
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{
+                        select: {
+                            options: this._services,
+                            mode: 'dropdown',
+                            custom_value: true
+                        }
+                    }}
+                    .value=${this.serviceCallAction.service || ''}
+                    .label=${"Service"}
+                    .helper= ${"Select a service or enter a custom one (domain.service)"}
+                    .labelPosition=${LabelPosition.Hidden}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('service', ev)}
+            ></ha-row-selector>
 
-            <div class="sensor-row">
-                <div class="sensor-entity" style="width: 100%;">
-                    <ha-row-selector
-                        .hass=${this.hass}
-                        .selector=${{
-                            boolean: {}
-                        }}
-                        .value=${this.serviceCallAction.confirmation || false}
-                        .label=${"Require Confirmation"}
-                        .helper=${"Show a confirmation dialog before calling the service"}
-                        @value-changed=${(ev: CustomEvent) => this.handleValueChange('confirmation', ev)}
-                    ></ha-row-selector>
-                </div>
-            </div>
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{
+                        text: {
+                            multiline: false,
+                            type: 'text'
+                        }
+                    }}
+                    label="Service Data (JSON)"
+                    .value=${this.serviceCallAction.service_data ? JSON.stringify(this.serviceCallAction.service_data) : '{}'}
+                    .labelPosition=${LabelPosition.Hidden}
+                    @value-changed=${(ev: CustomEvent) => {
+                        ev.stopPropagation();
+                        ev.preventDefault();
+                        const target = ev.target as HTMLElement & { value?: string };
+                        if (!target) return;
+                        try {
+                            const data = JSON.parse(ev.detail.value || '{}');
+                            this.actionChanged(this.index, 'service_data', data);
+                        } catch (e) {
+                            // Invalid JSON, don't update
+                        }
+                    }}
+            ></ha-row-selector>
 
-            ${this.serviceCallAction.confirmation ? html`
-                <div class="sensor-row">
-                    <div class="sensor-entity" style="width: 100%;">
-                        <ha-textfield
-                            label="Confirmation Message"
-                            .value=${this.serviceCallAction.confirmation_text || ''}
-                            style="width: 100%;"
-                            @input=${(ev: CustomEvent) => this.handleInputChange('confirmation_text', ev)}
-                        ></ha-textfield>
-                    </div>
-                </div>
-            ` : ''}
+            <div class="helper-text">Example: {"entity_id": "light.living_room"} for light.toggle service</div>
         `;
     }
 }
