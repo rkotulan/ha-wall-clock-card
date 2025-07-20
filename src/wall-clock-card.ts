@@ -16,6 +16,7 @@ import {WeatherComponent} from './components/weather';
 import {TransportationComponent} from './components/transportation';
 import {ActionBarComponent} from './components/action-bar';
 import { BottomBarManager } from './components/bottom-bar';
+import './components/bottom-bar/bottom-bar-manager';
 import './wall-clock-card-editor';
 import './components/ha-selector'; // Import the ha-selector components
 import {WeatherSignalProvider} from "./signals/weather-signal";
@@ -61,9 +62,7 @@ export interface WallClockConfig {
     weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
 
     // Transportation departures settings
-    enableTransportation?: boolean; // Whether to show transportation departures
     transportation?: TransportationConfig; // Configuration for transportation departures
-    transportationUpdateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 
     // Action bar settings
     actionBar?: ActionBarConfig; // Configuration for action bar
@@ -133,10 +132,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language;
 
-        // Initialize the transportation component
         this.transportationComponent.transportation = this.config.transportation;
-        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
 
         // Initialize the action bar component
@@ -195,11 +191,6 @@ export class WallClockCard extends LitElement {
         // Set the weather signal provider
         this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
 
-        // Initialize the transportation component with the latest configuration
-        this.transportationComponent.transportation = this.config.transportation;
-        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
-        this.transportationComponent.fontColor = this.config.fontColor;
         if (this.hass) {
             this.transportationComponent.hass = this.hass;
         }
@@ -227,6 +218,9 @@ export class WallClockCard extends LitElement {
         await this.sensorComponent.controller.ready;
         await this.transportationComponent.controller.ready;
         await this.actionBarComponent.controller.ready;
+
+        this.transportationComponent.fontColor = this.config.fontColor;
+        this.transportationComponent.transportation = this.config.transportation;
 
         // Configure the logger based on the configured log level
         const logLevelString = this.config.logLevel || 'info';
@@ -423,8 +417,6 @@ export class WallClockCard extends LitElement {
 
         // Initialize the transportation component with the new configuration
         this.transportationComponent.transportation = this.config.transportation;
-        this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
 
         this.actionBarComponent.config = this.config.actionBar;
@@ -485,6 +477,8 @@ export class WallClockCard extends LitElement {
             ${unsafeCSS(TransportationComponent.styles)}
             /* Include ActionBarComponent styles */
             ${unsafeCSS(ActionBarComponent.styles)}
+            /* Include BottomBarManager styles */
+            ${unsafeCSS(BottomBarManager.styles)}
             :host {
                 display: flex;
                 flex-direction: column;
@@ -517,9 +511,6 @@ export class WallClockCard extends LitElement {
     }
 
     render() {
-        // Update the active component before rendering
-        this.bottomBarManager.updateActiveComponent();
-
         // Calculate margin adjustment for clock based on whether a bottom bar component is active
         const hasBottomBar = this.bottomBarManager.currentComponent !== null;
 
@@ -543,7 +534,7 @@ export class WallClockCard extends LitElement {
                 <div style="${clockMarginStyle}">
                     ${this.clockComponent}
                 </div>
-                ${this.bottomBarManager.currentComponent}
+                ${this.bottomBarManager.render()}
             </ha-card>
         `;
     }

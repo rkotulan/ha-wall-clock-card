@@ -8,8 +8,6 @@ import {
 
 export interface TransportationControllerConfig {
     transportation?: TransportationConfig;
-    transportationUpdateInterval?: number;
-    enableTransportation?: boolean;
 }
 
 /**
@@ -69,10 +67,10 @@ export class TransportationController extends BaseController {
      * Set up the update interval for transportation data
      */
     private setupUpdateInterval(): void {
-        if (!this.config.transportation || this.config.enableTransportation === false) return;
+        if (!this.config.transportation || this.config.transportation.enable === false) return;
 
         // Get configured transportation update interval or default to 60 seconds
-        let transportationInterval = this.config.transportationUpdateInterval || 60;
+        let transportationInterval = this.config.transportation.updateInterval || 60;
 
         // Ensure minimum interval of 60 seconds
         transportationInterval = Math.max(transportationInterval, 60);
@@ -121,7 +119,7 @@ export class TransportationController extends BaseController {
      * Fetch transportation data from the configured provider
      */
     public async fetchTransportationDataAsync(): Promise<void> {
-        if (!this.config.transportation || this.config.enableTransportation === false)
+        if (!this.config.transportation || this.config.transportation.enable === false)
         {
             return;
         }
@@ -277,7 +275,7 @@ export class TransportationController extends BaseController {
      * Check if transportation is enabled in the configuration
      */
     get isTransportationEnabled(): boolean {
-        return this.config.enableTransportation !== false && this.config.transportation !== undefined;
+        return this.config.transportation !== undefined && this.config.transportation.enable !== false;
     }
 
     /**

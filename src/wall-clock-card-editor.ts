@@ -1581,7 +1581,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 </ha-expansion-panel>
 
                 <!-- Transportation Settings Section -->
-                ${this._config.enableTransportation === true ? html`
+                ${this._config.transportation?.enable === true ? html`
                     <ha-expansion-panel outlined>
                         <h3 slot="header">Transportation Departures</h3>
                         <div class="content">
@@ -1651,10 +1651,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                             mode: "box"
                                         }
                                     }}
-                                    .value=${Math.floor((this._config.transportationUpdateInterval || 60) / 60)}
+                                    .value=${Math.floor((this._config.transportation.updateInterval || 60) / 60)}
                                     .label= ${"Update Interval"}
                                     .helper= ${"Update interval in minutes (min: 1)"}
-                                    propertyName="transportationUpdateInterval"
+                                    propertyName="transportation.updateInterval"
                                     .transformData=${(value: number) => {
                                         // Ensure minimum of 1 minute
                                         const intervalMinutes = Math.max(value || 1, 1);

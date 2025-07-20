@@ -11,10 +11,7 @@ import { BottomBarComponent } from '../bottom-bar';
 
 export interface TransportationComponentConfig {
     transportation?: TransportationConfig;
-    transportationUpdateInterval?: number;
-    enableTransportation?: boolean;
     fontColor?: string;
-    actionBarEnabled?: boolean;
 }
 
 @customElement('ha-transportation')
@@ -34,8 +31,6 @@ export class TransportationComponent extends BottomBarComponent {
         return this.controller.isActive;
     }
     @property({ type: Object }) transportation?: TransportationConfig;
-    @property({ type: Number }) transportationUpdateInterval?: number;
-    @property({ type: Boolean }) enableTransportation?: boolean = true;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: any;
 
@@ -46,9 +41,7 @@ export class TransportationComponent extends BottomBarComponent {
         super();
         // Initialize the unified controller with the host (this component)
         this.transportationController = new TransportationController(this, {
-            transportation: this.transportation,
-            transportationUpdateInterval: this.transportationUpdateInterval,
-            enableTransportation: this.enableTransportation
+            transportation: this.transportation
         });
     }
 
@@ -252,29 +245,18 @@ export class TransportationComponent extends BottomBarComponent {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('transportation') || 
-            changedProperties.has('transportationUpdateInterval') || 
-            changedProperties.has('enableTransportation')) {
-
+        if (changedProperties.has('transportation')) {
             this.logger.debug('Transportation properties changed, updating TransportationController');
 
             // Update unified TransportationController with new configuration
             this.transportationController.updateConfig({
-                transportation: this.transportation,
-                transportationUpdateInterval: this.transportationUpdateInterval,
-                enableTransportation: this.enableTransportation
+                transportation: this.transportation
             });
-        }
-
-        // If actionBarEnabled changed, request an update to re-render
-        if (changedProperties.has('actionBarEnabled')) {
-            this.logger.debug('Action bar status changed, updating transportation component');
-            this.requestUpdate();
         }
     }
 
     render() {
-        if (!this.transportation || !this.enableTransportation) {
+        if (!this.transportation || this.transportation.enable === false) {
             return html``;
         }
 
@@ -283,7 +265,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         return html`
             ${transportationDataLoaded ?
-                
+
                 html`
                     <div class="transportation-container" style="color: ${this.fontColor};">
                         ${this.renderTransportationContent(transportationData)}
