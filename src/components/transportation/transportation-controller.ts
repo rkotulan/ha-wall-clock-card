@@ -22,6 +22,7 @@ export class TransportationController extends BaseController {
     // Reactive properties for transportation data
     private _transportationData: TransportationData = { departures: [], loading: false };
     private _transportationDataLoaded: boolean = false;
+    private _isActive: boolean = false; // Indicates if the transportation data is currently active
     private _lastTransportationUpdate?: Date;
 
     // Configuration
@@ -76,7 +77,7 @@ export class TransportationController extends BaseController {
         transportationInterval = Math.max(transportationInterval, 60);
 
         // Convert to milliseconds
-        const transportationIntervalMs = transportationInterval * 1000;
+        const transportationIntervalMs = transportationInterval * 1100; // Use 1100 to have time to close before next update
 
         this.logger.debug(`Setting transportation update interval to ${transportationInterval} seconds`);
 
@@ -106,13 +107,18 @@ export class TransportationController extends BaseController {
             window.clearTimeout(this.autoHideTimerId);
             this.autoHideTimerId = undefined;
         }
+
+        this._isActive = false;
     }
 
     /**
      * Fetch transportation data from the configured provider
      */
     public async fetchTransportationDataAsync(): Promise<void> {
-        if (!this.config.transportation || this.config.enableTransportation === false) return;
+        if (!this.config.transportation || this.config.enableTransportation === false)
+        {
+            return;
+        }
 
         // Mark as loading
         this._transportationData = {
@@ -157,7 +163,7 @@ export class TransportationController extends BaseController {
             // Update the last update timestamp
             this._lastTransportationUpdate = new Date();
 
-            this.logger.debug(`Fetched transportation data from ${provider.name}:`, this._transportationData);
+            this.logger.info(`Fetched transportation data from ${provider.name}:`, this._transportationData);
         } catch (error) {
             this.logger.error('Error fetching transportation data:', error);
             this._transportationData = {
@@ -177,6 +183,8 @@ export class TransportationController extends BaseController {
      */
     public async handleTransportationClick(): Promise<void> {
         this.logger.debug('Transportation button clicked, loading data on demand');
+
+        this._isActive = true;
 
         // Fetch transportation data
         await this.fetchTransportationDataAsync();
@@ -208,7 +216,10 @@ export class TransportationController extends BaseController {
             // Set timer to hide departures and show bus button again after timeout
             this.autoHideTimerId = window.setTimeout(() => {
                 this.logger.debug(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
+                this.clearTimers(); // Clear all timers
                 this._transportationDataLoaded = false;
+
+                // Request an update from the host
                 this.host.requestUpdate();
             }, autoHideTimeoutMs);
         }
@@ -226,7 +237,25 @@ export class TransportationController extends BaseController {
         return this._transportationDataLoaded;
     }
 
+    get isActive(): boolean {
+        return this._isActive;
+    }
+
     get lastTransportationUpdate(): Date | undefined {
         return this._lastTransportationUpdate;
+    }
+
+    /**
+     * Check if transportation is enabled in the configuration
+     */
+    get isTransportationEnabled(): boolean {
+        return this.config.enableTransportation !== false && this.config.transportation !== undefined;
+    }
+
+    /**
+     * Check if transportation configuration exists
+     */
+    get hasTransportationConfig(): boolean {
+        return this.config.transportation !== undefined;
     }
 }

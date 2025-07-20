@@ -13,6 +13,7 @@ export interface TransportationComponentConfig {
     transportationUpdateInterval?: number;
     enableTransportation?: boolean;
     fontColor?: string;
+    actionBarEnabled?: boolean;
 }
 
 @customElement('ha-transportation')
@@ -22,6 +23,7 @@ export class TransportationComponent extends LitElement {
     @property({ type: Boolean }) enableTransportation?: boolean = true;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: any;
+    @property({ type: Boolean }) actionBarEnabled?: boolean = false;
 
     private logger = createLogger('transportation-component');
     private transportationController: TransportationController;
@@ -249,10 +251,16 @@ export class TransportationComponent extends LitElement {
                 enableTransportation: this.enableTransportation
             });
         }
+
+        // If actionBarEnabled changed, request an update to re-render
+        if (changedProperties.has('actionBarEnabled')) {
+            this.logger.debug('Action bar status changed, updating transportation component');
+            this.requestUpdate();
+        }
     }
 
     render() {
-        if (!this.transportation || this.enableTransportation === false) {
+        if (!this.transportation || !this.enableTransportation) {
             return html``;
         }
 
@@ -261,13 +269,14 @@ export class TransportationComponent extends LitElement {
 
         return html`
             ${!transportationDataLoaded ?
-                html`
+                // Only show the transportation button if action bar is disabled
+                (!this.actionBarEnabled ? html`
                     <div class="transportation-on-demand-button"
                          @click=${this._handleTransportationClickAsync}>
                         <svg viewBox="0 0 24 24">
                             <path d="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1.78c0.61-0.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8,0.5-8,4v10zm3.5,1c-0.83,0-1.5-0.67-1.5-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zm9,0c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5 1.5-1.5 1.5,0.67 1.5,1.5-0.67,1.5-1.5,1.5zm1.5-6H6V6h12v5z"/>
                         </svg>
-                    </div>` :
+                    </div>` : html``) :
                 html`
                     <div class="transportation-container" style="color: ${this.fontColor};">
                         ${this.renderTransportationContent(transportationData)}
