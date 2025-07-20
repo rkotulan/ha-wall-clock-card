@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues } from 'lit';
+import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils';
 import { ActionBarController } from './action-bar-controller';
@@ -9,17 +9,31 @@ import {
 } from './types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PluginRegistry } from './plugin-registry';
+import { BottomBarComponent } from '../bottom-bar';
 
 export interface ActionBarComponentConfig {
     actionBar?: ActionBarConfig;
-    enableActionBar?: boolean;
     fontColor?: string;
 }
 
 @customElement('ha-action-bar')
-export class ActionBarComponent extends LitElement {
-    @property({ type: Object }) actionBar?: ActionBarConfig;
-    @property({ type: Boolean }) enableActionBar?: boolean = false;
+export class ActionBarComponent extends BottomBarComponent {
+    /**
+     * Priority of this component
+     * Higher priority components take precedence when multiple are active
+     */
+    get priority(): number {
+        return 5; // Lower than transportation
+    }
+
+    /**
+     * Whether this component wants to be displayed
+     */
+    get isActive(): boolean {
+        return this.config?.enabled===true && this.config.actions && this.config.actions.length > 0;
+    }
+
+    @property({ type: Object }) config?: ActionBarConfig;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: HomeAssistant;
 
@@ -30,8 +44,7 @@ export class ActionBarComponent extends LitElement {
         super();
         // Initialize the controller with the host (this component)
         this.actionBarController = new ActionBarController(this, {
-            actionBar: this.actionBar,
-            enableActionBar: this.enableActionBar
+            actionBar: this.config
         });
     }
 
@@ -102,21 +115,17 @@ export class ActionBarComponent extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('actionBar') || 
-            changedProperties.has('enableActionBar')) {
-
-            this.logger.debug('Action bar properties changed, updating ActionBarController');
+        if (changedProperties.has('config')) {
+            this.logger.debug('Config properties changed, updating ActionBarController');
 
             // Update ActionBarController with new configuration
             this.actionBarController.updateConfig({
-                actionBar: this.actionBar,
-                enableActionBar: this.enableActionBar
+                actionBar: this.config
             });
         }
 
         // If hass has changed, we need to re-render to update the icon and active state
         if (changedProperties.has('hass') && this.hass) {
-            this.logger.debug('Home Assistant instance changed, requesting update');
             this.requestUpdate();
         }
     }
@@ -125,11 +134,11 @@ export class ActionBarComponent extends LitElement {
      * Get the CSS justify-content value based on the alignment setting
      */
     private getJustifyContent(): string {
-        if (!this.actionBar || !this.actionBar.alignment) {
+        if (!this.config || !this.config.alignment) {
             return 'center'; // Default to center for backward compatibility
         }
 
-        switch (this.actionBar.alignment) {
+        switch (this.config.alignment) {
             case ActionBarAlignment.Left:
                 return 'flex-start';
             case ActionBarAlignment.Right:
@@ -141,21 +150,21 @@ export class ActionBarComponent extends LitElement {
     }
 
     render() {
-        if (!this.actionBar || this.enableActionBar === false || !this.actionBar.actions || this.actionBar.actions.length === 0) {
+        if (!this.config || this.config.enabled === false || !this.config.actions || this.config.actions.length === 0) {
             return html``;
         }
 
         const justifyContent = this.getJustifyContent();
 
         // Use the configured backgroundOpacity or default to 0.3
-        const opacity = this.actionBar.backgroundOpacity !== undefined ? this.actionBar.backgroundOpacity : 0.3;
+        const opacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.3;
 
         return html`
             <div class="action-bar-container" 
                 style="color: ${this.fontColor}; 
                        justify-content: ${justifyContent}; 
                        background-color: rgba(0, 0, 0, ${opacity});">
-                ${this.actionBar.actions.map(action => this.renderActionButton(action))}
+                ${this.config.actions.map(action => this.renderActionButton(action))}
             </div>
         `;
     }

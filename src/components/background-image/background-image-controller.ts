@@ -37,9 +37,6 @@ export class BackgroundImageController extends BaseController {
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
         super(host, 'background-image-controller');
         this.config = config;
-
-        // Default to global signal if no provider is set
-        this.setupWeatherWatcher();
     }
 
     /**

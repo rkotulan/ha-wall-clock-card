@@ -96,8 +96,6 @@ export class SensorComponent extends LitElement {
         }
 
         if (changedProperties.has('hass') && this.hass) {
-            this.logger.debug('Hass changed, updating SensorController');
-
             // Update the hass instance in the controller
             this.sensorController.updateHass(this.hass);
         }

@@ -3,6 +3,7 @@ import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 import { TransportationActionConfig, TRANSPORTATION_ACTION } from './types';
 import { TransportationComponent } from '../../../../components/transportation';
 import { createLogger, findComponentInDocument } from '../../../../utils';
+import { BottomBarManager } from '../../../../components/bottom-bar';
 
 /**
  * Transportation plugin for the action bar
@@ -34,20 +35,28 @@ export const transportationHandler: ActionHandler<TransportationActionConfig> = 
         return;
     }
 
-    // Access the action bar component from the card
+    // Access the bottom bar manager from the card
     // @ts-ignore - Accessing private property
-    const actionBarComponent = card.actionBarComponent;
-    if (!actionBarComponent) {
-        logger.warn('Action bar component not found');
-    } else {
-        logger.info('Triggering transportation display');
-        // Request an update to ensure UI is updated immediately
-        actionBarComponent.requestUpdate();
+    const bottomBarManager = card.bottomBarManager as BottomBarManager;
+    if (!bottomBarManager) {
+        logger.warn('Bottom bar manager not found');
+
+        // Fall back to the old method if bottom bar manager is not available
+        transportationComponent.controller.handleTransportationClick()
+            .then(() => {
+                logger.info('Transportation display triggered successfully (fallback mode)');
+            })
+            .catch((error) => {
+                logger.error('Error triggering transportation display:', error);
+            });
+        return;
     }
 
     // Trigger transportation display
     transportationComponent.controller.handleTransportationClick()
         .then(() => {
+            // Update the bottom bar manager to reflect the change
+            bottomBarManager.updateActiveComponent();
             logger.info('Transportation display triggered successfully');
         })
         .catch((error) => {
@@ -94,6 +103,8 @@ export class TransportationPlugin implements ActionPlugin<TransportationActionCo
         }
 
         // Check if transportation is enabled in the configuration
+        // This doesn't need to change as we're just checking if the feature is enabled,
+        // not if it's currently active
         return transportationComponent.controller.isTransportationEnabled;
     }
 

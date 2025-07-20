@@ -18,6 +18,7 @@ export interface TransportationControllerConfig {
 export class TransportationController extends BaseController {
     private intervalId?: number;
     private autoHideTimerId?: number;
+    private errorTimerId?: number;
 
     // Reactive properties for transportation data
     private _transportationData: TransportationData = { departures: [], loading: false };
@@ -108,6 +109,11 @@ export class TransportationController extends BaseController {
             this.autoHideTimerId = undefined;
         }
 
+        if (this.errorTimerId) {
+            window.clearTimeout(this.errorTimerId);
+            this.errorTimerId = undefined;
+        }
+
         this._isActive = false;
     }
 
@@ -171,6 +177,22 @@ export class TransportationController extends BaseController {
                 error: error instanceof Error ? error.message : String(error),
                 loading: false
             };
+
+            // Clear any existing error timer
+            if (this.errorTimerId) {
+                window.clearTimeout(this.errorTimerId);
+                this.errorTimerId = undefined;
+            }
+
+            // Set timer to hide error and switch back to action bar after 10 seconds
+            this.errorTimerId = window.setTimeout(() => {
+                this.logger.debug('Auto-hiding transportation error after 10 seconds');
+                this._isActive = false;
+                this._transportationDataLoaded = false;
+
+                // Request an update from the host
+                this.host.requestUpdate();
+            }, 10000); // 10 seconds
         }
 
         // Request an update to show the new data
@@ -183,6 +205,12 @@ export class TransportationController extends BaseController {
      */
     public async handleTransportationClick(): Promise<void> {
         this.logger.debug('Transportation button clicked, loading data on demand');
+
+        // Clear any existing error timer
+        if (this.errorTimerId) {
+            window.clearTimeout(this.errorTimerId);
+            this.errorTimerId = undefined;
+        }
 
         this._isActive = true;
 

@@ -15,6 +15,7 @@ import {BackgroundImageComponent} from './components/background-image';
 import {WeatherComponent} from './components/weather';
 import {TransportationComponent} from './components/transportation';
 import {ActionBarComponent} from './components/action-bar';
+import { BottomBarManager } from './components/bottom-bar';
 import './wall-clock-card-editor';
 import './components/ha-selector'; // Import the ha-selector components
 import {WeatherSignalProvider} from "./signals/weather-signal";
@@ -65,7 +66,6 @@ export interface WallClockConfig {
     transportationUpdateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 
     // Action bar settings
-    enableActionBar?: boolean; // Whether to show action bar
     actionBar?: ActionBarConfig; // Configuration for action bar
 
     // Allow string indexing for dynamic property access
@@ -91,6 +91,9 @@ export class WallClockCard extends LitElement {
     private backgroundImageComponent: BackgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
     private transportationComponent: TransportationComponent = document.createElement('ha-transportation') as TransportationComponent;
     private actionBarComponent: ActionBarComponent = document.createElement('ha-action-bar') as ActionBarComponent;
+
+    // Bottom bar manager to handle which bottom component is displayed
+    private bottomBarManager: BottomBarManager;
 
     // Weather signal provider instance
     private weatherSignalProvider = new WeatherSignalProvider();
@@ -135,12 +138,27 @@ export class WallClockCard extends LitElement {
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
         this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
-        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
 
         // Initialize the action bar component
-        this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
+        // Create a new actionBar object instead of modifying the existing one
+        const actionBar = this.config.actionBar 
+            ? { ...this.config.actionBar, enabled: this.config.enableActionBar === true }
+            : { actions: [], enabled: this.config.enableActionBar === true };
+
+        this.config = {
+            ...this.config,
+            actionBar
+        };
+
+        this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
+
+        // Initialize the bottom bar manager
+        this.bottomBarManager = new BottomBarManager(this);
+
+        // Register components with the bottom bar manager
+        this.bottomBarManager.registerComponent(this.transportationComponent);
+        this.bottomBarManager.registerComponent(this.actionBarComponent);
     }
 
     connectedCallback(): void {
@@ -182,14 +200,16 @@ export class WallClockCard extends LitElement {
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
         this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
-        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
         if (this.hass) {
             this.transportationComponent.hass = this.hass;
         }
 
         // Initialize the action bar component with the latest configuration
-        this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
+        if (!this.config.actionBar) {
+            this.config.actionBar = { actions: [] };
+        }
+
+        this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
         if (this.hass) {
             this.actionBarComponent.hass = this.hass;
@@ -406,11 +426,8 @@ export class WallClockCard extends LitElement {
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
         this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
-        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
 
-        // Initialize the action bar component with the new configuration
-        this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
+        this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
 
         if(!this.config.showWeather) {
@@ -432,11 +449,6 @@ export class WallClockCard extends LitElement {
 
             // Update the action bar component with the new hass
             this.actionBarComponent.hass = this.hass;
-        }
-
-        // If config changed, update the action bar status in the transportation component
-        if (changedProperties.has('config') && this.config) {
-            this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
         }
 
         // If config changed, update the log level
@@ -505,18 +517,16 @@ export class WallClockCard extends LitElement {
     }
 
     render() {
-        // Calculate margin adjustment for clock based on transportation and action bar
-        const hasTransportation = this.config.transportation && this.config.enableTransportation === true;
-        const hasActionBar = this.config.actionBar && this.config.enableActionBar === true;
+        // Update the active component before rendering
+        this.bottomBarManager.updateActiveComponent();
 
-        // Check if transportation data is loaded and should be displayed
-        const isTransportationDisplayed = hasTransportation && this.transportationComponent.controller.isActive;
+        // Calculate margin adjustment for clock based on whether a bottom bar component is active
+        const hasBottomBar = this.bottomBarManager.currentComponent !== null;
 
-        // Action bar takes precedence over transportation for margin adjustments
+        // Adjust clock margin if a bottom bar component is active
         let clockMarginStyle = '';
-
-        if (hasActionBar || isTransportationDisplayed) {
-            // Adjust for action bar (approximately 80px)
+        if (hasBottomBar) {
+            // Adjust for bottom bar (approximately 80px)
             clockMarginStyle = 'margin-top: -140px;';
         }
 
@@ -533,8 +543,7 @@ export class WallClockCard extends LitElement {
                 <div style="${clockMarginStyle}">
                     ${this.clockComponent}
                 </div>
-                ${this.transportationComponent}
-                ${!isTransportationDisplayed ? this.actionBarComponent : ''}
+                ${this.bottomBarManager.currentComponent}
             </ha-card>
         `;
     }

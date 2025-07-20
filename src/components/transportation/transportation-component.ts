@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues } from 'lit';
+import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils';
 import { TransportationController } from './transportation-controller';
@@ -7,6 +7,7 @@ import {
     TransportationData,
     TransportationDeparture
 } from '../../transportation-providers';
+import { BottomBarComponent } from '../bottom-bar';
 
 export interface TransportationComponentConfig {
     transportation?: TransportationConfig;
@@ -17,13 +18,26 @@ export interface TransportationComponentConfig {
 }
 
 @customElement('ha-transportation')
-export class TransportationComponent extends LitElement {
+export class TransportationComponent extends BottomBarComponent {
+    /**
+     * Priority of this component
+     * Higher priority components take precedence when multiple are active
+     */
+    get priority(): number {
+        return 10; // Higher than action bar
+    }
+
+    /**
+     * Whether this component wants to be displayed
+     */
+    get isActive(): boolean {
+        return this.controller.isActive;
+    }
     @property({ type: Object }) transportation?: TransportationConfig;
     @property({ type: Number }) transportationUpdateInterval?: number;
     @property({ type: Boolean }) enableTransportation?: boolean = true;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: any;
-    @property({ type: Boolean }) actionBarEnabled?: boolean = false;
 
     private logger = createLogger('transportation-component');
     private transportationController: TransportationController;
@@ -268,18 +282,15 @@ export class TransportationComponent extends LitElement {
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
 
         return html`
-            ${!transportationDataLoaded ?
-                // Only show the transportation button if action bar is disabled
-                (!this.actionBarEnabled ? html`
-                    <div class="transportation-on-demand-button"
-                         @click=${this._handleTransportationClickAsync}>
-                        <svg viewBox="0 0 24 24">
-                            <path d="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1-0.45 1-1v-1.78c0.61-0.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8,0.5-8,4v10zm3.5,1c-0.83,0-1.5-0.67-1.5-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zm9,0c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5 1.5-1.5 1.5,0.67 1.5,1.5-0.67,1.5-1.5,1.5zm1.5-6H6V6h12v5z"/>
-                        </svg>
-                    </div>` : html``) :
+            ${transportationDataLoaded ?
+                
                 html`
                     <div class="transportation-container" style="color: ${this.fontColor};">
                         ${this.renderTransportationContent(transportationData)}
+                    </div>` :
+                    html`
+                    <div class="transportation-container" style="color: ${this.fontColor};">
+                        <div>Loading transportation data...</div>
                     </div>`
             }
         `;
@@ -348,13 +359,5 @@ export class TransportationComponent extends LitElement {
                 })}
             </div>
         `;
-    }
-
-    /**
-     * Handle click on the transportation button
-     * This is called when the user clicks the bus icon to load transportation data on demand
-     */
-    private async _handleTransportationClickAsync(): Promise<void> {
-        this.transportationController.handleTransportationClick();
     }
 }

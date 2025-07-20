@@ -175,7 +175,7 @@ export class ClockComponent extends LitElement {
         // Log rendering information for debugging
         const seconds = this.getSeconds();
         const shouldShowSeconds = this.timeFormat?.second !== undefined && this.timeFormat?.second !== 'hidden';
-        this.logger.debug(`Rendering clock - Seconds: ${seconds}, Show seconds: ${shouldShowSeconds}, TimeFormat: ${JSON.stringify(this.timeFormat)}`);
+        // this.logger.debug(`Rendering clock - Seconds: ${seconds}, Show seconds: ${shouldShowSeconds}, TimeFormat: ${JSON.stringify(this.timeFormat)}`);
 
         return html`
             <div class="clock" style="color: ${this.fontColor};">

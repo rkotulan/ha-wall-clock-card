@@ -485,7 +485,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             newConfig.actionBar.actions = [...this._actions];
 
             // Enable action bar
-            newConfig.enableActionBar = true;
+            newConfig.actionBar.enabled = true;
 
             // Update the local config reference
             this._config = newConfig;
@@ -561,7 +561,9 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
             // If no actions left, disable action bar
             if (this._actions.length === 0) {
-                newConfig.enableActionBar = false;
+                if (newConfig.actionBar) {
+                    newConfig.actionBar.enabled = false;
+                }
                 newConfig.actionBar = undefined;
             }
 
@@ -1743,13 +1745,13 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{boolean: {}}}
-                                .value=${this._config.enableActionBar === true}
+                                .value=${this._config.actionBar?.enabled === true}
                                 .label= ${"Enable Action Bar"}
-                                propertyName="enableActionBar"
+                                propertyName="actionBar.enabled"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
-                        ${this._config.enableActionBar === true ? html`
+                        ${this._config.actionBar?.enabled === true ? html`
                             <div class="info-text">
                                 Configure action buttons that will appear at the bottom of the card.
                                 Action bar and transportation cannot be displayed simultaneously - action bar takes
