@@ -104,7 +104,6 @@ export interface ActionBarConfig {
  */
 export interface ActionBarControllerConfig {
     actionBar?: ActionBarConfig;
-    enableActionBar?: boolean;
 }
 
 /**

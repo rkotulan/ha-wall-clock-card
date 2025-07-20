@@ -49,11 +49,13 @@ export class ActionBarController extends BaseController {
 
     /**
      * Check if action bar is enabled
+     * 
+     * Returns true if actionBar exists and enabled is true
+     * Default to false if actionBar doesn't exist or enabled is not set
      */
     get isActionBarEnabled(): boolean {
-        return this.config.enableActionBar !== false && 
-               !!this.config.actionBar && 
-               this.config.actionBar.enabled !== false;
+        // If actionBar exists and enabled is explicitly set to true
+        return this.config.actionBar?.enabled === true;
     }
 
     /**
