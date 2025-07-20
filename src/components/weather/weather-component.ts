@@ -3,7 +3,6 @@ import { customElement, property } from 'lit/decorators.js';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import { createLogger, formatDate, translate } from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
-import { updateWeatherSignal } from '../../signals/weather-signal';
 
 export interface WeatherComponentConfig {
     showWeather?: boolean;
@@ -242,13 +241,8 @@ export class WeatherComponent extends LitElement {
         const weatherData = this.weatherController.weatherData;
 
         // Update the weather signal if we have weather data with a condition
-        if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
-            // Use the controller's provider if available, otherwise use global function
-            if (this.weatherController.weatherSignalProvider) {
-                this.weatherController.weatherSignalProvider.updateWeatherSignal(weatherData.current.conditionUnified);
-            } else {
-                updateWeatherSignal(weatherData.current.conditionUnified);
-            }
+        if (weatherData && weatherData.current && weatherData.current.conditionUnified && this.weatherController.weatherSignalProvider) {
+            this.weatherController.weatherSignalProvider.updateWeatherSignal(weatherData.current.conditionUnified);
         }
 
         return weatherData;

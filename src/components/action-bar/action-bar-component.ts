@@ -19,7 +19,7 @@ export interface ActionBarComponentConfig {
 @customElement('ha-action-bar')
 export class ActionBarComponent extends LitElement {
     @property({ type: Object }) actionBar?: ActionBarConfig;
-    @property({ type: Boolean }) enableActionBar?: boolean = true;
+    @property({ type: Boolean }) enableActionBar?: boolean = false;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: HomeAssistant;
 

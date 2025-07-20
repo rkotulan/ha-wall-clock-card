@@ -14,10 +14,3 @@ export class WeatherSignalProvider {
     this._weatherSignal.set(weather);
   }
 }
-
-// For backward compatibility, maintain a global instance
-const globalProvider = new WeatherSignalProvider();
-export const weatherSignal = globalProvider.weatherSignal;
-export function updateWeatherSignal(weather: Weather | undefined): void {
-  globalProvider.updateWeatherSignal(weather);
-}

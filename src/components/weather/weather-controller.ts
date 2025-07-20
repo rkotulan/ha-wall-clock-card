@@ -1,7 +1,7 @@
 import {ReactiveControllerHost} from 'lit';
 import {getWeatherProvider, WeatherData, WeatherProviderConfig} from '../../weather-providers';
 import {BaseController} from '../../utils/controllers';
-import {WeatherSignalProvider, updateWeatherSignal} from "../../signals/weather-signal";
+import {WeatherSignalProvider} from "../../signals/weather-signal";
 import {Weather} from "../../image-sources";
 
 export interface WeatherControllerConfig {
@@ -83,12 +83,8 @@ export class WeatherController extends BaseController {
         if (!previousShowWeather && this.config.showWeather) {
             await this.fetchWeatherDataAsync();
         }
-        else if(!this.config.showWeather) {
-            if (this._weatherSignalProvider) {
-                this._weatherSignalProvider.updateWeatherSignal(Weather.All);
-            } else {
-                updateWeatherSignal(Weather.All);
-            }
+        else if(!this.config.showWeather && this._weatherSignalProvider) {
+            this._weatherSignalProvider.updateWeatherSignal(Weather.All);
         }
 
         // Request an update from the host
@@ -171,12 +167,8 @@ export class WeatherController extends BaseController {
 
             // Fetch weather data from the provider
             this._weatherData = await provider.fetchWeatherAsync(weatherConfig);
-            if(this._weatherData) {
-                if (this._weatherSignalProvider) {
-                    this._weatherSignalProvider.updateWeatherSignal(this._weatherData.current?.conditionUnified ?? Weather.All);
-                } else {
-                    updateWeatherSignal(this._weatherData.current?.conditionUnified ?? Weather.All);
-                }
+            if(this._weatherData && this._weatherSignalProvider) {
+                this._weatherSignalProvider.updateWeatherSignal(this._weatherData.current?.conditionUnified ?? Weather.All);
             }
 
             this.logger.info(`Fetched weather data from ${provider.name}:`, this._weatherData);

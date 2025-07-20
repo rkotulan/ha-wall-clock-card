@@ -133,12 +133,13 @@ export class WallClockCard extends LitElement {
         // Initialize the transportation component
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
+        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
 
         // Initialize the action bar component
         this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar !== false;
+        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
         this.actionBarComponent.fontColor = this.config.fontColor;
     }
 
@@ -179,15 +180,16 @@ export class WallClockCard extends LitElement {
         // Initialize the transportation component with the latest configuration
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
+        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
         if (this.hass) {
             this.transportationComponent.hass = this.hass;
         }
 
         // Initialize the action bar component with the latest configuration
         this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar !== false;
+        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
         this.actionBarComponent.fontColor = this.config.fontColor;
         if (this.hass) {
             this.actionBarComponent.hass = this.hass;
@@ -262,9 +264,6 @@ export class WallClockCard extends LitElement {
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        // Clear all timers when the component is removed
-        // The ClockComponent, BackgroundImageComponent, WeatherComponent, and TransportationComponent 
-        // will clean up themselves when removed from the DOM
     }
 
     // Transportation data is now handled by the TransportationComponent
@@ -405,12 +404,13 @@ export class WallClockCard extends LitElement {
         // Initialize the transportation component with the new configuration
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.transportationUpdateInterval = this.config.transportationUpdateInterval;
-        this.transportationComponent.enableTransportation = this.config.enableTransportation !== false;
+        this.transportationComponent.enableTransportation = this.config.enableTransportation === true;
         this.transportationComponent.fontColor = this.config.fontColor;
+        this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
 
         // Initialize the action bar component with the new configuration
         this.actionBarComponent.actionBar = this.config.actionBar;
-        this.actionBarComponent.enableActionBar = this.config.enableActionBar !== false;
+        this.actionBarComponent.enableActionBar = this.config.enableActionBar === true;
         this.actionBarComponent.fontColor = this.config.fontColor;
 
         if(!this.config.showWeather) {
@@ -432,6 +432,11 @@ export class WallClockCard extends LitElement {
 
             // Update the action bar component with the new hass
             this.actionBarComponent.hass = this.hass;
+        }
+
+        // If config changed, update the action bar status in the transportation component
+        if (changedProperties.has('config') && this.config) {
+            this.transportationComponent.actionBarEnabled = this.config.enableActionBar === true;
         }
 
         // If config changed, update the log level
@@ -501,17 +506,18 @@ export class WallClockCard extends LitElement {
 
     render() {
         // Calculate margin adjustment for clock based on transportation and action bar
-        const hasTransportation = this.config.transportation && this.config.enableTransportation !== false;
-        const hasActionBar = this.config.actionBar && this.config.enableActionBar !== false;
+        const hasTransportation = this.config.transportation && this.config.enableTransportation === true;
+        const hasActionBar = this.config.actionBar && this.config.enableActionBar === true;
 
-        // Action bar takes precedence over transportation
+        // Check if transportation data is loaded and should be displayed
+        const isTransportationDisplayed = hasTransportation && this.transportationComponent.controller.isActive;
+
+        // Action bar takes precedence over transportation for margin adjustments
         let clockMarginStyle = '';
-        if (hasActionBar) {
+
+        if (hasActionBar || isTransportationDisplayed) {
             // Adjust for action bar (approximately 80px)
-            clockMarginStyle = 'margin-top: -80px;';
-        } else if (hasTransportation) {
-            // Adjust for transportation as before
-            clockMarginStyle = `margin-top: -${(this.config.transportation!.maxDepartures || 3) * 30 + 80}px;`;
+            clockMarginStyle = 'margin-top: -140px;';
         }
 
         return html`
@@ -527,8 +533,8 @@ export class WallClockCard extends LitElement {
                 <div style="${clockMarginStyle}">
                     ${this.clockComponent}
                 </div>
-                ${!hasActionBar ? this.transportationComponent : ''}
-                ${this.actionBarComponent}
+                ${this.transportationComponent}
+                ${!isTransportationDisplayed ? this.actionBarComponent : ''}
             </ha-card>
         `;
     }
