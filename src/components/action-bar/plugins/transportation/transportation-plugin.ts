@@ -69,9 +69,9 @@ export const transportationHandler: ActionHandler<TransportationActionConfig> = 
  */
 export class TransportationPlugin implements ActionPlugin<TransportationActionConfig> {
     readonly actionId = TRANSPORTATION_ACTION;
-    readonly name = 'Show Transportation';
+    readonly name = 'Transportation';
     readonly description = 'Show transportation information';
-    readonly icon = 'mdi:bus';
+    readonly icon = 'mdi:bus-clock';
     readonly handler: ActionHandler<TransportationActionConfig> = transportationHandler;
 
     // No editor needed for now
