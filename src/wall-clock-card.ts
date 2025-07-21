@@ -7,8 +7,7 @@ import {
     TransportationConfig
 } from './transportation-providers';
 import { ActionBarConfig } from './components/action-bar';
-import {ExtendedDateTimeFormatOptions, loadTranslationsAsync} from './utils/localize/lokalify';
-import {configureLogger, getLogLevelFromString, logger, LogLevel} from './utils/logger/logger';
+import {configureLogger, getLogLevelFromString, logger, LogLevel, ExtendedDateTimeFormatOptions, loadTranslationsAsync} from './utils';
 import {ClockComponent} from './components/clock';
 import {SensorComponent} from './components/sensor';
 import {BackgroundImageComponent} from './components/background-image';

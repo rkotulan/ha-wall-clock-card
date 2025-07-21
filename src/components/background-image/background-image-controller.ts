@@ -1,5 +1,5 @@
 import {ReactiveControllerHost} from 'lit';
-import {logger, BaseController, Messenger, WeatherMessage} from '../../utils';
+import {logger, BaseController, Messenger, WeatherMessage, findComponentsInShadowRoot} from '../../utils';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
 
@@ -198,53 +198,44 @@ export class BackgroundImageController extends BaseController {
         }
     }
 
+    // Animation configurations defined once to avoid recreating objects
+    private readonly fadeInKeyframes = [
+        { opacity: 0 },
+        { opacity: 1 }
+    ];
+
+    private readonly fadeOutKeyframes = [
+        { opacity: 1 },
+        { opacity: 0 }
+    ];
+
+    private readonly animationOptions = {
+        duration: 1000,
+        fill: 'forwards' as FillMode
+    };
+
     private async fireAnimate():Promise<void> {
+        const images = findComponentsInShadowRoot(this.host, '.background-image');
+        if (images.length === 0) return;
 
-        const element = this.host as unknown as HTMLElement & { shadowRoot: ShadowRoot };
-        if (element.shadowRoot) {
-            const images = Array.from(element.shadowRoot.querySelectorAll('.background-image')) as HTMLElement[];
+        if (images.length === 1) {
+            // Single image case - fade in only
+            images[0].animate(
+                this.fadeInKeyframes,
+                { ...this.animationOptions, easing: 'ease-in' }
+            );
+        } else {
+            images[0].animate(
+                this.fadeOutKeyframes,
+                { ...this.animationOptions, easing: 'ease-out' }
+            );
 
-            if (images.length == 1) {
-                const [curEl] = images;
-                curEl.animate(
-                    [
-                        { opacity: 0 },
-                        { opacity: 1 }
-                    ],
-                    {
-                        duration: 500,
-                        easing: 'ease-in',
-                        fill: 'forwards'
-                    }
-                );
-            } else if (images.length >= 2) {
-                const [prevEl, curEl] = images;
-
-                // Apply animations directly to the elements
-                prevEl.animate(
-                    [
-                        { opacity: 1 },
-                        { opacity: 0 }
-                    ],
-                    {
-                        duration: 500,
-                        easing: 'ease-out',
-                        fill: 'forwards'
-                    }
-                );
-                curEl.animate(
-                    [
-                        { opacity: 0 },
-                        { opacity: 1 }
-                    ],
-                    {
-                        duration: 500,
-                        easing: 'ease-in',
-                        fill: 'forwards'
-                    }
-                );
-            }
+            images[1].animate(
+                this.fadeInKeyframes,
+                { ...this.animationOptions, easing: 'ease-in' }
+            );
         }
+
         // clean up
         this._previousImageUrl = '';
     }
