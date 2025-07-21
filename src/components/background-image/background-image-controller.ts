@@ -1,9 +1,7 @@
 import {ReactiveControllerHost} from 'lit';
-import {logger} from '../../utils/logger/logger';
-import {BaseController} from '../../utils/controllers';
+import {logger, BaseController, Messenger, WeatherMessage} from '../../utils';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
-import {Messenger, WeatherMessage} from "../../utils/messenger";
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
@@ -14,10 +12,6 @@ export interface BackgroundImageControllerConfig {
  * Controller for managing background images
  */
 export class BackgroundImageController extends BaseController {
-    // Constants for transition timing
-    private static readonly TRANSITION_DELAY_MS = 50;
-    private static readonly TRANSITION_DURATION_MS = 1000;
-
     private backgroundImageManager: BackgroundImageManager = new BackgroundImageManager();
     private imageRotationTimer?: number;
     private config: BackgroundImageControllerConfig;
@@ -27,7 +21,6 @@ export class BackgroundImageController extends BaseController {
     // Image state
     private _currentImageUrl = '';
     private _previousImageUrl = '';
-    private _isTransitioning = false;
     private _fetchingImageUrls = false;
 
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
@@ -173,24 +166,24 @@ export class BackgroundImageController extends BaseController {
             if (newImageUrl) {
                 this.logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
                 const img = new Image();
-                img.onload = () => {
+                img.onload = async () => {
                     this.logger.debug(`New image loaded successfully: ${newImageUrl}`);
 
                     // Save the current image URL as the previous one before updating
                     if (this._currentImageUrl) {
                         this._previousImageUrl = this._currentImageUrl;
-                        this.logger.debug('Starting transition for subsequent image');
-                        this.handleImageTransition();
+                    } else {
+                        this._previousImageUrl = '';
                     }
 
                     // Update the current image URL
                     this._currentImageUrl = newImageUrl;
 
-                    if (!this._previousImageUrl) {
-                        // For first image load, still use a transition effect
-                        this.logger.debug('Starting transition for first image');
-                        this.handleImageTransition();
-                    }
+                    this.host.requestUpdate();
+                    await this.host.updateComplete;
+
+                    // Fire the animation after the image is loaded
+                    await this.fireAnimate();
                 };
                 img.onerror = () => {
                     this.logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
@@ -203,6 +196,57 @@ export class BackgroundImageController extends BaseController {
         } catch (error) {
             this.logger.error('Error fetching new dynamic image:', error);
         }
+    }
+
+    private async fireAnimate():Promise<void> {
+
+        const element = this.host as unknown as HTMLElement & { shadowRoot: ShadowRoot };
+        if (element.shadowRoot) {
+            const images = Array.from(element.shadowRoot.querySelectorAll('.background-image')) as HTMLElement[];
+
+            if (images.length == 1) {
+                const [curEl] = images;
+                curEl.animate(
+                    [
+                        { opacity: 0 },
+                        { opacity: 1 }
+                    ],
+                    {
+                        duration: 500,
+                        easing: 'ease-in',
+                        fill: 'forwards'
+                    }
+                );
+            } else if (images.length >= 2) {
+                const [prevEl, curEl] = images;
+
+                // Apply animations directly to the elements
+                prevEl.animate(
+                    [
+                        { opacity: 1 },
+                        { opacity: 0 }
+                    ],
+                    {
+                        duration: 500,
+                        easing: 'ease-out',
+                        fill: 'forwards'
+                    }
+                );
+                curEl.animate(
+                    [
+                        { opacity: 0 },
+                        { opacity: 1 }
+                    ],
+                    {
+                        duration: 500,
+                        easing: 'ease-in',
+                        fill: 'forwards'
+                    }
+                );
+            }
+        }
+        // clean up
+        this._previousImageUrl = '';
     }
 
     /**
@@ -244,64 +288,5 @@ export class BackgroundImageController extends BaseController {
      */
     get previousImageUrl(): string {
         return this._previousImageUrl;
-    }
-
-    /**
-     * Check if a transition is in progress
-     */
-    get isTransitioning(): boolean {
-        return this._isTransitioning;
-    }
-
-    /**
-     * Handle image transition with consistent behavior for both first and subsequent images
-     */
-    private handleImageTransition(): void {
-        this._isTransitioning = true;
-        this.host.requestUpdate();
-
-        // Add a small delay to ensure the initial state is rendered
-        setTimeout(() => {
-            this.applyTransitionEffect();
-        }, BackgroundImageController.TRANSITION_DELAY_MS);
-    }
-
-    /**
-     * Apply transition effect to the container element
-     */
-    private applyTransitionEffect(): void {
-        if (!(this.host instanceof HTMLElement && this.host.shadowRoot)) {
-            this.logger.error('Could not access shadow root');
-            return;
-        }
-
-        const container = this.host.shadowRoot.querySelector('.background-container');
-        if (!container) {
-            this.logger.error('Could not find background container element');
-            return;
-        }
-
-        // Add transition class to all images at once via the container
-        container.classList.add('active-transition');
-        this.logger.debug('Added active-transition class to container');
-
-        // After transition completes, clean up
-        setTimeout(() => {
-            this.cleanupAfterTransition(container);
-        }, BackgroundImageController.TRANSITION_DURATION_MS);
-    }
-
-    /**
-     * Clean up after transition completes
-     */
-    private cleanupAfterTransition(container: Element): void {
-        // Remove transition classes
-        if (container.classList.contains('active-transition')) {
-            container.classList.remove('active-transition');
-        }
-
-        this._isTransitioning = false;
-        this.host.requestUpdate();
-        this.logger.debug('Transition completed');
     }
 }

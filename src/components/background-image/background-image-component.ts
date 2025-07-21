@@ -2,6 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils';
 import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
+import { animate } from '@lit-labs/motion';
 
 @customElement('ha-background-image')
 export class BackgroundImageComponent extends LitElement {
@@ -55,40 +56,16 @@ export class BackgroundImageComponent extends LitElement {
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;            
-            opacity: 0;
-            /* No default transition - will be added only during explicit transitions */
+            object-fit: cover;
+            /* No default opacity or z-index - will be controlled by inline styles and @lit-labs/motion */            
         }
 
-        /* Default state - current image is visible */
-        .background-image:not(.previous) {
-            opacity: 1;
+        .fade-out {            
+            z-index: 0;
         }
 
-        /* Initial state for transition */
-        .transitioning .background-image {
-            transition: none; /* Ensure no transition during setup */
-        }
-
-        .transitioning .background-image.previous {
-            opacity: 1; /* Previous image starts visible */
-        }
-
-        .transitioning .background-image:not(.previous) {
-            opacity: 0; /* New image starts invisible */
-        }
-
-        /* Active transition state - smooth transition between images */
-        .transitioning.active-transition .background-image {
-            transition: opacity 1s ease-in-out; /* Apply transition to all images */
-        }
-
-        .transitioning.active-transition .background-image.previous {
-            opacity: 0; /* Previous image fades out */
-        }
-
-        .transitioning.active-transition .background-image:not(.previous) {
-            opacity: 1; /* New image fades in */
+        .fade-in {            
+            z-index: 1;
         }
 
         .background-overlay {
@@ -98,6 +75,7 @@ export class BackgroundImageComponent extends LitElement {
             width: 100%;
             height: 100%;
             background-color: black;
+            z-index: 2; /* Ensure overlay is above all images */
         }
     `;
 
@@ -121,26 +99,54 @@ export class BackgroundImageComponent extends LitElement {
         return this.backgroundImageController.previousImageUrl;
     }
 
-    get isTransitioning(): boolean {
-        return this.backgroundImageController.isTransitioning;
-    }
-
     render() {
         const currentImageUrl = this.currentImageUrl;
         const previousImageUrl = this.previousImageUrl;
-        const isTransitioning = this.isTransitioning;
 
         return html`
-            <div class="background-container ${isTransitioning ? 'transitioning' : ''}">
+            <div class="background-container">
                 ${currentImageUrl ?
                     html`
-
-                        ${isTransitioning && previousImageUrl ?
+                        ${previousImageUrl ? 
                             html`
-                                <img class="background-image previous" src="${previousImageUrl}" >
+                                <!-- Previous image that will fade out -->
+                                <img 
+                                    class="background-image fade-out" 
+                                    src="${previousImageUrl}"
+                                    ${animate({
+                                        id: 'fadeOut',
+                                        out: [
+                                            { opacity: 1 },
+                                            { opacity: 0 }
+                                        ],
+                                        keyframeOptions: {
+                                            duration: 1000,
+                                            easing: 'ease-out',
+                                            fill: 'forwards'
+                                        }
+                                    })}
+
+                                >
                             ` : ''
                         }
-                        <img class="background-image" src="${currentImageUrl}">
+                        <!-- Current image that will fade in -->
+                        <img 
+                            class="background-image fade-in" 
+                            src="${currentImageUrl}"
+                            ${animate({
+                                id: 'fadeIn',
+                                in: [
+                                    { opacity: 0 },
+                                    { opacity: 1 }
+                                ],
+                                keyframeOptions: {
+                                    duration: 1000,
+                                    easing: 'ease-in',
+                                    fill: 'forwards'
+                                }
+                            })}
+
+                        >
                         <div class="background-overlay" style="opacity: ${this.backgroundOpacity !== undefined ? this.backgroundOpacity : 0.5};"></div>
                     ` :
                     ''
