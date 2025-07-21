@@ -1,5 +1,5 @@
 import {ReactiveControllerHost, TemplateResult} from 'lit';
-import {BaseController} from '../../utils';
+import {BaseController, BottomBarRequestUpdateMessage, Messenger} from '../../utils';
 import {BottomBarComponent} from './bottom-bar-component';
 import {html, css, CSSResult} from 'lit';
 
@@ -11,6 +11,7 @@ import {html, css, CSSResult} from 'lit';
 export class BottomBarManager extends BaseController {
     private components: BottomBarComponent[] = [];
     private activeComponent: BottomBarComponent | null = null;
+    private messenger: Messenger = Messenger.getInstance();
 
     static get styles(): CSSResult {
         return css`
@@ -100,9 +101,15 @@ export class BottomBarManager extends BaseController {
     // Implementation of abstract methods from BaseController
     protected onHostConnected(): void {
         this.logger.debug('Bottom bar manager connected');
+        this.messenger.subscribe(BottomBarRequestUpdateMessage, this.onRequestUpdateMessage);
     }
 
     protected onHostDisconnected(): void {
         this.logger.debug('Bottom bar manager disconnected');
+        this.messenger.unsubscribe(BottomBarRequestUpdateMessage, this.onRequestUpdateMessage);
     }
+
+    private onRequestUpdateMessage = (_msg: BottomBarRequestUpdateMessage) => {
+        this.host.requestUpdate();
+    };
 }

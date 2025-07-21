@@ -10,3 +10,8 @@ export class WeatherMessage implements IMessage {
     constructor(public weather: Weather) {
     }
 }
+
+export class BottomBarRequestUpdateMessage implements IMessage {
+    constructor() {
+    }
+}

@@ -5,6 +5,7 @@ import {
     TransportationData,
     getTransportationProvider
 } from '../../transportation-providers';
+import {BottomBarRequestUpdateMessage, Messenger} from "../../utils";
 
 export interface TransportationControllerConfig {
     transportation?: TransportationConfig;
@@ -112,7 +113,7 @@ export class TransportationController extends BaseController {
             this.errorTimerId = undefined;
         }
 
-        this._isActive = false;
+        this.setInactive();
     }
 
     /**
@@ -185,7 +186,7 @@ export class TransportationController extends BaseController {
             // Set timer to hide error and switch back to action bar after 10 seconds
             this.errorTimerId = window.setTimeout(() => {
                 this.logger.debug('Auto-hiding transportation error after 10 seconds');
-                this._isActive = false;
+                this.setInactive();
                 this._transportationDataLoaded = false;
 
                 // Request an update from the host
@@ -278,10 +279,8 @@ export class TransportationController extends BaseController {
         return this.config.transportation !== undefined && this.config.transportation.enable !== false;
     }
 
-    /**
-     * Check if transportation configuration exists
-     */
-    get hasTransportationConfig(): boolean {
-        return this.config.transportation !== undefined;
+    private setInactive(): void {
+        this._isActive = false;
+        Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
 }

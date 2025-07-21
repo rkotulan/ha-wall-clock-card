@@ -93,6 +93,7 @@ export class WallClockCard extends LitElement {
     // Bottom bar manager to handle which bottom component is displayed
     private bottomBarManager: BottomBarManager;
 
+
     constructor() {
         super();
 
