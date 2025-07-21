@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
-import { createLogger, formatDate, translate } from '../../utils';
+import {createLogger, formatDate, Messenger, translate, WeatherMessage} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 
 export interface WeatherComponentConfig {
@@ -241,8 +241,8 @@ export class WeatherComponent extends LitElement {
         const weatherData = this.weatherController.weatherData;
 
         // Update the weather signal if we have weather data with a condition
-        if (weatherData && weatherData.current && weatherData.current.conditionUnified && this.weatherController.weatherSignalProvider) {
-            this.weatherController.weatherSignalProvider.updateWeatherSignal(weatherData.current.conditionUnified);
+        if (weatherData && weatherData.current && weatherData.current.conditionUnified) {
+            Messenger.getInstance().publish(new WeatherMessage(weatherData.current.conditionUnified));
         }
 
         return weatherData;

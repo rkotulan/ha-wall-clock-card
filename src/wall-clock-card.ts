@@ -18,8 +18,8 @@ import {ActionBarComponent} from './components/action-bar';
 import { BottomBarManager } from './components/bottom-bar';
 import './components/bottom-bar/bottom-bar-manager';
 import './wall-clock-card-editor';
-import './components/ha-selector'; // Import the ha-selector components
-import {WeatherSignalProvider} from "./signals/weather-signal";
+import './components/ha-selector';
+import {Messenger, WeatherMessage} from "./utils"; // Import the ha-selector components
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
@@ -93,9 +93,6 @@ export class WallClockCard extends LitElement {
 
     // Bottom bar manager to handle which bottom component is displayed
     private bottomBarManager: BottomBarManager;
-
-    // Weather signal provider instance
-    private weatherSignalProvider = new WeatherSignalProvider();
 
     constructor() {
         super();
@@ -188,9 +185,6 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
 
-        // Set the weather signal provider
-        this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
-
         if (this.hass) {
             this.transportationComponent.hass = this.hass;
         }
@@ -244,7 +238,7 @@ export class WallClockCard extends LitElement {
         }
 
         if(!this.config.showWeather) {
-            this.weatherSignalProvider.updateWeatherSignal(Weather.All);
+            Messenger.getInstance().publish(new WeatherMessage(Weather.All));
         }
 
         // Transportation data is now handled by the TransportationComponent
@@ -269,9 +263,6 @@ export class WallClockCard extends LitElement {
             imageSourceConfig: imageSourceConfig,
             backgroundRotationInterval: this.config.backgroundRotationInterval
         };
-
-        // Set the weather signal provider
-        this.backgroundImageComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
 
         logger.debug('Background image component initialized');
     }
@@ -412,9 +403,6 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
 
-        // Set the weather signal provider
-        this.weatherComponent.controller.setWeatherSignalProvider(this.weatherSignalProvider);
-
         // Initialize the transportation component with the new configuration
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.fontColor = this.config.fontColor;
@@ -424,8 +412,7 @@ export class WallClockCard extends LitElement {
 
         if(!this.config.showWeather) {
             this.backgroundImageComponent.controller.ready.then(() => {
-
-                this.weatherSignalProvider.updateWeatherSignal(Weather.All);
+                Messenger.getInstance().publish(new WeatherMessage(Weather.All));
             });
         }
     }

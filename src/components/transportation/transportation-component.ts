@@ -1,13 +1,13 @@
-import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { createLogger } from '../../utils';
-import { TransportationController } from './transportation-controller';
+import {html, css, PropertyValues} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
+import {createLogger} from '../../utils';
+import {TransportationController} from './transportation-controller';
 import {
     TransportationConfig,
     TransportationData,
     TransportationDeparture
 } from '../../transportation-providers';
-import { BottomBarComponent } from '../bottom-bar';
+import {BottomBarComponent} from '../bottom-bar';
 
 export interface TransportationComponentConfig {
     transportation?: TransportationConfig;
@@ -30,9 +30,10 @@ export class TransportationComponent extends BottomBarComponent {
     get isActive(): boolean {
         return this.controller.isActive;
     }
-    @property({ type: Object }) transportation?: TransportationConfig;
-    @property({ type: String }) fontColor?: string;
-    @property({ type: Object }) hass?: any;
+
+    @property({type: Object}) transportation?: TransportationConfig;
+    @property({type: String}) fontColor?: string;
+    @property({type: Object}) hass?: any;
 
     private logger = createLogger('transportation-component');
     private transportationController: TransportationController;
@@ -264,17 +265,23 @@ export class TransportationComponent extends BottomBarComponent {
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
 
         return html`
-            ${transportationDataLoaded ?
-
-                html`
-                    <div class="transportation-container" style="color: ${this.fontColor};">
-                        ${this.renderTransportationContent(transportationData)}
-                    </div>` :
-                    html`
-                    <div class="transportation-container" style="color: ${this.fontColor};">
-                        <div>Loading transportation data...</div>
-                    </div>`
-            }
+            ${this.controller.isActive
+                    ? (transportationDataLoaded
+                            ? html`
+                                <div
+                                        class="transportation-container"
+                                        style="color: ${this.fontColor};"
+                                >
+                                    ${this.renderTransportationContent(transportationData)}
+                                </div>`
+                            : html`
+                                <div
+                                        class="transportation-container"
+                                        style="color: ${this.fontColor};"
+                                >
+                                    <div>Loading transportation data...</div>
+                                </div>`)
+                    : html``}
         `;
     }
 
