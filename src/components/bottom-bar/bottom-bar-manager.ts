@@ -1,5 +1,5 @@
 import {ReactiveControllerHost, TemplateResult} from 'lit';
-import {BaseController, BottomBarRequestUpdateMessage, Messenger} from '../../utils';
+import {BaseController, BottomBarRequestUpdateMessage, Messenger, findComponentsInShadowRoot} from '../../utils';
 import {BottomBarComponent} from './bottom-bar-component';
 import {html, css, CSSResult} from 'lit';
 
@@ -11,7 +11,24 @@ import {html, css, CSSResult} from 'lit';
 export class BottomBarManager extends BaseController {
     private components: BottomBarComponent[] = [];
     private activeComponent: BottomBarComponent | null = null;
+    private previousActiveComponent: BottomBarComponent | null = null;
     private messenger: Messenger = Messenger.getInstance();
+
+    // Animation configurations
+    private readonly fadeInKeyframes = [
+        {opacity: 0},
+        {opacity: 1}
+    ];
+
+    private readonly fadeOutKeyframes = [
+        {opacity: 1},
+        {opacity: 0}
+    ];
+
+    private readonly animationOptions = {
+        duration: 500,
+        fill: 'forwards' as FillMode
+    };
 
     static get styles(): CSSResult {
         return css`
@@ -20,14 +37,22 @@ export class BottomBarManager extends BaseController {
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                z-index: 3;
+                z-index: 2;
             }
 
             .bottom-bar-item {
                 display: none;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
             }
 
             .bottom-bar-item.active {
+                display: block;
+            }
+
+            .bottom-bar-item.previous {
                 display: block;
             }
         `;
@@ -62,6 +87,9 @@ export class BottomBarManager extends BaseController {
         if (this.activeComponent !== newActiveComponent) {
             this.logger.debug(`Changing active component from ${this.activeComponent?.constructor.name || 'none'} to ${newActiveComponent?.constructor.name || 'none'}`);
 
+            // Store the previous component before updating
+            this.previousActiveComponent = this.activeComponent;
+
             // Deactivate current component
             if (this.activeComponent) {
                 this.activeComponent.deactivate();
@@ -72,7 +100,44 @@ export class BottomBarManager extends BaseController {
             if (this.activeComponent) {
                 this.activeComponent.activate();
             }
+
+            if (this.previousActiveComponent && this.activeComponent) {
+                this.host.requestUpdate();
+                this.host.updateComplete.then(() => {
+                    this.animateComponentChange();
+                });
+            }
         }
+    }
+
+    /**
+     * Animate the transition between components
+     */
+    private animateComponentChange(): void {
+        // Find the DOM elements for the current and previous components
+        if (!this.activeComponent || !this.previousActiveComponent) {
+            return;
+        }
+
+        // Find the active and previous elements by their classes
+        const currentElement = findComponentsInShadowRoot(this.host, '.bottom-bar-item.active')[0];
+        const previousElement = findComponentsInShadowRoot(this.host, '.bottom-bar-item.previous')[0];
+
+        if (!currentElement || !previousElement) {
+            this.logger.warn('Could not find elements for animation');
+            return;
+        }
+
+        previousElement.animate(
+            this.fadeOutKeyframes,
+            {...this.animationOptions, easing: 'ease-out'}
+        );
+
+        // Apply animations
+        currentElement.animate(
+            this.fadeInKeyframes,
+            {...this.animationOptions, easing: 'ease-in'}
+        );
     }
 
     /**
@@ -82,19 +147,22 @@ export class BottomBarManager extends BaseController {
         return this.activeComponent;
     }
 
-    public render():TemplateResult  {
-      this.updateActiveComponent();
+    public render(): TemplateResult {
 
         return html`
-          <div class="bottom-bar-container">
-            ${this.components.map(component => {
-                return html`
-                    <div class="bottom-bar-item ${component == this.currentComponent ? 'active' : ''}">
-                        ${component}
-                    </div>
-                `;
-            })}
-        </div>
+            <div class="bottom-bar-container">
+                ${this.components.map(component => {
+                    // Show component if it's the current active one or the previous one during transition
+                    const isActive = component == this.currentComponent;
+                    const isPrevious = component == this.previousActiveComponent;
+
+                    return html`
+                        <div class="bottom-bar-item ${isActive ? 'active' : ''} ${isPrevious ? 'previous' : ''}">
+                            ${component}
+                        </div>
+                    `;
+                })}
+            </div>
         `;
     }
 
@@ -110,6 +178,6 @@ export class BottomBarManager extends BaseController {
     }
 
     private onRequestUpdateMessage = (_msg: BottomBarRequestUpdateMessage) => {
-        this.host.requestUpdate();
+        this.updateActiveComponent();
     };
 }
