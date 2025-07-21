@@ -5,7 +5,7 @@ export * from './plugins';
 export * from './plugin-registry';
 
 // Import and register built-in plugins
-import { registerNavigationPlugin, registerServiceCallPlugin, registerLightTogglePlugin, registerSwitchTogglePlugin, registerWeatherUpdatePlugin, registerTransportationPlugin } from './plugins';
+import { registerNavigationPlugin, registerServiceCallPlugin, registerLightTogglePlugin, registerSwitchTogglePlugin, registerWeatherUpdatePlugin, registerTransportationPlugin, registerBackgroundNextPlugin } from './plugins';
 
 // Register built-in plugins
 registerNavigationPlugin();
@@ -14,3 +14,4 @@ registerLightTogglePlugin();
 registerSwitchTogglePlugin();
 registerWeatherUpdatePlugin();
 registerTransportationPlugin();
+registerBackgroundNextPlugin();
