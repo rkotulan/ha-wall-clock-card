@@ -3,8 +3,7 @@ import {logger} from '../../utils/logger/logger';
 import {BaseController} from '../../utils/controllers';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
-import {Signal} from "@lit-labs/signals";
-import {WeatherSignalProvider} from "../../signals/weather-signal";
+import {Messenger, WeatherMessage} from "../../utils/messenger";
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
@@ -23,6 +22,7 @@ export class BackgroundImageController extends BaseController {
     private imageRotationTimer?: number;
     private config: BackgroundImageControllerConfig;
     private currentWeather: Weather = Weather.All;
+    private messenger = Messenger.getInstance();
 
     // Image state
     private _currentImageUrl = '';
@@ -30,61 +30,19 @@ export class BackgroundImageController extends BaseController {
     private _isTransitioning = false;
     private _fetchingImageUrls = false;
 
-    // Signal watcher for weather updates
-    private weatherWatcher?: Signal.subtle.Watcher;
-    private weatherSignalProvider?: WeatherSignalProvider;
-
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
         super(host, 'background-image-controller');
         this.config = config;
     }
 
-    /**
-     * Set the weather signal provider for this controller
-     */
-    setWeatherSignalProvider(provider: WeatherSignalProvider): void {
-        // Disconnect from previous signal if any
-        if (this.weatherWatcher && this.weatherSignalProvider) {
-            this.weatherWatcher.unwatch(this.weatherSignalProvider.weatherSignal);
-        }
-
-        this.weatherSignalProvider = provider;
-
-        // Setup watcher with the new provider
-        this.setupWeatherWatcher();
-    }
-
-    /**
-     * Setup the weather watcher with the current provider
-     */
-    private setupWeatherWatcher(): void {
-        if (!this.weatherSignalProvider) {
-            this.logger.warn('No weather signal provider set, weather updates will not work');
-            return;
-        }
-
-        this.weatherWatcher = new Signal.subtle.Watcher(async () => {
-            await 0; // nutné kvůli async restrikci
-            if (!this.weatherSignalProvider) {
-                return;
-            }
-            const signal = this.weatherSignalProvider.weatherSignal;
-            const newValue = signal.get();
-            if(newValue === undefined) {
-                return;
-            }
-
-            this.updateWeather(newValue || Weather.All);
-            this.logger.info('New signal for weather:', newValue);
-            this.weatherWatcher?.watch(signal); // reaktivace watcheru
-        });
-    }
+    private onWeather = (msg: WeatherMessage) => {
+        this.logger.info('New message for weather:', msg.weather);
+        this.updateWeather(msg.weather);
+    };
 
     protected onHostConnected(): void {
         // Watch the signal if provider is available
-        if (this.weatherSignalProvider && this.weatherWatcher) {
-            this.weatherWatcher.watch(this.weatherSignalProvider.weatherSignal);
-        }
+        this.messenger.subscribe(WeatherMessage, this.onWeather);
 
         // Lazy inicializace pouze pokud máme konfiguraci
         if (this.config.imageSourceConfig) {
@@ -93,10 +51,7 @@ export class BackgroundImageController extends BaseController {
     }
 
     protected onHostDisconnected(): void {
-        // Unwatch the signal if provider is available
-        if (this.weatherSignalProvider && this.weatherWatcher) {
-            this.weatherWatcher.unwatch(this.weatherSignalProvider.weatherSignal);
-        }
+        this.messenger.unsubscribe(WeatherMessage, this.onWeather);
 
         // Clean up timers when the host disconnects
         if (this.imageRotationTimer) {

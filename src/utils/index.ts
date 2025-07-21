@@ -17,3 +17,6 @@ export * from './reflections';
 
 // Re-export DOM utilities
 export * from './dom';
+
+// Re-export messenger module
+export * from './messenger';

@@ -110,22 +110,6 @@ export class BackgroundImageComponent extends LitElement {
             // Update the controller with new configuration
             this.backgroundImageController.updateConfig(this.config ?? {});
         }
-
-        // If weather changed, refresh the image and update the signal
-        // This maintains backward compatibility with direct property setting
-        /*
-        if (changedProperties.has('weather')) {
-            if(this.weather) {
-                // Update the controller
-                this.backgroundImageController.updateWeather(this.weather);
-
-                // Update the signal to keep it in sync (but don't trigger another update)
-                if (weatherSignal.value !== this.weather) {
-                    updateWeatherSignal(this.weather);
-                }
-            }
-        }
-        */
     }
 
     // Getters to expose controller state
