@@ -2,7 +2,6 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { createLogger } from '../../utils';
 import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
-import { animate } from '@lit-labs/motion';
 
 @customElement('ha-background-image')
 export class BackgroundImageComponent extends LitElement {
@@ -110,43 +109,11 @@ export class BackgroundImageComponent extends LitElement {
                         ${previousImageUrl ? 
                             html`
                                 <!-- Previous image that will fade out -->
-                                <img 
-                                    class="background-image fade-out" 
-                                    src="${previousImageUrl}"
-                                    ${animate({
-                                        id: 'fadeOut',
-                                        out: [
-                                            { opacity: 1 },
-                                            { opacity: 0 }
-                                        ],
-                                        keyframeOptions: {
-                                            duration: 1000,
-                                            easing: 'ease-out',
-                                            fill: 'forwards'
-                                        }
-                                    })}
-
-                                >
+                                <img class="background-image fade-out" src="${previousImageUrl}">
                             ` : ''
                         }
                         <!-- Current image that will fade in -->
-                        <img 
-                            class="background-image fade-in" 
-                            src="${currentImageUrl}"
-                            ${animate({
-                                id: 'fadeIn',
-                                in: [
-                                    { opacity: 0 },
-                                    { opacity: 1 }
-                                ],
-                                keyframeOptions: {
-                                    duration: 1000,
-                                    easing: 'ease-in',
-                                    fill: 'forwards'
-                                }
-                            })}
-
-                        >
+                        <img class="background-image fade-in" src="${currentImageUrl}">
                         <div class="background-overlay" style="opacity: ${this.backgroundOpacity !== undefined ? this.backgroundOpacity : 0.5};"></div>
                     ` :
                     ''

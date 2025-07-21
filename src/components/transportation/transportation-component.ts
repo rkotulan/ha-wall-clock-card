@@ -63,6 +63,7 @@ export class TransportationComponent extends BottomBarComponent {
             padding: 8px 16px;
             background-color: rgba(0, 0, 0, 0.1);
             border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
+            min-height: 170px;
         }
 
         .transportation-on-demand-button {
