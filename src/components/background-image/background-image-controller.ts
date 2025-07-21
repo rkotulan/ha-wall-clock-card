@@ -148,6 +148,10 @@ export class BackgroundImageController extends BaseController {
         }, rotationInterval);
     }
 
+    public async fetchNextImageAsync(): Promise<void> {
+        await this.fetchNewImageAsync(this.currentWeather);
+    }
+
     /**
      * Fetch a new image from the image source
      */
