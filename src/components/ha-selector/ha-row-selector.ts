@@ -6,47 +6,146 @@ import {LabelPosition, Selector} from "./types";
 declare global {
     interface HASSDomEvents {
         "action-click": {};
-        "secondary-action-click": {};
-        "tertiary-action-click": {};
+        "action-click-0": {};
+        "action-click-1": {};
+        "action-click-2": {};
+        "action-click-3": {};
+        "action-click-4": {};
     }
 }
 
+/**
+ * A row selector component that provides a standardized layout for form fields
+ * with optional action buttons.
+ * 
+ * The component supports:
+ * - Label positioning (left, top, or hidden)
+ * - Helper text
+ * - Value transformation
+ * - Multiple action buttons (either individual or as an array)
+ * 
+ * @example
+ * ```html
+ * <ha-row-selector
+ *   .hass=${this.hass}
+ *   .selector=${{text: {type: "text"}}}
+ *   .value=${value}
+ *   .label=${"My Label"}
+ *   .helper=${"Helper text"}
+ *   .labelPosition=${LabelPosition.Top}
+ *   @value-changed=${this._handleValueChanged}
+ * ></ha-row-selector>
+ * ```
+ * 
+ * @example With action buttons
+ * ```html
+ * <ha-row-selector
+ *   .hass=${this.hass}
+ *   .selector=${{text: {type: "text"}}}
+ *   .value=${value}
+ *   .label=${"My Label"}
+ *   .actionButtons=${[
+ *     {
+ *       icon: 'M19,13H5V11H19V13Z',
+ *       tooltip: "Remove",
+ *       eventName: "action-click"
+ *     },
+ *     {
+ *       icon: 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z',
+ *       tooltip: "Move up",
+ *       eventName: "action-click-0"
+ *     }
+ *   ]}
+ *   @value-changed=${this._handleValueChanged}
+ *   @action-click=${this._handleRemove}
+ *   @action-click-0=${this._handleMoveUp}
+ * ></ha-row-selector>
+ * ```
+ */
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
+    /**
+     * The Home Assistant instance
+     * Required for accessing entity states and services
+     */
     @property({attribute: false}) public hass!: HomeAssistant;
 
+    /**
+     * The selector configuration that defines the input type
+     * @see Selector
+     */
     @property({attribute: false}) public selector!: Selector;
 
+    /**
+     * The current value of the input
+     */
     @property() public value?: string;
 
+    /**
+     * The label to display next to the input
+     */
     @property() public label?: string;
 
+    /**
+     * Helper text to display below the input
+     */
     @property() public helper?: string;
 
+    /**
+     * Whether the input is disabled
+     */
     @property({type: Boolean, reflect: true}) public disabled = false;
 
+    /**
+     * Whether the input is required
+     */
     @property({type: Boolean}) public required = true;
 
+    /**
+     * Optional property name to include in the value-changed event
+     * Useful when handling multiple inputs in a form
+     */
     @property() public propertyName?: string;
 
-    // Add the new transformData property
+    /**
+     * Optional function to transform the input value before firing the value-changed event
+     * @param value The input value to transform
+     * @returns The transformed value
+     */
     @property({attribute: false}) public transformData?: (value: any) => any;
 
-    // Add the labelPosition property
+    /**
+     * The position of the label relative to the input
+     * @default LabelPosition.Left
+     */
     @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
 
-    // Properties for the action buttons
-    @property({attribute: false}) public actionIcon?: string;
-    @property({attribute: false}) public actionTooltip?: string;
 
-    // Properties for secondary action button
-    @property({attribute: false}) public secondaryActionIcon?: string;
-    @property({attribute: false}) public secondaryActionTooltip?: string;
+    /**
+     * Array of action buttons to display
+     * Each button can have an icon, tooltip, and custom event name
+     * 
+     * @example
+     * ```typescript
+     * [
+     *   {
+     *     icon: 'M19,13H5V11H19V13Z', // SVG path for the icon
+     *     tooltip: "Remove item",      // Tooltip text
+     *     eventName: "action-click"    // Event to fire when clicked
+     *   }
+     * ]
+     * ```
+     */
+    @property({attribute: false}) public actionButtons?: Array<{
+        icon: string;
+        tooltip?: string;
+        eventName?: string;
+    }>;
 
-    // Properties for tertiary action button
-    @property({attribute: false}) public tertiaryActionIcon?: string;
-    @property({attribute: false}) public tertiaryActionTooltip?: string;
-
+    /**
+     * Renders the component
+     * @returns The rendered template
+     */
     protected render() {
         return html`
             <div class="row ${this.labelPosition.toLowerCase()}">
@@ -65,53 +164,38 @@ export class HaRowSelector extends LitElement {
                     ></ha-selector>
                 </div>
                 <div class="action-buttons">
-                    ${this.secondaryActionIcon ? html`
-                        <div class="action-button">
-                            <ha-icon-button
-                                .path=${this.secondaryActionIcon}
-                                .title=${this.secondaryActionTooltip || ''}
-                                @click=${this._handleSecondaryActionClick}
-                            ></ha-icon-button>
-                        </div>
-                    ` : ''}
-                    ${this.tertiaryActionIcon ? html`
-                        <div class="action-button">
-                            <ha-icon-button
-                                .path=${this.tertiaryActionIcon}
-                                .title=${this.tertiaryActionTooltip || ''}
-                                @click=${this._handleTertiaryActionClick}
-                            ></ha-icon-button>
-                        </div>
-                    ` : ''}
-                    ${this.actionIcon ? html`
-                        <div class="action-button">
-                            <ha-icon-button
-                                .path=${this.actionIcon}
-                                .title=${this.actionTooltip || ''}
-                                @click=${this._handleActionClick}
-                            ></ha-icon-button>
-                        </div>
-                    ` : ''}
+                    ${this.actionButtons ? 
+                        this.actionButtons.map((button, index) => html`
+                            <div class="action-button">
+                                <ha-icon-button
+                                    .path=${button.icon}
+                                    .title=${button.tooltip || ''}
+                                    @click=${(ev: MouseEvent) => this._handleDynamicActionClick(ev, index, button.eventName)}
+                                ></ha-icon-button>
+                            </div>
+                        `) 
+                    : ''}
                 </div>
             </div>
         `;
     }
 
-    private _handleActionClick(ev: MouseEvent) {
+
+    /**
+     * Handles clicks on dynamically created action buttons
+     * @param ev The mouse event
+     * @param index The index of the button in the actionButtons array
+     * @param eventName Optional custom event name to fire
+     */
+    private _handleDynamicActionClick(ev: MouseEvent, index: number, eventName?: string) {
         ev.stopPropagation();
-        fireEvent(this, "action-click", {});
+        fireEvent(this, (eventName || `action-click-${index}`) as keyof HASSDomEvents, {});
     }
 
-    private _handleSecondaryActionClick(ev: MouseEvent) {
-        ev.stopPropagation();
-        fireEvent(this, "secondary-action-click", {});
-    }
-
-    private _handleTertiaryActionClick(ev: MouseEvent) {
-        ev.stopPropagation();
-        fireEvent(this, "tertiary-action-click", {});
-    }
-
+    /**
+     * Handles value changes from the ha-selector component
+     * @param ev The custom event containing the new value
+     */
     private _valueChanged(ev: CustomEvent) {
         ev.stopPropagation();
         let value = ev.detail.value;

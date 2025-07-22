@@ -28,8 +28,11 @@ export class HaRowSelector extends LitElement {
   @property() public propertyName?: string;
   @property({attribute: false}) public transformData?: (value: any) => any;
   @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
-  @property({attribute: false}) public actionIcon?: string;
-  @property({attribute: false}) public actionTooltip?: string;
+  @property({attribute: false}) public actionButtons?: Array<{
+    icon: string;
+    tooltip?: string;
+    eventName?: string;
+  }>;
 }
 ```
 
@@ -47,8 +50,7 @@ export class HaRowSelector extends LitElement {
 | `propertyName` | `string` | `undefined` | Name of the property to update when value changes |
 | `transformData` | `(value: any) => any` | `undefined` | Function to transform the value before emitting the event |
 | `labelPosition` | `LabelPosition` | `LabelPosition.Left` | Position of the label relative to the selector |
-| `actionIcon` | `string` | `undefined` | Icon path for the action button. If provided, an action button will be displayed |
-| `actionTooltip` | `string` | `undefined` | Tooltip text for the action button |
+| `actionButtons` | `Array<{icon: string, tooltip?: string, eventName?: string}>` | `undefined` | Array of action buttons to display. Each button can have an icon, tooltip, and custom event name |
 
 ### Label Positions
 
@@ -67,7 +69,17 @@ export enum LabelPosition {
 | Event | Detail | Description |
 |-------|--------|-------------|
 | `value-changed` | `{ value: any, propertyName?: string }` | Fired when the value changes |
-| `action-click` | `{}` | Fired when the action button is clicked |
+| `action-click` | `{}` | Fired when a button with `eventName: "action-click"` is clicked |
+| `secondary-action-click` | `{}` | **Deprecated** - Use `action-click-0` instead. Fired when a button with `eventName: "secondary-action-click"` is clicked |
+| `tertiary-action-click` | `{}` | **Deprecated** - Use `action-click-1` instead. Fired when a button with `eventName: "tertiary-action-click"` is clicked |
+| `action-click-0` | `{}` | Fired when the first button in actionButtons is clicked (if no eventName is specified) |
+| `action-click-1` | `{}` | Fired when the second button in actionButtons is clicked (if no eventName is specified) |
+| `action-click-2` | `{}` | Fired when the third button in actionButtons is clicked (if no eventName is specified) |
+| `action-click-3` | `{}` | Fired when the fourth button in actionButtons is clicked (if no eventName is specified) |
+| `action-click-4` | `{}` | Fired when the fifth button in actionButtons is clicked (if no eventName is specified) |
+| `[custom-event]` | `{}` | Fired when a button with a custom eventName is clicked (the event name will be the value of eventName) |
+
+> **Note**: The standard event names (`action-click`, `action-click-0`, `action-click-1`) can be used with the `actionButtons` property by setting the `eventName` property to the desired event name. This allows for consistent event naming across your application. The event names `secondary-action-click` and `tertiary-action-click` are deprecated and should be replaced with `action-click-0` and `action-click-1` respectively. See the "Example with Multiple Action Buttons (Standard Event Names)" below for an example.
 
 ### Usage Example
 
@@ -252,7 +264,8 @@ export type Selector =
 ></ha-row-selector>
 ```
 
-### Example with Action Button
+
+### Example with Multiple Action Buttons (Custom Event Names)
 
 ```html
 <ha-row-selector
@@ -260,18 +273,95 @@ export type Selector =
   .selector=${{ select: { options: ["Option 1", "Option 2"] } }}
   .value=${this.selectedOption}
   .label=${"Select an option"}
-  .actionIcon=${"M19,13H5V11H19V13Z"}
-  .actionTooltip=${"Remove this option"}
+  .actionButtons=${[
+    {
+      icon: 'M19,13H5V11H19V13Z',
+      tooltip: "Remove this option",
+      eventName: "remove-option"
+    },
+    {
+      icon: 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z',
+      tooltip: "Move option up",
+      eventName: "move-up"
+    },
+    {
+      icon: 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z',
+      tooltip: "Move option down",
+      eventName: "move-down"
+    }
+  ]}
   @value-changed=${this._handleOptionChanged}
-  @action-click=${this._handleRemoveOption}
+  @remove-option=${this._handleRemoveOption}
+  @move-up=${this._handleMoveUp}
+  @move-down=${this._handleMoveDown}
 ></ha-row-selector>
 ```
 
 ```typescript
-// Example event handler for the action button
+// Example event handlers for the action buttons
 function _handleRemoveOption(ev: CustomEvent): void {
-  // Handle the action button click
+  // Handle the remove button click
   this.removeCurrentOption();
+}
+
+function _handleMoveUp(ev: CustomEvent): void {
+  // Handle the move up button click
+  this.moveOptionUp();
+}
+
+function _handleMoveDown(ev: CustomEvent): void {
+  // Handle the move down button click
+  this.moveOptionDown();
+}
+```
+
+### Example with Multiple Action Buttons (Standard Event Names)
+
+```html
+<ha-row-selector
+  .hass=${this.hass}
+  .selector=${{ select: { options: ["Option 1", "Option 2"] } }}
+  .value=${this.selectedOption}
+  .label=${"Select an option"}
+  .actionButtons=${[
+    {
+      icon: 'M19,13H5V11H19V13Z',
+      tooltip: "Remove this option",
+      eventName: "action-click"
+    },
+    {
+      icon: 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z',
+      tooltip: "Move option up",
+      eventName: "action-click-0"
+    },
+    {
+      icon: 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z',
+      tooltip: "Move option down",
+      eventName: "action-click-1"
+    }
+  ]}
+  @value-changed=${this._handleOptionChanged}
+  @action-click=${this._handleRemoveOption}
+  @action-click-0=${this._handleMoveUp}
+  @action-click-1=${this._handleMoveDown}
+></ha-row-selector>
+```
+
+```typescript
+// Example event handlers for the standard action buttons
+function _handleRemoveOption(ev: CustomEvent): void {
+  // Handle the remove button click
+  this.removeCurrentOption();
+}
+
+function _handleMoveUp(ev: CustomEvent): void {
+  // Handle the move up button click
+  this.moveOptionUp();
+}
+
+function _handleMoveDown(ev: CustomEvent): void {
+  // Handle the move down button click
+  this.moveOptionDown();
 }
 ```
 

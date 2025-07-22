@@ -1899,6 +1899,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <div class="section-subheader">Actions</div>
 
                             ${this._actions.map((action, index) => html`
+                                ${index > 0 ? html`<hr style="width: 100%; border: none; border-top: 1px solid var(--divider-color, rgba(0,0,0,0.8)); margin: 8px 0 16px 0;">` : ''}
 
                                 <ha-row-selector
                                         style="flex: 2;"
@@ -1913,18 +1914,29 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         .label= ${"Action Type"}
                                         .labelPosition=${LabelPosition.Hidden}
                                         .helper= ${"Select Action type"}
-                                        .actionIcon=${'M19,13H5V11H19V13Z'}
-                                        .actionTooltip= ${"Remove action"}
-                                        .secondaryActionIcon=${index > 0 ? 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z' : ''}
-                                        .secondaryActionTooltip=${index > 0 ? "Move action up" : ""}
-                                        .tertiaryActionIcon=${index < this._actions.length - 1 ? 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z' : ''}
-                                        .tertiaryActionTooltip=${index < this._actions.length - 1 ? "Move action down" : ""}
+                                        .actionButtons=${[
+                                            {
+                                                icon: 'M19,13H5V11H19V13Z',
+                                                tooltip: "Remove action",
+                                                eventName: "action-click"
+                                            },
+                                            ...(index > 0 ? [{
+                                                icon: 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z',
+                                                tooltip: "Move action up",
+                                                eventName: "action-click-0"
+                                            }] : []),
+                                            ...(index < this._actions.length - 1 ? [{
+                                                icon: 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z',
+                                                tooltip: "Move action down",
+                                                eventName: "action-click-1"
+                                            }] : [])
+                                        ]}
                                         @value-changed=${(ev: CustomEvent) => {
                                             this._actionChanged(index, 'actionId', ev.detail.value);
                                         }}
                                         @action-click=${() => this._removeAction(index)}
-                                        @secondary-action-click=${index > 0 ? () => this._moveActionUp(index) : null}
-                                        @tertiary-action-click=${index < this._actions.length - 1 ? () => this._moveActionDown(index) : null}
+                                        @action-click-0=${index > 0 ? () => this._moveActionUp(index) : null}
+                                        @action-click-1=${index < this._actions.length - 1 ? () => this._moveActionDown(index) : null}
                                 ></ha-row-selector>
 
                                 <ha-row-selector
