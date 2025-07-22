@@ -225,7 +225,22 @@ export class TransportationComponent extends BottomBarComponent {
 
         .transportation-error {
             color: #f44336;
-            font-size: 1rem;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 170px;
+            width: 100%;
+        }
+
+        .transportation-loading {
+            color: #FFFFFF;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
         }
 
         .transportation-update-time {
@@ -292,7 +307,7 @@ export class TransportationComponent extends BottomBarComponent {
     private renderTransportationContent(transportationData: TransportationData): any {
         if (transportationData.loading) {
             return html`
-                <div>Loading transportation data...</div>`;
+                <div class="transportation-loading">Loading transportation data...</div>`;
         }
 
         if (transportationData.error) {

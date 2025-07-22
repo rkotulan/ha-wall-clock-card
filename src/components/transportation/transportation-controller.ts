@@ -17,7 +17,6 @@ export interface TransportationControllerConfig {
 export class TransportationController extends BaseController {
     private intervalId?: number;
     private autoHideTimerId?: number;
-    private errorTimerId?: number;
 
     // Reactive properties for transportation data
     private _transportationData: TransportationData = { departures: [], loading: false };
@@ -117,11 +116,6 @@ export class TransportationController extends BaseController {
             this.autoHideTimerId = undefined;
         }
 
-        if (this.errorTimerId) {
-            window.clearTimeout(this.errorTimerId);
-            this.errorTimerId = undefined;
-        }
-
         this.setInactive();
     }
 
@@ -179,28 +173,12 @@ export class TransportationController extends BaseController {
 
             this.logger.info(`Fetched transportation data from ${provider.name}:`, this._transportationData);
         } catch (error) {
-            this.logger.error('Error fetching transportation data:', error);
+            this.logger.warn('Error fetching transportation data:', error);
             this._transportationData = {
                 departures: [],
                 error: error instanceof Error ? error.message : String(error),
                 loading: false
             };
-
-            // Clear any existing error timer
-            if (this.errorTimerId) {
-                window.clearTimeout(this.errorTimerId);
-                this.errorTimerId = undefined;
-            }
-
-            // Set timer to hide error and switch back to action bar after 10 seconds
-            this.errorTimerId = window.setTimeout(() => {
-                this.logger.debug('Auto-hiding transportation error after 10 seconds');
-                this.setInactive();
-                this._transportationDataLoaded = false;
-
-                // Request an update from the host
-                this.host.requestUpdate();
-            }, 10000); // 10 seconds
         }
 
         // Request an update to show the new data
@@ -213,12 +191,6 @@ export class TransportationController extends BaseController {
      */
     public async handleTransportationClick(): Promise<void> {
         this.logger.debug('Transportation button clicked, loading data on demand');
-
-        // Clear any existing error timer
-        if (this.errorTimerId) {
-            window.clearTimeout(this.errorTimerId);
-            this.errorTimerId = undefined;
-        }
 
         this.setActive()
 
@@ -245,7 +217,11 @@ export class TransportationController extends BaseController {
             autoHideTimeout = Math.max(1, Math.min(10, autoHideTimeout));
 
             // Convert to milliseconds
-            const autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
+            let autoHideTimeoutMs = autoHideTimeout * 60 * 1000;
+
+            if(this._transportationData.error) {
+                autoHideTimeoutMs = 10000; // If there was an error, set auto-hide to 10 seconds
+            }
 
             this.logger.debug(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
 
