@@ -15,3 +15,8 @@ export class BottomBarRequestUpdateMessage implements IMessage {
     constructor() {
     }
 }
+
+export class ShowTransportationMessage implements IMessage {
+    constructor() {
+    }
+}

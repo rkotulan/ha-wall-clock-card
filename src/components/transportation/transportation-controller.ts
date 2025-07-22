@@ -5,7 +5,7 @@ import {
     TransportationData,
     getTransportationProvider
 } from '../../transportation-providers';
-import {BottomBarRequestUpdateMessage, Messenger} from "../../utils";
+import {BottomBarRequestUpdateMessage, Messenger, ShowTransportationMessage} from "../../utils";
 
 export interface TransportationControllerConfig {
     transportation?: TransportationConfig;
@@ -35,13 +35,22 @@ export class TransportationController extends BaseController {
 
     // Implementation of abstract methods from BaseController
     protected onHostConnected(): void {
-        // On-demand loading is always enabled, so we don't fetch data automatically
-        // The data will be fetched when the user clicks the transportation button
+        // Subscribe to transportation click messages
+        Messenger.getInstance().subscribe(
+            ShowTransportationMessage,
+            () => this.handleTransportationClick()
+        );
     }
 
     protected onHostDisconnected(): void {
         // Clear intervals when disconnected
         this.clearTimers();
+
+        // Unsubscribe from transportation click messages
+        Messenger.getInstance().unsubscribe(
+            ShowTransportationMessage,
+            () => this.handleTransportationClick()
+        );
     }
 
     /**
@@ -211,7 +220,7 @@ export class TransportationController extends BaseController {
             this.errorTimerId = undefined;
         }
 
-        this._isActive = true;
+        this.setActive()
 
         // Fetch transportation data
         await this.fetchTransportationDataAsync();
@@ -281,6 +290,11 @@ export class TransportationController extends BaseController {
 
     private setInactive(): void {
         this._isActive = false;
+        Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
+    }
+
+    private setActive(): void {
+        this._isActive = true;
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
 }

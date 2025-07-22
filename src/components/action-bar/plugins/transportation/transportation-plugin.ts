@@ -1,9 +1,7 @@
 import { ActionHandler } from '../../types';
 import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 import { TransportationActionConfig, TRANSPORTATION_ACTION } from './types';
-import { TransportationComponent } from '../../../../components/transportation';
-import { createLogger, findComponentInDocument } from '../../../../utils';
-import { BottomBarManager } from '../../../../components/bottom-bar';
+import {createLogger, Messenger, ShowTransportationMessage} from '../../../../utils';
 
 /**
  * Transportation plugin for the action bar
@@ -19,49 +17,9 @@ const logger = createLogger('transportation-plugin');
  * @param hass The Home Assistant instance
  */
 export const transportationHandler: ActionHandler<TransportationActionConfig> = (_action, _hass) => {
-    // Try to find the card element using the utility function
-    const card = findComponentInDocument('wall-clock-card');
+    logger.info('Transportation clicked');
 
-    if (!card) {
-        logger.warn('Wall Clock Card not found');
-        return;
-    }
-
-    // Access the transportation component from the card
-    // @ts-ignore - Accessing private property
-    const transportationComponent = card.transportationComponent as TransportationComponent;
-    if (!transportationComponent) {
-        logger.warn('Transportation component not found');
-        return;
-    }
-
-    // Access the bottom bar manager from the card
-    // @ts-ignore - Accessing private property
-    const bottomBarManager = card.bottomBarManager as BottomBarManager;
-    if (!bottomBarManager) {
-        logger.warn('Bottom bar manager not found');
-
-        // Fall back to the old method if bottom bar manager is not available
-        transportationComponent.controller.handleTransportationClick()
-            .then(() => {
-                logger.info('Transportation display triggered successfully (fallback mode)');
-            })
-            .catch((error) => {
-                logger.error('Error triggering transportation display:', error);
-            });
-        return;
-    }
-
-    // Trigger transportation display
-    transportationComponent.controller.handleTransportationClick()
-        .then(() => {
-            // Update the bottom bar manager to reflect the change
-            bottomBarManager.updateActiveComponent();
-            logger.info('Transportation display triggered successfully');
-        })
-        .catch((error) => {
-            logger.error('Error triggering transportation display:', error);
-        });
+    Messenger.getInstance().publish(new ShowTransportationMessage());
 };
 
 /**
@@ -83,29 +41,6 @@ export class TransportationPlugin implements ActionPlugin<TransportationActionCo
             title: 'Transportation',
             icon: this.icon
         };
-    }
-
-    /**
-     * Check if the plugin should be available
-     * Only show if transportation is enabled
-     */
-    isAvailable(): boolean {
-        // Try to find the card element
-        const card = findComponentInDocument('wall-clock-card');
-        if (!card) {
-            return false;
-        }
-
-        // @ts-ignore - Accessing private property
-        const transportationComponent = card.transportationComponent as TransportationComponent;
-        if (!transportationComponent) {
-            return false;
-        }
-
-        // Check if transportation is enabled in the configuration
-        // This doesn't need to change as we're just checking if the feature is enabled,
-        // not if it's currently active
-        return transportationComponent.controller.isTransportationEnabled;
     }
 
     register(): void {
