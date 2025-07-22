@@ -532,6 +532,106 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         }
     }
 
+    /**
+     * Move an action up in the list (swap with the previous action)
+     * @param index The index of the action to move up
+     */
+    private _moveActionUp(index: number): void {
+        // Can't move the first item up
+        if (index <= 0 || index >= this._actions.length) {
+            return;
+        }
+
+        // Clear the entire cache since changing indices affects the cache
+        this._editorComponentCache.clear();
+
+        // Swap the action with the one above it
+        const newActions = [...this._actions];
+        const temp = newActions[index];
+        newActions[index] = newActions[index - 1];
+        newActions[index - 1] = temp;
+        this._actions = newActions;
+
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure actionBar config exists
+            if (!newConfig.actionBar) {
+                newConfig.actionBar = {
+                    enabled: true,
+                    actions: [],
+                    backgroundOpacity: 0.3
+                };
+            }
+
+            // Ensure actions array exists
+            if (!newConfig.actionBar.actions) {
+                newConfig.actionBar.actions = [];
+            }
+
+            // Update actions
+            newConfig.actionBar.actions = [...this._actions];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
+    /**
+     * Move an action down in the list (swap with the next action)
+     * @param index The index of the action to move down
+     */
+    private _moveActionDown(index: number): void {
+        // Can't move the last item down
+        if (index < 0 || index >= this._actions.length - 1) {
+            return;
+        }
+
+        // Clear the entire cache since changing indices affects the cache
+        this._editorComponentCache.clear();
+
+        // Swap the action with the one below it
+        const newActions = [...this._actions];
+        const temp = newActions[index];
+        newActions[index] = newActions[index + 1];
+        newActions[index + 1] = temp;
+        this._actions = newActions;
+
+        // Update the config with a deep copy
+        if (this._config) {
+            // Create a deep copy of the config
+            const newConfig = JSON.parse(JSON.stringify(this._config));
+
+            // Ensure actionBar config exists
+            if (!newConfig.actionBar) {
+                newConfig.actionBar = {
+                    enabled: true,
+                    actions: [],
+                    backgroundOpacity: 0.3
+                };
+            }
+
+            // Ensure actions array exists
+            if (!newConfig.actionBar.actions) {
+                newConfig.actionBar.actions = [];
+            }
+
+            // Update actions
+            newConfig.actionBar.actions = [...this._actions];
+
+            // Update the local config reference
+            this._config = newConfig;
+
+            // Fire the config-changed event with the new config
+            fireEvent(this, 'config-changed', {config: newConfig});
+        }
+    }
+
     private _removeAction(index: number): void {
         // Clear the entire cache since removing an action changes indices
         this._editorComponentCache.clear();
@@ -1811,12 +1911,20 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         }}
                                         .value=${action.actionId}
                                         .label= ${"Action Type"}
+                                        .labelPosition=${LabelPosition.Hidden}
+                                        .helper= ${"Select Action type"}
                                         .actionIcon=${'M19,13H5V11H19V13Z'}
                                         .actionTooltip= ${"Remove action"}
+                                        .secondaryActionIcon=${index > 0 ? 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z' : ''}
+                                        .secondaryActionTooltip=${index > 0 ? "Move action up" : ""}
+                                        .tertiaryActionIcon=${index < this._actions.length - 1 ? 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z' : ''}
+                                        .tertiaryActionTooltip=${index < this._actions.length - 1 ? "Move action down" : ""}
                                         @value-changed=${(ev: CustomEvent) => {
                                             this._actionChanged(index, 'actionId', ev.detail.value);
                                         }}
                                         @action-click=${() => this._removeAction(index)}
+                                        @secondary-action-click=${index > 0 ? () => this._moveActionUp(index) : null}
+                                        @tertiary-action-click=${index < this._actions.length - 1 ? () => this._moveActionDown(index) : null}
                                 ></ha-row-selector>
 
                                 <ha-row-selector
