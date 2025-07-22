@@ -2,22 +2,20 @@ import {LitElement, html, css, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
-import {WallClockConfig, SensorConfig} from './wall-clock-card';
-import {BackgroundImage} from './image-sources';
-import {StopConfig as TransportationStopConfig} from './transportation-providers';
-import {ModuleActionConfig} from './components/action-bar';
+import {WallClockConfig, SensorConfig} from '../wall-clock-card';
+import {BackgroundImage} from '../image-sources';
+import {StopConfig as TransportationStopConfig} from '../transportation-providers';
+import {ModuleActionConfig} from '../components/action-bar';
 
 // Import editor components
-import './components/editors';
-
 // These imports are needed for the custom elements to work
 // even though TypeScript thinks they are unused
-import './components/action-bar/plugins/navigator/navigation-editor-plugin';
-import './components/action-bar/plugins/service-call/service-call-editor-plugin';
-import './components/action-bar/plugins/weather-update/weather-update-editor-plugin';
-import {getLanguageOptions, ExtendedDateTimeFormatOptions} from './utils';
-import {setPropertyByPath} from './utils';
-
+import '../components/editors';
+import '../components/action-bar/plugins/navigator/navigation-editor-plugin';
+import '../components/action-bar/plugins/service-call/service-call-editor-plugin';
+import '../components/action-bar/plugins/weather-update/weather-update-editor-plugin';
+import {getLanguageOptions, ExtendedDateTimeFormatOptions} from '../utils';
+import {setPropertyByPath} from '../utils';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {

@@ -1,6 +1,6 @@
 import { html, css } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { BaseEditorSection } from '../editor-base/base-editor-section';
+import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 
 /**
  * Editor component for date format settings

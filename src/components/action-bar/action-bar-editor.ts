@@ -1,6 +1,6 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { BaseEditorSection } from '../editor-base/base-editor-section';
+import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import { ActionBarAlignment, ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-bar';
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';

@@ -1,6 +1,6 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { BaseEditorSection } from '../editor-base/base-editor-section';
+import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import { SensorConfig } from '../../wall-clock-card';
 import { LabelPosition } from '../ha-selector/types';
 

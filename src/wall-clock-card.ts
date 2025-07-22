@@ -16,7 +16,7 @@ import {TransportationComponent} from './components/transportation';
 import {ActionBarComponent} from './components/action-bar';
 import { BottomBarManager } from './components/bottom-bar';
 import './components/bottom-bar/bottom-bar-manager';
-import './wall-clock-card-editor';
+import './editors';
 import './components/ha-selector';
 import {Messenger, WeatherMessage} from "./utils"; // Import the ha-selector components
 

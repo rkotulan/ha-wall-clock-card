@@ -6,4 +6,4 @@ export * from './clock/time-format-editor';
 export * from './sensor/sensors-editor';
 export * from './transportation/transportation-editor';
 export * from './weather/weather-editor';
-export * from './editor-base/base-editor-section';
+export * from '../editors/editor-base/base-editor-section';
