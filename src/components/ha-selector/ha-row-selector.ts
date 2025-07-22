@@ -6,6 +6,8 @@ import {LabelPosition, Selector} from "./types";
 declare global {
     interface HASSDomEvents {
         "action-click": {};
+        "secondary-action-click": {};
+        "tertiary-action-click": {};
     }
 }
 
@@ -33,9 +35,17 @@ export class HaRowSelector extends LitElement {
     // Add the labelPosition property
     @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
 
-    // Properties for the action button
+    // Properties for the action buttons
     @property({attribute: false}) public actionIcon?: string;
     @property({attribute: false}) public actionTooltip?: string;
+
+    // Properties for secondary action button
+    @property({attribute: false}) public secondaryActionIcon?: string;
+    @property({attribute: false}) public secondaryActionTooltip?: string;
+
+    // Properties for tertiary action button
+    @property({attribute: false}) public tertiaryActionIcon?: string;
+    @property({attribute: false}) public tertiaryActionTooltip?: string;
 
     protected render() {
         return html`
@@ -54,15 +64,35 @@ export class HaRowSelector extends LitElement {
                         @value-changed=${this._valueChanged}
                     ></ha-selector>
                 </div>
-                ${this.actionIcon ? html`
-                    <div class="action-button">
-                        <ha-icon-button
-                            .path=${this.actionIcon}
-                            .title=${this.actionTooltip || ''}
-                            @click=${this._handleActionClick}
-                        ></ha-icon-button>
-                    </div>
-                ` : ''}
+                <div class="action-buttons">
+                    ${this.secondaryActionIcon ? html`
+                        <div class="action-button">
+                            <ha-icon-button
+                                .path=${this.secondaryActionIcon}
+                                .title=${this.secondaryActionTooltip || ''}
+                                @click=${this._handleSecondaryActionClick}
+                            ></ha-icon-button>
+                        </div>
+                    ` : ''}
+                    ${this.tertiaryActionIcon ? html`
+                        <div class="action-button">
+                            <ha-icon-button
+                                .path=${this.tertiaryActionIcon}
+                                .title=${this.tertiaryActionTooltip || ''}
+                                @click=${this._handleTertiaryActionClick}
+                            ></ha-icon-button>
+                        </div>
+                    ` : ''}
+                    ${this.actionIcon ? html`
+                        <div class="action-button">
+                            <ha-icon-button
+                                .path=${this.actionIcon}
+                                .title=${this.actionTooltip || ''}
+                                @click=${this._handleActionClick}
+                            ></ha-icon-button>
+                        </div>
+                    ` : ''}
+                </div>
             </div>
         `;
     }
@@ -70,6 +100,16 @@ export class HaRowSelector extends LitElement {
     private _handleActionClick(ev: MouseEvent) {
         ev.stopPropagation();
         fireEvent(this, "action-click", {});
+    }
+
+    private _handleSecondaryActionClick(ev: MouseEvent) {
+        ev.stopPropagation();
+        fireEvent(this, "secondary-action-click", {});
+    }
+
+    private _handleTertiaryActionClick(ev: MouseEvent) {
+        ev.stopPropagation();
+        fireEvent(this, "tertiary-action-click", {});
     }
 
     private _valueChanged(ev: CustomEvent) {
@@ -136,11 +176,18 @@ export class HaRowSelector extends LitElement {
             text-overflow: ellipsis; /* Add this */
         }
 
+        /* Action buttons container */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
+        }
+
         /* Action button styles */
         .action-button {
             display: flex;
             align-items: center;
-            margin-left: 8px;
+            margin-left: 4px;
         }
     `;
 }
