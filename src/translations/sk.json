@@ -17,7 +17,8 @@
     "thunderstorm": "Búrka",
     "snow": "Sneženie",
     "mist": "Hmla",
-    "light_rain": "Slabý dážď"
+    "light_rain": "Slabý dážď",
+    "moderate_rain": "Mierny dážď"
   },
   "forecast": {
     "title": "Predpoveď",

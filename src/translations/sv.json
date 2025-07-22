@@ -17,7 +17,8 @@
     "thunderstorm": "Åska",
     "snow": "Snö",
     "mist": "Dimma",
-    "light_rain": "Lätt regn"
+    "light_rain": "Lätt regn",
+    "moderate_rain": "Måttligt regn"
   },
   "forecast": {
     "title": "Prognos",

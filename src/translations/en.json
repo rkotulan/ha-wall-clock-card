@@ -17,7 +17,8 @@
     "thunderstorm": "Thunderstorm",
     "snow": "Snow",
     "mist": "Mist",
-    "light_rain": "Light rain"
+    "light_rain": "Light rain",
+    "moderate_rain": "Moderate rain"
   },
   "forecast": {
     "title": "Forecast",

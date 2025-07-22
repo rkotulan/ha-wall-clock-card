@@ -17,7 +17,8 @@
     "thunderstorm": "Bouřka",
     "snow": "Sněžení",
     "mist": "Mlha",
-    "light_rain": "Slabý déšť"
+    "light_rain": "Slabý déšť",
+    "moderate_rain": "Mírný déšť"
   },
   "forecast": {
     "title": "Předpověď",

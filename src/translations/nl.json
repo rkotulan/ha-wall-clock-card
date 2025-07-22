@@ -17,7 +17,8 @@
     "thunderstorm": "Onweer",
     "snow": "Sneeuw",
     "mist": "Mist",
-    "light_rain": "Lichte regen"
+    "light_rain": "Lichte regen",
+    "moderate_rain": "Matige regen"
   },
   "forecast": {
     "title": "Voorspelling",

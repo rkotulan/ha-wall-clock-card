@@ -17,7 +17,8 @@
     "thunderstorm": "Ukkonen",
     "snow": "Lumi",
     "mist": "Sumu",
-    "light_rain": "Kevyt sade"
+    "light_rain": "Kevyt sade",
+    "moderate_rain": "Kohtalainen sade"
   },
   "forecast": {
     "title": "Ennuste",

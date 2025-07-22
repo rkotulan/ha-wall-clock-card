@@ -17,7 +17,8 @@
     "thunderstorm": "Burza",
     "snow": "Śnieg",
     "mist": "Mgła",
-    "light_rain": "Lekki deszcz"
+    "light_rain": "Lekki deszcz",
+    "moderate_rain": "Umiarkowany deszcz"
   },
   "forecast": {
     "title": "Prognoza",
