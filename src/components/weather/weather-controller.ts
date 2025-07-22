@@ -1,6 +1,6 @@
 import {ReactiveControllerHost} from 'lit';
 import {getWeatherProvider, WeatherData, WeatherProviderConfig} from '../../weather-providers';
-import {BaseController, Messenger, WeatherMessage} from '../../utils';
+import {BaseController, ForceUpdateWeatherMessage, Messenger, WeatherMessage} from '../../utils';
 import {Weather} from "../../image-sources";
 
 export interface WeatherControllerConfig {
@@ -24,6 +24,8 @@ export class WeatherController extends BaseController {
     private _weatherLoading = false;
     private _weatherError = false;
     private _weatherErrorMessage = '';
+    private _messenger = Messenger.getInstance();
+    private _forceUpdateWeatherHandler = (_message: ForceUpdateWeatherMessage) => this.fetchWeatherDataAsync();
 
     // Configuration
     private config: WeatherControllerConfig = {};
@@ -35,6 +37,10 @@ export class WeatherController extends BaseController {
 
     // Implementation of abstract methods from BaseController
     protected onHostConnected(): void {
+
+        // Watch the signal if provider is available
+        this._messenger.subscribe(ForceUpdateWeatherMessage, this._forceUpdateWeatherHandler);
+
         // Fetch weather data immediately if enabled
         if (this.config.showWeather) {
             // Set up interval to update weather data
@@ -45,6 +51,9 @@ export class WeatherController extends BaseController {
     }
 
     protected onHostDisconnected(): void {
+        // Unsubscribe from the message using our stored handler
+        this._messenger.unsubscribe(ForceUpdateWeatherMessage, this._forceUpdateWeatherHandler);
+
         // Clear interval when disconnected
         if (this.updateTimer) {
             window.clearInterval(this.updateTimer);
@@ -123,7 +132,9 @@ export class WeatherController extends BaseController {
      * Fetch weather data from the configured provider
      */
     async fetchWeatherDataAsync(): Promise<void> {
-        if (this._weatherLoading || !this.config.showWeather) return;
+        if (this._weatherLoading || !this.config.showWeather)  {
+            return;
+        }
 
         this.logger.debug(`Begin fetch weather data`);
 

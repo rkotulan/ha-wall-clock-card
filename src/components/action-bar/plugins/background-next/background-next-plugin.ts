@@ -1,8 +1,7 @@
 import { ActionHandler } from '../../types';
 import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 import { BackgroundNextActionConfig, BACKGROUND_NEXT_ACTION } from './types';
-import { BackgroundImageComponent } from '../../../../components/background-image';
-import { createLogger, findComponentInDocument } from '../../../../utils';
+import { createLogger, FetchNextImageMessage, Messenger } from '../../../../utils';
 
 /**
  * Background Next plugin for the action bar
@@ -14,34 +13,12 @@ const logger = createLogger('background-next-plugin');
 
 /**
  * Handler for background next actions
- * @param action The background next action configuration
- * @param hass The Home Assistant instance
+ * @param _action The background next action configuration
+ * @param _hass The Home Assistant instance
  */
 export const backgroundNextHandler: ActionHandler<BackgroundNextActionConfig> = (_action, _hass) => {
-    // Try to find the card element using the utility function
-    const card = findComponentInDocument('wall-clock-card');
-
-    if (!card) {
-        logger.warn('Wall Clock Card not found');
-        return;
-    }
-
-    // Access the background image component from the card
-    // @ts-ignore - Accessing private property
-    const backgroundImageComponent = card.backgroundImageComponent as BackgroundImageComponent;
-    if (!backgroundImageComponent) {
-        logger.warn('Background image component not found');
-        return;
-    }
-
-    // Trigger next background image
-    backgroundImageComponent.controller.fetchNextImageAsync()
-        .then(() => {
-            logger.info('Next background image triggered successfully');
-        })
-        .catch((error) => {
-            logger.error('Error triggering next background image:', error);
-        });
+    logger.info('Background next clicked');
+    Messenger.getInstance().publish(new FetchNextImageMessage());
 };
 
 /**
@@ -63,27 +40,6 @@ export class BackgroundNextPlugin implements ActionPlugin<BackgroundNextActionCo
             title: 'Next Background',
             icon: this.icon
         };
-    }
-
-    /**
-     * Check if the plugin should be available
-     * Only show if background image is enabled
-     */
-    isAvailable(): boolean {
-        // Try to find the card element
-        const card = findComponentInDocument('wall-clock-card');
-        if (!card) {
-            return false;
-        }
-
-        // @ts-ignore - Accessing private property
-        const backgroundImageComponent = card.backgroundImageComponent as BackgroundImageComponent;
-        if (!backgroundImageComponent) {
-            return false;
-        }
-
-        // Check if background image is initialized
-        return backgroundImageComponent.controller.isInitialized;
     }
 
     register(): void {

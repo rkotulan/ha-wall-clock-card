@@ -1,5 +1,12 @@
 import {ReactiveControllerHost} from 'lit';
-import {logger, BaseController, Messenger, WeatherMessage, findComponentsInShadowRoot} from '../../utils';
+import {
+    logger,
+    BaseController,
+    Messenger,
+    WeatherMessage,
+    findComponentsInShadowRoot,
+    FetchNextImageMessage
+} from '../../utils';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
 
@@ -33,9 +40,16 @@ export class BackgroundImageController extends BaseController {
         this.updateWeather(msg.weather);
     };
 
+    private onFetchNextImage = (_msg: FetchNextImageMessage) => {
+        this.logger.info('Fetch next image requested');
+        this.setupImageRotation();
+        this.fetchNewImageAsync(this.currentWeather);
+    };
+
     protected onHostConnected(): void {
         // Watch the signal if provider is available
         this.messenger.subscribe(WeatherMessage, this.onWeather);
+        this.messenger.subscribe(FetchNextImageMessage, this.onFetchNextImage);
 
         // Lazy inicializace pouze pokud máme konfiguraci
         if (this.config.imageSourceConfig) {
@@ -45,6 +59,7 @@ export class BackgroundImageController extends BaseController {
 
     protected onHostDisconnected(): void {
         this.messenger.unsubscribe(WeatherMessage, this.onWeather);
+        this.messenger.unsubscribe(FetchNextImageMessage, this.onFetchNextImage);
 
         // Clean up timers when the host disconnects
         if (this.imageRotationTimer) {
@@ -146,10 +161,6 @@ export class BackgroundImageController extends BaseController {
                 }
             })();
         }, rotationInterval);
-    }
-
-    public async fetchNextImageAsync(): Promise<void> {
-        await this.fetchNewImageAsync(this.currentWeather);
     }
 
     /**
