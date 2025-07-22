@@ -11,12 +11,22 @@ export class WeatherMessage implements IMessage {
     }
 }
 
+export class ForceUpdateWeatherMessage implements IMessage {
+    constructor() {
+    }
+}
+
 export class BottomBarRequestUpdateMessage implements IMessage {
     constructor() {
     }
 }
 
 export class ShowTransportationMessage implements IMessage {
+    constructor() {
+    }
+}
+
+export class FetchNextImageMessage implements IMessage {
     constructor() {
     }
 }

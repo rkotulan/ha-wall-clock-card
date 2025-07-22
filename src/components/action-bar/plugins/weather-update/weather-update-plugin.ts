@@ -1,8 +1,7 @@
 import {ActionHandler} from '../../types';
 import {registerPlugin, ActionPlugin} from '../../plugin-registry';
 import {WeatherUpdateActionConfig} from "./types";
-import {WeatherComponent} from "../../../../components/weather";
-import {createLogger, findComponentInDocument} from "../../../../utils";
+import {createLogger, ForceUpdateWeatherMessage, Messenger} from "../../../../utils";
 
 /**
  * Weather Update plugin for the action bar
@@ -21,30 +20,8 @@ export const WEATHER_UPDATE_ACTION = 'weather-update';
  * @param hass The Home Assistant instance
  */
 export const weatherUpdateHandler: ActionHandler<WeatherUpdateActionConfig> = (_action, _hass) => {
-    // Try to find the card element using the utility function
-    const card = findComponentInDocument('wall-clock-card');
-
-    if (!card) {
-        logger.warn('Wall Clock Card not found');
-        return;
-    }
-
-    // Access the weather component from the card
-    // @ts-ignore - Accessing private property
-    const weatherComponent = card.weatherComponent as WeatherComponent;
-    if (!weatherComponent) {
-        logger.warn('Weather component not found');
-        return;
-    }
-
-    // Trigger weather update
-    weatherComponent.controller.fetchWeatherDataAsync()
-        .then(() => {
-            logger.info('Weather update triggered successfully');
-        })
-        .catch((error) => {
-            logger.error('Error triggering weather update:', error);
-        });
+    logger.info('Weather update clicked');
+    Messenger.getInstance().publish(new ForceUpdateWeatherMessage());
 };
 
 /**
