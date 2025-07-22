@@ -17,7 +17,8 @@
     "thunderstorm": "Furtună",
     "snow": "Ninsoare",
     "mist": "Ceață",
-    "light_rain": "Ploaie ușoară"
+    "light_rain": "Ploaie ușoară",
+    "moderate_rain": "Ploaie moderată"
   },
   "forecast": {
     "title": "Prognoză",

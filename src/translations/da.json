@@ -17,7 +17,8 @@
     "thunderstorm": "Tordenvejr",
     "snow": "Sne",
     "mist": "Tåge",
-    "light_rain": "Let regn"
+    "light_rain": "Let regn",
+    "moderate_rain": "Moderat regn"
   },
   "forecast": {
     "title": "Prognose",

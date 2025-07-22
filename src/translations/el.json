@@ -17,7 +17,8 @@
     "thunderstorm": "Καταιγίδα",
     "snow": "Χιόνι",
     "mist": "Ομίχλη",
-    "light_rain": "Ελαφριά βροχή"
+    "light_rain": "Ελαφριά βροχή",
+    "moderate_rain": "Μέτρια βροχή"
   },
   "forecast": {
     "title": "Πρόγνωση",

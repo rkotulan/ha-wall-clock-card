@@ -17,7 +17,8 @@
     "thunderstorm": "Гроза",
     "snow": "Снег",
     "mist": "Туман",
-    "light_rain": "Небольшой дождь"
+    "light_rain": "Небольшой дождь",
+    "moderate_rain": "Умеренный дождь"
   },
   "forecast": {
     "title": "Прогноз",

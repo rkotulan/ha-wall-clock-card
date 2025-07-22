@@ -17,7 +17,8 @@
     "thunderstorm": "Tormenta",
     "snow": "Nieve",
     "mist": "Niebla",
-    "light_rain": "Lluvia ligera"
+    "light_rain": "Lluvia ligera",
+    "moderate_rain": "Lluvia moderada"
   },
   "forecast": {
     "title": "Pronóstico",

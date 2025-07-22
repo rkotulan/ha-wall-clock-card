@@ -17,7 +17,8 @@
     "thunderstorm": "Zivatar",
     "snow": "Hó",
     "mist": "Köd",
-    "light_rain": "Gyenge eső"
+    "light_rain": "Gyenge eső",
+    "moderate_rain": "Mérsékelt eső"
   },
   "forecast": {
     "title": "Előrejelzés",

@@ -17,7 +17,8 @@
     "thunderstorm": "Trovoada",
     "snow": "Neve",
     "mist": "Névoa",
-    "light_rain": "Chuva fraca"
+    "light_rain": "Chuva fraca",
+    "moderate_rain": "Chuva moderada"
   },
   "forecast": {
     "title": "Previsão",

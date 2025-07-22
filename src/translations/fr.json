@@ -17,7 +17,8 @@
     "thunderstorm": "Orage",
     "snow": "Neige",
     "mist": "Brouillard",
-    "light_rain": "Pluie légère"
+    "light_rain": "Pluie légère",
+    "moderate_rain": "Pluie modérée"
   },
   "forecast": {
     "title": "Prévisions",
