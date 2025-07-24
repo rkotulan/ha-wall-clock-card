@@ -239,7 +239,7 @@ export class TransportationComponent extends BottomBarComponent {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            height: 170px;
             width: 100%;
         }
 
@@ -295,7 +295,7 @@ export class TransportationComponent extends BottomBarComponent {
                                         class="transportation-container"
                                         style="color: ${this.fontColor};"
                                 >
-                                    <div>Loading transportation data...</div>
+                                    <div class="transportation-loading">Loading transportation data...</div>
                                 </div>`)
                     : html``}
         `;
@@ -317,7 +317,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         if (!transportationData.departures || transportationData.departures.length === 0) {
             return html`
-                <div>No departures available</div>`;
+                <div class="transportation-loading">No departures available</div>`;
         }
 
         // Group departures by stop name and postId

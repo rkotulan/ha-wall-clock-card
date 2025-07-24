@@ -420,12 +420,12 @@
                                         class="transportation-container"
                                         style="color: ${this.fontColor};"
                                 >
-                                    <div>Loading transportation data...</div>
+                                    <div class="transportation-loading">Loading transportation data...</div>
                                 </div>`:W``}
         `}renderTransportationContent(e){if(e.loading)return W`
                 <div class="transportation-loading">Loading transportation data...</div>`;if(e.error)return W`
                 <div class="transportation-error">${e.error}</div>`;if(!e.departures||0===e.departures.length)return W`
-                <div>No departures available</div>`;const t={};for(const o of e.departures){const e=`${o.stopName}-${o.postId}`;t[e]||(t[e]=[]),t[e].push(o)}return W`
+                <div class="transportation-loading">No departures available</div>`;const t={};for(const o of e.departures){const e=`${o.stopName}-${o.postId}`;t[e]||(t[e]=[]),t[e].push(o)}return W`
             <div class="transportation-departures">
                 ${Object.entries(t).map(([e,t])=>{const o=t[0].stopName;return W`
                         <div class="stop-group">
@@ -641,7 +641,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            height: 170px;
             width: 100%;
         }
 
