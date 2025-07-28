@@ -1,39 +1,28 @@
 import {css, CSSResult, html, LitElement, unsafeCSS} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
-import {BackgroundImage, ImageSourceConfig, Weather} from './image-sources';
-import {WeatherProviderConfig} from './weather-providers';
+import {BackgroundImage, ImageSourceConfig, Weather} from '../providers/image';
+import {WeatherProviderConfig} from '../providers/weather';
 import {
     TransportationConfig
-} from './transportation-providers';
-import { ActionBarConfig } from './components/action-bar';
-import {configureLogger, getLogLevelFromString, logger, LogLevel, ExtendedDateTimeFormatOptions, loadTranslationsAsync} from './utils';
-import {ClockComponent} from './components/clock';
-import {SensorComponent} from './components/sensor';
-import {BackgroundImageComponent} from './components/background-image';
-import {WeatherComponent} from './components/weather';
-import {TransportationComponent} from './components/transportation';
-import {ActionBarComponent} from './components/action-bar';
-import { BottomBarManager } from './components/bottom-bar';
-import './components/bottom-bar/bottom-bar-manager';
-import './editors';
-import './components/ha-selector';
-import {Messenger, WeatherMessage} from "./utils"; // Import the ha-selector components
+} from '../providers/transportation';
+import { ActionBarConfig } from '../components/action-bar';
+import {configureLogger, getLogLevelFromString, logger, LogLevel, ExtendedDateTimeFormatOptions, loadTranslationsAsync} from '../utils';
+import {ClockComponent} from '../components/clock';
+import {SensorComponent} from '../components/sensors';
+import {BackgroundImageComponent} from '../components/background';
+import {WeatherComponent} from '../components/weather';
+import {TransportationComponent} from '../components/transportation';
+import {ActionBarComponent} from '../components/action-bar';
+import { BottomBarManager } from '../components/bottom-bar';
+import '../components/bottom-bar/bottom-bar-manager';
+import '../editors';
+import '../components/ha-selector';
+import {Messenger, WeatherMessage} from "../utils";
+import {  SensorConfig } from './types';
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
-
-// Interface for sensor configuration
-export interface SensorConfig {
-    entity: string;
-    label?: string;
-}
-
-// Legacy interfaces for backward compatibility
-export interface StopConfig {
-    stopId: number;
-    postId: number;
-}
 
 export interface WallClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;

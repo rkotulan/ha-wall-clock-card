@@ -1,7 +1,7 @@
 import { LitElement, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
-import { WallClockConfig } from '../../wall-clock-card';
+import { WallClockConfig } from '../../core/wall-clock-card';
 
 /**
  * Interface for editor section components
@@ -51,7 +51,7 @@ export abstract class BaseEditorSection extends LitElement implements EditorSect
 
         // Create a deep copy of the config and set the property value
         const newConfig = JSON.parse(JSON.stringify(this.config));
-        
+
         // Set the property value using the property path
         this.setPropertyByPath(newConfig, ev.detail.propertyName, ev.detail.value);
 
@@ -74,20 +74,20 @@ export abstract class BaseEditorSection extends LitElement implements EditorSect
 
         for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i];
-            
+
             // Handle array indices in the path (e.g., "sensors.0.entity")
             if (part.includes('[') && part.includes(']')) {
                 const arrayName = part.substring(0, part.indexOf('['));
                 const index = parseInt(part.substring(part.indexOf('[') + 1, part.indexOf(']')), 10);
-                
+
                 if (!current[arrayName]) {
                     current[arrayName] = [];
                 }
-                
+
                 if (!current[arrayName][index]) {
                     current[arrayName][index] = {};
                 }
-                
+
                 current = current[arrayName][index];
             } else {
                 // Regular property

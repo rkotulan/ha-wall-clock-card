@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0
+
+### What's Changed
+- Improved project structure with better organization:
+  - Created core directory for main components and logic
+  - Reorganized providers under a common providers directory
+  - Created services directory for API and services
+  - Improved structure of components
+  - Reorganized editors
+- Enhanced code maintainability with clearer separation of concerns
+- Better modularity for easier future development
+- Improved organization of related functionality
+- Consistent naming conventions across the project
+
 ## 2.1.0
 
 ### What's Changed

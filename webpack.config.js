@@ -7,7 +7,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const isAnalyze = process.argv.includes('--analyze');
 
 module.exports = {
-  entry: './src/wall-clock-card.ts',
+  entry: './src/index.ts',
   output: {
     filename: 'wall-clock-card.js',
     path: path.resolve(__dirname, 'dist'),

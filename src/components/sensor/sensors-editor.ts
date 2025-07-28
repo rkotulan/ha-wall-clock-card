@@ -1,7 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
-import { SensorConfig } from '../../wall-clock-card';
+import { SensorConfig } from '../../core/types';
 import { LabelPosition } from '../ha-selector/types';
 
 /**
@@ -63,23 +63,23 @@ export class SensorsEditor extends BaseEditorSection {
             .content {
                 padding: 12px;
             }
-            
+
             .sensor-row {
                 display: flex;
                 margin-bottom: 8px;
                 align-items: center;
             }
-            
+
             .sensor-entity {
                 flex: 2;
                 margin-right: 8px;
             }
-            
+
             .sensor-label {
                 flex: 1;
                 margin-right: 8px;
             }
-            
+
             .sensor-actions {
                 flex: 0 0 40px;
                 text-align: center;
