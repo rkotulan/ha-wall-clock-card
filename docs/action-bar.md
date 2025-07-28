@@ -51,6 +51,7 @@ actionBar:
   - **type** (required): The type of action to perform. One of:
     - **navigate**: Navigate to a different page in Home Assistant.
     - **call-service**: Call a Home Assistant service.
+    - **more-info**: Open the default modal window of an entity.
     - **custom**: Perform a custom action (for future extensibility).
   - **title** (required): The text to display under the icon.
   - **icon** (required): The icon to display. Can be specified in two formats:
@@ -62,6 +63,8 @@ actionBar:
     - For **call-service** actions:
       - **service** (required): The service to call (e.g., light.turn_on).
       - **service_data** (optional): Data to pass to the service.
+    - For **more-info** actions:
+      - **entity_id** (required): The entity ID to show more info for (e.g., light.living_room).
     - For **custom** actions:
       - **action** (required): A string identifier for the custom action.
 
@@ -117,6 +120,28 @@ actionBar:
         entity_id: light.living_room
       title: Lights Off
       icon: mdi:lightbulb-off
+```
+
+### More Info Example
+
+```yaml
+type: custom:wall-clock-card
+enableActionBar: true
+actionBar:
+  alignment: center
+  actions:
+    - type: more-info
+      entity_id: weather.home
+      title: Weather
+      icon: mdi:weather-partly-cloudy
+    - type: more-info
+      entity_id: climate.living_room
+      title: Climate
+      icon: mdi:thermostat
+    - type: more-info
+      entity_id: media_player.living_room
+      title: Media
+      icon: mdi:television
 ```
 
 ### Left Alignment Example

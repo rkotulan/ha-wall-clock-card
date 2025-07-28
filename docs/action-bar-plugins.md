@@ -148,6 +148,79 @@ if (actionBarController) {
 - `registerNavigationPlugin()`: Register the navigation plugin with the ActionRegistry
 - `createNavigationAction(title, icon, path, target)`: Create a navigation action configuration
 
+### More Info Plugin
+
+The More Info Plugin provides a way to open the default modal window of an entity, giving users direct access to entity controls and history.
+
+#### Overview
+
+The More Info Plugin allows you to add buttons to the action bar that open the standard Home Assistant entity more-info dialogs. This provides:
+
+- Direct access to entity controls and history
+- Seamless integration with Home Assistant's native entity information modals
+- Configurable entity selection for more-info actions
+- Enhanced user experience with quick access to detailed entity information
+
+#### Configuration UI
+
+The More Info Plugin includes a configuration UI that allows users to set:
+
+- **Title**: The text to display on the button
+- **Icon**: The icon to display on the button (using the Material Design Icons)
+- **Entity**: The Home Assistant entity to show more info for (e.g., `light.living_room`, `weather.home`)
+
+To use the configuration UI, simply select "Entity More Info" as the action type when adding a new action in the card editor.
+
+#### Usage
+
+```typescript
+import { 
+  MORE_INFO_ACTION, 
+  MoreInfoActionConfig, 
+  registerMoreInfoPlugin, 
+  createMoreInfoAction 
+} from '../components/action-bar/plugins';
+
+// Register the more-info plugin
+registerMoreInfoPlugin();
+
+// Create a more-info action for a weather entity
+const weatherMoreInfoAction = createMoreInfoAction(
+  'Weather',
+  'mdi:weather-partly-cloudy',
+  'weather.home'
+);
+
+// Create a more-info action for a climate entity
+const climateMoreInfoAction = createMoreInfoAction(
+  'Climate',
+  'mdi:thermostat',
+  'climate.living_room'
+);
+
+// Add the actions to the action bar
+const actionBarController = document.querySelector('ha-action-bar')?.controller;
+if (actionBarController) {
+  const actionBarConfig = actionBarController.actionBarConfig || { actions: [] };
+
+  actionBarConfig.actions.push(weatherMoreInfoAction);
+  actionBarConfig.actions.push(climateMoreInfoAction);
+
+  actionBarController.updateConfig({ actionBar: actionBarConfig });
+}
+```
+
+#### API
+
+- `MORE_INFO_ACTION`: The action type for more-info actions
+- `MoreInfoActionConfig`: Interface for more-info action configuration
+  - `actionId`: The action type (MORE_INFO_ACTION)
+  - `title`: The title to display on the button
+  - `icon`: The icon to display on the button
+  - `entity_id`: The entity ID to show more info for
+- `registerMoreInfoPlugin()`: Register the more-info plugin with the ActionRegistry
+- `createMoreInfoAction(title, icon, entity_id)`: Create a more-info action configuration
+
 ### Service Call Plugin
 
 The Service Call Plugin provides an enhanced way to call Home Assistant services with optional confirmation dialogs.

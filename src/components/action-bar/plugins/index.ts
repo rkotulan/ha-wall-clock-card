@@ -5,4 +5,5 @@ export * from './switch-toggle';
 export * from './weather-update';
 export * from './transportation';
 export * from './background-next';
+export * from './more-info';
 export * from './editors';

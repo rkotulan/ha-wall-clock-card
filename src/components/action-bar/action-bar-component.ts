@@ -7,7 +7,7 @@ import {
     executeAction,
     ActionBarAlignment, ModuleActionConfig
 } from './types';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant} from 'custom-card-helpers';
 import { PluginRegistry } from './plugin-registry';
 import { BottomBarComponent } from '../bottom-bar';
 
@@ -225,7 +225,10 @@ export class ActionBarComponent extends BottomBarComponent {
             return;
         }
 
+        // const eventDetail = { entityId: 'cover.somfy_roleta_obyvak_prava_2', view: 'info' } as any;
+        // fireEvent(this, 'hass-more-info', eventDetail);
+
         this.logger.debug('Action clicked:', action);
-        executeAction(action, this.hass);
+        executeAction(action, this.hass, this);
     }
 }

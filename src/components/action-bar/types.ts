@@ -44,7 +44,8 @@ export interface ModuleActionConfig extends BaseActionConfig {
 /**
  * Type for action handler functions
  */
-export type ActionHandler<T extends ModuleActionConfig = ModuleActionConfig> = (action: T, hass: HomeAssistant) => void;
+export type ActionHandler<T extends ModuleActionConfig = ModuleActionConfig> = 
+  (action: T, hass: HomeAssistant, element?: HTMLElement) => void;
 
 /**
  * Registry for action handlers
@@ -110,13 +111,14 @@ export interface ActionBarControllerConfig {
  * Execute an action based on its configuration
  * @param action The action configuration
  * @param hass The Home Assistant instance
+ * @param element Optional HTML element that triggered the action
  */
-export function executeAction(action: ModuleActionConfig, hass: HomeAssistant): void {
+export function executeAction(action: ModuleActionConfig, hass: HomeAssistant, element?: HTMLElement): void {
     const registry = ActionRegistry.getInstance();
     const handler = registry.getHandler(action.actionId);
 
     if (handler) {
-        handler(action, hass);
+        handler(action, hass, element);
     } else {
         console.warn(`No handler registered for action type: ${action.actionId}`);
     }

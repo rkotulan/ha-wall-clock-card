@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+### What's Changed
+- Added more-info plugin to the action bar component:
+  - Support for opening entity more-info dialogs directly from action buttons
+  - Configurable entity selection for more-info actions
+  - Seamless integration with Home Assistant's native entity information modals
+  - Enhanced user experience with direct access to entity controls and history
+
 ## 2.0.0
 
 ### Breaking Changes
