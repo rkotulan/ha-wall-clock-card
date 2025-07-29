@@ -1,7 +1,7 @@
 import { LitElement, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
-import { WallClockConfig } from '../../core/wall-clock-card';
+import { WallClockConfig } from '../../core/types';
 
 /**
  * Interface for editor section components

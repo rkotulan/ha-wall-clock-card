@@ -1,5 +1,5 @@
 import { WeatherProvider, WeatherProviderConfig, WeatherData } from './weather-provider';
-import { Weather } from '../image-sources/image-source';
+import { Weather } from '../image-sources/types';
 import { logger } from '../utils';
 
 /**

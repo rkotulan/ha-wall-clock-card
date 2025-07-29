@@ -2,8 +2,48 @@
 
 // Import necessary dependencies
 import { HomeAssistant } from 'custom-card-helpers';
+import { BackgroundImage, ImageSourceConfig } from '../image-sources/types';
+import { WeatherProviderConfig } from '../weather-providers/types';
+import { TransportationConfig } from '../transportation-providers/types';
+import { ActionBarConfig } from '../components/action-bar/types';
+import { ExtendedDateTimeFormatOptions } from '../utils';
 
 // Common interfaces
+
+export interface WallClockConfig {
+    timeFormat?: ExtendedDateTimeFormatOptions;
+    dateFormat?: ExtendedDateTimeFormatOptions;
+    backgroundOpacity?: number;
+    imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
+    imageConfig?: ImageSourceConfig; // Configuration for the image source
+    backgroundRotationInterval?: number;
+    sensors?: SensorConfig[]; // Multiple sensors
+    fontColor?: string; // Font color for all text elements
+    language?: string; // Language for translations
+    timeZone?: string; // Time zone for clock (e.g., 'America/New_York')
+    logLevel?: string; // Log level for the logger (debug, info, warn, error, none)
+
+    // Background images structure
+    backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
+
+    // Weather forecast settings
+    showWeather?: boolean; // Whether to show weather forecast
+    weatherProvider?: string; // ID of the weather provider plugin ('openweathermap', etc.)
+    weatherConfig?: WeatherProviderConfig; // Configuration for the weather provider
+    weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
+    weatherForecastDays?: number; // Number of days to show in forecast (1-7)
+    weatherTitle?: string; // Custom title for the weather section (default: "Weather")
+    weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
+
+    // Transportation departures settings
+    transportation?: TransportationConfig; // Configuration for transportation departures
+
+    // Action bar settings
+    actionBar?: ActionBarConfig; // Configuration for action bar
+
+    // Allow string indexing for dynamic property access
+    [key: string]: any;
+}
 export interface WallClockCardConfig {
     type: string;
     name?: string;
@@ -53,31 +93,7 @@ export interface WeatherConfig {
     updateInterval?: number;
 }
 
-export interface TransportationConfig {
-    provider: string;
-    apiKey?: string;
-    stops?: TransportationStopConfig[];
-    maxDepartures?: number;
-    onDemand?: boolean;
-    autoHideTimeout?: number;
-    updateInterval?: number;
-}
-
-export interface TransportationStopConfig {
-    id: string;
-    name?: string;
-}
-
-export interface ActionBarConfig {
-    buttons: ActionBarButtonConfig[];
-}
-
-export interface ActionBarButtonConfig {
-    type: string;
-    icon: string;
-    title?: string;
-    action?: any;
-}
+// TransportationConfig and ActionBarConfig are imported from their respective modules
 
 // Enums
 export enum Weather {

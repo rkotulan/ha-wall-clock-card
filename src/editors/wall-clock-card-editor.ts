@@ -2,7 +2,7 @@ import {LitElement, html, css, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
-import {WallClockConfig} from '../core/wall-clock-card';
+import {WallClockConfig} from '../core/types';
 import {SensorConfig} from '../core/types';
 import {BackgroundImage} from '../image-sources';
 import {StopConfig as TransportationStopConfig} from '../transportation-providers';

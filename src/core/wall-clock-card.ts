@@ -1,12 +1,8 @@
 import {css, CSSResult, html, LitElement, unsafeCSS} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
-import {BackgroundImage, ImageSourceConfig, Weather} from '../providers/image';
-import {WeatherProviderConfig} from '../providers/weather';
-import {
-    TransportationConfig
-} from '../providers/transportation';
-import { ActionBarConfig } from '../components/action-bar';
+import {ImageSourceConfig, Weather} from '../providers/image';
+
 import {configureLogger, getLogLevelFromString, logger, LogLevel, ExtendedDateTimeFormatOptions, loadTranslationsAsync} from '../utils';
 import {ClockComponent} from '../components/clock';
 import {SensorComponent} from '../components/sensors';
@@ -19,45 +15,10 @@ import '../components/bottom-bar/bottom-bar-manager';
 import '../editors';
 import '../components/ha-selector';
 import {Messenger, WeatherMessage} from "../utils";
-import {  SensorConfig } from './types';
+import { WallClockConfig } from './types';
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
-
-export interface WallClockConfig {
-    timeFormat?: ExtendedDateTimeFormatOptions;
-    dateFormat?: ExtendedDateTimeFormatOptions;
-    backgroundOpacity?: number;
-    imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
-    imageConfig?: ImageSourceConfig; // Configuration for the image source
-    backgroundRotationInterval?: number;
-    sensors?: SensorConfig[]; // Multiple sensors
-    fontColor?: string; // Font color for all text elements
-    language?: string; // Language for translations
-    timeZone?: string; // Time zone for clock (e.g., 'America/New_York')
-    logLevel?: string; // Log level for the logger (debug, info, warn, error, none)
-
-    // Background images structure
-    backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
-
-    // Weather forecast settings
-    showWeather?: boolean; // Whether to show weather forecast
-    weatherProvider?: string; // ID of the weather provider plugin ('openweathermap', etc.)
-    weatherConfig?: WeatherProviderConfig; // Configuration for the weather provider
-    weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
-    weatherForecastDays?: number; // Number of days to show in forecast (1-7)
-    weatherTitle?: string; // Custom title for the weather section (default: "Weather")
-    weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
-
-    // Transportation departures settings
-    transportation?: TransportationConfig; // Configuration for transportation departures
-
-    // Action bar settings
-    actionBar?: ActionBarConfig; // Configuration for action bar
-
-    // Allow string indexing for dynamic property access
-    [key: string]: any;
-}
 
 
 @customElement('wall-clock-card')
