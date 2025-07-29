@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { ExtendedDateTimeFormatOptions, createLogger } from '../../utils';
+import { ExtendedDateTimeFormatOptions, createLogger, getSizeValue } from '../../utils';
 import { ClockController } from './clock-controller';
 import { Size } from '../../core/types';
 
@@ -173,25 +173,11 @@ export class ClockComponent extends LitElement {
     }
 
     getClockSize(): string {
-        if (this.size === Size.Custom && this.clockSize) {
-            return this.clockSize;
-        } else if (this.size === Size.Large) {
-            return '18rem';
-        } else {
-            // Default to medium size
-            return '16rem';
-        }
+        return getSizeValue(this.size, this.clockSize, 'clockSize');
     }
 
     getDateSize(): string {
-        if (this.size === Size.Custom && this.dateSize) {
-            return this.dateSize;
-        } else if (this.size === Size.Large) {
-            return '6rem';
-        } else {
-            // Default to medium size
-            return '6rem';
-        }
+        return getSizeValue(this.size, this.dateSize, 'dateSize');
     }
 
     render() {

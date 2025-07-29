@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { createLogger } from '../../utils';
+import { createLogger, getSizeValue } from '../../utils';
 import { SensorController, SensorConfig } from './sensor-controller';
 import { Size } from '../../core/types';
 
@@ -91,25 +91,11 @@ export class SensorComponent extends LitElement {
     `;
 
     getLabelSize(): string {
-        if (this.size === Size.Custom && this.labelSize) {
-            return this.labelSize;
-        } else if (this.size === Size.Large) {
-            return '1.8rem';
-        } else {
-            // Default to medium size
-            return '1.2rem';
-        }
+        return getSizeValue(this.size, this.labelSize, 'labelSize');
     }
 
     getValueSize(): string {
-        if (this.size === Size.Custom && this.valueSize) {
-            return this.valueSize;
-        } else if (this.size === Size.Large) {
-            return '3rem';
-        } else {
-            // Default to medium size
-            return '2rem';
-        }
+        return getSizeValue(this.size, this.valueSize, 'valueSize');
     }
 
     updated(changedProperties: PropertyValues): void {

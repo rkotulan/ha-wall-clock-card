@@ -267,6 +267,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         options: [
                                             {value: Size.Large, label: "Large"},
                                             {value: Size.Medium, label: "Medium"},
+                                            {value: Size.Small, label: "Small"},
                                             {value: Size.Custom, label: "Custom"}
                                         ],
                                         mode: 'dropdown'

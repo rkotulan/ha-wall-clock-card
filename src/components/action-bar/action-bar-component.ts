@@ -1,6 +1,6 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { createLogger } from '../../utils';
+import { createLogger, getSizeValue, getButtonSizeValue } from '../../utils';
 import { ActionBarController } from './action-bar-controller';
 import {
     ActionBarConfig,
@@ -58,32 +58,11 @@ export class ActionBarComponent extends BottomBarComponent {
     }
 
     getIconSize(): string {
-        if (this.size === Size.Custom && this.iconSize) {
-            return this.iconSize;
-        } else if (this.size === Size.Large) {
-            return '84px';
-        } else {
-            // Default to medium size
-            return '72px';
-        }
+        return getSizeValue(this.size, this.iconSize, 'iconSize');
     }
 
     getButtonSize(): string {
-        if (this.size === Size.Custom && this.iconSize) {
-            // For custom size, scale the button based on the icon size
-            // Parse the icon size to get the numeric value
-            const iconSizeValue = parseInt(this.iconSize);
-            if (!isNaN(iconSizeValue)) {
-                // Make the button size twice the icon size
-                return `${iconSizeValue * 2}px`;
-            }
-            return '144px'; // Default if parsing fails
-        } else if (this.size === Size.Large) {
-            return '168px';
-        } else {
-            // Default to medium size
-            return '144px';
-        }
+        return getButtonSizeValue(this.size, this.iconSize);
     }
 
     static styles = css`

@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
-import {createLogger, formatDate, Messenger, translate, WeatherMessage} from '../../utils';
+import {createLogger, formatDate, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
 
@@ -256,33 +256,15 @@ export class WeatherComponent extends LitElement {
     }
 
     getLabelSize(): string {
-        if (this.size === Size.Custom && this.labelSize) {
-            return this.labelSize;
-        } else if (this.size === Size.Large) {
-            return '1.8rem';
-        } else {
-            // Default to medium size
-            return '1.5rem';
-        }
+        return getSizeValue(this.size, this.labelSize, 'labelSize');
     }
 
     getValueSize(): string {
-        if (this.size === Size.Custom && this.valueSize) {
-            return this.valueSize;
-        } else if (this.size === Size.Large) {
-            return '3.5rem';
-        } else {
-            // Default to medium size
-            return '3rem';
-        }
+        return getSizeValue(this.size, this.valueSize, 'valueSize');
     }
 
     getForecastTempWidth(): string {
-        if (this.size === Size.Large) {
-            return '120px'; // Wider for large size to prevent wrapping
-        } else {
-            return '80px'; // Default width
-        }
+        return getSizeValue(this.size, undefined, 'forecastTempWidth');
     }
 
     render() {

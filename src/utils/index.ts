@@ -20,3 +20,6 @@ export * from './dom';
 
 // Re-export messenger module
 export * from './messenger';
+
+// Re-export size utilities
+export * from './size';
