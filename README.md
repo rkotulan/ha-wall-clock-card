@@ -12,6 +12,14 @@ Junie from JetBrains took on the programming challenge, creating a clean, elegan
 
 Today, our Wall Clock Card serves as the central information hub on our kitchen tablet, providing all the essential information we need throughout the day in a visually pleasing package.
 
+## Tech Stack
+
+- **TypeScript**: Main programming language
+- **Lit**: Web components library for UI
+- **Webpack**: Module bundler
+- **Jest**: Testing framework
+- **Home Assistant Custom Card API**: Integration with Home Assistant
+
 ## Features
 
 - **Beautiful clock display**:
@@ -147,6 +155,82 @@ For detailed documentation, please see the following pages:
 - [Background Handling](docs/background-handling.md) - How background images are handled
 - [Bundle Analyzer](docs/bundle-analyzer.md) - How to analyze and optimize bundle size
 - [Development](docs/developer/development.md) - Information for developers
+
+## Project Structure
+
+- **src/**: Source code
+  - **core/**: Core components and logic
+    - **wall-clock-card.ts**: Main component
+    - **types.ts**: Shared types and interfaces
+    - **config.ts**: Configuration and default values
+  - **components/**: UI components
+    - **action-bar/**: Action bar components
+    - **background/**: Background image components
+    - **bottom-bar/**: Bottom bar components
+    - **clock/**: Clock components
+    - **sensors/**: Sensor components
+    - **ui-elements/**: Shared UI elements
+  - **providers/**: Data providers
+    - **image/**: Image source providers
+    - **weather/**: Weather data providers
+    - **transportation/**: Transportation data providers
+  - **services/**: Services and APIs
+    - **ha-api/**: Home Assistant API communication
+    - **localization/**: Translations and localization
+    - **messaging/**: Internal component communication
+  - **utils/**: Utility functions and helpers
+    - **date-time/**: Date and time utilities
+    - **dom/**: DOM manipulation utilities
+    - **logger/**: Logging utilities
+  - **editors/**: Configuration editors
+    - **components/**: Editor components
+    - **validators/**: Configuration validators
+- **dist/**: Compiled output
+- **tests/**: Test files
+- **docs/**: Documentation
+
+## Development Workflow
+
+### Setup
+1. Clone the repository
+2. Install dependencies: `npm install`
+
+### Development
+1. Start development server: `npm run watch`
+2. Make changes to the source code
+3. Test your changes in Home Assistant
+
+### Building
+1. Build the project: `npm run build`
+2. The output will be in the `dist/` directory
+
+### Testing
+1. Write tests in the `tests/` directory using Jest
+2. Run tests: `npm test`
+3. Tests should follow the pattern `*.test.ts`
+
+## Best Practices
+
+- Keep components small and focused on a single responsibility
+- Use TypeScript interfaces for configuration objects
+- Follow the component-based architecture
+- Place core logic and types in the `core/` directory
+- Use the appropriate provider directory for data sources
+- Implement services in the `services/` directory
+- Keep related functionality together in the directory structure
+- Write unit tests for all new functionality
+- Use strict type checking
+- Define interfaces for all data structures
+- Use type annotations for function parameters and return values
+- Extend LitElement for new components
+- Use decorators for properties
+- Follow the existing component patterns
+- Minimize DOM operations
+- Use efficient data structures
+- Avoid unnecessary re-renders
+- Write clear commit messages
+- Keep pull requests focused on a single feature or bug fix
+- Update documentation when changing functionality
 
 ## License
 

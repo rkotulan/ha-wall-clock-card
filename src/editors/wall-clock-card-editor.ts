@@ -2,7 +2,7 @@ import {LitElement, html, css, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
-import {WallClockConfig} from '../core/types';
+import {WallClockConfig, Size} from '../core/types';
 import {SensorConfig} from '../core/types';
 import {BackgroundImage} from '../image-sources';
 import {StopConfig as TransportationStopConfig} from '../transportation-providers';
@@ -83,6 +83,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             backgroundRotationInterval: wallClockConfig.backgroundRotationInterval || 90,
             sensors: wallClockConfig.sensors || [],
             fontColor: wallClockConfig.fontColor || '#FFFFFF',
+            // Size settings
+            size: wallClockConfig.size || Size.Medium,
+            customSizes: wallClockConfig.customSizes || {
+                clockSize: '16rem',
+                dateSize: '6rem',
+                labelSize: '1.5rem',
+                valueSize: '3rem',
+                actionBarIconSize: '72px'
+            },
             // Weather settings
             showWeather: wallClockConfig.showWeather !== undefined ? wallClockConfig.showWeather : false,
             weatherProvider: wallClockConfig.weatherProvider || 'openweathermap',
@@ -249,6 +258,73 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 propertyName="logLevel"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+
+                        <!-- Size Settings -->
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    select: {
+                                        options: [
+                                            {value: Size.Large, label: "Large"},
+                                            {value: Size.Medium, label: "Medium"},
+                                            {value: Size.Custom, label: "Custom"}
+                                        ],
+                                        mode: 'dropdown'
+                                    }
+                                }}
+                                .value=${this._config.size || Size.Medium}
+                                .label= ${"Size"}
+                                propertyName="size"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+
+                        ${this._config.size === Size.Custom ? html`
+                            <h4>Custom Sizes</h4>
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.clockSize || '16rem'}
+                                    .label= ${"Clock Size (e.g., 16rem)"}
+                                    propertyName="customSizes.clockSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.dateSize || '6rem'}
+                                    .label= ${"Date Size (e.g., 6rem)"}
+                                    propertyName="customSizes.dateSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.labelSize || '1.5rem'}
+                                    .label= ${"Label Size (e.g., 1.5rem)"}
+                                    propertyName="customSizes.labelSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.valueSize || '3rem'}
+                                    .label= ${"Value Size (e.g., 3rem)"}
+                                    propertyName="customSizes.valueSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.actionBarIconSize || '72px'}
+                                    .label= ${"Action Bar Icon Size (e.g., 72px)"}
+                                    propertyName="customSizes.actionBarIconSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+                        ` : ''}
                     </div>
                 </ha-expansion-panel>
 

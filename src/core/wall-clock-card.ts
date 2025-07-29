@@ -15,7 +15,7 @@ import '../components/bottom-bar/bottom-bar-manager';
 import '../editors';
 import '../components/ha-selector';
 import {Messenger, WeatherMessage} from "../utils";
-import { WallClockConfig } from './types';
+import { WallClockConfig, Size } from './types';
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
@@ -60,10 +60,25 @@ export class WallClockCard extends LitElement {
         this.clockComponent.language = this.config.language;
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
+        this.clockComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.clockComponent.clockSize = this.config.customSizes.clockSize;
+            this.clockComponent.dateSize = this.config.customSizes.dateSize;
+        }
 
         // Initialize the sensor component
         this.sensorComponent.sensors = this.config.sensors;
         this.sensorComponent.fontColor = this.config.fontColor;
+        this.sensorComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
+            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
+        }
+
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
@@ -78,6 +93,13 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language;
+        this.weatherComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
+            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
+        }
 
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.fontColor = this.config.fontColor;
@@ -95,6 +117,12 @@ export class WallClockCard extends LitElement {
 
         this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
+        this.actionBarComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
+        }
 
         // Initialize the bottom bar manager
         this.bottomBarManager = new BottomBarManager(this);
@@ -116,10 +144,25 @@ export class WallClockCard extends LitElement {
         this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
+        this.clockComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.clockComponent.clockSize = this.config.customSizes.clockSize;
+            this.clockComponent.dateSize = this.config.customSizes.dateSize;
+        }
 
         // Initialize the sensor component with the latest configuration
         this.sensorComponent.sensors = this.config.sensors;
         this.sensorComponent.fontColor = this.config.fontColor;
+        this.sensorComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
+            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
+        }
+
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
@@ -134,6 +177,13 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.weatherComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
+            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
+        }
 
         if (this.hass) {
             this.transportationComponent.hass = this.hass;
@@ -146,6 +196,13 @@ export class WallClockCard extends LitElement {
 
         this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
+        this.actionBarComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
+        }
+
         if (this.hass) {
             this.actionBarComponent.hass = this.hass;
         }
@@ -322,7 +379,9 @@ export class WallClockCard extends LitElement {
             backgroundRotationInterval: config.backgroundRotationInterval || 90,
             sensors: config.sensors || [],
             fontColor: config.fontColor || '#FFFFFF', // Default to white
-            timeZone: timeZone
+            timeZone: timeZone,
+            size: config.size || Size.Medium, // Default to medium size
+            customSizes: config.customSizes || {} // Default to empty object
         };
 
         // Initialize the background image component
@@ -334,10 +393,25 @@ export class WallClockCard extends LitElement {
         this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
+        this.clockComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.clockComponent.clockSize = this.config.customSizes.clockSize;
+            this.clockComponent.dateSize = this.config.customSizes.dateSize;
+        }
 
         // Initialize the sensor component with the new configuration
         this.sensorComponent.sensors = this.config.sensors;
         this.sensorComponent.fontColor = this.config.fontColor;
+        this.sensorComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
+            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
+        }
+
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
         }
@@ -352,6 +426,13 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.weatherComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
+            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
+        }
 
         // Initialize the transportation component with the new configuration
         this.transportationComponent.transportation = this.config.transportation;
@@ -359,6 +440,12 @@ export class WallClockCard extends LitElement {
 
         this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
+        this.actionBarComponent.size = this.config.size;
+
+        // Pass custom sizes if configured
+        if (this.config.customSizes) {
+            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
+        }
 
         if(!this.config.showWeather) {
             this.backgroundImageComponent.controller.ready.then(() => {

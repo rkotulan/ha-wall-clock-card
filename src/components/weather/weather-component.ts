@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, Messenger, translate, WeatherMessage} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
+import { Size } from '../../core/types';
 
 export interface WeatherComponentConfig {
     showWeather?: boolean;
@@ -14,6 +15,9 @@ export interface WeatherComponentConfig {
     weatherUpdateInterval?: number;
     fontColor?: string;
     language?: string;
+    size?: Size;
+    labelSize?: string;
+    valueSize?: string;
 }
 
 @customElement('ha-weather')
@@ -27,6 +31,9 @@ export class WeatherComponent extends LitElement {
     @property({ type: Number }) weatherUpdateInterval?: number;
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
+    @property({ type: String }) size?: Size;
+    @property({ type: String }) labelSize?: string;
+    @property({ type: String }) valueSize?: string;
 
     private logger = createLogger('weather-component');
     private weatherController: WeatherController;
@@ -82,20 +89,20 @@ export class WeatherComponent extends LitElement {
         }
 
         .weather-temp {
-            font-size: 2.5rem;
-            line-height: 2.5rem;
+            font-size: 3rem; /* Medium size (default) */
+            line-height: 3rem;
             font-weight: 400;
         }
 
         .weather-condition {
-            font-size: 1.5rem;
+            font-size: 1.5rem; /* Medium size (default) */
             font-weight: 300;
             opacity: 0.8;
         }
 
         .weather-icon {
-            width: 50px;
-            height: 50px;
+            width: 60px; /* Medium size (default) */
+            height: 60px;
             margin-left: 8px;
         }
 
@@ -111,7 +118,7 @@ export class WeatherComponent extends LitElement {
         }
 
         .forecast-date {
-            font-size: 1.4rem;
+            font-size: 1.4rem; /* Medium size (default) */
             font-weight: 300;
             margin-right: 8px;
             opacity: 0.8;
@@ -126,14 +133,14 @@ export class WeatherComponent extends LitElement {
         }
 
         .forecast-temp {
-            font-size: 1.4rem;
+            font-size: 1.4rem; /* Medium size (default) */
             font-weight: 400;
             width: 80px;
             text-align: right;
         }
 
         .forecast-condition {
-            font-size: 0.9rem;
+            font-size: 0.9rem; /* Medium size (default) */
             margin-top: 0.2rem;
             text-align: center;
             white-space: nowrap;
@@ -145,31 +152,6 @@ export class WeatherComponent extends LitElement {
         .weather-error {
             color: #f44336;
             font-size: 1rem;
-        }
-
-        /* Responsive adjustments */
-        @media (min-width: 900px) {
-            .weather-temp {
-                font-size: 3rem;
-                line-height: 3rem;
-            }
-
-            .weather-icon {
-                width: 60px;
-                height: 60px;
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .weather-temp {
-                font-size: 3rem;
-                line-height: 3rem;
-            }
-
-            .weather-icon {
-                width: 60px;
-                height: 60px;
-            }
         }
     `;
 
@@ -198,6 +180,31 @@ export class WeatherComponent extends LitElement {
             };
 
             this.weatherController.updateConfigAsync(config);
+        }
+
+        if (changedProperties.has('size') ||
+            changedProperties.has('labelSize') ||
+            changedProperties.has('valueSize')) {
+
+            this.logger.debug('Size properties changed');
+
+            if (changedProperties.has('size')) {
+                const oldSize = changedProperties.get('size');
+                this.logger.debug(`Size changed: ${oldSize} -> ${this.size}`);
+            }
+
+            if (changedProperties.has('labelSize')) {
+                const oldLabelSize = changedProperties.get('labelSize');
+                this.logger.debug(`LabelSize changed: ${oldLabelSize} -> ${this.labelSize}`);
+            }
+
+            if (changedProperties.has('valueSize')) {
+                const oldValueSize = changedProperties.get('valueSize');
+                this.logger.debug(`ValueSize changed: ${oldValueSize} -> ${this.valueSize}`);
+            }
+
+            // Force re-render to apply new sizes
+            this.requestUpdate();
         }
     }
 
@@ -248,6 +255,36 @@ export class WeatherComponent extends LitElement {
         return weatherData;
     }
 
+    getLabelSize(): string {
+        if (this.size === Size.Custom && this.labelSize) {
+            return this.labelSize;
+        } else if (this.size === Size.Large) {
+            return '1.8rem';
+        } else {
+            // Default to medium size
+            return '1.5rem';
+        }
+    }
+
+    getValueSize(): string {
+        if (this.size === Size.Custom && this.valueSize) {
+            return this.valueSize;
+        } else if (this.size === Size.Large) {
+            return '3.5rem';
+        } else {
+            // Default to medium size
+            return '3rem';
+        }
+    }
+
+    getForecastTempWidth(): string {
+        if (this.size === Size.Large) {
+            return '120px'; // Wider for large size to prevent wrapping
+        } else {
+            return '80px'; // Default width
+        }
+    }
+
     render() {
         const weatherData: WeatherData | undefined = this.weatherController.weatherData;
 
@@ -272,9 +309,13 @@ export class WeatherComponent extends LitElement {
         // Limit forecast days to available data (max 7 days)
         const limitedForecastDays = Math.min(forecastDays, weatherData.daily.length);
 
+        const labelSize = this.getLabelSize();
+        const valueSize = this.getValueSize();
+        const forecastTempWidth = this.getForecastTempWidth();
+
         return html`
             <div class="weather-container" style="color: ${this.fontColor};">
-                <div class="weather-title" style="color: ${this.fontColor};">${weatherTitle}</div>
+                <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">${weatherTitle}</div>
 
                 ${(displayMode === 'current' || displayMode === 'both') ?
                     html`
@@ -282,9 +323,9 @@ export class WeatherComponent extends LitElement {
                             <div class="weather-temp-container">
                                 <img class="weather-icon" src="${weatherData.current.icon}"
                                      alt="${weatherData.current.condition}">
-                                <div class="weather-temp">${Math.round(weatherData.current.temperature)}°</div>
+                                <div class="weather-temp" style="font-size: ${valueSize};">${Math.round(weatherData.current.temperature)}°</div>
                             </div>
-                            <div class="weather-condition">
+                            <div class="weather-condition" style="font-size: ${labelSize};">
                                 ${this.translateWeatherCondition(weatherData.current.condition)}
                             </div>
                         </div>
@@ -297,9 +338,9 @@ export class WeatherComponent extends LitElement {
                         <div class="weather-forecast">
                             ${weatherData.daily.slice(0, limitedForecastDays).map(day => html`
                                 <div class="forecast-day">
-                                    <div class="forecast-date">${this.formatForecastDate(day.date)}</div>
+                                    <div class="forecast-date" style="font-size: ${labelSize};">${this.formatForecastDate(day.date)}</div>
                                     <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
-                                    <div class="forecast-temp">${Math.round(day.temperatureMin)}° -
+                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">${Math.round(day.temperatureMin)}° -
                                         ${Math.round(day.temperatureMax)}°
                                     </div>
                                 </div>

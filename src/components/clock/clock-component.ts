@@ -2,6 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { ExtendedDateTimeFormatOptions, createLogger } from '../../utils';
 import { ClockController } from './clock-controller';
+import { Size } from '../../core/types';
 
 export interface ClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
@@ -9,6 +10,9 @@ export interface ClockConfig {
     fontColor?: string;
     language?: string;
     timeZone?: string;
+    size?: Size;
+    clockSize?: string;
+    dateSize?: string;
 }
 
 @customElement('ha-clock')
@@ -18,6 +22,9 @@ export class ClockComponent extends LitElement {
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
     @property({ type: String }) timeZone?: string;
+    @property({ type: String }) size?: Size;
+    @property({ type: String }) clockSize?: string;
+    @property({ type: String }) dateSize?: string;
 
     private logger = createLogger('clock-component');
     private clockController: ClockController;
@@ -39,8 +46,8 @@ export class ClockComponent extends LitElement {
 
     static styles = css`
         .clock {
-            font-size: 12rem;
-            line-height: 10rem;
+            font-size: 16rem; /* Medium size (default) */
+            line-height: 14rem;
             font-weight: 300;
             text-align: center;
             z-index: 2;
@@ -85,37 +92,14 @@ export class ClockComponent extends LitElement {
         }
 
         .date {
-            font-size: 4rem;
+            font-size: 6rem; /* Medium size (default) */
             font-weight: 400;
             text-align: center;
             margin-top: 0.2rem;
             opacity: 1;
             z-index: 2;
             position: relative;
-        }
-
-        /* Responsive adjustments */
-        @media (min-width: 900px) {
-            .clock {
-                font-size: 16rem;
-                line-height: 14rem;
-            }
-
-            .date {
-                font-size: 6rem;
-                line-height: 5rem;
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .clock {
-                font-size: 18rem;
-                line-height: 14rem;
-            }
-
-            .date {
-                font-size: 6rem;
-            }
+            line-height: 5rem;
         }
     `;
 
@@ -125,7 +109,10 @@ export class ClockComponent extends LitElement {
         if (changedProperties.has('timeFormat') || 
             changedProperties.has('dateFormat') || 
             changedProperties.has('language') || 
-            changedProperties.has('timeZone')) {
+            changedProperties.has('timeZone') ||
+            changedProperties.has('size') ||
+            changedProperties.has('clockSize') ||
+            changedProperties.has('dateSize')) {
 
             this.logger.debug('Clock properties changed, updating ClockController');
 
@@ -140,6 +127,20 @@ export class ClockComponent extends LitElement {
                 this.logger.debug(`DateFormat changed: ${JSON.stringify(oldDateFormat)} -> ${JSON.stringify(this.dateFormat)}`);
             }
 
+            if (changedProperties.has('size')) {
+                const oldSize = changedProperties.get('size');
+                this.logger.debug(`Size changed: ${oldSize} -> ${this.size}`);
+            }
+
+            if (changedProperties.has('clockSize')) {
+                const oldClockSize = changedProperties.get('clockSize');
+                this.logger.debug(`ClockSize changed: ${oldClockSize} -> ${this.clockSize}`);
+            }
+
+            if (changedProperties.has('dateSize')) {
+                const oldDateSize = changedProperties.get('dateSize');
+                this.logger.debug(`DateSize changed: ${oldDateSize} -> ${this.dateSize}`);
+            }
 
             // Update unified ClockController with new configuration
             this.clockController.updateConfig({
@@ -171,14 +172,39 @@ export class ClockComponent extends LitElement {
         return this.clockController.currentDate;
     }
 
+    getClockSize(): string {
+        if (this.size === Size.Custom && this.clockSize) {
+            return this.clockSize;
+        } else if (this.size === Size.Large) {
+            return '18rem';
+        } else {
+            // Default to medium size
+            return '16rem';
+        }
+    }
+
+    getDateSize(): string {
+        if (this.size === Size.Custom && this.dateSize) {
+            return this.dateSize;
+        } else if (this.size === Size.Large) {
+            return '6rem';
+        } else {
+            // Default to medium size
+            return '6rem';
+        }
+    }
+
     render() {
         // Log rendering information for debugging
         const seconds = this.getSeconds();
         const shouldShowSeconds = this.timeFormat?.second !== undefined && this.timeFormat?.second !== 'hidden';
-        // this.logger.debug(`Rendering clock - Seconds: ${seconds}, Show seconds: ${shouldShowSeconds}, TimeFormat: ${JSON.stringify(this.timeFormat)}`);
+        const clockSize = this.getClockSize();
+        const dateSize = this.getDateSize();
+
+        this.logger.debug(`Rendering clock - Size: ${this.size}, ClockSize: ${clockSize}, DateSize: ${dateSize}`);
 
         return html`
-            <div class="clock" style="color: ${this.fontColor};">
+            <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize};">
                 <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
                 ${shouldShowSeconds ? html`
                     <div class="seconds-container">
@@ -191,7 +217,7 @@ export class ClockComponent extends LitElement {
                     </div>
                 ` : ''}
             </div>
-            <div class="date" style="color: ${this.fontColor};">${this.getCurrentDate()}</div>
+            <div class="date" style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
         `;
     }
 }

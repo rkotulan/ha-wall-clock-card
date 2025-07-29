@@ -3,6 +3,12 @@
 ## 2.2.0
 
 ### What's Changed
+- Added size configuration options for better customization:
+  - New Size enum with Large, Medium, and Custom options
+  - Configurable sizes for clock, date, labels, values, and action bar icons
+  - Removed media queries in favor of programmatic size control
+  - Fixed temperature wrapping in forecast list for large size
+  - Improved responsive design with consistent sizing across all components
 - Improved project structure with better organization:
   - Created core directory for main components and logic
   - Reorganized providers under a common providers directory

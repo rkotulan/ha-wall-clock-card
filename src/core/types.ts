@@ -23,6 +23,16 @@ export interface WallClockConfig {
     timeZone?: string; // Time zone for clock (e.g., 'America/New_York')
     logLevel?: string; // Log level for the logger (debug, info, warn, error, none)
 
+    // Size settings
+    size?: Size; // Size of the clock (large, medium, custom)
+    customSizes?: {
+        clockSize?: string; // Custom size for the clock
+        dateSize?: string; // Custom size for the date
+        labelSize?: string; // Custom size for labels
+        valueSize?: string; // Custom size for values
+        actionBarIconSize?: string; // Custom size for action bar icons
+    };
+
     // Background images structure
     backgroundImages?: BackgroundImage[]; // Array of background images with weather and time-of-day information
 
@@ -110,6 +120,12 @@ export enum TimeOfDay {
     Day = 'day',
     Night = 'night',
     Unspecified = 'unspecified',
+}
+
+export enum Size {
+    Large = 'large',
+    Medium = 'medium',
+    Custom = 'custom',
 }
 
 // Type definitions

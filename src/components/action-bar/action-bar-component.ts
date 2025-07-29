@@ -10,10 +10,13 @@ import {
 import { HomeAssistant} from 'custom-card-helpers';
 import { PluginRegistry } from './plugin-registry';
 import { BottomBarComponent } from '../bottom-bar';
+import { Size } from '../../core/types';
 
 export interface ActionBarComponentConfig {
     actionBar?: ActionBarConfig;
     fontColor?: string;
+    size?: Size;
+    iconSize?: string;
 }
 
 @customElement('ha-action-bar')
@@ -36,6 +39,8 @@ export class ActionBarComponent extends BottomBarComponent {
     @property({ type: Object }) config?: ActionBarConfig;
     @property({ type: String }) fontColor?: string;
     @property({ type: Object }) hass?: HomeAssistant;
+    @property({ type: String }) size?: Size;
+    @property({ type: String }) iconSize?: string;
 
     private logger = createLogger('action-bar-component');
     private actionBarController: ActionBarController;
@@ -50,6 +55,35 @@ export class ActionBarComponent extends BottomBarComponent {
 
     get controller(): ActionBarController {
         return this.actionBarController;
+    }
+
+    getIconSize(): string {
+        if (this.size === Size.Custom && this.iconSize) {
+            return this.iconSize;
+        } else if (this.size === Size.Large) {
+            return '84px';
+        } else {
+            // Default to medium size
+            return '72px';
+        }
+    }
+
+    getButtonSize(): string {
+        if (this.size === Size.Custom && this.iconSize) {
+            // For custom size, scale the button based on the icon size
+            // Parse the icon size to get the numeric value
+            const iconSizeValue = parseInt(this.iconSize);
+            if (!isNaN(iconSizeValue)) {
+                // Make the button size twice the icon size
+                return `${iconSizeValue * 2}px`;
+            }
+            return '144px'; // Default if parsing fails
+        } else if (this.size === Size.Large) {
+            return '168px';
+        } else {
+            // Default to medium size
+            return '144px';
+        }
     }
 
     static styles = css`
@@ -68,7 +102,7 @@ export class ActionBarComponent extends BottomBarComponent {
             border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
             gap: 16px;
             height: auto;
-            min-height: 144px;
+            min-height: var(--action-button-size, 144px);
         }
 
         .action-button {
@@ -79,8 +113,8 @@ export class ActionBarComponent extends BottomBarComponent {
             cursor: pointer;
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 90px;
-            width: 144px;
-            height: 144px;
+            width: var(--action-button-size, 144px);
+            height: var(--action-button-size, 144px);
             transition: all 0.3s ease;
         }
 
@@ -155,15 +189,19 @@ export class ActionBarComponent extends BottomBarComponent {
         }
 
         const justifyContent = this.getJustifyContent();
+        const buttonSize = this.getButtonSize();
 
         // Use the configured backgroundOpacity or default to 0.3
         const opacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.3;
+
+        this.logger.debug(`Rendering action bar - ButtonSize: ${buttonSize}`);
 
         return html`
             <div class="action-bar-container" 
                 style="color: ${this.fontColor}; 
                        justify-content: ${justifyContent}; 
-                       background-color: rgba(0, 0, 0, ${opacity});">
+                       background-color: rgba(0, 0, 0, ${opacity});
+                       --action-button-size: ${buttonSize};">
                 ${this.config.actions.map(action => this.renderActionButton(action))}
             </div>
         `;
@@ -204,10 +242,15 @@ export class ActionBarComponent extends BottomBarComponent {
                  @click=${() => this._handleActionClick(action)}>
                 ${iconToUse && iconToUse.startsWith('mdi:') 
                     ? html`<ha-icon icon="${iconToUse}" 
-                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''}">
+                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''} 
+                                          width: ${this.getIconSize()}; 
+                                          height: ${this.getIconSize()}; 
+                                          --mdc-icon-size: ${this.getIconSize()};">
                            </ha-icon>` 
                     : html`<svg viewBox="0 0 24 24"
-                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''}">
+                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''} 
+                                      width: ${this.getIconSize()}; 
+                                      height: ${this.getIconSize()};">
                         <path d="${iconToUse}"></path>
                       </svg>`
                 }
