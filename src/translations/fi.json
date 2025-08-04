@@ -18,7 +18,8 @@
     "snow": "Lumi",
     "mist": "Sumu",
     "light_rain": "Kevyt sade",
-    "moderate_rain": "Kohtalainen sade"
+    "moderate_rain": "Kohtalainen sade",
+    "heavy_intensity_rain": "Voimakas sade"
   },
   "forecast": {
     "title": "Ennuste",

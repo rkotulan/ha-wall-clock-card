@@ -18,7 +18,8 @@
     "snow": "Snø",
     "mist": "Tåke",
     "light_rain": "Lett regn",
-    "moderate_rain": "Moderat regn"
+    "moderate_rain": "Moderat regn",
+    "heavy_intensity_rain": "Kraftig regn"
   },
   "forecast": {
     "title": "Prognose",

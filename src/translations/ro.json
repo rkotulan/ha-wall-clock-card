@@ -18,7 +18,8 @@
     "snow": "Ninsoare",
     "mist": "Ceață",
     "light_rain": "Ploaie ușoară",
-    "moderate_rain": "Ploaie moderată"
+    "moderate_rain": "Ploaie moderată",
+    "heavy_intensity_rain": "Ploaie puternică"
   },
   "forecast": {
     "title": "Prognoză",

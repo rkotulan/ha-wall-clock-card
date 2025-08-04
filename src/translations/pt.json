@@ -18,7 +18,8 @@
     "snow": "Neve",
     "mist": "Névoa",
     "light_rain": "Chuva fraca",
-    "moderate_rain": "Chuva moderada"
+    "moderate_rain": "Chuva moderada",
+    "heavy_intensity_rain": "Chuva forte"
   },
   "forecast": {
     "title": "Previsão",

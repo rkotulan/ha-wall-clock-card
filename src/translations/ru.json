@@ -18,7 +18,8 @@
     "snow": "Снег",
     "mist": "Туман",
     "light_rain": "Небольшой дождь",
-    "moderate_rain": "Умеренный дождь"
+    "moderate_rain": "Умеренный дождь",
+    "heavy_intensity_rain": "Сильный дождь"
   },
   "forecast": {
     "title": "Прогноз",

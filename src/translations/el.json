@@ -18,7 +18,8 @@
     "snow": "Χιόνι",
     "mist": "Ομίχλη",
     "light_rain": "Ελαφριά βροχή",
-    "moderate_rain": "Μέτρια βροχή"
+    "moderate_rain": "Μέτρια βροχή",
+    "heavy_intensity_rain": "Έντονη βροχή"
   },
   "forecast": {
     "title": "Πρόγνωση",

@@ -18,7 +18,8 @@
     "snow": "Sneeuw",
     "mist": "Mist",
     "light_rain": "Lichte regen",
-    "moderate_rain": "Matige regen"
+    "moderate_rain": "Matige regen",
+    "heavy_intensity_rain": "Zware regen"
   },
   "forecast": {
     "title": "Voorspelling",

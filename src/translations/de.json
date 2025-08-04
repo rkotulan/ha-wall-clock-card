@@ -18,7 +18,8 @@
     "snow": "Schnee",
     "mist": "Nebel",
     "light_rain": "Leichter Regen",
-    "moderate_rain": "Mäßiger Regen"
+    "moderate_rain": "Mäßiger Regen",
+    "heavy_intensity_rain": "Starker Regen"
   },
   "forecast": {
     "title": "Vorhersage",

@@ -18,7 +18,8 @@
     "snow": "Sneženie",
     "mist": "Hmla",
     "light_rain": "Slabý dážď",
-    "moderate_rain": "Mierny dážď"
+    "moderate_rain": "Mierny dážď",
+    "heavy_intensity_rain": "Silný dážď"
   },
   "forecast": {
     "title": "Predpoveď",

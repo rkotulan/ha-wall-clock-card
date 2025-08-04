@@ -18,7 +18,8 @@
     "snow": "Neige",
     "mist": "Brouillard",
     "light_rain": "Pluie légère",
-    "moderate_rain": "Pluie modérée"
+    "moderate_rain": "Pluie modérée",
+    "heavy_intensity_rain": "Pluie forte"
   },
   "forecast": {
     "title": "Prévisions",

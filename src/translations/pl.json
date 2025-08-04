@@ -18,7 +18,8 @@
     "snow": "Śnieg",
     "mist": "Mgła",
     "light_rain": "Lekki deszcz",
-    "moderate_rain": "Umiarkowany deszcz"
+    "moderate_rain": "Umiarkowany deszcz",
+    "heavy_intensity_rain": "Intensywny deszcz"
   },
   "forecast": {
     "title": "Prognoza",

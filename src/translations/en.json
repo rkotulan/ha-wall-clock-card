@@ -18,7 +18,8 @@
     "snow": "Snow",
     "mist": "Mist",
     "light_rain": "Light rain",
-    "moderate_rain": "Moderate rain"
+    "moderate_rain": "Moderate rain",
+    "heavy_intensity_rain": "Heavy rain"
   },
   "forecast": {
     "title": "Forecast",

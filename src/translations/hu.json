@@ -18,7 +18,8 @@
     "snow": "Hó",
     "mist": "Köd",
     "light_rain": "Gyenge eső",
-    "moderate_rain": "Mérsékelt eső"
+    "moderate_rain": "Mérsékelt eső",
+    "heavy_intensity_rain": "Erős eső"
   },
   "forecast": {
     "title": "Előrejelzés",

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0
+
+### What's Changed
+- Added translation for "heavy_intensity_rain" weather condition to all supported languages
+
 ## 2.2.0
 
 ### What's Changed
