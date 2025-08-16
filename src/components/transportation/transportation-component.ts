@@ -273,7 +273,7 @@ export class TransportationComponent extends BottomBarComponent {
     }
 
     render() {
-        if (!this.transportation || this.transportation.enable === false) {
+        if (!this.transportation || this.transportation.enable !== true) {
             return html``;
         }
 

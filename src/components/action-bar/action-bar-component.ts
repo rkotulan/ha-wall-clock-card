@@ -1,6 +1,6 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { createLogger, getSizeValue, getButtonSizeValue } from '../../utils';
+import {createLogger, getSizeValue, getButtonSizeValue, Messenger, BottomBarRequestUpdateMessage} from '../../utils';
 import { ActionBarController } from './action-bar-controller';
 import {
     ActionBarConfig,
@@ -135,6 +135,8 @@ export class ActionBarComponent extends BottomBarComponent {
             this.actionBarController.updateConfig({
                 actionBar: this.config
             });
+
+            Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
         }
 
         // If hass has changed, we need to re-render to update the icon and active state
