@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0
+
+### What's Changed
+- Fixed action bar is not displayed after the page reloads.
+
 ## 2.3.0
 
 ### What's Changed
