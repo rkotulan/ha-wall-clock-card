@@ -54,19 +54,14 @@ export class IDSJMKProvider implements TransportationProvider {
         const postIds = stopsForThisId.map(s => s.postId);
 
         // Make a single API call without postId parameter
-        const baseUrl = `https://dpmbinfo.dpmb.cz/api/departures?stopid=${stopId}`;
+        const baseUrl = `https://transportation-proxy.datario.app/proxy/departures?stopid=${stopId}`;
 
-        // Use a CORS proxy to avoid CORS issues
-        // This is necessary because the DPMB API doesn't include CORS headers in its responses,
-        // which prevents browsers from accessing the API directly from client-side JavaScript.
-        const corsProxyUrl = 'https://api.allorigins.win/raw?url=';
-        const url = `${corsProxyUrl}${encodeURIComponent(baseUrl)}`;
 
         // Make the request with the specified User-Agent
         // Removed X-ClientId header to avoid CORS preflight issues with AllOrigins proxy
-        const response = await fetch(url, {
+        const response = await fetch(baseUrl, {
           headers: {
-            'User-Agent': 'cz.dpmb.dpmbinfo/4.1.3 (Linux; U; Android 13; SM-A546B Build/UP1A.231005.007)'
+             'X-Api-Key': '2f8a0c7b2e9a44a4b8aa9a6b4a3d1e2f'
           }
         });
 
