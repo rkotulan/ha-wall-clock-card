@@ -170,6 +170,8 @@ export class BottomBarManager extends BaseController {
     protected onHostConnected(): void {
         this.logger.debug('Bottom bar manager connected');
         this.messenger.subscribe(BottomBarRequestUpdateMessage, this.onRequestUpdateMessage);
+        
+        this.updateActiveComponent();
     }
 
     protected onHostDisconnected(): void {

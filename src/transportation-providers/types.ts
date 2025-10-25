@@ -30,7 +30,7 @@ export interface TransportationConfig {
   stops: StopConfig[]; // Array of stop configurations
   maxDepartures?: number; // Global max departures setting (applies to all stops if not specified at stop level)
   autoHideTimeout?: number; // Time in minutes after which to hide departures and show the bus button again (1-10 minutes)
-  enable?: boolean; // Whether to show transportation departures
+  enabled?: boolean; // Whether to show transportation departures
   updateInterval?: number; // Interval in seconds to update transportation data (minimum: 60)
 }
 

@@ -187,8 +187,6 @@ export class ClockComponent extends LitElement {
         const clockSize = this.getClockSize();
         const dateSize = this.getDateSize();
 
-        this.logger.debug(`Rendering clock - Size: ${this.size}, ClockSize: ${clockSize}, DateSize: ${dateSize}`);
-
         return html`
             <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize};">
                 <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>

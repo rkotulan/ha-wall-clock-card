@@ -272,13 +272,15 @@ export class TransportationComponent extends BottomBarComponent {
         }
     }
 
-    render() {
-        if (!this.transportation || this.transportation.enable !== true) {
+    render() {                
+        if (!this.transportation || this.transportation.enabled !== true) {
             return html``;
         }
 
         const transportationData = this.transportationController.transportationData;
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
+
+        // this.logger.debug(`Rendering transportation component isActive: ${this.controller.isActive} data: ${JSON.stringify(transportationData)} loaded: ${transportationDataLoaded}`);
 
         return html`
             ${this.controller.isActive
@@ -317,7 +319,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         if (!transportationData.departures || transportationData.departures.length === 0) {
             return html`
-                <div class="transportation-loading">No departures available</div>`;
+                <div class="transportation-loading">No departures available.</div>`;
         }
 
         // Group departures by stop name and postId

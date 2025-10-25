@@ -196,7 +196,7 @@ export class TransportationEditor extends BaseEditorSection {
         }
 
         // Only render if transportation is enabled
-        if (!this.config.transportation?.enable) {
+        if (!this.config.transportation?.enabled) {
             return html``;
         }
 

@@ -399,7 +399,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                 </ha-expansion-panel>
 
                 <!-- Transportation Settings Section -->
-                ${this._config.transportation?.enable === true ? html`
+                ${this._config.transportation?.enabled === true ? html`
                     <ha-expansion-panel outlined>
                         <h3 slot="header">Transportation Departures</h3>
                         <transportation-editor

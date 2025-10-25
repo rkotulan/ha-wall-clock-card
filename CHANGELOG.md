@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1
+
+### What's Changed
+- Fixed the display of departure information.
+
 ## 2.4.0
 
 ### What's Changed

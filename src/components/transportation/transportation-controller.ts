@@ -45,6 +45,8 @@ export class TransportationController extends BaseController {
         // Clear intervals when disconnected
         this.clearTimers();
 
+        this._transportationDataLoaded = false;
+
         // Unsubscribe from transportation click messages
         Messenger.getInstance().unsubscribe(
             ShowTransportationMessage,
@@ -76,7 +78,7 @@ export class TransportationController extends BaseController {
      * Set up the update interval for transportation data
      */
     private setupUpdateInterval(): void {
-        if (!this.config.transportation || this.config.transportation.enable === false) return;
+        if (!this.config.transportation || this.config.transportation.enabled === false) return;
 
         // Get configured transportation update interval or default to 60 seconds
         let transportationInterval = this.config.transportation.updateInterval || 60;
@@ -123,7 +125,7 @@ export class TransportationController extends BaseController {
      * Fetch transportation data from the configured provider
      */
     public async fetchTransportationDataAsync(): Promise<void> {
-        if (!this.config.transportation || this.config.transportation.enable === false)
+        if (!this.config.transportation || this.config.transportation.enabled === false)
         {
             return;
         }
@@ -166,6 +168,7 @@ export class TransportationController extends BaseController {
             if (transportationConfig.maxDepartures !== undefined) {
                 providerConfig.maxDepartures = transportationConfig.maxDepartures;
             }
+            
             this._transportationData = await provider.fetchTransportationAsync(providerConfig, stops);
 
             // Update the last update timestamp
@@ -196,7 +199,7 @@ export class TransportationController extends BaseController {
 
         // Fetch transportation data
         await this.fetchTransportationDataAsync();
-
+        
         // Mark as loaded so the button is replaced with the data
         this._transportationDataLoaded = true;
 
@@ -223,11 +226,11 @@ export class TransportationController extends BaseController {
                 autoHideTimeoutMs = 10000; // If there was an error, set auto-hide to 10 seconds
             }
 
-            this.logger.debug(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
+            this.logger.info(`Setting transportation auto-hide timeout to ${autoHideTimeout} minutes`);
 
             // Set timer to hide departures and show bus button again after timeout
             this.autoHideTimerId = window.setTimeout(() => {
-                this.logger.debug(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
+                this.logger.info(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
                 this.clearTimers(); // Clear all timers
                 this._transportationDataLoaded = false;
 
@@ -261,15 +264,17 @@ export class TransportationController extends BaseController {
      * Check if transportation is enabled in the configuration
      */
     get isTransportationEnabled(): boolean {
-        return this.config.transportation !== undefined && this.config.transportation.enable !== false;
+        return this.config.transportation !== undefined && this.config.transportation.enabled !== false;
     }
 
     private setInactive(): void {
+        this.logger.info("Transportation set to inactive, clearing timers and sending message to bottom bar to hide departures");
         this._isActive = false;
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
 
     private setActive(): void {
+        this.logger.info("Transportation set to active, sending message to bottom bar to show departures");
         this._isActive = true;
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
