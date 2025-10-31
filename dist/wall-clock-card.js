@@ -1941,7 +1941,7 @@
                 align-items: center;
                 height: 100%;
                 width: 100%;
-                background-color: var(--card-background-color, var(--primary-background-color, #111));
+                // background-color: var(--card-background-color, var(--primary-background-color, #111));
                 color: var(--primary-text-color, #fff);
                 font-family: var(--paper-font-common-base_-_font-family, "Roboto", sans-serif);
                 position: relative;
