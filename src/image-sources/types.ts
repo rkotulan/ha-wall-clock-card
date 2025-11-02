@@ -1,3 +1,5 @@
+import { HomeAssistant } from 'custom-card-helpers';
+
 /**
  * Types and interfaces for image sources
  */
@@ -120,4 +122,10 @@ export interface ImageSource {
    * @returns Default configuration
    */
   getDefaultConfig(): ImageSourceConfig;
+
+  /**
+   * Optional method for sources that interact with Home Assistant APIs
+   * @param hass The Home Assistant instance to use for queries
+   */
+  setHass?(hass?: HomeAssistant): void;
 }

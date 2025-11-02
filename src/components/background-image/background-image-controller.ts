@@ -9,6 +9,7 @@ import {
 } from '../../utils';
 import {BackgroundImageManager} from '../../image-sources';
 import {Weather, TimeOfDay, getCurrentTimeOfDay, ImageSourceConfig} from '../../image-sources';
+import { HomeAssistant } from 'custom-card-helpers';
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
@@ -24,6 +25,7 @@ export class BackgroundImageController extends BaseController {
     private config: BackgroundImageControllerConfig;
     private currentWeather: Weather = Weather.All;
     private messenger = Messenger.getInstance();
+    private hass?: HomeAssistant;
 
     // Image state
     private _currentImageUrl = '';
@@ -33,6 +35,11 @@ export class BackgroundImageController extends BaseController {
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
         super(host, 'background-image-controller');
         this.config = config;
+    }
+
+    updateHass(hass?: HomeAssistant): void {
+        this.hass = hass;
+        this.backgroundImageManager.setHass(hass);
     }
 
     private onWeather = (msg: WeatherMessage) => {
@@ -122,6 +129,10 @@ export class BackgroundImageController extends BaseController {
             const initialized = this.backgroundImageManager.initialize(
                 imageSourceConfig
             );
+
+            if (initialized) {
+                this.backgroundImageManager.setHass(this.hass);
+            }
 
             if (!initialized) {
                 this.logger.warn('Failed to initialize BackgroundImageManager');
