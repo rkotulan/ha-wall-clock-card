@@ -15,14 +15,6 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 
 We built this card to keep time, date, and weather in view on a kitchen tablet without compromising aesthetics. The project has since grown into a polished Home Assistant companion that we still rely on every day.
 
-## Tech Stack
-
-- **TypeScript**: Main programming language
-- **Lit**: Web components library for UI
-- **Webpack**: Module bundler
-- **Jest**: Testing framework
-- **Home Assistant Custom Card API**: Integration with Home Assistant
-
 ## Features
 
 - **Beautiful clock display**:
@@ -272,3 +264,11 @@ For detailed documentation, please see the following pages:
 ## License
 
 MIT
+
+## Tech Stack
+
+- **TypeScript**: Main programming language
+- **Lit**: Web components library for UI
+- **Webpack**: Module bundler
+- **Jest**: Testing framework
+- **Home Assistant Custom Card API**: Integration with Home Assistant
