@@ -84,7 +84,7 @@ export class BackgroundImageManager {
         if (imageUrl && imageUrl.startsWith('media-source://')) {
             try {
                 if (this.hass?.callWS) {
-                    const result = await this.hass.callWS({
+                    const result : any = await this.hass.callWS({
                         type: 'media_source/resolve_media',
                         media_content_id: imageUrl
                     });
