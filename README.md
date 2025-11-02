@@ -15,6 +15,37 @@ A simple, elegant card for Home Assistant's Lovelace UI that displays a clock wi
 
 We built this card to keep time, date, and weather in view on a kitchen tablet without compromising aesthetics. The project has since grown into a polished Home Assistant companion that we still rely on every day.
 
+## Installation
+
+Choose the method that fits your setup. HACS keeps the card up to date automatically and is the recommended path for most users.
+
+### HACS Installation
+
+[![HASC](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rkotulan&repository=ha-wall-clock-card&category=plugin)
+
+1. Open HACS in your Home Assistant instance
+2. Search for "Wall Clock Card"
+3. Click on the "Wall Clock Card" in the search results
+4. Click "Download" in the bottom right corner
+5. HACS will automatically add the required resource to your Lovelace configuration
+6. Restart Home Assistant if needed
+
+### Manual Installation
+
+1. Create a `www/wall-clock-card` folder in your Home Assistant configuration directory.
+2. Download the `wall-clock-card.js` file from the `dist` folder of this repository.
+3. Place the file in the `www/wall-clock-card` folder.
+4. Add the following resource entry to your `configuration.yaml` (or manage it through the Lovelace resources UI):
+
+```yaml
+lovelace:
+  resources:
+    - url: /local/wall-clock-card/wall-clock-card.js
+      type: module
+```
+
+5. Restart Home Assistant.
+
 ## Features
 
 - **Beautiful clock display**:
@@ -123,37 +154,6 @@ imageConfig:
   - Comprehensive YAML configuration options
   - Individual background image management
   - Language selection for weather conditions
-
-## Installation
-
-Choose the method that fits your setup. HACS keeps the card up to date automatically and is the recommended path for most users.
-
-### HACS Installation
-
-[![HASC](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rkotulan&repository=ha-wall-clock-card&category=plugin)
-
-1. Open HACS in your Home Assistant instance
-2. Search for "Wall Clock Card"
-3. Click on the "Wall Clock Card" in the search results
-4. Click "Download" in the bottom right corner
-5. HACS will automatically add the required resource to your Lovelace configuration
-6. Restart Home Assistant if needed
-
-### Manual Installation
-
-1. Create a `www/wall-clock-card` folder in your Home Assistant configuration directory.
-2. Download the `wall-clock-card.js` file from the `dist` folder of this repository.
-3. Place the file in the `www/wall-clock-card` folder.
-4. Add the following resource entry to your `configuration.yaml` (or manage it through the Lovelace resources UI):
-
-```yaml
-lovelace:
-  resources:
-    - url: /local/wall-clock-card/wall-clock-card.js
-      type: module
-```
-
-5. Restart Home Assistant.
 
 ## Usage
 
