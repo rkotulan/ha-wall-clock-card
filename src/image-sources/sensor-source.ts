@@ -6,6 +6,7 @@ import {
 } from './image-source';
 import { AbstractImageSource } from './abstract-image-source';
 import { createLogger } from '../utils/logger';
+import { HomeAssistant } from 'custom-card-helpers';
 
 /**
  * Configuration for the Sensor image source
@@ -34,6 +35,11 @@ export class SensorSource extends AbstractImageSource {
 
     // Entity tracking
     private entityId: string | null = null;
+    private hass?: HomeAssistant;
+
+    setHass(hass?: HomeAssistant): void {
+        this.hass = hass;
+    }
 
 
     /**
@@ -43,17 +49,13 @@ export class SensorSource extends AbstractImageSource {
      */
     private async checkEntityAsync(entityId: string): Promise<void> {
         try {
-            // Get the Home Assistant instance
-            const hass = (window as any).document.querySelector('home-assistant').hass;
-
-            // If we can't get the Home Assistant instance, return
-            if (!hass) {
+            if (!this.hass) {
                 this.logger.warn('Could not get Home Assistant instance');
                 return;
             }
 
             // Get the entity state
-            const state = hass.states[entityId];
+            const state = this.hass.states[entityId];
 
             // If the entity doesn't exist, return
             if (!state) {
@@ -126,17 +128,13 @@ export class SensorSource extends AbstractImageSource {
         }
 
         try {
-            // Get the Home Assistant instance
-            const hass = (window as any).document.querySelector('home-assistant').hass;
-
-            // If we can't get the Home Assistant instance, return an empty array
-            if (!hass) {
+            if (!this.hass) {
                 this.logger.warn('Could not get Home Assistant instance');
                 return [];
             }
 
             // Get the sensor state
-            const state = hass.states[entityId];
+            const state = this.hass.states[entityId];
 
             // If the sensor doesn't exist, return an empty array
             if (!state) {

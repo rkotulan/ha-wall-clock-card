@@ -1,3 +1,4 @@
+import { HomeAssistant } from 'custom-card-helpers';
 import {ImageSource, ImageSourceConfig, TimeOfDay, Weather} from './image-source';
 import {getImageSource} from './image-source-factory';
 import { createLogger } from '../utils/logger';
@@ -11,6 +12,16 @@ export class BackgroundImageManager {
     private sourceConfig: ImageSourceConfig = {};
     private imageSourceId: string = 'picsum';
     private logger = createLogger('background-image-manager');
+    private hass?: HomeAssistant;
+
+    constructor(hass?: HomeAssistant) {
+        this.hass = hass;
+    }
+
+    public setHass(hass?: HomeAssistant): void {
+        this.hass = hass;
+        this.imageSource?.setHass?.(hass);
+    }
 
     /**
      * Initialize the BackgroundImageManager with the given image source ID and configuration
@@ -37,6 +48,8 @@ export class BackgroundImageManager {
             this.logger.error(`Image source '${this.imageSourceId}' not found`);
             return false;
         }
+
+        this.imageSource.setHass?.(this.hass);
 
         // Get the default configuration for the image source
         const defaultConfig = this.imageSource ? this.imageSource.getDefaultConfig() : {};
@@ -70,9 +83,8 @@ export class BackgroundImageManager {
           // Transform url if it starts with media-source:// by resolving via Home Assistant, if available
         if (imageUrl && imageUrl.startsWith('media-source://')) {
             try {
-                const hass = (window as any).document.querySelector('home-assistant').hass;                
-                if (hass?.callWS) {
-                    const result = await hass.callWS({
+                if (this.hass?.callWS) {
+                    const result : any = await this.hass.callWS({
                         type: 'media_source/resolve_media',
                         media_content_id: imageUrl
                     });

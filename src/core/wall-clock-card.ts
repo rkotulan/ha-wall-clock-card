@@ -270,6 +270,7 @@ export class WallClockCard extends LitElement {
             imageSourceConfig: imageSourceConfig,
             backgroundRotationInterval: this.config.backgroundRotationInterval
         };
+        this.backgroundImageComponent.hass = this.hass;
 
         logger.debug('Background image component initialized');
     }
@@ -465,6 +466,9 @@ export class WallClockCard extends LitElement {
 
             // Update the action bar component with the new hass
             this.actionBarComponent.hass = this.hass;
+
+            // Update the background image component with the new hass
+            this.backgroundImageComponent.hass = this.hass;
         }
 
         // If config changed, update the log level

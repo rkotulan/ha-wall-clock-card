@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { createLogger } from '../../utils';
 import {BackgroundImageController, BackgroundImageControllerConfig} from './background-image-controller';
 
@@ -7,6 +8,7 @@ import {BackgroundImageController, BackgroundImageControllerConfig} from './back
 export class BackgroundImageComponent extends LitElement {
     @property({ type: Number }) backgroundOpacity?: number = 0.5;
     @property({ type: Object }) config?: BackgroundImageControllerConfig;
+    @property({ type: Object }) hass?: HomeAssistant;
 
     private logger = createLogger('background-image-component');
     private backgroundImageController: BackgroundImageController;
@@ -86,6 +88,10 @@ export class BackgroundImageComponent extends LitElement {
 
             // Update the controller with new configuration
             this.backgroundImageController.updateConfig(this.config ?? {});
+        }
+
+        if (changedProperties.has('hass')) {
+            this.backgroundImageController.updateHass(this.hass);
         }
     }
 
