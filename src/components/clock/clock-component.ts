@@ -13,6 +13,7 @@ export interface ClockConfig {
     size?: Size;
     clockSize?: string;
     dateSize?: string;
+    clockTopMargin?: string;
 }
 
 @customElement('ha-clock')
@@ -25,6 +26,7 @@ export class ClockComponent extends LitElement {
     @property({ type: String }) size?: Size;
     @property({ type: String }) clockSize?: string;
     @property({ type: String }) dateSize?: string;
+    @property({ type: String }) clockTopMargin?: string;
 
     private logger = createLogger('clock-component');
     private clockController: ClockController;
@@ -106,13 +108,14 @@ export class ClockComponent extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('timeFormat') || 
-            changedProperties.has('dateFormat') || 
-            changedProperties.has('language') || 
+        if (changedProperties.has('timeFormat') ||
+            changedProperties.has('dateFormat') ||
+            changedProperties.has('language') ||
             changedProperties.has('timeZone') ||
             changedProperties.has('size') ||
             changedProperties.has('clockSize') ||
-            changedProperties.has('dateSize')) {
+            changedProperties.has('dateSize') ||
+            changedProperties.has('clockTopMargin')) {
 
             this.logger.debug('Clock properties changed, updating ClockController');
 
@@ -140,6 +143,11 @@ export class ClockComponent extends LitElement {
             if (changedProperties.has('dateSize')) {
                 const oldDateSize = changedProperties.get('dateSize');
                 this.logger.debug(`DateSize changed: ${oldDateSize} -> ${this.dateSize}`);
+            }
+
+            if (changedProperties.has('clockTopMargin')) {
+                const oldClockTopMargin = changedProperties.get('clockTopMargin');
+                this.logger.debug(`ClockTopMargin changed: ${oldClockTopMargin} -> ${this.clockTopMargin}`);
             }
 
             // Update unified ClockController with new configuration
@@ -180,6 +188,14 @@ export class ClockComponent extends LitElement {
         return getSizeValue(this.size, this.dateSize, 'dateSize');
     }
 
+    getClockTopMargin(): string {
+        if (this.size === Size.Custom) {
+            return this.clockTopMargin ?? '0rem';
+        }
+
+        return '0rem';
+    }
+
     render() {
         // Log rendering information for debugging
         const seconds = this.getSeconds();
@@ -188,7 +204,7 @@ export class ClockComponent extends LitElement {
         const dateSize = this.getDateSize();
 
         return html`
-            <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize};">
+            <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize}; margin-top: ${this.getClockTopMargin()};">
                 <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
                 ${shouldShowSeconds ? html`
                     <div class="seconds-container">

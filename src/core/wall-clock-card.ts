@@ -66,6 +66,7 @@ export class WallClockCard extends LitElement {
         if (this.config.customSizes) {
             this.clockComponent.clockSize = this.config.customSizes.clockSize;
             this.clockComponent.dateSize = this.config.customSizes.dateSize;
+            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
         }
 
         // Initialize the sensor component
@@ -150,6 +151,7 @@ export class WallClockCard extends LitElement {
         if (this.config.customSizes) {
             this.clockComponent.clockSize = this.config.customSizes.clockSize;
             this.clockComponent.dateSize = this.config.customSizes.dateSize;
+            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
         }
 
         // Initialize the sensor component with the latest configuration
@@ -400,6 +402,7 @@ export class WallClockCard extends LitElement {
         if (this.config.customSizes) {
             this.clockComponent.clockSize = this.config.customSizes.clockSize;
             this.clockComponent.dateSize = this.config.customSizes.dateSize;
+            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
         }
 
         // Initialize the sensor component with the new configuration
