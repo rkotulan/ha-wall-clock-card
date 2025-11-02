@@ -130,6 +130,27 @@ The Wall Clock Card can fetch background images from online sources, which means
            scan_interval: 600  # Refresh every 10 minutes
      ```
 
+     - **Using Home Assistant media-source URLs**:
+       - Since 2.4.3, the card can resolve media-source URLs automatically. You can generate media-source paths in your sensor so the files are served via the media browser backend.
+
+       Example using a NAS-mounted folder under /media:
+       ```yaml
+       command_line:
+         - sensor:
+             name: Photos from NAS
+             command: >-
+               printf '{"files":[';
+               find /media/MEDIA/wcp-bg-1920/ -type f \( -iname "*.jpg" -o -iname "*.png" \) \
+                 | sort \
+                 | sed 's/.*/"&"/g' \
+                 | paste -sd, - \
+                 | sed 's#/media/#media-source://media_source/local/#g';
+               printf ']}'
+             value_template: "OK"
+             json_attributes: files
+             scan_interval: 600 # každých 10 minut
+       ```
+       **MEDIA** is the name of your NAS media folder.
    - **Image URL Recognition**:
      - The sensor source automatically extracts weather conditions and time of day from image URLs
      - Include weather conditions in the image path (e.g., `/images/clear-sky/image.jpg`)

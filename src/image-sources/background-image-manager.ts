@@ -65,9 +65,28 @@ export class BackgroundImageManager {
 
     try {
           this.logger.info(`Getting next image URL with imageSourceId: ${this.imageSourceId} for weather: ${weather}, time of day: ${timeOfDay}`);
-          const imageUrl = await this.imageSource.getNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
+          let imageUrl = await this.imageSource.getNextImageUrlAsync(this.sourceConfig, weather, timeOfDay);
 
-          if (imageUrl) {
+          // Transform url if it starts with media-source:// by resolving via Home Assistant, if available
+        if (imageUrl && imageUrl.startsWith('media-source://')) {
+            try {
+                const hass = (window as any).document.querySelector('home-assistant').hass;                
+                if (hass?.callWS) {
+                    const result = await hass.callWS({
+                        type: 'media_source/resolve_media',
+                        media_content_id: imageUrl
+                    });
+                    // Result is typically { url: string, mime_type: string }
+                    imageUrl = result && result.url ? result.url : imageUrl;
+                } else {
+                    this.logger.warn('Home Assistant instance not available to resolve media-source URL; using original URL');
+                }
+            } catch (e) {
+                this.logger.error('Failed to resolve media-source URL', e);
+            }
+        }
+
+        if (imageUrl) {
               this.logger.debug(`Got image URL: ${imageUrl}`);
               return imageUrl;
           } else {

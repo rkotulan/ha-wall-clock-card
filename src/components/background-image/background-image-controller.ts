@@ -171,7 +171,7 @@ export class BackgroundImageController extends BaseController {
             // Get current weather and time of day
             let currentWeather: Weather = weather; // Use provided weather
             let currentTimeOfDay: TimeOfDay = getCurrentTimeOfDay();
-
+           
             // Use the BackgroundImageManager to fetch a new image
             const newImageUrl = await this.backgroundImageManager.getNextImageUrlAsync(
                 currentWeather,

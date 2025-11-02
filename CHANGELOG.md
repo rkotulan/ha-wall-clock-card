@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.3
+
+### What's Changed
+- Added support for Home Assistant media-source URLs for background images. You can now provide image URLs starting with `media-source://...` (e.g., `media-source://media_source/local/...`). The card will resolve these via Home Assistant automatically.
+- Documentation updated with an example command_line sensor that exposes a list of images using media-source paths.
+
 ## 2.4.1
 
 ### What's Changed

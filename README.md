@@ -90,6 +90,38 @@ Today, our Wall Clock Card serves as the central information hub on our kitchen 
     - Images are automatically cached and refreshed every 10 minutes
     - Supports weather and time-of-day recognition from image URLs
     - Automatically filters images based on current weather conditions and time of day
+    - Supports Home Assistant media-source URLs (media-source://) and resolves them automatically via HA
+
+### Example: Command line sensor using media-source (NAS photos)
+
+Add this sensor to your Home Assistant configuration.yaml to expose a list of image files as media-source URLs. The card can then use the sensor as image source 'sensor'.
+**MEDIA** is the name of your NAS media folder.
+
+```yaml
+command_line:
+  - sensor:
+      name: Photos from NAS
+      command: >-
+        printf '{"files":[';
+        find /media/MEDIA/wcp-bg-1920/ -type f \( -iname "*.jpg" -o -iname "*.png" \) \
+          | sort \
+          | sed 's/.*/"&"/g' \
+          | paste -sd, - \
+          | sed 's#/media/#media-source://media_source/local/#g';
+        printf ']}'
+      value_template: "OK"
+      json_attributes: files
+      scan_interval: 600 # každých 10 minut
+```
+
+Then point the card to this sensor:
+
+```yaml
+type: custom:wall-clock-card
+imageSource: sensor
+imageConfig:
+  entity: sensor.photos_from_nas
+```
 
 - **Configuration**:
   - Full visual editor in Home Assistant UI
