@@ -85,13 +85,23 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             fontColor: wallClockConfig.fontColor || '#FFFFFF',
             // Size settings
             size: wallClockConfig.size || Size.Medium,
-            customSizes: wallClockConfig.customSizes || {
-                clockSize: '16rem',
-                dateSize: '6rem',
-                labelSize: '1.5rem',
-                valueSize: '3rem',
-                actionBarIconSize: '72px'
-            },
+            customSizes: wallClockConfig.customSizes
+                ? {
+                    clockSize: wallClockConfig.customSizes.clockSize ?? '16rem',
+                    dateSize: wallClockConfig.customSizes.dateSize ?? '6rem',
+                    labelSize: wallClockConfig.customSizes.labelSize ?? '1.5rem',
+                    valueSize: wallClockConfig.customSizes.valueSize ?? '3rem',
+                    actionBarIconSize: wallClockConfig.customSizes.actionBarIconSize ?? '72px',
+                    clockTopMargin: wallClockConfig.customSizes.clockTopMargin ?? '0rem'
+                }
+                : {
+                    clockSize: '16rem',
+                    dateSize: '6rem',
+                    labelSize: '1.5rem',
+                    valueSize: '3rem',
+                    actionBarIconSize: '72px',
+                    clockTopMargin: '0rem'
+                },
             // Weather settings
             showWeather: wallClockConfig.showWeather !== undefined ? wallClockConfig.showWeather : false,
             weatherProvider: wallClockConfig.weatherProvider || 'openweathermap',
@@ -287,6 +297,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .value=${this._config.customSizes?.clockSize || '16rem'}
                                     .label= ${"Clock Size (e.g., 16rem)"}
                                     propertyName="customSizes.clockSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._config.customSizes?.clockTopMargin || '0rem'}
+                                    .label= ${"Clock Top Margin (e.g., 0rem)"}
+                                    propertyName="customSizes.clockTopMargin"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 

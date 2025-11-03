@@ -150,7 +150,16 @@ The Wall Clock Card can fetch background images from online sources, which means
              json_attributes: files
              scan_interval: 600 # každých 10 minut
        ```
-       **MEDIA** is the name of your NAS media folder.
+       **MEDIA** is the name of your NAS media folder. 
+     
+       Then point the card to this sensor:
+
+       ```yaml
+       type: custom:wall-clock-card
+       imageSource: sensor
+       imageConfig:
+         entity: sensor.photos_from_nas
+       ```     
    - **Image URL Recognition**:
      - The sensor source automatically extracts weather conditions and time of day from image URLs
      - Include weather conditions in the image path (e.g., `/images/clear-sky/image.jpg`)

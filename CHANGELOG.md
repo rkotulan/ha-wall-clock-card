@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.4
+
+### What's Changed
+- Ability to set top margin for the clock.
 ## 2.4.3
 
 ### What's Changed

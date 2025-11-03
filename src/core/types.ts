@@ -31,6 +31,7 @@ export interface WallClockConfig {
         labelSize?: string; // Custom size for labels
         valueSize?: string; // Custom size for values
         actionBarIconSize?: string; // Custom size for action bar icons
+        clockTopMargin?: string; // Custom top margin for the clock container
     };
 
     // Background images structure
