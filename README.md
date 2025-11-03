@@ -2,13 +2,6 @@
 
 A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
 
-## Quick Start
-
-1. **Install via HACS** – Search for "Wall Clock Card" in HACS → Download → Restart Home Assistant if prompted.
-2. **Manual install** – Copy `dist/wall-clock-card.js` to `config/www/wall-clock-card/` and add it as a Lovelace resource (`/local/wall-clock-card/wall-clock-card.js`).
-3. **Add to dashboard** – Edit a dashboard → Add card → Choose **Wall Clock Card** (or use YAML `type: custom:wall-clock-card`).
-4. **Customize** – Configure sensors, backgrounds, and weather in the UI editor or via YAML.
-
 ![Wall Clock Card](images/showcase-01.png)
 
 ## Our Story
@@ -117,37 +110,6 @@ lovelace:
     - Supports weather and time-of-day recognition from image URLs
     - Automatically filters images based on current weather conditions and time of day
     - Supports Home Assistant media-source URLs (media-source://) and resolves them automatically via HA
-
-### Example: Command line sensor using media-source (NAS photos)
-
-Add this sensor to your Home Assistant configuration.yaml to expose a list of image files as media-source URLs. The card can then use the sensor as image source 'sensor'.
-**MEDIA** is the name of your NAS media folder.
-
-```yaml
-command_line:
-  - sensor:
-      name: Photos from NAS
-      command: >-
-        printf '{"files":[';
-        find /media/MEDIA/wcp-bg-1920/ -type f \( -iname "*.jpg" -o -iname "*.png" \) \
-          | sort \
-          | sed 's/.*/"&"/g' \
-          | paste -sd, - \
-          | sed 's#/media/#media-source://media_source/local/#g';
-        printf ']}'
-      value_template: "OK"
-      json_attributes: files
-      scan_interval: 600 # každých 10 minut
-```
-
-Then point the card to this sensor:
-
-```yaml
-type: custom:wall-clock-card
-imageSource: sensor
-imageConfig:
-  entity: sensor.photos_from_nas
-```
 
 - **Configuration**:
   - Full visual editor in Home Assistant UI
