@@ -6,6 +6,7 @@
 - Fixed `SensorComponent` to respect the `display_precision` setting from Home Assistant for individual entities.
 - Refactored `SensorController` for better maintainability and performance.
 - Added Bulgarian translation.
+- Updated Bulgarian localization for weather conditions.
 
 ## 2.4.4
 
