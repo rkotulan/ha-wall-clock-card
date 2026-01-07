@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.0
+
+### What's Changed
+- Added Bulgarian translation.
+
 ## 2.4.4
 
 ### What's Changed

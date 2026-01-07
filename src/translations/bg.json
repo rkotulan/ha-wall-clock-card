@@ -1,0 +1,41 @@
+{
+  "common": {
+    "title": "Времето",
+    "description": "Текущо време и прогноза",
+    "settings": "Настройки на времето"
+  },
+  "conditions": {
+    "all": "Всички метеорологични условия",
+    "clouds": "Облачно",
+    "clear_sky": "Ясно небе",
+    "few_clouds": "Предимно ясно",
+    "scattered_clouds": "Разпръсната облачност",
+    "broken_clouds": "Предимно облачно",
+    "overcast_clouds": "Облачно",
+    "shower_rain": "Пръски дъжд",
+    "rain": "Дъжд",
+    "thunderstorm": "Гръмотевична буря",
+    "snow": "Сняг",
+    "mist": "Мъгла",
+    "light_rain": "Слаб дъжд",
+    "moderate_rain": "Умерен дъжд",
+    "heavy_intensity_rain": "Силен дъжд"
+  },
+  "forecast": {
+    "title": "Прогноза",
+    "today": "Днес",
+    "tomorrow": "Утре",
+    "next_days": "Следващите дни"
+  },
+  "units": {
+    "temperature": {
+      "celsius": "°C",
+      "fahrenheit": "°F"
+    },
+    "wind": {
+      "ms": "m/s",
+      "mph": "mph",
+      "kmh": "km/h"
+    }
+  }
+}

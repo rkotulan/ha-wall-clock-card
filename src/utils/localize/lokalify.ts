@@ -11,6 +11,7 @@ export interface Translations {
 }
 
 // Import translations directly from JSON files
+import bgTranslations from '../../translations/bg.json';
 import csTranslations from '../../translations/cs.json';
 import daTranslations from '../../translations/da.json';
 import deTranslations from '../../translations/de.json';
@@ -40,6 +41,7 @@ export interface LanguageDefinition {
 
 // Single source of truth for all language-related data
 export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
+  { code: 'bg', label: 'Bulgarian (Български)', locale: 'bg-BG', translations: bgTranslations },
   { code: 'cs', label: 'Czech (Čeština)', locale: 'cs-CZ', translations: csTranslations },
   { code: 'da', label: 'Danish (Dansk)', locale: 'da-DK', translations: daTranslations },
   { code: 'de', label: 'German (Deutsch)', locale: 'de-DE', translations: deTranslations },

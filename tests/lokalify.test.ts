@@ -9,6 +9,7 @@ import {
   formatDate, 
   formatTime, 
   formatDateTime, 
+  translate,
   ExtendedDateTimeFormatOptions
 } from '../src/utils/localize/lokalify';
 
@@ -45,6 +46,14 @@ describe('formatDate function', () => {
       expect(csResult.includes('leden') || csResult.includes('ledna')).toBeTruthy();
       expect(csResult).toContain('15');
       expect(csResult).toContain('2023');
+    });
+
+    test('should format date correctly in Bulgarian', () => {
+      const bgResult = formatDate(date, 'bg', options);
+      expect(bgResult).toContain('неделя');
+      expect(bgResult).toContain('януари');
+      expect(bgResult).toContain('15');
+      expect(bgResult).toContain('2023');
     });
   });
 
@@ -255,5 +264,21 @@ describe('formatDateTime function', () => {
       });
       expect(allHiddenResult).toBe('');
     });
+  });
+});
+
+// Test translate function
+describe('translate function', () => {
+  test('should translate weather condition to Bulgarian', () => {
+    expect(translate('conditions.clouds', 'bg')).toBe('Облачно');
+    expect(translate('conditions.rain', 'bg')).toBe('Дъжд');
+  });
+
+  test('should translate forecast title to Bulgarian', () => {
+    expect(translate('forecast.title', 'bg')).toBe('Прогноза');
+  });
+
+  test('should fall back to key if translation missing', () => {
+    expect(translate('non.existent.key', 'bg')).toBe('non.existent.key');
   });
 });
