@@ -3,6 +3,8 @@
 ## 2.5.0
 
 ### What's Changed
+- Fixed `SensorComponent` to respect the `display_precision` setting from Home Assistant for individual entities.
+- Refactored `SensorController` for better maintainability and performance.
 - Added Bulgarian translation.
 
 ## 2.4.4

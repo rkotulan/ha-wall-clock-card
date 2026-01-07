@@ -1,5 +1,5 @@
 import { ReactiveControllerHost } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, formatNumber } from 'custom-card-helpers';
 import { BaseController } from '../../utils/controllers';
 
 export interface SensorConfig {
@@ -73,37 +73,82 @@ export class SensorController extends BaseController {
             return;
         }
 
-        // Clear previous values
-        this._sensorValues = [];
-
-        // Process sensors array
-        this.config.sensors.forEach(sensorConfig => {
-            if (sensorConfig.entity && this.hass!.states[sensorConfig.entity]) {
-                const state = this.hass!.states[sensorConfig.entity];
-                let value = state.state;
-
-                // If the entity has a unit_of_measurement attribute, append it
-                if (state.attributes && state.attributes.unit_of_measurement) {
-                    value += ` ${state.attributes.unit_of_measurement}`;
-                }
-
-                this._sensorValues.push({
-                    entity: sensorConfig.entity,
-                    label: sensorConfig.label,
-                    value: value
-                });
-            } else if (sensorConfig.entity) {
-                // Entity not found or unavailable
-                this._sensorValues.push({
-                    entity: sensorConfig.entity,
-                    label: sensorConfig.label,
-                    value: 'unavailable'
-                });
-            }
-        });
+        // Process sensors and update values
+        this._sensorValues = this.config.sensors.map(sensorConfig => this.processSensor(sensorConfig));
 
         // Request an update from the host
         this.host.requestUpdate();
+    }
+
+    /**
+     * Process a single sensor configuration and return its value
+     */
+    private processSensor(sensorConfig: SensorConfig): SensorValue {
+        const entityId = sensorConfig.entity;
+        const entityState = this.hass?.states[entityId];
+
+        if (!entityId || !entityState) {
+            return {
+                entity: entityId,
+                label: sensorConfig.label,
+                value: 'unavailable'
+            };
+        }
+
+        let value = entityState.state;
+        const displayPrecision = this.getDisplayPrecision(sensorConfig);
+
+        if (displayPrecision !== undefined && value !== null && value !== '' && !isNaN(Number(value))) {
+            value = this.formatNumericValue(Number(value), displayPrecision);
+        }
+
+        // If the entity has a unit_of_measurement attribute, append it
+        if (entityState.attributes?.unit_of_measurement) {
+            value += ` ${entityState.attributes.unit_of_measurement}`;
+        }
+
+        return {
+            entity: entityId,
+            label: sensorConfig.label,
+            value: value
+        };
+    }
+
+    /**
+     * Get display precision for a sensor
+     */
+    private getDisplayPrecision(sensorConfig: SensorConfig): number | undefined {
+        // Entity registry (display_precision)
+        if ((this.hass as any)?.entities && (this.hass as any).entities[sensorConfig.entity]) {
+            const registryPrecision = (this.hass as any).entities[sensorConfig.entity].display_precision;
+            if (registryPrecision !== undefined) {
+                return registryPrecision;
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Format a numeric value with specified precision
+     */
+    private formatNumericValue(numericValue: number, precision: number): string {
+        try {
+            let formattedValue = formatNumber(numericValue, this.hass!.locale, {
+                minimumFractionDigits: precision,
+                maximumFractionDigits: precision
+            });
+
+            // Verify if the formatted value actually contains the decimal part
+            // Some versions of formatNumber might ignore fraction digits in tests
+            if (precision > 0 && !formattedValue.includes('.') && !formattedValue.includes(',')) {
+                return numericValue.toFixed(precision);
+            }
+            return formattedValue;
+        } catch (e) {
+            // Fallback
+            return numericValue.toFixed(precision);
+        }
     }
 
     // Getter method for sensor values
