@@ -268,9 +268,11 @@ export class WallClockCard extends LitElement {
 
         // Set the properties
         this.backgroundImageComponent.backgroundOpacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5;
+        this.backgroundImageComponent.objectFit = this.config.objectFit || 'cover';
         this.backgroundImageComponent.config = {
             imageSourceConfig: imageSourceConfig,
-            backgroundRotationInterval: this.config.backgroundRotationInterval
+            backgroundRotationInterval: this.config.backgroundRotationInterval,
+            objectFit: this.config.objectFit || 'cover'
         };
         this.backgroundImageComponent.hass = this.hass;
 
@@ -380,6 +382,7 @@ export class WallClockCard extends LitElement {
             imageSource,
             imageConfig: config.imageConfig || {},
             backgroundRotationInterval: config.backgroundRotationInterval || 90,
+            objectFit: config.objectFit || 'cover',
             sensors: config.sensors || [],
             fontColor: config.fontColor || '#FFFFFF', // Default to white
             timeZone: timeZone,

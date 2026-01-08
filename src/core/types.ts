@@ -17,6 +17,7 @@ export interface WallClockConfig {
     imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
     imageConfig?: ImageSourceConfig; // Configuration for the image source
     backgroundRotationInterval?: number;
+    objectFit?: string;
     sensors?: SensorConfig[]; // Multiple sensors
     fontColor?: string; // Font color for all text elements
     language?: string; // Language for translations
@@ -71,6 +72,7 @@ export interface WallClockCardConfig {
     backgroundImages?: BackgroundImageConfig[];
     backgroundOpacity?: number;
     rotationInterval?: number;
+    objectFit?: string;
     weather?: WeatherConfig;
     transportation?: TransportationConfig;
     actionBar?: ActionBarConfig;

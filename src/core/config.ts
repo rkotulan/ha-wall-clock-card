@@ -11,6 +11,7 @@ export const DEFAULT_CONFIG: Partial<WallClockCardConfig> = {
     fontColor: 'white',
     backgroundOpacity: 0.5,
     rotationInterval: 30,
+    objectFit: 'cover',
     imageSource: 'none',
     logLevel: 'info',
 };

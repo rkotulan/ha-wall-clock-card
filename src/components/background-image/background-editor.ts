@@ -19,6 +19,14 @@ export class BackgroundEditor extends BaseEditorSection {
         {value: 'sensor', label: 'Sensor Images'},
     ];
 
+    private _objectFitOptions = [
+        {value: 'fill', label: 'Fill'},
+        {value: 'contain', label: 'Contain'},
+        {value: 'cover', label: 'Cover'},
+        {value: 'none', label: 'None'},
+        {value: 'scale-down', label: 'Scale Down'},
+    ];
+
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 
@@ -165,6 +173,20 @@ export class BackgroundEditor extends BaseEditorSection {
                         .value=${this.config.backgroundRotationInterval || 90}
                         .label= ${"Rotation Interval (sec)"}
                         propertyName="backgroundRotationInterval"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
+                            select: {
+                                options: this._objectFitOptions,
+                                mode: 'dropdown'
+                            }
+                        }}
+                        .value=${this.config.objectFit || 'cover'}
+                        .label= ${"Background Image Fit (object-fit)"}
+                        propertyName="objectFit"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
                 

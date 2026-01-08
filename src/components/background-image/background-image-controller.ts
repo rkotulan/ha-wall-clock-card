@@ -13,6 +13,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 export interface BackgroundImageControllerConfig {
     backgroundRotationInterval?: number;
+    objectFit?: string;
     imageSourceConfig?: ImageSourceConfig;
 }
 

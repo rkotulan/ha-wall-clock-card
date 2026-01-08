@@ -7,6 +7,7 @@ import {BackgroundImageController, BackgroundImageControllerConfig} from './back
 @customElement('ha-background-image')
 export class BackgroundImageComponent extends LitElement {
     @property({ type: Number }) backgroundOpacity?: number = 0.5;
+    @property({ type: String }) objectFit?: string = 'cover';
     @property({ type: Object }) config?: BackgroundImageControllerConfig;
     @property({ type: Object }) hass?: HomeAssistant;
 
@@ -57,7 +58,6 @@ export class BackgroundImageComponent extends LitElement {
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
             /* No default opacity or z-index - will be controlled by inline styles and @lit-labs/motion */            
         }
 
@@ -107,6 +107,7 @@ export class BackgroundImageComponent extends LitElement {
     render() {
         const currentImageUrl = this.currentImageUrl;
         const previousImageUrl = this.previousImageUrl;
+        const objectFit = this.objectFit || 'cover';
 
         return html`
             <div class="background-container">
@@ -115,11 +116,11 @@ export class BackgroundImageComponent extends LitElement {
                         ${previousImageUrl ? 
                             html`
                                 <!-- Previous image that will fade out -->
-                                <img class="background-image fade-out" src="${previousImageUrl}">
+                                <img class="background-image fade-out" src="${previousImageUrl}" style="object-fit: ${objectFit};">
                             ` : ''
                         }
                         <!-- Current image that will fade in -->
-                        <img class="background-image fade-in" src="${currentImageUrl}">
+                        <img class="background-image fade-in" src="${currentImageUrl}" style="object-fit: ${objectFit};">
                         <div class="background-overlay" style="opacity: ${this.backgroundOpacity !== undefined ? this.backgroundOpacity : 0.5};"></div>
                     ` :
                     ''
