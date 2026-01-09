@@ -103,7 +103,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       logger.error(`[HA Weather] Error fetching forecast for ${entityId}:`, error);
     }
 
-    return { current, daily };
+    return { current, daily, entityId };
   }
 
   /**

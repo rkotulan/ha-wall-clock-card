@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
@@ -70,6 +70,10 @@ export class WeatherComponent extends LitElement {
             max-width: 100%;
             max-height: 100%;
             overflow-y: auto;
+        }
+
+        .weather-container.clickable {
+            cursor: pointer;
         }
 
         .weather-title {
@@ -281,6 +285,12 @@ export class WeatherComponent extends LitElement {
         return getSizeValue(this.size, undefined, 'forecastTempWidth');
     }
 
+    private _handleWeatherClick(entityId?: string): void {
+        if (entityId && this.hass) {
+            fireEvent(this, 'hass-more-info', { entityId });
+        }
+    }
+
     render() {
         const weatherData: WeatherData | undefined = this.weatherController.weatherData;
 
@@ -310,7 +320,9 @@ export class WeatherComponent extends LitElement {
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
-            <div class="weather-container" style="color: ${this.fontColor};">
+            <div class="weather-container ${weatherData.entityId ? 'clickable' : ''}" 
+                 style="color: ${this.fontColor};"
+                 @click="${() => this._handleWeatherClick(weatherData.entityId)}">
                 <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">${weatherTitle}</div>
 
                 ${(displayMode === 'current' || displayMode === 'both') ?

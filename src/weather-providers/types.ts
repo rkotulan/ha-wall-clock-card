@@ -48,6 +48,7 @@ export interface WeatherData {
     humidity?: number;
     windSpeed?: number;
   }>;
+  entityId?: string;
 }
 
 /**

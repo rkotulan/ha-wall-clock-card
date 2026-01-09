@@ -66,6 +66,7 @@ describe('HomeAssistantWeatherProvider', () => {
     expect(result.current.temperature).toBe(25);
     expect(result.current.condition).toBe('clear_sky');
     expect(result.current.conditionUnified).toBe(Weather.ClearSky);
+    expect(result.entityId).toBe('weather.test');
     expect(result.daily.length).toBe(2);
     expect(result.daily[0].temperatureMax).toBe(28);
     expect(result.daily[0].temperatureMin).toBe(20);
