@@ -13,6 +13,7 @@
 - Refactored `SensorController` for better maintainability and performance.
 - Added Bulgarian translation.
 - Updated Bulgarian localization for weather conditions.
+- Added "Custom Date Format" field to the date format editor.
 
 ## 2.4.4
 

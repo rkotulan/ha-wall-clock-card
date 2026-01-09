@@ -116,6 +116,34 @@ describe('formatDate function', () => {
       expect(monthShortResult).toContain('15');
     });
   });
+
+  // Test custom format
+  describe('with custom format', () => {
+    const date = createTestDate();
+
+    test('should format with custom format string', () => {
+      const customResult = formatDate(date, 'en', { custom: 'yyyy-MM-dd' });
+      expect(customResult).toBe('2023-01-15');
+    });
+
+    test('should format with custom format string including weekday and month name', () => {
+      const customResult = formatDate(date, 'en', { custom: 'EEEE, MMMM d, yyyy' });
+      expect(customResult).toBe('Sunday, January 15, 2023');
+    });
+
+    test('should format with custom format string in Czech', () => {
+      const customResult = formatDate(date, 'cs', { custom: 'EEEE d. MMMM yyyy' });
+      expect(customResult).toContain('neděle 15.');
+      expect(customResult.includes('leden') || customResult.includes('ledna')).toBeTruthy();
+      expect(customResult).toContain('2023');
+    });
+
+    test('should not add trailing dot when format is yyyy MM/dd in Czech', () => {
+      const date = createTestDate();
+      const customResult = formatDate(date, 'cs', { custom: 'yyyy MM/dd' });
+      expect(customResult).toBe('2023 01/15');
+    });
+  });
 });
 
 // Test formatTime function
@@ -206,6 +234,21 @@ describe('formatTime function', () => {
       expect(allHiddenResult).toBe('');
     });
   });
+
+  // Test custom format
+  describe('with custom format', () => {
+    const date = createTestDate();
+
+    test('should format with custom format string', () => {
+      const customResult = formatTime(date, 'en', { custom: 'HH:mm:ss' });
+      expect(customResult).toBe('14:30:45');
+    });
+
+    test('should format with custom format string (hours and minutes only)', () => {
+      const customResult = formatTime(date, 'en', { custom: 'HH:mm' });
+      expect(customResult).toBe('14:30');
+    });
+  });
 });
 
 // Test formatDateTime function
@@ -230,6 +273,16 @@ describe('formatDateTime function', () => {
       expect(fullResult).toContain('2023');
       expect(fullResult).toContain('14');
       expect(fullResult).toContain('30');
+    });
+
+    test('should format with custom format string', () => {
+      const customResult = formatDateTime(date, 'en', { custom: 'yyyy-MM-dd HH:mm:ss' });
+      expect(customResult).toBe('2023-01-15 14:30:45');
+    });
+
+    test('should format with custom format string and some non-standard characters', () => {
+      const customResult = formatDateTime(date, 'en', { custom: 'dd.MM.yyyy | HH:mm' });
+      expect(customResult).toBe('15.01.2023 | 14:30');
     });
 
     test('should format with some components hidden', () => {

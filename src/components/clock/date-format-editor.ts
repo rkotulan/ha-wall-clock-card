@@ -53,6 +53,18 @@ export class DateFormatEditor extends BaseEditorSection {
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
+                            text: {}
+                        }}
+                        .value=${this.config.dateFormat?.custom || ''}
+                        .label= ${"Custom Date Format"}
+                        .helper= ${"e.g. yyyy-MM-dd or EEEE, MMMM d, yyyy. If filled, it overrides the settings below."}
+                        propertyName="dateFormat.custom"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
                             select: {
                                 options: this._dateFormatOptions.weekday,
                                 mode: 'dropdown'

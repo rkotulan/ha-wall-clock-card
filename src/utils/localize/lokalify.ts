@@ -211,7 +211,71 @@ export type ExtendedDateTimeFormatOptions = Omit<
   month?: 'numeric' | '2-digit' | 'long' | 'short' | 'narrow' | 'hidden';
   day?: 'numeric' | '2-digit' | 'hidden';
   second?: 'numeric' | '2-digit' | 'hidden';
+  custom?: string;
 };
+
+/**
+ * Apply a custom format string to a date
+ * @param date The date to format
+ * @param language The language code
+ * @param format The custom format string (e.g., 'EEEE, MMMM d, yyyy')
+ * @param timeZone Optional time zone
+ * @returns The formatted date string
+ */
+function applyCustomFormat(date: Date, language: string, format: string, timeZone?: string): string {
+  const locale = getLocaleForLanguage(language);
+
+  // Map format tokens to their respective Intl component types
+  const tokenToType: Record<string, string> = {
+    EEEE: 'weekday',
+    EEE: 'weekday',
+    MMMM: 'month',
+    MMM: 'month',
+    MM: 'month',
+    M: 'month',
+    dd: 'day',
+    d: 'day',
+    yyyy: 'year',
+    yy: 'year',
+    HH: 'hour',
+    H: 'hour',
+    mm: 'minute',
+    m: 'minute',
+    ss: 'second',
+    s: 'second',
+  };
+
+  // Create formatters for different components
+  // We use objects to avoid creating new formatters in every replace call if we had many
+  const formatters: Record<string, Intl.DateTimeFormat> = {
+    EEEE: new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone }),
+    EEE: new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }),
+    MMMM: new Intl.DateTimeFormat(locale, { month: 'long', timeZone }),
+    MMM: new Intl.DateTimeFormat(locale, { month: 'short', timeZone }),
+    MM: new Intl.DateTimeFormat(locale, { month: '2-digit', timeZone }),
+    M: new Intl.DateTimeFormat(locale, { month: 'numeric', timeZone }),
+    dd: new Intl.DateTimeFormat(locale, { day: '2-digit', timeZone }),
+    d: new Intl.DateTimeFormat(locale, { day: 'numeric', timeZone }),
+    yyyy: new Intl.DateTimeFormat(locale, { year: 'numeric', timeZone }),
+    yy: new Intl.DateTimeFormat(locale, { year: '2-digit', timeZone }),
+    HH: new Intl.DateTimeFormat(locale, { hour: '2-digit', hour12: false, timeZone }),
+    H: new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12: false, timeZone }),
+    mm: new Intl.DateTimeFormat(locale, { minute: '2-digit', timeZone }),
+    m: new Intl.DateTimeFormat(locale, { minute: 'numeric', timeZone }),
+    ss: new Intl.DateTimeFormat(locale, { second: '2-digit', timeZone }),
+    s: new Intl.DateTimeFormat(locale, { second: 'numeric', timeZone }),
+  };
+
+  const regex = /EEEE|EEE|MMMM|MMM|MM|M|dd|d|yyyy|yy|HH|H|mm|m|ss|s/g;
+
+  return format.replace(regex, (match) => {
+    const type = tokenToType[match];
+    const parts = formatters[match].formatToParts(date);
+    // Find the part that matches the type we're looking for
+    // This ignores literal parts like dots or spaces added by the locale
+    return parts.find(part => part.type === type)?.value || '';
+  });
+}
 
 /**
  * Format a date for display using the specified language and options
@@ -229,6 +293,11 @@ export function formatDate(
 ): string {
   // Create a copy of the options to avoid modifying the original
   const formatOptions = { ...options };
+
+  // If custom format is specified, use it
+  if (formatOptions.custom) {
+    return applyCustomFormat(date, language, formatOptions.custom, timeZone);
+  }
 
   // Add time zone if provided
   if (timeZone) {
@@ -308,6 +377,11 @@ export function formatTime(
   // Create a copy of the options to avoid modifying the original
   const formatOptions = { ...options };
 
+  // If custom format is specified, use it
+  if (formatOptions.custom) {
+    return applyCustomFormat(date, language, formatOptions.custom, timeZone);
+  }
+
   // Add time zone if provided
   if (timeZone) {
     formatOptions.timeZone = timeZone;
@@ -350,6 +424,11 @@ export function formatDateTime(
 ): string {
   // Create a copy of the options to avoid modifying the original
   const formatOptions = { ...options };
+
+  // If custom format is specified, use it
+  if (formatOptions.custom) {
+    return applyCustomFormat(date, language, formatOptions.custom, timeZone);
+  }
 
   // Add time zone if provided
   if (timeZone) {
