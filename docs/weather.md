@@ -7,11 +7,11 @@ type: 'custom:wall-clock-card'
 # Weather settings
 showWeather: true  # Set to true to enable weather display
 weatherTitle: 'Weather'  # Custom title for the weather section
-weatherProvider: 'homeassistant'  # Supports 'homeassistant', 'openweathermap' or 'metno'
+weatherProvider: 'homeassistant'  # Supports 'homeassistant' or 'openweathermap'
 weatherConfig:
   entityId: 'weather.forecast_home'  # Required for Home Assistant provider
   apiKey: 'your-openweathermap-api-key'  # Required for OpenWeatherMap, not used for others
-  latitude: 50.0755  # Used for OpenWeatherMap and Met.no
+  latitude: 50.0755  # Used for OpenWeatherMap
   longitude: 14.4378
   units: 'metric'  # 'metric' or 'imperial'
   language: 'cs'  # Language code (cs for Czech, en for English, etc.)
@@ -24,11 +24,11 @@ weatherUpdateInterval: 30  # Update interval in minutes (minimum: 1, default: 30
 
 The card supports multiple weather providers:
 
-### Met.no (Meteorologisk institutt)
+### Home Assistant Entity
 
-[Met.no](https://www.met.no/) is the Norwegian Meteorological Institute. It provides free weather data for most of the world.
-- **API Key**: Not required.
-- **Attribution**: Recommended to credit Met.no/YR.no.
+This is the recommended provider as it uses your existing Home Assistant weather entities.
+- **Entity ID**: The ID of your weather entity (e.g., `weather.forecast_home`).
+- **Data**: Uses the data provided by the entity, including forecasts.
 
 ### OpenWeatherMap
 
