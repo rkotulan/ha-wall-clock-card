@@ -97,4 +97,22 @@ describe('HomeAssistantWeatherProvider', () => {
     // @ts-ignore
     expect(provider.mapWeatherCondition('unknown')).toBe(Weather.All);
   });
+
+  it('should return correct icon URLs based on iconSet', async () => {
+    const configMetNo = { entityId: 'weather.test', iconSet: 'metno' };
+    const resultMetNo = await provider.fetchWeatherAsync(configMetNo);
+    expect(resultMetNo.current.icon).toContain('metno');
+
+    const configOWM = { entityId: 'weather.test', iconSet: 'openweathermap' };
+    const resultOWM = await provider.fetchWeatherAsync(configOWM);
+    expect(resultOWM.current.icon).toContain('openweathermap.org');
+    expect(resultOWM.current.icon).toContain('01d'); // sunny -> 01d
+  });
+
+  it('should return animated icon URL when iconSet is basmilius', async () => {
+    const config = { entityId: 'weather.test', iconSet: 'basmilius' };
+    const result = await provider.fetchWeatherAsync(config);
+    expect(result.current.icon).toContain('basmilius');
+    expect(result.current.icon).toContain('clear-day.svg');
+  });
 });

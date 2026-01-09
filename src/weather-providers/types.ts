@@ -16,6 +16,7 @@ export interface WeatherProviderConfig {
   longitude?: number;
   units?: 'metric' | 'imperial';
   language?: string;
+  iconSet?: string;
   [key: string]: any; // Allow additional provider-specific properties
 }
 

@@ -14,6 +14,7 @@ export interface WeatherComponentConfig {
     weatherForecastDays?: number;
     weatherTitle?: string;
     weatherUpdateInterval?: number;
+    weatherIconSet?: string;
     fontColor?: string;
     language?: string;
     size?: Size;
@@ -31,6 +32,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: Number }) weatherForecastDays?: number;
     @property({ type: String }) weatherTitle?: string;
     @property({ type: Number }) weatherUpdateInterval?: number;
+    @property({ type: String }) weatherIconSet?: string;
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
     @property({ type: String }) size?: Size;
@@ -50,7 +52,8 @@ export class WeatherComponent extends LitElement {
             weatherDisplayMode: this.weatherDisplayMode,
             weatherForecastDays: this.weatherForecastDays,
             weatherTitle: this.weatherTitle,
-            weatherUpdateInterval: this.weatherUpdateInterval
+            weatherUpdateInterval: this.weatherUpdateInterval,
+            weatherIconSet: this.weatherIconSet
         });
     }
 
@@ -171,7 +174,8 @@ export class WeatherComponent extends LitElement {
             changedProperties.has('weatherDisplayMode') || 
             changedProperties.has('weatherForecastDays') || 
             changedProperties.has('weatherTitle') || 
-            changedProperties.has('weatherUpdateInterval')) {
+            changedProperties.has('weatherUpdateInterval') ||
+            changedProperties.has('weatherIconSet')) {
 
             this.logger.debug('Weather properties or hass changed, updating WeatherController');
 
@@ -183,7 +187,8 @@ export class WeatherComponent extends LitElement {
                 weatherDisplayMode: this.weatherDisplayMode,
                 weatherForecastDays: this.weatherForecastDays,
                 weatherTitle: this.weatherTitle,
-                weatherUpdateInterval: this.weatherUpdateInterval
+                weatherUpdateInterval: this.weatherUpdateInterval,
+                weatherIconSet: this.weatherIconSet
             };
 
             this.weatherController.updateConfigAsync(config, this.hass);

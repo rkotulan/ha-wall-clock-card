@@ -93,6 +93,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language;
         this.weatherComponent.size = this.config.size;
@@ -182,6 +183,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.weatherComponent.size = this.config.size;
@@ -432,6 +434,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.weatherComponent.size = this.config.size;

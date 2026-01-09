@@ -27,6 +27,13 @@ export class WeatherEditor extends BaseEditorSection {
         {value: 'both', label: 'Current and Forecast'},
     ];
 
+    // Weather icon set options
+    private _weatherIconSetOptions = [
+        {value: 'metno', label: 'Met.no (SVG)'},
+        {value: 'openweathermap', label: 'OpenWeatherMap (PNG)'},
+        {value: 'basmilius', label: 'Bas Milius (Animated)'},
+    ];
+
     static get styles() {
         return css`
             .content {
@@ -173,6 +180,21 @@ export class WeatherEditor extends BaseEditorSection {
                             propertyName="weatherDisplayMode"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
+
+                    <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{
+                                select: {
+                                    options: this._weatherIconSetOptions,
+                                    mode: 'dropdown'
+                                }
+                            }}
+                            .value=${this.config.weatherIconSet || (this.config.weatherProvider === 'homeassistant' ? 'metno' : 'openweathermap')}
+                            .label= ${"Weather Icon Set"}
+                            propertyName="weatherIconSet"
+                            @value-changed=${this._handleFormValueChanged}
+                    ></ha-row-selector>
+
 
                     ${(this.config.weatherDisplayMode === 'forecast' || this.config.weatherDisplayMode === 'both') ? html`
                         <ha-row-selector

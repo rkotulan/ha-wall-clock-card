@@ -59,7 +59,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       temperature: attributes.temperature,
       condition: this.mapConditionToKey(condition),
       conditionUnified: conditionUnified,
-      icon: this.getIconUrl(condition),
+      icon: this.getIconUrl(condition, config.iconSet),
       humidity: attributes.humidity,
       windSpeed: attributes.wind_speed,
       pressure: attributes.pressure,
@@ -93,7 +93,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
           temperatureMin: item.templow !== undefined ? item.templow : item.temperature,
           temperatureMax: item.temperature,
           condition: this.mapConditionToKey(item.condition),
-          icon: this.getIconUrl(item.condition),
+          icon: this.getIconUrl(item.condition, config.iconSet),
           precipitation: item.precipitation,
           humidity: item.humidity,
           windSpeed: item.wind_speed
@@ -183,8 +183,17 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   /**
    * Get icon for condition
    */
-  private getIconUrl(condition: string): string {
+  private getIconUrl(condition: string, iconSet?: string): string {
     const lowerCondition = condition?.toLowerCase();
+
+    if (iconSet === 'basmilius') {
+      return this.getAnimatedIconUrl(lowerCondition);
+    }
+
+    if (iconSet === 'openweathermap') {
+      return this.getOpenWeatherMapIconUrl(lowerCondition);
+    }
+
     let symbol = 'clearsky_day'; // Default
 
     switch (lowerCondition) {
@@ -223,6 +232,98 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
 
     // Use jsDelivr CDN to fetch Met.no icons from their official repository
     return `https://cdn.jsdelivr.net/gh/metno/weathericons@main/weather/svg/${symbol}.svg`;
+  }
+
+  /**
+   * Get OpenWeatherMap icon URL for Home Assistant condition
+   */
+  private getOpenWeatherMapIconUrl(condition: string): string {
+    let iconCode = '01d'; // Default
+
+    switch (condition) {
+      case 'sunny':
+        iconCode = '01d';
+        break;
+      case 'clear-night':
+        iconCode = '01n';
+        break;
+      case 'cloudy':
+        iconCode = '03d';
+        break;
+      case 'partlycloudy':
+        iconCode = '02d';
+        break;
+      case 'rainy':
+        iconCode = '10d';
+        break;
+      case 'pouring':
+        iconCode = '09d';
+        break;
+      case 'lightning':
+      case 'lightning-rainy':
+        iconCode = '11d';
+        break;
+      case 'snowy':
+        iconCode = '13d';
+        break;
+      case 'snowy-rainy':
+        iconCode = '13d';
+        break;
+      case 'fog':
+        iconCode = '50d';
+        break;
+    }
+
+    return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  }
+
+  /**
+   * Get Bas Milius animated icon URL for Home Assistant condition
+   */
+  private getAnimatedIconUrl(condition: string): string {
+    let symbol = 'clear-day'; // Default
+
+    switch (condition) {
+      case 'sunny':
+        symbol = 'clear-day';
+        break;
+      case 'clear-night':
+        symbol = 'clear-night';
+        break;
+      case 'cloudy':
+        symbol = 'cloudy';
+        break;
+      case 'partlycloudy':
+        symbol = 'partly-cloudy-day';
+        break;
+      case 'rainy':
+        symbol = 'rain';
+        break;
+      case 'pouring':
+        symbol = 'extreme-rain';
+        break;
+      case 'lightning':
+      case 'lightning-rainy':
+        symbol = 'thunderstorms-rain';
+        break;
+      case 'snowy':
+        symbol = 'snow';
+        break;
+      case 'snowy-rainy':
+        symbol = 'sleet';
+        break;
+      case 'fog':
+        symbol = 'fog';
+        break;
+      case 'hail':
+        symbol = 'hail';
+        break;
+      case 'windy':
+        symbol = 'wind';
+        break;
+    }
+
+    return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons/production/fill/all/${symbol}.svg`;
   }
 }
 

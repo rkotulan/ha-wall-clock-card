@@ -12,6 +12,7 @@ export interface WeatherControllerConfig {
     weatherForecastDays?: number;
     weatherTitle?: string;
     weatherUpdateInterval?: number;
+    weatherIconSet?: string;
 }
 
 /**
@@ -187,6 +188,13 @@ export class WeatherController extends BaseController {
                     weatherConfig.units = this.config.weatherConfig.units;
                     this.logger.debug(`Using weather units: ${weatherConfig.units}`);
                 }
+            }
+
+            // Set icon set if specified in the main config
+            if (this.config.weatherIconSet) {
+                weatherConfig.iconSet = this.config.weatherIconSet;
+            } else if (this.config.weatherConfig?.iconSet) {
+                weatherConfig.iconSet = this.config.weatherConfig.iconSet;
             }
 
             // Fetch weather data from the provider
