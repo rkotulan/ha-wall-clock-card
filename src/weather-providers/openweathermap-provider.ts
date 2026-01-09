@@ -309,6 +309,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
         result = Weather.All; // No direct mapping, use 'all'
         break;
       case 'snow':
+      case 'light snow':
         result = Weather.Snow;
         break;
       case 'mist':

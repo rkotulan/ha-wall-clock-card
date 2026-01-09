@@ -71,4 +71,13 @@ describe('OpenWeatherMapProvider', () => {
     const config = { apiKey: '' };
     await expect(provider.fetchWeatherAsync(config)).rejects.toThrow('OpenWeatherMap API key is required');
   });
+
+  it('should map weather conditions correctly', () => {
+    expect(provider.mapWeatherCondition('Clear')).toBe(Weather.ClearSky);
+    expect(provider.mapWeatherCondition('Few clouds')).toBe(Weather.Clouds);
+    expect(provider.mapWeatherCondition('Light rain')).toBe(Weather.Rain);
+    expect(provider.mapWeatherCondition('Snow')).toBe(Weather.Snow);
+    expect(provider.mapWeatherCondition('Light snow')).toBe(Weather.Snow);
+    expect(provider.mapWeatherCondition('Unknown')).toBe(Weather.All);
+  });
 });

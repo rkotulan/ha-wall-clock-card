@@ -272,6 +272,15 @@ describe('translate function', () => {
   test('should translate weather condition to Bulgarian', () => {
     expect(translate('conditions.clouds', 'bg')).toBe('Облачно');
     expect(translate('conditions.rain', 'bg')).toBe('Дъжд');
+    expect(translate('conditions.light_snow', 'bg')).toBe('Слаб сняг');
+  });
+
+  test('should translate weather condition to Czech', () => {
+    expect(translate('conditions.light_snow', 'cs')).toBe('Slabé sněžení');
+  });
+
+  test('should translate weather condition to English', () => {
+    expect(translate('conditions.light_snow', 'en')).toBe('Light snow');
   });
 
   test('should translate forecast title to Bulgarian', () => {
