@@ -82,6 +82,7 @@ export class WallClockCard extends LitElement {
 
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
+            this.weatherComponent.hass = this.hass;
         }
 
         // Initialize the weather component
@@ -92,6 +93,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language;
         this.weatherComponent.size = this.config.size;
@@ -167,6 +169,10 @@ export class WallClockCard extends LitElement {
 
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
+            this.weatherComponent.hass = this.hass;
+            this.transportationComponent.hass = this.hass;
+            this.actionBarComponent.hass = this.hass;
+            this.backgroundImageComponent.hass = this.hass;
         }
 
         // Initialize the weather component with the latest configuration
@@ -177,6 +183,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.weatherComponent.size = this.config.size;
@@ -185,10 +192,6 @@ export class WallClockCard extends LitElement {
         if (this.config.customSizes) {
             this.weatherComponent.labelSize = this.config.customSizes.labelSize;
             this.weatherComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        if (this.hass) {
-            this.transportationComponent.hass = this.hass;
         }
 
         // Initialize the action bar component with the latest configuration
@@ -203,10 +206,6 @@ export class WallClockCard extends LitElement {
         // Pass custom sizes if configured
         if (this.config.customSizes) {
             this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
-        }
-
-        if (this.hass) {
-            this.actionBarComponent.hass = this.hass;
         }
 
         this.initConnectCallbackAsync();
@@ -421,6 +420,10 @@ export class WallClockCard extends LitElement {
 
         if (this.hass) {
             this.sensorComponent.hass = this.hass;
+            this.weatherComponent.hass = this.hass;
+            this.transportationComponent.hass = this.hass;
+            this.actionBarComponent.hass = this.hass;
+            this.backgroundImageComponent.hass = this.hass;
         }
 
         // Initialize the weather component with the new configuration
@@ -431,6 +434,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
         this.weatherComponent.weatherTitle = this.config.weatherTitle;
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
+        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
         this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
         this.weatherComponent.size = this.config.size;
@@ -466,6 +470,9 @@ export class WallClockCard extends LitElement {
         if (changedProperties.has('hass') && this.hass) {
             // Update the sensor component with the new hass
             this.sensorComponent.hass = this.hass;
+
+            // Update the weather component with the new hass
+            this.weatherComponent.hass = this.hass;
 
             // Update the transportation component with the new hass
             this.transportationComponent.hass = this.hass;

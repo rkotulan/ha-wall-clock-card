@@ -2,6 +2,7 @@ import {ReactiveControllerHost} from 'lit';
 import {getWeatherProvider, WeatherData, WeatherProviderConfig} from '../../weather-providers';
 import {BaseController, ForceUpdateWeatherMessage, Messenger, WeatherMessage} from '../../utils';
 import {Weather} from "../../image-sources";
+import {HomeAssistant} from 'custom-card-helpers';
 
 export interface WeatherControllerConfig {
     showWeather?: boolean;
@@ -11,6 +12,7 @@ export interface WeatherControllerConfig {
     weatherForecastDays?: number;
     weatherTitle?: string;
     weatherUpdateInterval?: number;
+    weatherIconSet?: string;
 }
 
 /**
@@ -25,6 +27,7 @@ export class WeatherController extends BaseController {
     private _weatherError = false;
     private _weatherErrorMessage = '';
     private _messenger = Messenger.getInstance();
+    private _hass?: HomeAssistant;
     private _forceUpdateWeatherHandler = (_message: ForceUpdateWeatherMessage) => this.fetchWeatherDataAsync();
 
     // Configuration
@@ -64,10 +67,13 @@ export class WeatherController extends BaseController {
     /**
      * Update the configuration
      */
-    async updateConfigAsync(config: WeatherControllerConfig): Promise<void> {
+    async updateConfigAsync(config: WeatherControllerConfig, hass?: HomeAssistant): Promise<void> {
         this.logger.debug('Updating WeatherController config:', config);
 
+        const previousHass = this._hass;
+        this._hass = hass;
         const previousShowWeather = this.config.showWeather;
+        const previousProvider = this.config.weatherProvider;
         const previousUpdateInterval = this.config.weatherUpdateInterval;
 
         this.config = { ...this.config, ...config };
@@ -77,8 +83,17 @@ export class WeatherController extends BaseController {
             this.setupUpdateInterval();
         }
 
-        // If weather was disabled and is now enabled, fetch data
-        if (!previousShowWeather && this.config.showWeather) {
+        // Fetch data if:
+        // 1. Weather was just enabled
+        // 2. Hass just became available and we have no data yet
+        // 3. Provider changed
+        const shouldFetch = (this.config.showWeather && (
+            (!previousShowWeather && this.config.showWeather) ||
+            (!previousHass && this._hass && !this._weatherData) ||
+            (previousProvider !== this.config.weatherProvider)
+        ));
+
+        if (shouldFetch) {
             await this.fetchWeatherDataAsync();
         }
         else if(!this.config.showWeather) {
@@ -151,6 +166,16 @@ export class WeatherController extends BaseController {
                 throw new Error(`Weather provider '${providerId}' not found`);
             }
 
+            // Set hass on provider if supported
+            if (provider.setHass) {
+                if (this._hass) {
+                    provider.setHass(this._hass);
+                } else if (provider.id === 'homeassistant') {
+                    this.logger.debug('Home Assistant instance not available yet for HA weather provider, skipping fetch');
+                    return;
+                }
+            }
+
             // Get the weather config from the card config and ensure it's properly processed
             let weatherConfig = provider.getDefaultConfig();
 
@@ -163,6 +188,13 @@ export class WeatherController extends BaseController {
                     weatherConfig.units = this.config.weatherConfig.units;
                     this.logger.debug(`Using weather units: ${weatherConfig.units}`);
                 }
+            }
+
+            // Set icon set if specified in the main config
+            if (this.config.weatherIconSet) {
+                weatherConfig.iconSet = this.config.weatherIconSet;
+            } else if (this.config.weatherConfig?.iconSet) {
+                weatherConfig.iconSet = this.config.weatherConfig.iconSet;
             }
 
             // Fetch weather data from the provider

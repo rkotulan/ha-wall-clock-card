@@ -16,10 +16,20 @@
     "rain": "Regen",
     "thunderstorm": "Onweer",
     "snow": "Sneeuw",
+    "light_snow": "Lichte sneeuw",
     "mist": "Mist",
     "light_rain": "Lichte regen",
     "moderate_rain": "Matige regen",
-    "heavy_intensity_rain": "Zware regen"
+    "heavy_intensity_rain": "Zware regen",
+    "sunny": "Zonnig",
+    "clear_night": "Heldere nacht",
+    "partlycloudy": "Half bewolkt",
+    "cloudy": "Bewolkt",
+    "rainy": "Regenachtig",
+    "snowy": "Sneeuwachtig",
+    "fog": "Mist",
+    "hail": "Hagel",
+    "windy": "Winderig"
   },
   "forecast": {
     "title": "Voorspelling",

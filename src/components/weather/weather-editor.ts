@@ -10,6 +10,7 @@ export class WeatherEditor extends BaseEditorSection {
     // Weather provider options
     private _weatherProviderOptions = [
         {value: 'none', label: 'None (Disable Weather)'},
+        {value: 'homeassistant', label: 'Home Assistant Entity'},
         {value: 'openweathermap', label: 'OpenWeatherMap'},
     ];
 
@@ -24,6 +25,13 @@ export class WeatherEditor extends BaseEditorSection {
         {value: 'current', label: 'Current Weather Only'},
         {value: 'forecast', label: 'Forecast Only'},
         {value: 'both', label: 'Current and Forecast'},
+    ];
+
+    // Weather icon set options
+    private _weatherIconSetOptions = [
+        {value: 'metno', label: 'Met.no (SVG)'},
+        {value: 'openweathermap', label: 'OpenWeatherMap (PNG)'},
+        {value: 'basmilius', label: 'Bas Milius (Animated)'},
     ];
 
     static get styles() {
@@ -79,6 +87,22 @@ export class WeatherEditor extends BaseEditorSection {
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
 
+                    ${this.config.weatherProvider === 'homeassistant' ? html`
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    entity: {
+                                        domain: "weather"
+                                    }
+                                }}
+                                .value=${this.config.weatherConfig?.entityId || ''}
+                                .label=${"Weather Entity"}
+                                propertyName="weatherConfig.entityId"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+                    ` : ''}
+
+
                     ${this.config.weatherProvider === 'openweathermap' ? html`
                         <ha-row-selector
                                 .hass=${this.hass}
@@ -93,7 +117,9 @@ export class WeatherEditor extends BaseEditorSection {
                                 propertyName="weatherConfig.apiKey"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+                    ` : ''}
 
+                    ${(this.config.weatherProvider === 'openweathermap') ? html`
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -154,6 +180,21 @@ export class WeatherEditor extends BaseEditorSection {
                             propertyName="weatherDisplayMode"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
+
+                    <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{
+                                select: {
+                                    options: this._weatherIconSetOptions,
+                                    mode: 'dropdown'
+                                }
+                            }}
+                            .value=${this.config.weatherIconSet || (this.config.weatherProvider === 'homeassistant' ? 'metno' : 'openweathermap')}
+                            .label= ${"Weather Icon Set"}
+                            propertyName="weatherIconSet"
+                            @value-changed=${this._handleFormValueChanged}
+                    ></ha-row-selector>
+
 
                     ${(this.config.weatherDisplayMode === 'forecast' || this.config.weatherDisplayMode === 'both') ? html`
                         <ha-row-selector

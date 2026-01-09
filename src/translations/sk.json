@@ -16,10 +16,20 @@
     "rain": "Dážď",
     "thunderstorm": "Búrka",
     "snow": "Sneženie",
+    "light_snow": "Slabé sneženie",
     "mist": "Hmla",
     "light_rain": "Slabý dážď",
     "moderate_rain": "Mierny dážď",
-    "heavy_intensity_rain": "Silný dážď"
+    "heavy_intensity_rain": "Silný dážď",
+    "sunny": "Slnečno",
+    "clear_night": "Jasná noc",
+    "partlycloudy": "Polojasno",
+    "cloudy": "Oblačno",
+    "rainy": "Daždivo",
+    "snowy": "Sneženie",
+    "fog": "Hmla",
+    "hail": "Krupobitie",
+    "windy": "Veterno"
   },
   "forecast": {
     "title": "Predpoveď",

@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
@@ -13,6 +14,7 @@ export interface WeatherComponentConfig {
     weatherForecastDays?: number;
     weatherTitle?: string;
     weatherUpdateInterval?: number;
+    weatherIconSet?: string;
     fontColor?: string;
     language?: string;
     size?: Size;
@@ -22,6 +24,7 @@ export interface WeatherComponentConfig {
 
 @customElement('ha-weather')
 export class WeatherComponent extends LitElement {
+    @property({ type: Object }) hass?: HomeAssistant;
     @property({ type: Boolean }) showWeather?: boolean;
     @property({ type: String }) weatherProvider?: string;
     @property({ type: Object }) weatherConfig?: WeatherProviderConfig;
@@ -29,6 +32,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: Number }) weatherForecastDays?: number;
     @property({ type: String }) weatherTitle?: string;
     @property({ type: Number }) weatherUpdateInterval?: number;
+    @property({ type: String }) weatherIconSet?: string;
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
     @property({ type: String }) size?: Size;
@@ -48,7 +52,8 @@ export class WeatherComponent extends LitElement {
             weatherDisplayMode: this.weatherDisplayMode,
             weatherForecastDays: this.weatherForecastDays,
             weatherTitle: this.weatherTitle,
-            weatherUpdateInterval: this.weatherUpdateInterval
+            weatherUpdateInterval: this.weatherUpdateInterval,
+            weatherIconSet: this.weatherIconSet
         });
     }
 
@@ -65,6 +70,10 @@ export class WeatherComponent extends LitElement {
             max-width: 100%;
             max-height: 100%;
             overflow-y: auto;
+        }
+
+        .weather-container.clickable {
+            cursor: pointer;
         }
 
         .weather-title {
@@ -103,7 +112,7 @@ export class WeatherComponent extends LitElement {
         .weather-icon {
             width: 60px; /* Medium size (default) */
             height: 60px;
-            margin-left: 8px;
+            margin-right: 8px;
         }
 
         .weather-forecast {
@@ -139,6 +148,10 @@ export class WeatherComponent extends LitElement {
             text-align: right;
         }
 
+        .forecast-separator {
+            opacity: 0.65;
+        }
+
         .forecast-condition {
             font-size: 0.9rem; /* Medium size (default) */
             margin-top: 0.2rem;
@@ -158,15 +171,17 @@ export class WeatherComponent extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('showWeather') || 
+        if (changedProperties.has('hass') ||
+            changedProperties.has('showWeather') || 
             changedProperties.has('weatherProvider') || 
             changedProperties.has('weatherConfig') || 
             changedProperties.has('weatherDisplayMode') || 
             changedProperties.has('weatherForecastDays') || 
             changedProperties.has('weatherTitle') || 
-            changedProperties.has('weatherUpdateInterval')) {
+            changedProperties.has('weatherUpdateInterval') ||
+            changedProperties.has('weatherIconSet')) {
 
-            this.logger.debug('Weather properties changed, updating WeatherController');
+            this.logger.debug('Weather properties or hass changed, updating WeatherController');
 
             // Update WeatherController with new configuration
             const config: WeatherControllerConfig = {
@@ -176,10 +191,11 @@ export class WeatherComponent extends LitElement {
                 weatherDisplayMode: this.weatherDisplayMode,
                 weatherForecastDays: this.weatherForecastDays,
                 weatherTitle: this.weatherTitle,
-                weatherUpdateInterval: this.weatherUpdateInterval
+                weatherUpdateInterval: this.weatherUpdateInterval,
+                weatherIconSet: this.weatherIconSet
             };
 
-            this.weatherController.updateConfigAsync(config);
+            this.weatherController.updateConfigAsync(config, this.hass);
         }
 
         if (changedProperties.has('size') ||
@@ -222,9 +238,11 @@ export class WeatherComponent extends LitElement {
 
         // Try to get the translation from the conditions section
         const conditionPath = `conditions.${normalizedCondition}`;
-        const translation = translate(conditionPath, language, null);
+        
+        // Pass empty string as default value to detect if translation exists
+        const translation = translate(conditionPath, language, "");
 
-        if (translation !== null) {
+        if (translation && translation !== "") {
             return translation;
         }
 
@@ -267,6 +285,12 @@ export class WeatherComponent extends LitElement {
         return getSizeValue(this.size, undefined, 'forecastTempWidth');
     }
 
+    private _handleWeatherClick(entityId?: string): void {
+        if (entityId && this.hass) {
+            fireEvent(this, 'hass-more-info', { entityId });
+        }
+    }
+
     render() {
         const weatherData: WeatherData | undefined = this.weatherController.weatherData;
 
@@ -296,7 +320,9 @@ export class WeatherComponent extends LitElement {
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
-            <div class="weather-container" style="color: ${this.fontColor};">
+            <div class="weather-container ${weatherData.entityId ? 'clickable' : ''}" 
+                 style="color: ${this.fontColor};"
+                 @click="${() => this._handleWeatherClick(weatherData.entityId)}">
                 <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">${weatherTitle}</div>
 
                 ${(displayMode === 'current' || displayMode === 'both') ?
@@ -322,8 +348,8 @@ export class WeatherComponent extends LitElement {
                                 <div class="forecast-day">
                                     <div class="forecast-date" style="font-size: ${labelSize};">${this.formatForecastDate(day.date)}</div>
                                     <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
-                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">${Math.round(day.temperatureMin)}° -
-                                        ${Math.round(day.temperatureMax)}°
+                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">
+                                        ${Math.round(day.temperatureMin)}°<span class="forecast-separator"> - </span>${Math.round(day.temperatureMax)}°
                                     </div>
                                 </div>
                             `)}

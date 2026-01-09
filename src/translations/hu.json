@@ -16,10 +16,20 @@
     "rain": "Eső",
     "thunderstorm": "Zivatar",
     "snow": "Hó",
+    "light_snow": "Gyenge havazás",
     "mist": "Köd",
     "light_rain": "Gyenge eső",
     "moderate_rain": "Mérsékelt eső",
-    "heavy_intensity_rain": "Erős eső"
+    "heavy_intensity_rain": "Erős eső",
+    "sunny": "Napos",
+    "clear_night": "Tiszta éjszaka",
+    "partlycloudy": "Részben felhős",
+    "cloudy": "Felhős",
+    "rainy": "Esős",
+    "snowy": "Havas",
+    "fog": "Köd",
+    "hail": "Jégeső",
+    "windy": "Szeles"
   },
   "forecast": {
     "title": "Előrejelzés",

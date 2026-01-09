@@ -16,10 +16,20 @@
     "rain": "Deszcz",
     "thunderstorm": "Burza",
     "snow": "Śnieg",
+    "light_snow": "Lekki śnieg",
     "mist": "Mgła",
     "light_rain": "Lekki deszcz",
     "moderate_rain": "Umiarkowany deszcz",
-    "heavy_intensity_rain": "Intensywny deszcz"
+    "heavy_intensity_rain": "Intensywny deszcz",
+    "sunny": "Słonecznie",
+    "clear_night": "Pogodna noc",
+    "partlycloudy": "Częściowe zachmurzenie",
+    "cloudy": "Pochmurno",
+    "rainy": "Deszczowo",
+    "snowy": "Śnieżnie",
+    "fog": "Mgła",
+    "hail": "Grad",
+    "windy": "Wietrznie"
   },
   "forecast": {
     "title": "Prognoza",

@@ -3,6 +3,7 @@
  */
 
 import { Weather } from '../image-sources/types';
+import { HomeAssistant } from 'custom-card-helpers';
 
 /**
  * Interface for weather provider plugins
@@ -15,6 +16,7 @@ export interface WeatherProviderConfig {
   longitude?: number;
   units?: 'metric' | 'imperial';
   language?: string;
+  iconSet?: string;
   [key: string]: any; // Allow additional provider-specific properties
 }
 
@@ -46,6 +48,7 @@ export interface WeatherData {
     humidity?: number;
     windSpeed?: number;
   }>;
+  entityId?: string;
 }
 
 /**
@@ -79,4 +82,10 @@ export interface WeatherProvider {
    * @returns Default configuration
    */
   getDefaultConfig(): WeatherProviderConfig;
+
+  /**
+   * Set the Home Assistant instance
+   * @param hass The Home Assistant instance
+   */
+  setHass?(hass: HomeAssistant): void;
 }

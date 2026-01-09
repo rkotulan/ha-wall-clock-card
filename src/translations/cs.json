@@ -16,10 +16,20 @@
     "rain": "Déšť",
     "thunderstorm": "Bouřka",
     "snow": "Sněžení",
+    "light_snow": "Slabé sněžení",
     "mist": "Mlha",
     "light_rain": "Slabý déšť",
     "moderate_rain": "Mírný déšť",
-    "heavy_intensity_rain": "Silný déšť"
+    "heavy_intensity_rain": "Silný déšť",
+    "sunny": "Slunečno",
+    "clear_night": "Jasná noc",
+    "partlycloudy": "Polojasno",
+    "cloudy": "Oblačno",
+    "rainy": "Deštivo",
+    "snowy": "Sněžení",
+    "fog": "Mlha",
+    "hail": "Krupobití",
+    "windy": "Větrno"
   },
   "forecast": {
     "title": "Předpověď",

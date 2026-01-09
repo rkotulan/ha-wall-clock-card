@@ -16,9 +16,20 @@
     "rain": "Regn",
     "thunderstorm": "Åska",
     "snow": "Snö",
+    "light_snow": "Lätt snöfall",
     "mist": "Dimma",
     "light_rain": "Lätt regn",
-    "moderate_rain": "Måttligt regn"
+    "moderate_rain": "Måttligt regn",
+    "heavy_intensity_rain": "Kraftigt regn",
+    "sunny": "Soligt",
+    "clear_night": "Klar natt",
+    "partlycloudy": "Halvklart",
+    "cloudy": "Molnigt",
+    "rainy": "Regnigt",
+    "snowy": "Snöigt",
+    "fog": "Dimma",
+    "hail": "Hagel",
+    "windy": "Blåsigt"
   },
   "forecast": {
     "title": "Prognos",

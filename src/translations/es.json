@@ -16,10 +16,20 @@
     "rain": "Lluvia",
     "thunderstorm": "Tormenta",
     "snow": "Nieve",
+    "light_snow": "Nieve ligera",
     "mist": "Niebla",
     "light_rain": "Lluvia ligera",
     "moderate_rain": "Lluvia moderada",
-    "heavy_intensity_rain": "Lluvia intensa"
+    "heavy_intensity_rain": "Lluvia intensa",
+    "sunny": "Soleado",
+    "clear_night": "Noche despejada",
+    "partlycloudy": "Parcialmente nublado",
+    "cloudy": "Nublado",
+    "rainy": "Lluvioso",
+    "snowy": "Nevado",
+    "fog": "Niebla",
+    "hail": "Granizo",
+    "windy": "Ventoso"
   },
   "forecast": {
     "title": "Pronóstico",

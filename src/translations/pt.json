@@ -16,10 +16,20 @@
     "rain": "Chuva",
     "thunderstorm": "Trovoada",
     "snow": "Neve",
+    "light_snow": "Neve leve",
     "mist": "Névoa",
     "light_rain": "Chuva fraca",
     "moderate_rain": "Chuva moderada",
-    "heavy_intensity_rain": "Chuva forte"
+    "heavy_intensity_rain": "Chuva forte",
+    "sunny": "Ensolarado",
+    "clear_night": "Noite limpa",
+    "partlycloudy": "Parcialmente nublado",
+    "cloudy": "Nublado",
+    "rainy": "Chuvoso",
+    "snowy": "Nevado",
+    "fog": "Nevoeiro",
+    "hail": "Granizo",
+    "windy": "Ventoso"
   },
   "forecast": {
     "title": "Previsão",

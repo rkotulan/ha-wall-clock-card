@@ -16,10 +16,20 @@
     "rain": "Sade",
     "thunderstorm": "Ukkonen",
     "snow": "Lumi",
+    "light_snow": "Kevyt lumisade",
     "mist": "Sumu",
     "light_rain": "Kevyt sade",
     "moderate_rain": "Kohtalainen sade",
-    "heavy_intensity_rain": "Voimakas sade"
+    "heavy_intensity_rain": "Voimakas sade",
+    "sunny": "Aurinkoinen",
+    "clear_night": "Selkeä yö",
+    "partlycloudy": "Puolipilvinen",
+    "cloudy": "Pilvinen",
+    "rainy": "Sateinen",
+    "snowy": "Luminen",
+    "fog": "Sumu",
+    "hail": "Rae",
+    "windy": "Tuulinen"
   },
   "forecast": {
     "title": "Ennuste",

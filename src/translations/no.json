@@ -16,10 +16,20 @@
     "rain": "Regn",
     "thunderstorm": "Tordenvær",
     "snow": "Snø",
+    "light_snow": "Lett snø",
     "mist": "Tåke",
     "light_rain": "Lett regn",
     "moderate_rain": "Moderat regn",
-    "heavy_intensity_rain": "Kraftig regn"
+    "heavy_intensity_rain": "Kraftig regn",
+    "sunny": "Solfylt",
+    "clear_night": "Klar natt",
+    "partlycloudy": "Delvis skyet",
+    "cloudy": "Overskyet",
+    "rainy": "Regnfullt",
+    "snowy": "Snøfylt",
+    "fog": "Tåke",
+    "hail": "Hagl",
+    "windy": "Vindfullt"
   },
   "forecast": {
     "title": "Prognose",

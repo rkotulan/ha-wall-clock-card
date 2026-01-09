@@ -16,10 +16,20 @@
     "rain": "Βροχή",
     "thunderstorm": "Καταιγίδα",
     "snow": "Χιόνι",
+    "light_snow": "Ελαφριά χιονόπτωση",
     "mist": "Ομίχλη",
     "light_rain": "Ελαφριά βροχή",
     "moderate_rain": "Μέτρια βροχή",
-    "heavy_intensity_rain": "Έντονη βροχή"
+    "heavy_intensity_rain": "Έντονη βροχή",
+    "sunny": "Ηλιοφάνεια",
+    "clear_night": "Αίθριος νυχτερινός ουρανός",
+    "partlycloudy": "Μερικώς συννεφιασμένος",
+    "cloudy": "Συννεφιά",
+    "rainy": "Βροχερός",
+    "snowy": "Χιονισμένος",
+    "fog": "Ομίχλη",
+    "hail": "Χαλάζι",
+    "windy": "Ανεμώδης"
   },
   "forecast": {
     "title": "Πρόγνωση",

@@ -16,10 +16,20 @@
     "rain": "Дъжд",
     "thunderstorm": "Гръмотевична буря",
     "snow": "Сняг",
+    "light_snow": "Слаб сняг",
     "mist": "Мъгла",
     "light_rain": "Слаб дъжд",
     "moderate_rain": "Умерен дъжд",
-    "heavy_intensity_rain": "Силен дъжд"
+    "heavy_intensity_rain": "Силен дъжд",
+    "sunny": "Слънчево",
+    "clear_night": "Ясна нощ",
+    "partlycloudy": "Предимно облачно",
+    "cloudy": "Облачно",
+    "rainy": "Дъждовно",
+    "snowy": "Снежно",
+    "fog": "Мъгла",
+    "hail": "Градушка",
+    "windy": "Ветровито"
   },
   "forecast": {
     "title": "Прогноза",

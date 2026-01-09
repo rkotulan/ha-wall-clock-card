@@ -46,6 +46,7 @@ export interface WallClockConfig {
     weatherForecastDays?: number; // Number of days to show in forecast (1-7)
     weatherTitle?: string; // Custom title for the weather section (default: "Weather")
     weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
+    weatherIconSet?: string; // Icon set to use for weather
 
     // Transportation departures settings
     transportation?: TransportationConfig; // Configuration for transportation departures
@@ -104,6 +105,7 @@ export interface WeatherConfig {
     forecastDays?: number;
     title?: string;
     updateInterval?: number;
+    iconSet?: string;
 }
 
 // TransportationConfig and ActionBarConfig are imported from their respective modules

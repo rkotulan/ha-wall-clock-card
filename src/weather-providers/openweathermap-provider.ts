@@ -60,7 +60,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
         temperature: firstForecast.main.temp,
         condition: weatherCondition,
         conditionUnified: this.mapWeatherCondition(weatherCondition),
-        icon: this.getIconUrl(firstForecast.weather[0].icon),
+        icon: this.getIconUrl(firstForecast.weather[0].icon, config.iconSet),
         humidity: firstForecast.main.humidity,
         windSpeed: firstForecast.wind.speed,
         windDirection: this.getWindDirection(firstForecast.wind.deg),
@@ -108,7 +108,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
           temperatureMin: minTemp,
           temperatureMax: maxTemp,
           condition: representativeItem.weather[0].description,
-          icon: this.getIconUrl(representativeItem.weather[0].icon),
+          icon: this.getIconUrl(representativeItem.weather[0].icon, config.iconSet),
           precipitation: avgPrecipitation,
           humidity: representativeItem.main.humidity,
           windSpeed: representativeItem.wind.speed
@@ -139,10 +139,117 @@ export class OpenWeatherMapProvider implements WeatherProvider {
   /**
    * Get the URL for a weather icon
    * @param iconCode OpenWeatherMap icon code
+   * @param iconSet The icon set to use
    * @returns URL to the icon image
    */
-  private getIconUrl(iconCode: string): string {
+  private getIconUrl(iconCode: string, iconSet?: string): string {
+    if (iconSet === 'basmilius') {
+      return this.getAnimatedIconUrl(iconCode);
+    }
+    if (iconSet === 'metno') {
+      return this.getMetNoIconUrl(iconCode);
+    }
     return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  }
+
+  /**
+   * Get Bas Milius animated icon URL for OpenWeatherMap icon code
+   */
+  private getAnimatedIconUrl(iconCode: string): string {
+    let symbol = 'clear-day';
+    // Map OWM icon codes to Bas Milius symbols
+    switch (iconCode) {
+      case '01d':
+        symbol = 'clear-day';
+        break;
+      case '01n':
+        symbol = 'clear-night';
+        break;
+      case '02d':
+        symbol = 'partly-cloudy-day';
+        break;
+      case '02n':
+        symbol = 'partly-cloudy-night';
+        break;
+      case '03d':
+      case '03n':
+      case '04d':
+      case '04n':
+        symbol = 'cloudy';
+        break;
+      case '09d':
+      case '09n':
+        symbol = 'rain';
+        break;
+      case '10d':
+        symbol = 'partly-cloudy-day-rain';
+        break;
+      case '10n':
+        symbol = 'partly-cloudy-night-rain';
+        break;
+      case '11d':
+      case '11n':
+        symbol = 'thunderstorms';
+        break;
+      case '13d':
+      case '13n':
+        symbol = 'snow';
+        break;
+      case '50d':
+      case '50n':
+        symbol = 'fog';
+        break;
+    }
+    return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons/production/fill/all/${symbol}.svg`;
+  }
+
+  /**
+   * Get Met.no icon URL for OpenWeatherMap icon code
+   */
+  private getMetNoIconUrl(iconCode: string): string {
+    let symbol = 'clearsky_day';
+    // Map OWM icon codes to Met.no symbols
+    switch (iconCode) {
+      case '01d':
+        symbol = 'clearsky_day';
+        break;
+      case '01n':
+        symbol = 'clearsky_night';
+        break;
+      case '02d':
+        symbol = 'fair_day';
+        break;
+      case '02n':
+        symbol = 'fair_night';
+        break;
+      case '03d':
+      case '03n':
+      case '04d':
+      case '04n':
+        symbol = 'cloudy';
+        break;
+      case '09d':
+      case '09n':
+        symbol = 'heavyrain';
+        break;
+      case '10d':
+      case '10n':
+        symbol = 'rain';
+        break;
+      case '11d':
+      case '11n':
+        symbol = 'rainshowersandthunder_day';
+        break;
+      case '13d':
+      case '13n':
+        symbol = 'snow';
+        break;
+      case '50d':
+      case '50n':
+        symbol = 'fog';
+        break;
+    }
+    return `https://cdn.jsdelivr.net/gh/metno/weathericons@main/weather/svg/${symbol}.svg`;
   }
 
   /**
@@ -202,6 +309,7 @@ export class OpenWeatherMapProvider implements WeatherProvider {
         result = Weather.All; // No direct mapping, use 'all'
         break;
       case 'snow':
+      case 'light snow':
         result = Weather.Snow;
         break;
       case 'mist':

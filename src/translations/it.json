@@ -16,10 +16,20 @@
     "rain": "Pioggia",
     "thunderstorm": "Temporale",
     "snow": "Neve",
+    "light_snow": "Neve leggera",
     "mist": "Nebbia",
     "light_rain": "Pioggia leggera",
     "moderate_rain": "Pioggia moderata",
-    "heavy_intensity_rain": "Pioggia intensa"
+    "heavy_intensity_rain": "Pioggia intensa",
+    "sunny": "Soleggiato",
+    "clear_night": "Notte serena",
+    "partlycloudy": "Parzialmente nuvoloso",
+    "cloudy": "Nuvoloso",
+    "rainy": "Piovoso",
+    "snowy": "Nevoso",
+    "fog": "Nebbia",
+    "hail": "Grandine",
+    "windy": "Ventoso"
   },
   "forecast": {
     "title": "Previsioni",

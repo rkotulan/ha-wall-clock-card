@@ -16,10 +16,20 @@
     "rain": "Pluie",
     "thunderstorm": "Orage",
     "snow": "Neige",
+    "light_snow": "Légère neige",
     "mist": "Brouillard",
     "light_rain": "Pluie légère",
     "moderate_rain": "Pluie modérée",
-    "heavy_intensity_rain": "Pluie forte"
+    "heavy_intensity_rain": "Pluie forte",
+    "sunny": "Ensoleillé",
+    "clear_night": "Nuit claire",
+    "partlycloudy": "Partiellement nuageux",
+    "cloudy": "Nuageux",
+    "rainy": "Pluvieux",
+    "snowy": "Neigeux",
+    "fog": "Brouillard",
+    "hail": "Grêle",
+    "windy": "Venteux"
   },
   "forecast": {
     "title": "Prévisions",
