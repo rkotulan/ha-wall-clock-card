@@ -222,8 +222,8 @@
                                 <div class="forecast-day">
                                     <div class="forecast-date" style="font-size: ${s};">${this.formatForecastDate(e.date)}</div>
                                     <img class="forecast-icon" src="${e.icon}" alt="${e.condition}">
-                                    <div class="forecast-temp" style="font-size: ${s}; width: ${r};">${Math.round(e.temperatureMin)}° -
-                                        ${Math.round(e.temperatureMax)}°
+                                    <div class="forecast-temp" style="font-size: ${s}; width: ${r};">
+                                        ${Math.round(e.temperatureMin)}°<span class="forecast-separator"> - </span>${Math.round(e.temperatureMax)}°
                                     </div>
                                 </div>
                             `)}
@@ -277,7 +277,7 @@
         .weather-icon {
             width: 60px; /* Medium size (default) */
             height: 60px;
-            margin-left: 8px;
+            margin-right: 8px;
         }
 
         .weather-forecast {
@@ -311,6 +311,10 @@
             font-weight: 400;
             width: 80px;
             text-align: right;
+        }
+
+        .forecast-separator {
+            opacity: 0.65;
         }
 
         .forecast-condition {

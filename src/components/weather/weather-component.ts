@@ -105,7 +105,7 @@ export class WeatherComponent extends LitElement {
         .weather-icon {
             width: 60px; /* Medium size (default) */
             height: 60px;
-            margin-left: 8px;
+            margin-right: 8px;
         }
 
         .weather-forecast {
@@ -139,6 +139,10 @@ export class WeatherComponent extends LitElement {
             font-weight: 400;
             width: 80px;
             text-align: right;
+        }
+
+        .forecast-separator {
+            opacity: 0.65;
         }
 
         .forecast-condition {
@@ -327,8 +331,8 @@ export class WeatherComponent extends LitElement {
                                 <div class="forecast-day">
                                     <div class="forecast-date" style="font-size: ${labelSize};">${this.formatForecastDate(day.date)}</div>
                                     <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
-                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">${Math.round(day.temperatureMin)}° -
-                                        ${Math.round(day.temperatureMax)}°
+                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">
+                                        ${Math.round(day.temperatureMin)}°<span class="forecast-separator"> - </span>${Math.round(day.temperatureMax)}°
                                     </div>
                                 </div>
                             `)}

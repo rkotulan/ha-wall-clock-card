@@ -3,6 +3,8 @@
 ## 2.5.0
 
 ### What's Changed
+- Set 65% opacity for the hyphen between temperatures in weather forecast.
+- Added 8px offset between current weather icon and temperature.
 - Added support for Home Assistant weather forecast provider.
 - Added `object-fit` configuration for background images (fill, contain, cover, none, scale-down).
 - Fixed `SensorComponent` to respect the `display_precision` setting from Home Assistant for individual entities.
