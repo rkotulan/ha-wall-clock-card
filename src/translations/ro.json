@@ -19,7 +19,16 @@
     "mist": "Ceață",
     "light_rain": "Ploaie ușoară",
     "moderate_rain": "Ploaie moderată",
-    "heavy_intensity_rain": "Ploaie puternică"
+    "heavy_intensity_rain": "Ploaie puternică",
+    "sunny": "Însorit",
+    "clear_night": "Noapte senină",
+    "partlycloudy": "Parțial înnorat",
+    "cloudy": "Înnorat",
+    "rainy": "Ploios",
+    "snowy": "Înzăpezit",
+    "fog": "Ceață",
+    "hail": "Grindină",
+    "windy": "Vântos"
   },
   "forecast": {
     "title": "Prognoză",

@@ -19,7 +19,16 @@
     "mist": "Tåge",
     "light_rain": "Let regn",
     "moderate_rain": "Moderat regn",
-    "heavy_intensity_rain": "Kraftig regn"
+    "heavy_intensity_rain": "Kraftig regn",
+    "sunny": "Solrigt",
+    "clear_night": "Klar nat",
+    "partlycloudy": "Delvist skyet",
+    "cloudy": "Overskyet",
+    "rainy": "Regnfuldt",
+    "snowy": "Snevejr",
+    "fog": "Tåge",
+    "hail": "Hagl",
+    "windy": "Blæsende"
   },
   "forecast": {
     "title": "Prognose",
