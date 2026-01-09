@@ -3,6 +3,7 @@
 ## 2.5.0
 
 ### What's Changed
+- Added support for Home Assistant weather forecast provider.
 - Added `object-fit` configuration for background images (fill, contain, cover, none, scale-down).
 - Fixed `SensorComponent` to respect the `display_precision` setting from Home Assistant for individual entities.
 - Refactored `SensorController` for better maintainability and performance.

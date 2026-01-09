@@ -10,7 +10,9 @@ export class WeatherEditor extends BaseEditorSection {
     // Weather provider options
     private _weatherProviderOptions = [
         {value: 'none', label: 'None (Disable Weather)'},
+        {value: 'homeassistant', label: 'Home Assistant Entity'},
         {value: 'openweathermap', label: 'OpenWeatherMap'},
+        {value: 'metno', label: 'Met.no (Meteorologisk institutt)'},
     ];
 
     // Units options
@@ -79,6 +81,28 @@ export class WeatherEditor extends BaseEditorSection {
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
 
+                    ${this.config.weatherProvider === 'homeassistant' ? html`
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{
+                                    entity: {
+                                        domain: "weather"
+                                    }
+                                }}
+                                .value=${this.config.weatherConfig?.entityId || ''}
+                                .label=${"Weather Entity"}
+                                propertyName="weatherConfig.entityId"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+                    ` : ''}
+
+                    ${this.config.weatherProvider === 'metno' ? html`
+                        <div style="padding: 0 8px 8px 8px; font-size: 0.8rem; color: var(--warning-color, #ff9800);">
+                            Note: Met.no provider may experience CORS issues depending on your connection method. 
+                            If it fails to load, consider using the "Home Assistant Entity" provider instead.
+                        </div>
+                    ` : ''}
+
                     ${this.config.weatherProvider === 'openweathermap' ? html`
                         <ha-row-selector
                                 .hass=${this.hass}
@@ -93,7 +117,9 @@ export class WeatherEditor extends BaseEditorSection {
                                 propertyName="weatherConfig.apiKey"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+                    ` : ''}
 
+                    ${(this.config.weatherProvider === 'openweathermap' || this.config.weatherProvider === 'metno') ? html`
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -104,7 +130,7 @@ export class WeatherEditor extends BaseEditorSection {
                                         mode: "box"
                                     }
                                 }}
-                                .value=${this.config.weatherConfig?.latitude || 50.0755}
+                                .value=${this.config.weatherConfig?.latitude || (this.config.weatherProvider === 'metno' ? 59.9139 : 50.0755)}
                                 .label=${"Latitude"}
                                 propertyName="weatherConfig.latitude"
                                 @value-changed=${this._handleFormValueChanged}
@@ -120,7 +146,7 @@ export class WeatherEditor extends BaseEditorSection {
                                         mode: "box"
                                     }
                                 }}
-                                .value=${this.config.weatherConfig?.longitude || 14.4378}
+                                .value=${this.config.weatherConfig?.longitude || (this.config.weatherProvider === 'metno' ? 10.7522 : 14.4378)}
                                 .label=${"Longitude"}
                                 propertyName="weatherConfig.longitude"
                                 @value-changed=${this._handleFormValueChanged}

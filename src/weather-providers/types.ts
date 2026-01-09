@@ -3,6 +3,7 @@
  */
 
 import { Weather } from '../image-sources/types';
+import { HomeAssistant } from 'custom-card-helpers';
 
 /**
  * Interface for weather provider plugins
@@ -79,4 +80,10 @@ export interface WeatherProvider {
    * @returns Default configuration
    */
   getDefaultConfig(): WeatherProviderConfig;
+
+  /**
+   * Set the Home Assistant instance
+   * @param hass The Home Assistant instance
+   */
+  setHass?(hass: HomeAssistant): void;
 }

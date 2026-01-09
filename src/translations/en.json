@@ -19,7 +19,16 @@
     "mist": "Mist",
     "light_rain": "Light rain",
     "moderate_rain": "Moderate rain",
-    "heavy_intensity_rain": "Heavy rain"
+    "heavy_intensity_rain": "Heavy rain",
+    "sunny": "Sunny",
+    "clear_night": "Clear night",
+    "partlycloudy": "Partly cloudy",
+    "cloudy": "Cloudy",
+    "rainy": "Rainy",
+    "snowy": "Snowy",
+    "fog": "Fog",
+    "hail": "Hail",
+    "windy": "Windy"
   },
   "forecast": {
     "title": "Forecast",

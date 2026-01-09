@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
@@ -22,6 +23,7 @@ export interface WeatherComponentConfig {
 
 @customElement('ha-weather')
 export class WeatherComponent extends LitElement {
+    @property({ type: Object }) hass?: HomeAssistant;
     @property({ type: Boolean }) showWeather?: boolean;
     @property({ type: String }) weatherProvider?: string;
     @property({ type: Object }) weatherConfig?: WeatherProviderConfig;
@@ -158,7 +160,8 @@ export class WeatherComponent extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
 
-        if (changedProperties.has('showWeather') || 
+        if (changedProperties.has('hass') ||
+            changedProperties.has('showWeather') || 
             changedProperties.has('weatherProvider') || 
             changedProperties.has('weatherConfig') || 
             changedProperties.has('weatherDisplayMode') || 
@@ -166,7 +169,7 @@ export class WeatherComponent extends LitElement {
             changedProperties.has('weatherTitle') || 
             changedProperties.has('weatherUpdateInterval')) {
 
-            this.logger.debug('Weather properties changed, updating WeatherController');
+            this.logger.debug('Weather properties or hass changed, updating WeatherController');
 
             // Update WeatherController with new configuration
             const config: WeatherControllerConfig = {
@@ -179,7 +182,7 @@ export class WeatherComponent extends LitElement {
                 weatherUpdateInterval: this.weatherUpdateInterval
             };
 
-            this.weatherController.updateConfigAsync(config);
+            this.weatherController.updateConfigAsync(config, this.hass);
         }
 
         if (changedProperties.has('size') ||
@@ -222,9 +225,11 @@ export class WeatherComponent extends LitElement {
 
         // Try to get the translation from the conditions section
         const conditionPath = `conditions.${normalizedCondition}`;
-        const translation = translate(conditionPath, language, null);
+        
+        // Pass empty string as default value to detect if translation exists
+        const translation = translate(conditionPath, language, "");
 
-        if (translation !== null) {
+        if (translation && translation !== "") {
             return translation;
         }
 
