@@ -1,5 +1,5 @@
 import {ReactiveControllerHost} from 'lit';
-import {getWeatherProvider, WeatherData, WeatherProviderConfig} from '../../weather-providers';
+import {getWeatherProvider, WeatherData, WeatherProvider, WeatherProviderConfig} from '../../weather-providers';
 import {BaseController, ForceUpdateWeatherMessage, Messenger, WeatherMessage} from '../../utils';
 import {Weather} from "../../image-sources";
 import {HomeAssistant} from 'custom-card-helpers';
@@ -29,6 +29,12 @@ export class WeatherController extends BaseController {
     private _messenger = Messenger.getInstance();
     private _hass?: HomeAssistant;
     private _forceUpdateWeatherHandler = (_message: ForceUpdateWeatherMessage) => this.fetchWeatherDataAsync();
+
+    // Push-update state: last seen entity state object (reference compare)
+    // and the active weather/subscribe_forecast subscription.
+    private _lastEntityState?: unknown;
+    private _forecastUnsubscribe?: () => void;
+    private _subscribedEntityId?: string;
 
     // Configuration
     private config: WeatherControllerConfig = {};
@@ -61,6 +67,20 @@ export class WeatherController extends BaseController {
         if (this.updateTimer) {
             window.clearInterval(this.updateTimer);
             this.updateTimer = undefined;
+        }
+
+        this.teardownForecastSubscription();
+    }
+
+    private teardownForecastSubscription(): void {
+        if (this._forecastUnsubscribe) {
+            try {
+                this._forecastUnsubscribe();
+            } catch (e) {
+                this.logger.debug('Error unsubscribing from forecast updates:', e);
+            }
+            this._forecastUnsubscribe = undefined;
+            this._subscribedEntityId = undefined;
         }
     }
 
@@ -99,9 +119,110 @@ export class WeatherController extends BaseController {
         else if(!this.config.showWeather) {
             Messenger.getInstance().publish(new WeatherMessage(Weather.All));
         }
+        else {
+            // React to entity state changes pushed through hass instead of
+            // waiting for the next polling tick.
+            this.refreshCurrentFromEntity();
+        }
 
         // Request an update from the host
         this.host.requestUpdate();
+    }
+
+    /**
+     * Refresh current conditions from the weather entity when its state
+     * object changed (hass pushes a new state object on every update).
+     * Cheap: reads attributes only, no service call — the forecast is kept
+     * fresh by the weather/subscribe_forecast subscription.
+     */
+    private refreshCurrentFromEntity(): void {
+        if (!this._hass || !this._weatherData) {
+            return;
+        }
+
+        const providerId = this.config.weatherProvider || 'openweathermap';
+        const provider = getWeatherProvider(providerId);
+        if (!provider?.getCurrentWeather) {
+            return;
+        }
+
+        const weatherConfig = this.buildProviderConfig(provider);
+        const entityId = weatherConfig.entityId;
+        if (!entityId) {
+            return;
+        }
+
+        const state = this._hass.states[entityId];
+        if (!state || state === this._lastEntityState) {
+            return;
+        }
+        this._lastEntityState = state;
+
+        provider.setHass?.(this._hass);
+        const current = provider.getCurrentWeather(weatherConfig);
+        if (current) {
+            this.logger.debug(`Weather entity ${entityId} changed, refreshing current conditions`);
+            this._weatherData = { ...this._weatherData, current };
+            this._messenger.publish(new WeatherMessage(current.conditionUnified ?? Weather.All));
+        }
+    }
+
+    /**
+     * Subscribe to pushed forecast updates when the provider supports it.
+     * Safe to call repeatedly; re-subscribes only when the entity changes.
+     */
+    private async setupForecastSubscriptionAsync(provider: WeatherProvider, weatherConfig: WeatherProviderConfig): Promise<void> {
+        if (!provider.subscribeForecastAsync) {
+            // Provider switched to one without push support — drop any stale subscription
+            this.teardownForecastSubscription();
+            return;
+        }
+
+        const entityId = weatherConfig.entityId as string | undefined;
+        if (!entityId || entityId === this._subscribedEntityId) {
+            return;
+        }
+
+        this.teardownForecastSubscription();
+
+        const unsubscribe = await provider.subscribeForecastAsync(weatherConfig, (daily) => {
+            if (this._weatherData) {
+                this.logger.debug(`Received pushed forecast update (${daily.length} days)`);
+                this._weatherData = { ...this._weatherData, daily };
+                this.host.requestUpdate();
+            }
+        });
+
+        if (unsubscribe) {
+            this._forecastUnsubscribe = unsubscribe;
+            this._subscribedEntityId = entityId;
+        }
+    }
+
+    /**
+     * Build the effective provider config from defaults and card config
+     */
+    private buildProviderConfig(provider: WeatherProvider): WeatherProviderConfig {
+        let weatherConfig = provider.getDefaultConfig();
+
+        if (this.config.weatherConfig) {
+            // Create a new object to avoid reference issues
+            weatherConfig = {...weatherConfig, ...this.config.weatherConfig};
+
+            // Ensure units is properly set if specified
+            if (this.config.weatherConfig.units) {
+                weatherConfig.units = this.config.weatherConfig.units;
+            }
+        }
+
+        // Set icon set if specified in the main config
+        if (this.config.weatherIconSet) {
+            weatherConfig.iconSet = this.config.weatherIconSet;
+        } else if (this.config.weatherConfig?.iconSet) {
+            weatherConfig.iconSet = this.config.weatherConfig.iconSet;
+        }
+
+        return weatherConfig;
     }
 
     /**
@@ -177,31 +298,21 @@ export class WeatherController extends BaseController {
             }
 
             // Get the weather config from the card config and ensure it's properly processed
-            let weatherConfig = provider.getDefaultConfig();
-
-            if (this.config.weatherConfig) {
-                // Create a new object to avoid reference issues
-                weatherConfig = {...weatherConfig, ...this.config.weatherConfig};
-
-                // Ensure units is properly set if specified
-                if (this.config.weatherConfig.units) {
-                    weatherConfig.units = this.config.weatherConfig.units;
-                    this.logger.debug(`Using weather units: ${weatherConfig.units}`);
-                }
-            }
-
-            // Set icon set if specified in the main config
-            if (this.config.weatherIconSet) {
-                weatherConfig.iconSet = this.config.weatherIconSet;
-            } else if (this.config.weatherConfig?.iconSet) {
-                weatherConfig.iconSet = this.config.weatherConfig.iconSet;
-            }
+            const weatherConfig = this.buildProviderConfig(provider);
 
             // Fetch weather data from the provider
             this._weatherData = await provider.fetchWeatherAsync(weatherConfig);
             if(this._weatherData) {
                 Messenger.getInstance().publish(new WeatherMessage(this._weatherData.current?.conditionUnified ?? Weather.All));
             }
+
+            // Remember the entity state this data came from and switch the
+            // forecast to pushed updates when the provider supports it.
+            const entityId = weatherConfig.entityId as string | undefined;
+            if (entityId && this._hass) {
+                this._lastEntityState = this._hass.states[entityId];
+            }
+            await this.setupForecastSubscriptionAsync(provider, weatherConfig);
 
             this.logger.info(`Fetched weather data from ${provider.name}:`, this._weatherData);
         } catch (error) {

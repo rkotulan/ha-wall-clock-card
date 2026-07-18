@@ -51,21 +51,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
 
     const attributes = state.attributes as any;
 
-    // Map HA condition to internal Weather enum
-    const condition = state.state;
-    const conditionUnified = this.mapWeatherCondition(condition);
-
-    const current = {
-      temperature: attributes.temperature,
-      condition: this.mapConditionToKey(condition),
-      conditionText: this.localizeCondition(state),
-      conditionUnified: conditionUnified,
-      icon: this.getIconUrl(condition, config.iconSet),
-      humidity: attributes.humidity,
-      windSpeed: attributes.wind_speed,
-      pressure: attributes.pressure,
-      feelsLike: attributes.apparent_temperature
-    };
+    const current = this.buildCurrent(state, config);
 
     // Process forecast data
     let daily: any[] = [];
@@ -89,17 +75,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       const forecastData = forecastResponse.response[entityId]?.forecast;
 
       if (forecastData && Array.isArray(forecastData)) {
-        daily = forecastData.map((item: any) => ({
-          date: new Date(item.datetime),
-          temperatureMin: item.templow !== undefined ? item.templow : item.temperature,
-          temperatureMax: item.temperature,
-          condition: this.mapConditionToKey(item.condition),
-          conditionText: this.localizeCondition(state, item.condition),
-          icon: this.getIconUrl(item.condition, config.iconSet),
-          precipitation: item.precipitation,
-          humidity: item.humidity,
-          windSpeed: item.wind_speed
-        }));
+        daily = this.mapForecastItems(forecastData, config, state);
       }
     } catch (error: any) {
       logger.error(`[HA Weather] Error fetching forecast for ${entityId}:`, error);
@@ -109,6 +85,97 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       || (this.hass.config as any)?.unit_system?.temperature;
 
     return { current, daily, entityId, temperatureUnit };
+  }
+
+  /**
+   * Read the current conditions straight from the entity state (no service
+   * call). Returns undefined when hass or the entity is unavailable.
+   */
+  getCurrentWeather(config: HomeAssistantWeatherConfig): WeatherData['current'] | undefined {
+    const state = config.entityId ? this.hass?.states[config.entityId] : undefined;
+    if (!state) {
+      return undefined;
+    }
+    return this.buildCurrent(state, config);
+  }
+
+  /**
+   * Subscribe to pushed daily forecast updates via HA's
+   * weather/subscribe_forecast WebSocket API (the same mechanism the
+   * built-in weather card uses). Resolves to an unsubscribe function, or
+   * null when hass/entity/connection is unavailable (older HA versions).
+   */
+  async subscribeForecastAsync(
+    config: HomeAssistantWeatherConfig,
+    onDaily: (daily: WeatherData['daily']) => void
+  ): Promise<(() => void) | null> {
+    const entityId = config.entityId;
+    const connection = (this.hass as any)?.connection;
+    if (!entityId || !connection?.subscribeMessage) {
+      return null;
+    }
+
+    try {
+      const unsubscribe = await connection.subscribeMessage(
+        (event: any) => {
+          if (event?.forecast && Array.isArray(event.forecast)) {
+            const state = this.hass?.states[entityId];
+            onDaily(this.mapForecastItems(event.forecast, config, state));
+          }
+        },
+        {
+          type: 'weather/subscribe_forecast',
+          entity_id: entityId,
+          forecast_type: 'daily',
+        }
+      );
+      logger.debug(`[HA Weather] Subscribed to forecast updates for ${entityId}`);
+      return unsubscribe;
+    } catch (error) {
+      logger.warn(`[HA Weather] weather/subscribe_forecast unavailable for ${entityId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Map the entity state to the current-conditions structure
+   */
+  private buildCurrent(state: any, config: HomeAssistantWeatherConfig): WeatherData['current'] {
+    const attributes = state.attributes as any;
+    const condition = state.state;
+
+    return {
+      temperature: attributes.temperature,
+      condition: this.mapConditionToKey(condition),
+      conditionText: this.localizeCondition(state),
+      conditionUnified: this.mapWeatherCondition(condition),
+      icon: this.getIconUrl(condition, config.iconSet),
+      humidity: attributes.humidity,
+      windSpeed: attributes.wind_speed,
+      pressure: attributes.pressure,
+      feelsLike: attributes.apparent_temperature
+    };
+  }
+
+  /**
+   * Map raw forecast items to the daily forecast structure
+   */
+  private mapForecastItems(
+    forecastData: any[],
+    config: HomeAssistantWeatherConfig,
+    state: any
+  ): WeatherData['daily'] {
+    return forecastData.map((item: any) => ({
+      date: new Date(item.datetime),
+      temperatureMin: item.templow !== undefined ? item.templow : item.temperature,
+      temperatureMax: item.temperature,
+      condition: this.mapConditionToKey(item.condition),
+      conditionText: state ? this.localizeCondition(state, item.condition) : undefined,
+      icon: this.getIconUrl(item.condition, config.iconSet),
+      precipitation: item.precipitation,
+      humidity: item.humidity,
+      windSpeed: item.wind_speed
+    }));
   }
 
   /**

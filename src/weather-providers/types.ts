@@ -94,4 +94,20 @@ export interface WeatherProvider {
    * @param hass The Home Assistant instance
    */
   setHass?(hass: HomeAssistant): void;
+
+  /**
+   * Optional: cheap read of the current conditions without any network or
+   * service call (e.g. straight from the entity state). Used to refresh the
+   * display when the entity changes between full fetches.
+   */
+  getCurrentWeather?(config: WeatherProviderConfig): WeatherData['current'] | undefined;
+
+  /**
+   * Optional: subscribe to pushed forecast updates (HA weather/subscribe_forecast).
+   * Resolves to an unsubscribe function, or null when unsupported.
+   */
+  subscribeForecastAsync?(
+    config: WeatherProviderConfig,
+    onDaily: (daily: WeatherData['daily']) => void
+  ): Promise<(() => void) | null>;
 }

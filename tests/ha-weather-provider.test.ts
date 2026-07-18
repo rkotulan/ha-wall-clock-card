@@ -116,4 +116,71 @@ describe('HomeAssistantWeatherProvider', () => {
     expect(result.current.icon).toContain('basmilius');
     expect(result.current.icon).toContain('clear-day.svg');
   });
+
+  describe('getCurrentWeather', () => {
+    it('maps the entity state without any service call', () => {
+      const current = provider.getCurrentWeather({ entityId: 'weather.test' });
+
+      expect(current).toMatchObject({
+        temperature: 25,
+        condition: 'clear_sky',
+        humidity: 40,
+      });
+      expect(mockHass.callWS).not.toHaveBeenCalled();
+    });
+
+    it('uses hass.formatEntityState for the condition text when available', () => {
+      mockHass.formatEntityState = jest.fn().mockReturnValue('Slunečno');
+
+      const current = provider.getCurrentWeather({ entityId: 'weather.test' });
+
+      expect(current?.conditionText).toBe('Slunečno');
+    });
+
+    it('returns undefined for a missing entity or hass', () => {
+      expect(provider.getCurrentWeather({ entityId: 'weather.missing' })).toBeUndefined();
+      expect(new HomeAssistantWeatherProvider().getCurrentWeather({ entityId: 'weather.test' })).toBeUndefined();
+    });
+  });
+
+  describe('subscribeForecastAsync', () => {
+    it('subscribes via weather/subscribe_forecast and maps pushed forecasts', async () => {
+      const unsubscribe = jest.fn();
+      let capturedCallback: ((event: any) => void) | undefined;
+      mockHass.connection = {
+        subscribeMessage: jest.fn().mockImplementation(async (cb: any) => {
+          capturedCallback = cb;
+          return unsubscribe;
+        }),
+      };
+
+      const onDaily = jest.fn();
+      const result = await provider.subscribeForecastAsync({ entityId: 'weather.test' }, onDaily);
+
+      expect(result).toBe(unsubscribe);
+      expect(mockHass.connection.subscribeMessage).toHaveBeenCalledWith(expect.any(Function), {
+        type: 'weather/subscribe_forecast',
+        entity_id: 'weather.test',
+        forecast_type: 'daily',
+      });
+
+      capturedCallback!({
+        forecast: [
+          { datetime: '2023-01-03T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny' },
+        ],
+      });
+
+      expect(onDaily).toHaveBeenCalledTimes(1);
+      expect(onDaily.mock.calls[0][0][0]).toMatchObject({
+        temperatureMin: 15,
+        temperatureMax: 25,
+        condition: 'clear_sky',
+      });
+    });
+
+    it('resolves to null when the connection is unavailable', async () => {
+      const result = await provider.subscribeForecastAsync({ entityId: 'weather.test' }, jest.fn());
+      expect(result).toBeNull();
+    });
+  });
 });
