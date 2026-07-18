@@ -124,11 +124,7 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
 
             <ha-row-selector
                     .hass=${this.hass}
-                    .selector=${{
-                        color: {
-                            type: "rgb",
-                        }
-                    }}
+                    .selector=${{ color_hex: "" }}
                     .value=${this.serviceCallAction.activeColor || '#ffeb3b'}
                     .label=${"Active Color"}
                     .helper=${"Color to use when the service call action is active"}

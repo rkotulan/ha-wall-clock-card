@@ -45,11 +45,7 @@ export class HaActionEditorPlugin extends BasePluginEditor {
 
             <ha-row-selector
                     .hass=${this.hass}
-                    .selector=${{
-                        color: {
-                            type: 'rgb',
-                        }
-                    }}
+                    .selector=${{ color_hex: '' }}
                     .value=${this.haAction.activeColor || '#ffeb3b'}
                     .label=${'Active Color'}
                     .helper=${'Color to use when the action is active'}

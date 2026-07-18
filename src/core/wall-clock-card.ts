@@ -563,7 +563,7 @@ export class WallClockCard extends LitElement {
         }
 
         return html`
-            <ha-card style="color: rgb( ${this.config.fontColor});">
+            <ha-card style="color: ${this.config.fontColor};">
                 ${this.backgroundImageComponent}
                 ${this.sensorComponent}
                 ${this.config.showWeather ?
