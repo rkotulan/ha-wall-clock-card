@@ -19,7 +19,7 @@ export const SERVICE_CALL_ACTION = 'call-service';
  * @param element Optional HTML element that triggered the action
  */
 export const serviceCallHandler: ActionHandler<ServiceCallActionConfig> = (action, hass, element) => {
-    const {service, service_data, confirmation, confirmation_text} = action;
+    const {service, service_data, target, confirmation, confirmation_text} = action;
 
     // Route through HA's standard action handling; confirmation uses HA's
     // native confirm dialog instead of window.confirm.
@@ -28,6 +28,7 @@ export const serviceCallHandler: ActionHandler<ServiceCallActionConfig> = (actio
             action: 'call-service',
             service: service,
             service_data: service_data,
+            target: target,
             confirmation: confirmation
                 ? {text: confirmation_text || `Are you sure you want to call ${service}?`}
                 : undefined,

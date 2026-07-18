@@ -1,39 +1,19 @@
-import {html, css} from 'lit';
-import {customElement, state} from 'lit/decorators.js';
+import {html} from 'lit';
+import {customElement} from 'lit/decorators.js';
 import {BasePluginEditor} from '../editors';
 import {ServiceCallActionConfig} from "./types";
 import {LabelPosition} from "../../../ha-selector/types";
 
 /**
- * Editor component for service call actions
- * This component provides the UI for configuring service call actions
+ * Editor component for service call actions.
+ *
+ * Uses HA's native service UI (the `ui_action` selector pinned to
+ * perform-action renders ha-service-control): service picker with
+ * per-service fields and target selection, instead of a hand-rolled
+ * dropdown + raw JSON input.
  */
 @customElement('service-call-editor-plugin')
 export class ServiceCallEditorPlugin extends BasePluginEditor {
-    static styles = css`
-        .sensor-row {
-            display: flex;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .sensor-entity {
-            flex: 1;
-            margin-right: 8px;
-        }
-
-        .helper-text {
-            color: #666;
-            font-size: 12px;
-            margin-top: 4px;
-            margin-bottom: 8px;
-        }
-    `;
-
-    /**
-     * State property to store the list of available services
-     */
-    @state() private _services: { value: string, label: string }[] = [];
 
     /**
      * Cast the action to ServiceCallActionConfig
@@ -43,84 +23,70 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
     }
 
     /**
-     * When the component is first updated, load the services
+     * Card config -> HA ui_action value (modern perform-action shape)
      */
-    firstUpdated() {
-        this._loadServices();
+    private get uiActionValue(): Record<string, any> {
+        const {service, service_data, target} = this.serviceCallAction;
+        return {
+            action: 'perform-action',
+            perform_action: service || '',
+            data: service_data,
+            target: target,
+        };
     }
 
     /**
-     * Load the list of available services from Home Assistant
+     * HA ui_action value -> card config. Accepts both the modern
+     * (perform_action/data) and legacy (service/service_data) shapes.
      */
-    private _loadServices() {
-        if (!this.hass) return;
-
-        const services = this.hass.services;
-        if (!services) return;
-
-        const serviceOptions: { value: string, label: string }[] = [];
-
-        // Iterate through all domains and services
-        Object.keys(services).forEach(domain => {
-            Object.keys(services[domain]).forEach(service => {
-                serviceOptions.push({
-                    value: `${domain}.${service}`,
-                    label: `${domain}.${service}`
-                });
-            });
-        });
-
-        // Sort services alphabetically
-        serviceOptions.sort((a, b) => a.label.localeCompare(b.label));
-
-        this._services = serviceOptions;
+    private _serviceChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+        ev.preventDefault();
+        const value = ev.detail.value || {};
+        this.actionChanged(this.index, 'service', value.perform_action ?? value.service ?? '');
+        this.actionChanged(this.index, 'service_data', value.data ?? value.service_data);
+        this.actionChanged(this.index, 'target', value.target);
     }
 
     render() {
         return html`
-
             <ha-row-selector
                     .hass=${this.hass}
                     .selector=${{
-                        select: {
-                            options: this._services,
-                            mode: 'dropdown',
-                            custom_value: true
+                        ui_action: {
+                            actions: ['perform-action'],
+                            default_action: 'perform-action',
                         }
                     }}
-                    .value=${this.serviceCallAction.service || ''}
+                    .value=${this.uiActionValue}
                     .label=${"Service"}
-                    .helper= ${"Select a service or enter a custom one (domain.service)"}
-                    .labelPosition=${LabelPosition.Hidden}
-                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('service', ev)}
+                    .helper=${"Service to call, including data and target"}
+                    .labelPosition=${LabelPosition.Top}
+                    @value-changed=${(ev: CustomEvent) => this._serviceChanged(ev)}
             ></ha-row-selector>
 
             <ha-row-selector
                     .hass=${this.hass}
-                    .selector=${{
-                        text: {
-                            multiline: false,
-                            type: 'text'
-                        }
-                    }}
-                    label="Service Data (JSON)"
-                    .value=${this.serviceCallAction.service_data ? JSON.stringify(this.serviceCallAction.service_data) : '{}'}
-                    .labelPosition=${LabelPosition.Hidden}
-                    @value-changed=${(ev: CustomEvent) => {
-                        ev.stopPropagation();
-                        ev.preventDefault();
-                        const target = ev.target as HTMLElement & { value?: string };
-                        if (!target) return;
-                        try {
-                            const data = JSON.parse(ev.detail.value || '{}');
-                            this.actionChanged(this.index, 'service_data', data);
-                        } catch (e) {
-                            // Invalid JSON, don't update
-                        }
-                    }}
+                    .selector=${{ boolean: {} }}
+                    .value=${this.serviceCallAction.confirmation || false}
+                    .label=${"Ask for confirmation"}
+                    .helper=${"Show a confirmation dialog before calling the service"}
+                    .labelPosition=${LabelPosition.Left}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('confirmation', ev)}
             ></ha-row-selector>
 
-            <div class="helper-text">Example: {"entity_id": "light.living_room"} for light.toggle service</div>
+            ${this.serviceCallAction.confirmation ? html`
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{ text: { type: 'text' } }}
+                        .value=${this.serviceCallAction.confirmation_text || ''}
+                        .required=${false}
+                        .label=${"Confirmation Text"}
+                        .helper=${"Custom text for the confirmation dialog"}
+                        .labelPosition=${LabelPosition.Hidden}
+                        @value-changed=${(ev: CustomEvent) => this.handleValueChange('confirmation_text', ev)}
+                ></ha-row-selector>
+            ` : ''}
 
             <ha-row-selector
                     .hass=${this.hass}
