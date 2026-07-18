@@ -69,9 +69,10 @@ export class LightTogglePlugin implements ActionPlugin<LightToggleActionConfig> 
         // Store the active state in a separate property that we'll check later
         this._lastActiveState = state.state === 'on';
 
-        // Use the appropriate icon based on the state
+        // Use the appropriate icon based on the state; a lit bulb falls back
+        // to the default "on" icon when no icon_on is configured
         if (this._lastActiveState) {
-            return action.icon_on || this.icon;
+            return action.icon_on || 'mdi:lightbulb-on';
         } else {
             return action.icon || this.icon;
         }

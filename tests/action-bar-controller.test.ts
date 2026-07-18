@@ -1,4 +1,6 @@
-import { ActionBarController } from '../src/components/action-bar';
+// Import directly from the controller file (not the action-bar barrel):
+// the barrel pulls in LitElement components whose ESM Jest cannot load.
+import { ActionBarController } from '../src/components/action-bar/action-bar-controller';
 
 // Mock ReactiveControllerHost
 const mockHost = {

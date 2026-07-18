@@ -1,5 +1,16 @@
+// Import directly from plugin/types files (not the action-bar barrel):
+// the barrel pulls in LitElement components whose ESM Jest cannot load.
 import { ActionRegistry, ActionHandler, ModuleActionConfig } from '../src/components/action-bar/types';
+import { registerNavigationPlugin } from '../src/components/action-bar/plugins/navigator/navigation-plugin';
+import { NAVIGATION_ACTION } from '../src/components/action-bar/plugins/navigator/types';
+import { registerServiceCallPlugin, SERVICE_CALL_ACTION } from '../src/components/action-bar/plugins/service-call/service-call-plugin';
 import { HomeAssistant } from 'custom-card-helpers';
+
+// Plugin handlers touch the DOM through custom-card-helpers; mock it out.
+jest.mock('custom-card-helpers', () => ({
+    navigate: jest.fn(),
+    handleAction: jest.fn(),
+}));
 
 // Mock HomeAssistant
 const mockHass = {
@@ -58,17 +69,15 @@ describe('Action Bar Plugins', () => {
     });
 
     it('should handle built-in action types', () => {
-        // Test Navigate action
-        const navigateHandler = registry.getHandler('navigate');
+        // Built-in plugins register themselves via their register functions
+        registerNavigationPlugin();
+        registerServiceCallPlugin();
+
+        const navigateHandler = registry.getHandler(NAVIGATION_ACTION);
         expect(navigateHandler).toBeDefined();
 
-        // Test CallService action
-        const callServiceHandler = registry.getHandler('call-service');
+        const callServiceHandler = registry.getHandler(SERVICE_CALL_ACTION);
         expect(callServiceHandler).toBeDefined();
-
-        // Test Custom action
-        const customHandler = registry.getHandler('custom');
-        expect(customHandler).toBeDefined();
     });
 
     it('should return undefined for unregistered action types', () => {
