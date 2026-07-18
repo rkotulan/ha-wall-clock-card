@@ -9,7 +9,9 @@
     "update-card-tools": "npm uninstall card-tools && npm install thomasloven/lovelace-card-tools",
     "type-check": "tsc --noEmit",
     "test": "jest",
-    "analyze": "webpack --analyze"
+    "analyze": "webpack --analyze",
+    "deploy": "node scripts/deploy.js",
+    "bump": "node scripts/bump-resource.js"
   },
   "keywords": [
     "home-assistant",

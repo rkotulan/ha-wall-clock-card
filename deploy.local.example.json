@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy this file to deploy.local.json and set your Home Assistant www folder. deploy.local.json is gitignored. Alternatively set the HA_WWW_DEST env var. The path is the folder that will contain wall-clock-card.js, served by HA as /local/wall-clock-card/wall-clock-card.js.",
+  "dest": "Z:\\www\\wall-clock-card",
+  "_comment2": "Optional: with haUrl + haToken (a long-lived access token from your HA profile), each deploy also bumps the ?v= cache-buster on the Lovelace resource via the HA WebSocket API (needs Node >= 22). resourceUrl overrides the resource path to bump (default /local/wall-clock-card/wall-clock-card.js).",
+  "haUrl": "http://192.168.1.10:8123",
+  "haToken": ""
+}

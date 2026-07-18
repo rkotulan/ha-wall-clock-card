@@ -22,3 +22,6 @@ logs/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Local deploy target (Home Assistant www path) — machine specific
+deploy.local.json
