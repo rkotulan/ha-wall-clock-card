@@ -297,6 +297,15 @@ export class WallClockCard extends LitElement {
         return 4; // Approximately 200px height
     }
 
+    // Grid sizing hints for the Sections view (1 row = 56px + 8px gap)
+    getGridOptions() {
+        return {
+            columns: 'full',
+            rows: 6,
+            min_rows: 4,
+        };
+    }
+
     // Required for Home Assistant custom cards
     static getStubConfig(): WallClockConfig {
         return {
@@ -316,14 +325,16 @@ export class WallClockCard extends LitElement {
     }
 
     setConfig(config: WallClockConfig): void {
-        if (!config) {
+        if (!config || typeof config !== 'object') {
             throw new Error('Invalid configuration');
         }
 
-        this.initAfterSetConfigAsync(config);
+        this.applyConfig(config);
     }
 
-    async initAfterSetConfigAsync(config: WallClockConfig): Promise<void> {
+    // Applies the config synchronously so setConfig() conforms to the
+    // Lovelace contract (validate and apply before returning, throw on error).
+    private applyConfig(config: WallClockConfig): void {
         // Set default imageSource if not provided
         const imageSource = config.imageSource || 'none';
 
