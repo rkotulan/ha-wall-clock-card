@@ -133,15 +133,32 @@ export type ActionGesture = 'tap' | 'hold' | 'double_tap';
  * @param element Optional HTML element that triggered the action
  * @param gesture The gesture that triggered the action (default 'tap')
  */
+/**
+ * A valid standard HA action config is a plain object with a string `action`.
+ * Anything else (e.g. an automation action sequence stored by mistake) is
+ * ignored so the plugin handler still runs instead of a silent no-op.
+ */
+function isStandardActionConfig(value: unknown): value is ActionConfig {
+    return !!value
+        && typeof value === 'object'
+        && !Array.isArray(value)
+        && typeof (value as any).action === 'string';
+}
+
 export function executeAction(
     action: ModuleActionConfig,
     hass: HomeAssistant,
     element?: HTMLElement,
     gesture: ActionGesture = 'tap'
 ): void {
-    const standardAction = gesture === 'hold' ? action.hold_action
+    let standardAction = gesture === 'hold' ? action.hold_action
         : gesture === 'double_tap' ? action.double_tap_action
         : action.tap_action;
+
+    if (standardAction && !isStandardActionConfig(standardAction)) {
+        console.warn(`Ignoring invalid ${gesture} action config (expected an object with an "action" key):`, standardAction);
+        standardAction = undefined;
+    }
 
     // Any action carrying a standard HA action config for this gesture goes
     // through HA's own handleAction(), regardless of which plugin it belongs to.

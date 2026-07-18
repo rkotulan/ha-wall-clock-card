@@ -79,6 +79,27 @@ describe('executeAction', () => {
         );
     });
 
+    it('falls back to the plugin handler when tap_action is not a valid action config', () => {
+        const registryHandler = jest.fn();
+        ActionRegistry.getInstance().registerHandler('action-more-info', registryHandler);
+
+        const action: ModuleActionConfig = {
+            actionId: 'action-more-info',
+            title: 'Test',
+            icon: 'mdi:test',
+            entity_id: 'weather.home',
+            // Automation action sequence stored by mistake (array, no string `action` key semantics)
+            tap_action: [{ action: 'light.toggle', target: { entity_id: 'light.office' } }] as any,
+        };
+
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        executeAction(action, mockHass, fakeElement);
+        warnSpy.mockRestore();
+
+        expect(handleAction).not.toHaveBeenCalled();
+        expect(registryHandler).toHaveBeenCalledWith(action, mockHass, fakeElement);
+    });
+
     it('routes hold gestures through handleAction when hold_action is set', () => {
         const action: ModuleActionConfig = {
             actionId: 'action-ha',

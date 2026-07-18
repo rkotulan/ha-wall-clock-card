@@ -654,7 +654,7 @@
                       </svg>`}
                 <div class="action-title">${e.title}</div>
             </div>
-        `}_handleAction(e,t){this.hass?(this.logger.debug(`Action ${t}:`,e),function(e,t,i,o="tap"){const n="hold"===o?e.hold_action:"double_tap"===o?e.double_tap_action:e.tap_action;if(n){const s={...e},a=n.entity||n.entity_id||e.entity_id;return!s.entity&&a&&(s.entity=a),void mt(i||document.body,t,s,o)}if("tap"!==o)return;const s=Bt.getInstance().getHandler(e.actionId);s?s(e,t,i):console.warn(`No handler registered for action type: ${e.actionId}`)}(e,this.hass,this,t)):this.logger.error("Home Assistant instance not available")}};Kt.styles=a`
+        `}_handleAction(e,t){this.hass?(this.logger.debug(`Action ${t}:`,e),function(e,t,i,o="tap"){let n="hold"===o?e.hold_action:"double_tap"===o?e.double_tap_action:e.tap_action;var s;if(n&&(!(s=n)||"object"!=typeof s||Array.isArray(s)||"string"!=typeof s.action)&&(console.warn(`Ignoring invalid ${o} action config (expected an object with an "action" key):`,n),n=void 0),n){const s={...e},a=n.entity||n.entity_id||e.entity_id;return!s.entity&&a&&(s.entity=a),void mt(i||document.body,t,s,o)}if("tap"!==o)return;const a=Bt.getInstance().getHandler(e.actionId);a?a(e,t,i):console.warn(`No handler registered for action type: ${e.actionId}`)}(e,this.hass,this,t)):this.logger.error("Home Assistant instance not available")}};Kt.styles=a`
         .action-bar-container {
             position: absolute;
             bottom: 0;
