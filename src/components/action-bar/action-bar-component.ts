@@ -5,9 +5,10 @@ import { ActionBarController } from './action-bar-controller';
 import {
     ActionBarConfig,
     executeAction,
-    ActionBarAlignment, ModuleActionConfig
+    ActionBarAlignment, ModuleActionConfig, ActionGesture
 } from './types';
-import { HomeAssistant} from 'custom-card-helpers';
+import { HomeAssistant, hasAction } from 'custom-card-helpers';
+import { actionHandler } from './action-handler-directive';
 import { PluginRegistry } from './plugin-registry';
 import { BottomBarComponent } from '../bottom-bar';
 import { Size } from '../../core/types';
@@ -100,6 +101,11 @@ export class ActionBarComponent extends BottomBarComponent {
         .action-button:hover {
             background-color: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
+        }
+
+        .action-button:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
         }
 
         .action-button.active ha-icon {
@@ -218,9 +224,16 @@ export class ActionBarComponent extends BottomBarComponent {
             : '';
 
         return html`
-            <div class="action-button ${activeClass}" 
+            <div class="action-button ${activeClass}"
                  style="${activeColorStyle}"
-                 @click=${() => this._handleActionClick(action)}>
+                 role="button"
+                 tabindex="0"
+                 aria-label="${action.title}"
+                 ${actionHandler({
+                     hasHold: hasAction(action.hold_action),
+                     hasDoubleClick: hasAction(action.double_tap_action),
+                 })}
+                 @action=${(ev: CustomEvent) => this._handleAction(action, ev.detail?.action || 'tap')}>
                 ${iconToUse && iconToUse.startsWith('mdi:') 
                     ? html`<ha-icon icon="${iconToUse}" 
                                    style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''} 
@@ -241,18 +254,15 @@ export class ActionBarComponent extends BottomBarComponent {
     }
 
     /**
-     * Handle click on an action button
+     * Handle a tap/hold/double-tap gesture on an action button
      */
-    private _handleActionClick(action: ModuleActionConfig): void {
+    private _handleAction(action: ModuleActionConfig, gesture: ActionGesture): void {
         if (!this.hass) {
             this.logger.error('Home Assistant instance not available');
             return;
         }
 
-        // const eventDetail = { entityId: 'cover.somfy_roleta_obyvak_prava_2', view: 'info' } as any;
-        // fireEvent(this, 'hass-more-info', eventDetail);
-
-        this.logger.debug('Action clicked:', action);
-        executeAction(action, this.hass, this);
+        this.logger.debug(`Action ${gesture}:`, action);
+        executeAction(action, this.hass, this, gesture);
     }
 }

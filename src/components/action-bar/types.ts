@@ -122,25 +122,46 @@ export interface ActionBarControllerConfig {
 }
 
 /**
+ * Gesture that triggered an action, matching HA's handleAction contract
+ */
+export type ActionGesture = 'tap' | 'hold' | 'double_tap';
+
+/**
  * Execute an action based on its configuration
  * @param action The action configuration
  * @param hass The Home Assistant instance
  * @param element Optional HTML element that triggered the action
+ * @param gesture The gesture that triggered the action (default 'tap')
  */
-export function executeAction(action: ModuleActionConfig, hass: HomeAssistant, element?: HTMLElement): void {
-    // Any action carrying a standard tap_action goes through HA's own
-    // handleAction(), regardless of which plugin it belongs to.
-    if (action.tap_action) {
+export function executeAction(
+    action: ModuleActionConfig,
+    hass: HomeAssistant,
+    element?: HTMLElement,
+    gesture: ActionGesture = 'tap'
+): void {
+    const standardAction = gesture === 'hold' ? action.hold_action
+        : gesture === 'double_tap' ? action.double_tap_action
+        : action.tap_action;
+
+    // Any action carrying a standard HA action config for this gesture goes
+    // through HA's own handleAction(), regardless of which plugin it belongs to.
+    if (standardAction) {
         const config: ModuleActionConfig = { ...action };
         // handleAction() reads `entity` from the top-level config for
-        // more-info/toggle; also accept it nested inside tap_action.
-        const nestedEntity = (action.tap_action as any).entity
-            || (action.tap_action as any).entity_id
+        // more-info/toggle; also accept it nested inside the action config.
+        const nestedEntity = (standardAction as any).entity
+            || (standardAction as any).entity_id
             || action.entity_id;
         if (!config.entity && nestedEntity) {
             config.entity = nestedEntity;
         }
-        handleAction(element || document.body, hass, config, 'tap');
+        handleAction(element || document.body, hass, config, gesture);
+        return;
+    }
+
+    // Plugin handlers only respond to tap; a hold/double-tap without a
+    // configured standard action does nothing.
+    if (gesture !== 'tap') {
         return;
     }
 

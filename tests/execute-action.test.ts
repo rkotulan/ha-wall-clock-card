@@ -79,6 +79,41 @@ describe('executeAction', () => {
         );
     });
 
+    it('routes hold gestures through handleAction when hold_action is set', () => {
+        const action: ModuleActionConfig = {
+            actionId: 'action-ha',
+            title: 'Test',
+            icon: 'mdi:test',
+            tap_action: { action: 'navigate', navigation_path: '/config' },
+            hold_action: { action: 'more-info' } as any,
+        };
+
+        executeAction(action, mockHass, fakeElement, 'hold');
+
+        expect(handleAction).toHaveBeenCalledWith(
+            fakeElement,
+            mockHass,
+            expect.objectContaining({ hold_action: { action: 'more-info' } }),
+            'hold',
+        );
+    });
+
+    it('does nothing on hold without a configured hold_action', () => {
+        const registryHandler = jest.fn();
+        ActionRegistry.getInstance().registerHandler('some-plugin', registryHandler);
+
+        const action: ModuleActionConfig = {
+            actionId: 'some-plugin',
+            title: 'Test',
+            icon: 'mdi:test',
+        };
+
+        executeAction(action, mockHass, fakeElement, 'hold');
+
+        expect(handleAction).not.toHaveBeenCalled();
+        expect(registryHandler).not.toHaveBeenCalled();
+    });
+
     it('keeps an explicit top-level entity', () => {
         const action: ModuleActionConfig = {
             actionId: 'action-ha',

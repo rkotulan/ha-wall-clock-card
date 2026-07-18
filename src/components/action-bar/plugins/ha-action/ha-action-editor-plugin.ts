@@ -45,6 +45,28 @@ export class HaActionEditorPlugin extends BasePluginEditor {
 
             <ha-row-selector
                     .hass=${this.hass}
+                    .selector=${{ ui_action: {} }}
+                    .value=${this.haAction.hold_action}
+                    .required=${false}
+                    .label=${'Hold Action'}
+                    .helper=${'Standard Home Assistant action to run on hold'}
+                    .labelPosition=${LabelPosition.Top}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('hold_action', ev)}
+            ></ha-row-selector>
+
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{ ui_action: {} }}
+                    .value=${this.haAction.double_tap_action}
+                    .required=${false}
+                    .label=${'Double Tap Action'}
+                    .helper=${'Standard Home Assistant action to run on double tap'}
+                    .labelPosition=${LabelPosition.Top}
+                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('double_tap_action', ev)}
+            ></ha-row-selector>
+
+            <ha-row-selector
+                    .hass=${this.hass}
                     .selector=${{ color_hex: '' }}
                     .value=${this.haAction.activeColor || '#ffeb3b'}
                     .label=${'Active Color'}
