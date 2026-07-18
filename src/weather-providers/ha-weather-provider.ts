@@ -58,6 +58,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
     const current = {
       temperature: attributes.temperature,
       condition: this.mapConditionToKey(condition),
+      conditionText: this.localizeCondition(state),
       conditionUnified: conditionUnified,
       icon: this.getIconUrl(condition, config.iconSet),
       humidity: attributes.humidity,
@@ -93,6 +94,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
           temperatureMin: item.templow !== undefined ? item.templow : item.temperature,
           temperatureMax: item.temperature,
           condition: this.mapConditionToKey(item.condition),
+          conditionText: this.localizeCondition(state, item.condition),
           icon: this.getIconUrl(item.condition, config.iconSet),
           precipitation: item.precipitation,
           humidity: item.humidity,
@@ -103,7 +105,33 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       logger.error(`[HA Weather] Error fetching forecast for ${entityId}:`, error);
     }
 
-    return { current, daily, entityId };
+    const temperatureUnit = attributes.temperature_unit
+      || (this.hass.config as any)?.unit_system?.temperature;
+
+    return { current, daily, entityId, temperatureUnit };
+  }
+
+  /**
+   * Localize a weather condition through HA's own state formatting
+   * (hass.formatEntityState), matching what built-in cards display.
+   * Returns undefined on older HA versions so callers can fall back to the
+   * card's bundled translations.
+   * @param state The weather entity state object
+   * @param condition Optional condition override (for forecast entries)
+   */
+  private localizeCondition(state: any, condition?: string): string | undefined {
+    const formatEntityState = (this.hass as any)?.formatEntityState;
+    if (typeof formatEntityState !== 'function') {
+      return undefined;
+    }
+    try {
+      return condition !== undefined
+        ? formatEntityState.call(this.hass, state, condition)
+        : formatEntityState.call(this.hass, state);
+    } catch (e) {
+      logger.warn('[HA Weather] formatEntityState failed:', e);
+      return undefined;
+    }
   }
 
   /**

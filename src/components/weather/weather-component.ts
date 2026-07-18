@@ -225,6 +225,15 @@ export class WeatherComponent extends LitElement {
     }
 
     /**
+     * Get the display text for a weather condition: an already-localized
+     * text from the provider (HA's formatEntityState) wins over the card's
+     * bundled translations.
+     */
+    private conditionDisplayText(condition: string, conditionText?: string): string {
+        return conditionText || this.translateWeatherCondition(condition);
+    }
+
+    /**
      * Translate a weather condition
      * @param condition The weather condition to translate
      * @returns The translated weather condition
@@ -330,11 +339,11 @@ export class WeatherComponent extends LitElement {
                         <div class="weather-current">
                             <div class="weather-temp-container">
                                 <img class="weather-icon" src="${weatherData.current.icon}"
-                                     alt="${weatherData.current.condition}">
-                                <div class="weather-temp" style="font-size: ${valueSize};">${Math.round(weatherData.current.temperature)}°</div>
+                                     alt="${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}">
+                                <div class="weather-temp" style="font-size: ${valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
                             </div>
                             <div class="weather-condition" style="font-size: ${labelSize};">
-                                ${this.translateWeatherCondition(weatherData.current.condition)}
+                                ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
                             </div>
                         </div>
                     ` :
@@ -347,7 +356,7 @@ export class WeatherComponent extends LitElement {
                             ${weatherData.daily.slice(0, limitedForecastDays).map(day => html`
                                 <div class="forecast-day">
                                     <div class="forecast-date" style="font-size: ${labelSize};">${this.formatForecastDate(day.date)}</div>
-                                    <img class="forecast-icon" src="${day.icon}" alt="${day.condition}">
+                                    <img class="forecast-icon" src="${day.icon}" alt="${this.conditionDisplayText(day.condition, day.conditionText)}">
                                     <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">
                                         ${Math.round(day.temperatureMin)}°<span class="forecast-separator"> - </span>${Math.round(day.temperatureMax)}°
                                     </div>

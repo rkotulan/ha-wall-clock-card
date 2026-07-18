@@ -115,7 +115,11 @@ export class OpenWeatherMapProvider implements WeatherProvider {
         };
       });
 
-      return { current, daily };
+      return {
+        current,
+        daily,
+        temperatureUnit: config.units === 'imperial' ? '°F' : '°C'
+      };
     } catch (error) {
       logger.error('Error fetching weather data from OpenWeatherMap:', error);
       throw error;

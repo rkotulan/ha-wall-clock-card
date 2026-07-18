@@ -28,6 +28,8 @@ export interface WeatherData {
   current: {
     temperature: number;
     condition: string;
+    /** Already-localized condition text (e.g. from hass.formatEntityState); falls back to the card's own translation of `condition` */
+    conditionText?: string;
     conditionUnified?: Weather;
     icon: string;
     humidity?: number;
@@ -43,11 +45,15 @@ export interface WeatherData {
     temperatureMin: number;
     temperatureMax: number;
     condition: string;
+    /** Already-localized condition text; see current.conditionText */
+    conditionText?: string;
     icon: string;
     precipitation?: number;
     humidity?: number;
     windSpeed?: number;
   }>;
+  /** Temperature unit label, e.g. °C / °F (from the entity or hass.config.unit_system) */
+  temperatureUnit?: string;
   entityId?: string;
 }
 
