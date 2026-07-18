@@ -108,17 +108,7 @@ export class WallClockCard extends LitElement {
         this.transportationComponent.transportation = this.config.transportation;
         this.transportationComponent.fontColor = this.config.fontColor;
 
-        // Initialize the action bar component
-        // Create a new actionBar object instead of modifying the existing one
-        const actionBar = this.config.actionBar 
-            ? { ...this.config.actionBar, enabled: this.config.enableActionBar === true }
-            : { actions: [], enabled: this.config.enableActionBar === true };
-
-        this.config = {
-            ...this.config,
-            actionBar
-        };
-
+        // Initialize the action bar component; the config is normalized in applyConfig()
         this.actionBarComponent.config = this.config.actionBar;
         this.actionBarComponent.fontColor = this.config.fontColor;
         this.actionBarComponent.size = this.config.size;
@@ -381,8 +371,17 @@ export class WallClockCard extends LitElement {
             timeZone = this.hass.config.time_zone;
         }
 
+        // Normalize the action bar config: actionBar.enabled wins; the legacy
+        // top-level enableActionBar is still honored for old configurations.
+        const actionBar = {
+            actions: [],
+            ...config.actionBar,
+            enabled: config.actionBar?.enabled ?? (config.enableActionBar === true),
+        };
+
         this.config = {
             ...config,
+            actionBar,
             timeFormat,
             dateFormat,
             backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,

@@ -53,6 +53,8 @@ export interface WallClockConfig {
 
     // Action bar settings
     actionBar?: ActionBarConfig; // Configuration for action bar
+    /** @deprecated Use actionBar.enabled instead; still honored when actionBar.enabled is unset */
+    enableActionBar?: boolean;
 
     // Allow string indexing for dynamic property access
     [key: string]: any;
