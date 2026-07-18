@@ -15,6 +15,7 @@ import '../components/bottom-bar/bottom-bar-manager';
 import '../editors';
 import '../components/ha-selector';
 import {Messenger, WeatherMessage} from "../utils";
+import {resolveLanguage, resolveHour12} from '../utils/ha-locale';
 import { WallClockConfig, Size } from './types';
 
 // Global constant injected by webpack.DefinePlugin
@@ -144,7 +145,7 @@ export class WallClockCard extends LitElement {
         // Initialize the clock component with the latest configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
         this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.clockComponent.language = resolveLanguage(this.config.language, this.hass);
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
         this.clockComponent.size = this.config.size;
@@ -185,7 +186,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.weatherComponent.language = resolveLanguage(this.config.language, this.hass);
         this.weatherComponent.size = this.config.size;
 
         // Pass custom sizes if configured
@@ -326,22 +327,18 @@ export class WallClockCard extends LitElement {
         // Set default imageSource if not provided
         const imageSource = config.imageSource || 'none';
 
-        // Ensure timeFormat is properly processed
+        // Ensure timeFormat is properly processed. When hour12 is not set in
+        // the card config, it follows the user's HA profile (hass.locale.time_format).
         let timeFormat: ExtendedDateTimeFormatOptions = {
             hour: '2-digit' as const,
             minute: '2-digit' as const,
             second: '2-digit' as const,
-            hour12: false
+            hour12: resolveHour12(config.timeFormat?.hour12, this.hass)
         };
 
         if (config.timeFormat) {
             // Create a new object to avoid reference issues
-            timeFormat = {...timeFormat, ...config.timeFormat};
-
-            // Ensure hour12 is properly set if specified
-            if (config.timeFormat.hour12 !== undefined) {
-                timeFormat.hour12 = Boolean(config.timeFormat.hour12);
-            }
+            timeFormat = {...timeFormat, ...config.timeFormat, hour12: timeFormat.hour12};
 
             // Explicitly handle the case when second is undefined
             if (config.timeFormat.second === undefined) {
@@ -395,7 +392,7 @@ export class WallClockCard extends LitElement {
         // Initialize the clock component with the new configuration
         this.clockComponent.timeFormat = this.config.timeFormat;
         this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.clockComponent.language = resolveLanguage(this.config.language, this.hass);
         this.clockComponent.timeZone = this.config.timeZone;
         this.clockComponent.fontColor = this.config.fontColor;
         this.clockComponent.size = this.config.size;
@@ -436,7 +433,7 @@ export class WallClockCard extends LitElement {
         this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
         this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
         this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = this.config.language || (this.hass ? this.hass.language : null) || 'en';
+        this.weatherComponent.language = resolveLanguage(this.config.language, this.hass);
         this.weatherComponent.size = this.config.size;
 
         // Pass custom sizes if configured
