@@ -49,7 +49,7 @@ export type Selector =
     // | TriggerSelector
     // | TTSSelector
     // | TTSVoiceSelector
-    // | UiActionSelector
+    | UiActionSelector
     // | UiColorSelector
     // | UiStateContentSelector
     // | BackupLocationSelector;
@@ -185,4 +185,17 @@ export interface LocationSelector {
 
 export interface ActionSelector {
     action: {} | null;
+}
+
+/**
+ * Renders Home Assistant's standard tap-action editor (hui-action-editor) —
+ * the same UI built-in cards use for tap_action/hold_action configuration.
+ * Not to be confused with ActionSelector (`action`), which renders the
+ * automation action-sequence builder.
+ */
+export interface UiActionSelector {
+    ui_action: {
+        actions?: readonly string[];
+        default_action?: string;
+    } | null;
 }

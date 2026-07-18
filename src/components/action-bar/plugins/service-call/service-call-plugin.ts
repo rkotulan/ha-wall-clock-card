@@ -1,6 +1,7 @@
 import {ActionHandler} from '../../types';
 import {registerPlugin, ActionPlugin} from '../../plugin-registry';
 import {ServiceCallActionConfig} from "./types";
+import {handleAction} from 'custom-card-helpers';
 
 /**
  * Service Call plugin for the action bar
@@ -15,24 +16,23 @@ export const SERVICE_CALL_ACTION = 'call-service';
  * Handler for service call actions
  * @param action The service call action configuration
  * @param hass The Home Assistant instance
+ * @param element Optional HTML element that triggered the action
  */
-export const serviceCallHandler: ActionHandler<ServiceCallActionConfig> = (action, hass) => {
-    // Get the service and service_data from the action configuration
+export const serviceCallHandler: ActionHandler<ServiceCallActionConfig> = (action, hass, element) => {
     const {service, service_data, confirmation, confirmation_text} = action;
 
-    // If confirmation is required, show a confirmation dialog
-    if (confirmation) {
-        const message = confirmation_text || `Are you sure you want to call ${service}?`;
-        if (!confirm(message)) {
-            return;
+    // Route through HA's standard action handling; confirmation uses HA's
+    // native confirm dialog instead of window.confirm.
+    handleAction(element || document.body, hass, {
+        tap_action: {
+            action: 'call-service',
+            service: service,
+            service_data: service_data,
+            confirmation: confirmation
+                ? {text: confirmation_text || `Are you sure you want to call ${service}?`}
+                : undefined,
         }
-    }
-
-    // Split the service string into domain and service
-    const [domain, serviceMethod] = service.split('.');
-
-    // Call the service
-    hass.callService(domain, serviceMethod, service_data);
+    } as any, 'tap');
 };
 
 /**

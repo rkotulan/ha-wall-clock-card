@@ -229,6 +229,39 @@ actionBar:
         url_path: https://www.home-assistant.io
 ```
 
+### tap_action on any action
+
+`tap_action` is not limited to `actionId: action-ha` — **any** action in the bar
+may carry a standard `tap_action`, and it then runs through HA's `handleAction()`
+instead of the plugin handler:
+
+```yaml
+actionBar:
+  actions:
+    - actionId: action-navigate   # plugin id is ignored when tap_action is set
+      title: Energy
+      icon: mdi:lightning-bolt
+      tap_action:
+        action: navigate
+        navigation_path: /energy
+```
+
+### Confirmation for service calls
+
+Service call actions (`actionId: call-service`) support a native HA confirmation
+dialog:
+
+```yaml
+actionBar:
+  actions:
+    - actionId: call-service
+      title: Restart
+      icon: mdi:restart
+      service: script.restart_all
+      confirmation: true
+      confirmation_text: Really restart everything?
+```
+
 ## Display Format
 
 The action bar is displayed at the bottom of the card:

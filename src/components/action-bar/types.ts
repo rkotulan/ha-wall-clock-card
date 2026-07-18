@@ -1,4 +1,4 @@
-import {HomeAssistant} from 'custom-card-helpers';
+import {HomeAssistant, ActionConfig, handleAction} from 'custom-card-helpers';
 
 /**
  * Alignment options for action bar buttons
@@ -32,6 +32,20 @@ export interface ModuleActionConfig extends BaseActionConfig {
      * Color to use when the action is in active state
      */
     activeColor?: string;
+
+    /**
+     * Entity read by handleAction() for the more-info and toggle actions
+     */
+    entity?: string;
+
+    /**
+     * Standard Home Assistant actions. When tap_action is set, executeAction()
+     * routes the whole action through HA's handleAction() instead of a plugin
+     * handler, so any action bar button can use standard HA actions.
+     */
+    tap_action?: ActionConfig;
+    hold_action?: ActionConfig;
+    double_tap_action?: ActionConfig;
 
     [key: string]: any; // Allow any additional properties for module-specific configuration
 }
@@ -114,6 +128,22 @@ export interface ActionBarControllerConfig {
  * @param element Optional HTML element that triggered the action
  */
 export function executeAction(action: ModuleActionConfig, hass: HomeAssistant, element?: HTMLElement): void {
+    // Any action carrying a standard tap_action goes through HA's own
+    // handleAction(), regardless of which plugin it belongs to.
+    if (action.tap_action) {
+        const config: ModuleActionConfig = { ...action };
+        // handleAction() reads `entity` from the top-level config for
+        // more-info/toggle; also accept it nested inside tap_action.
+        const nestedEntity = (action.tap_action as any).entity
+            || (action.tap_action as any).entity_id
+            || action.entity_id;
+        if (!config.entity && nestedEntity) {
+            config.entity = nestedEntity;
+        }
+        handleAction(element || document.body, hass, config, 'tap');
+        return;
+    }
+
     const registry = ActionRegistry.getInstance();
     const handler = registry.getHandler(action.actionId);
 
