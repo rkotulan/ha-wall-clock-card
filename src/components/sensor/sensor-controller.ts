@@ -4,7 +4,10 @@ import { BaseController } from '../../utils/controllers';
 
 export interface SensorConfig {
     entity: string;
+    /** Custom label; unset falls back to the entity's friendly_name, '' hides the label */
     label?: string;
+    /** Decimal places override; unset falls back to HA display precision */
+    precision?: number;
 }
 
 export interface SensorValue {
@@ -95,8 +98,33 @@ export class SensorController extends BaseController {
             };
         }
 
+        return {
+            entity: entityId,
+            // Explicit label wins; unset falls back to the entity's friendly
+            // name; an empty string deliberately hides the label.
+            label: sensorConfig.label ?? entityState.attributes?.friendly_name,
+            value: this.formatState(sensorConfig, entityState)
+        };
+    }
+
+    /**
+     * Format an entity state for display. Prefers HA's own formatEntityState
+     * (localized state, device_class handling, units, display precision);
+     * falls back to manual number formatting + unit concatenation on older
+     * HA versions. An explicit precision in the sensor config always wins.
+     */
+    private formatState(sensorConfig: SensorConfig, entityState: any): string {
+        const formatEntityState = (this.hass as any)?.formatEntityState;
+        if (sensorConfig.precision === undefined && typeof formatEntityState === 'function') {
+            try {
+                return formatEntityState.call(this.hass, entityState);
+            } catch (e) {
+                this.logger.warn('formatEntityState failed, using fallback formatting', e);
+            }
+        }
+
         let value = entityState.state;
-        const displayPrecision = this.getDisplayPrecision(sensorConfig);
+        const displayPrecision = this.getDisplayPrecision(sensorConfig, entityState);
 
         if (displayPrecision !== undefined && value !== null && value !== '' && !isNaN(Number(value))) {
             value = this.formatNumericValue(Number(value), displayPrecision);
@@ -107,23 +135,31 @@ export class SensorController extends BaseController {
             value += ` ${entityState.attributes.unit_of_measurement}`;
         }
 
-        return {
-            entity: entityId,
-            label: sensorConfig.label,
-            value: value
-        };
+        return value;
     }
 
     /**
-     * Get display precision for a sensor
+     * Get display precision for a sensor: card config, then the entity
+     * registry (the user's HA override), then the entity's state attributes,
+     * then the integration's suggested precision.
      */
-    private getDisplayPrecision(sensorConfig: SensorConfig): number | undefined {
+    private getDisplayPrecision(sensorConfig: SensorConfig, entityState: any): number | undefined {
+        if (sensorConfig.precision !== undefined) {
+            return sensorConfig.precision;
+        }
+
         // Entity registry (display_precision)
-        if ((this.hass as any)?.entities && (this.hass as any).entities[sensorConfig.entity]) {
-            const registryPrecision = (this.hass as any).entities[sensorConfig.entity].display_precision;
-            if (registryPrecision !== undefined) {
-                return registryPrecision;
-            }
+        const registryPrecision = (this.hass as any)?.entities?.[sensorConfig.entity]?.display_precision;
+        if (registryPrecision !== undefined) {
+            return registryPrecision;
+        }
+
+        if (entityState?.attributes?.display_precision !== undefined) {
+            return entityState.attributes.display_precision;
+        }
+
+        if (entityState?.attributes?.suggested_display_precision !== undefined) {
+            return entityState.attributes.suggested_display_precision;
         }
 
         return undefined;

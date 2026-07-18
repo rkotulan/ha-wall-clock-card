@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { createLogger, getSizeValue } from '../../utils';
 import { SensorController, SensorConfig } from './sensor-controller';
 import { Size } from '../../core/types';
@@ -55,6 +55,7 @@ export class SensorComponent extends LitElement {
         .sensor-item {
             margin-bottom: 16px;
             width: 100%;
+            cursor: pointer;
         }
 
         .sensor-label {
@@ -141,6 +142,13 @@ export class SensorComponent extends LitElement {
         }
     }
 
+    private _openMoreInfo(entityId: string): void {
+        if (!entityId) {
+            return;
+        }
+        fireEvent(this, 'hass-more-info', { entityId } as any);
+    }
+
     render() {
         const sensorValues = this.sensorController.sensorValues;
 
@@ -156,7 +164,16 @@ export class SensorComponent extends LitElement {
         return html`
             <div class="sensor-container" style="color: ${this.fontColor};">
                 ${sensorValues.map(sensor => html`
-                    <div class="sensor-item">
+                    <div class="sensor-item"
+                         role="button"
+                         tabindex="0"
+                         @click=${() => this._openMoreInfo(sensor.entity)}
+                         @keydown=${(ev: KeyboardEvent) => {
+                             if (ev.key === 'Enter' || ev.key === ' ') {
+                                 ev.preventDefault();
+                                 this._openMoreInfo(sensor.entity);
+                             }
+                         }}>
                         ${sensor.label ?
                             html`
                                 <div class="sensor-label" style="color: ${this.fontColor}; font-size: ${labelSize};">
