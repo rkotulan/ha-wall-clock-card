@@ -164,6 +164,71 @@ actionBar:
       icon: mdi:toggle-switch
 ```
 
+## Home Assistant Action (standard actions)
+
+The **Home Assistant Action** (`actionId: action-ha`) runs a native Home Assistant
+action through HA's own `handleAction()` implementation, so it behaves exactly
+like actions on built-in HA cards. Use it to reach **any** HA route — including
+system pages such as `/config`, `/history`, and `/logbook` — and to trigger the
+standard `navigate`, `call-service`, `more-info`, `url`, and `toggle` actions.
+
+The action is configured via a standard HA `tap_action` object. The `entity` field
+(used by `more-info` and `toggle`) is set at the top level, matching HA's own
+schema.
+
+> **Note**: These examples use `actionId` (the key the current card actually
+> reads). The older `type:` examples elsewhere in this document predate the plugin
+> system; prefer `actionId`.
+
+```yaml
+type: custom:wall-clock-card
+enableActionBar: true
+actionBar:
+  enabled: true
+  actions:
+    # Navigate to a HA system route (works, unlike plain dashboard navigation)
+    - actionId: action-ha
+      title: Settings
+      icon: mdi:cog
+      tap_action:
+        action: navigate
+        navigation_path: /config
+
+    # Open an entity's more-info dialog
+    - actionId: action-ha
+      title: Weather
+      icon: mdi:weather-partly-cloudy
+      entity: weather.home
+      tap_action:
+        action: more-info
+
+    # Toggle an entity
+    - actionId: action-ha
+      title: Lamp
+      icon: mdi:lightbulb
+      entity: light.living_room
+      tap_action:
+        action: toggle
+
+    # Call a service
+    - actionId: action-ha
+      title: Scene
+      icon: mdi:palette
+      tap_action:
+        action: call-service
+        service: scene.turn_on
+        service_data:
+          entity_id: scene.movie_time
+
+    # Open an external URL in a new tab
+    - actionId: action-ha
+      title: Docs
+      icon: mdi:book-open-variant
+      tap_action:
+        action: url
+        url_path: https://www.home-assistant.io
+```
+
 ## Display Format
 
 The action bar is displayed at the bottom of the card:

@@ -1,3 +1,4 @@
+import { navigate } from 'custom-card-helpers';
 import { ActionHandler } from '../../types';
 import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 import {NAVIGATION_ACTION, NavigationActionConfig} from "./types";
@@ -5,20 +6,24 @@ import {NAVIGATION_ACTION, NavigationActionConfig} from "./types";
 /**
  * Handler for navigation actions
  * @param action The navigation action configuration
+ * @param _hass The Home Assistant instance (unused)
+ * @param element Optional HTML element that triggered the action
  */
-export const navigationHandler: ActionHandler<NavigationActionConfig> = (action) => {
+export const navigationHandler: ActionHandler<NavigationActionConfig> = (action, _hass, element) => {
     // Get the path and target from the action configuration
     const { path, target } = action;
 
     if (target === '_blank') {
         // Open in a new tab/window
         window.open(path, '_blank');
-    } else {
-        // Navigate to the specified path in the current tab
-        window.history.pushState(null, '', path);
-        const event = new Event('location-changed', { composed: true });
-        window.dispatchEvent(event);
+        return;
     }
+
+    // Use Home Assistant's navigate() helper for in-app navigation. Unlike a raw
+    // history.pushState + non-bubbling Event, navigate() fires a bubbling,
+    // composed `location-changed` event that the HA router listens for, so all
+    // routes work (e.g. /config, /history, /logbook), not just dashboard views.
+    navigate(element || document.body, path);
 };
 
 /**
