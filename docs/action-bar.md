@@ -4,11 +4,12 @@ This document describes how to configure the action bar feature in the Wall Cloc
 
 ## Overview
 
-The action bar feature allows you to display customizable action buttons at the bottom of the card. These buttons can be used to navigate to different pages in Home Assistant, call services, or perform custom actions.
+The action bar feature allows you to display customizable action buttons at the bottom of the card. These buttons can be used to navigate to different pages in Home Assistant, call services, toggle lights and switches, open more-info dialogs, or run any standard Home Assistant action.
 
 ## Configuration
 
-You have to enable the action bar in the yaml configuration. 
+You have to enable the action bar in the yaml configuration.
+
 ```yaml
 actionBar:
   enabled: true
@@ -18,63 +19,78 @@ actionBar:
 
 ### Actions Configuration
 
-Use an array of actions to configure the action bar:
+Use an array of actions to configure the action bar. Every action is identified by its `actionId` and has a `title` and an `icon`:
 
 ```yaml
 actionBar:
-  enabled: true  
+  enabled: true
   actions:        # Array of action configurations
-    - type: navigate
-      path: /lovelace/0
+    - actionId: action-navigate
       title: Home
-      icon: M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z
-    - type: call-service
+      icon: mdi:home
+      path: /lovelace/0
+    - actionId: call-service
+      title: Lights
+      icon: mdi:lightbulb
       service: light.turn_on
       service_data:
         entity_id: light.living_room
-      title: Lights
-      icon: M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z
-    - type: custom
-      action: custom-action
-      title: Custom
-      icon: M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z
+    - actionId: action-more-info
+      title: Weather
+      icon: mdi:weather-partly-cloudy
+      entity_id: weather.home
 ```
 
 ### Configuration Options
 
-- **enabled** (optional): Whether the action bar is enabled (default: true when enableActionBar is true).
+- **enabled** (optional): Whether the action bar is enabled.
 - **alignment** (optional): The horizontal alignment of the buttons. One of:
   - **left**: Align buttons to the left side of the card.
   - **center**: Align buttons to the center of the card (default).
   - **right**: Align buttons to the right side of the card.
-- **actions** (required): Array of action configurations.
-  - **type** (required): The type of action to perform. One of:
-    - **navigate**: Navigate to a different page in Home Assistant.
-    - **call-service**: Call a Home Assistant service.
-    - **more-info**: Open the default modal window of an entity.
-    - **custom**: Perform a custom action (for future extensibility).
+- **actions** (required): Array of action configurations. Common properties:
+  - **actionId** (required): Which action plugin to run. One of:
+
+    | actionId | Purpose |
+    |---|---|
+    | `action-navigate` | Navigate to a Home Assistant page |
+    | `call-service` | Call a Home Assistant service |
+    | `light-toggle` | Toggle a light (icon reflects state) |
+    | `switch-toggle` | Toggle a switch (icon reflects state) |
+    | `action-more-info` | Open an entity's more-info dialog |
+    | `action-ha` | Run any standard HA action (see below) |
+    | `weather-update` | Force a weather refresh |
+    | `transportation` | Temporarily show transportation departures |
+    | `background-next` | Switch to the next background image |
+
   - **title** (required): The text to display under the icon.
-  - **icon** (required): The icon to display. Can be specified in two formats:
-      - **Material Design Icons format**: Using the `mdi:` prefix followed by the icon name (e.g., `mdi:home`, `mdi:light-bulb`).
-      - **SVG path data format**: Using the raw SVG path data.
-  - Additional properties based on action type:
-    - For **navigate** actions:
-      - **path** (required): The path to navigate to (e.g., /lovelace/0).
-    - For **call-service** actions:
-      - **service** (required): The service to call (e.g., light.turn_on).
-      - **service_data** (optional): Data to pass to the service.
-    - For **more-info** actions:
-      - **entity_id** (required): The entity ID to show more info for (e.g., light.living_room).
-    - For **custom** actions:
-      - **action** (required): A string identifier for the custom action.
+  - **icon** (required): The icon to display. Either a Material Design Icon name with the `mdi:` prefix (e.g. `mdi:home`, browse at [Material Design Icons](https://pictogrammers.com/library/mdi/)), or raw SVG path data for custom icons.
+  - **tap_action / hold_action / double_tap_action** (optional): Standard Home Assistant action configs — see [Standard HA actions](#standard-ha-actions-on-any-button) below.
+
+- Additional properties based on `actionId`:
+  - For **action-navigate**:
+    - **path** (required): The path to navigate to (e.g. `/lovelace/0`, `/config`).
+    - **target** (optional): `_blank` opens the path in a new tab.
+  - For **call-service**:
+    - **service** (required): The service to call (e.g. `light.turn_on`).
+    - **service_data** (optional): Data to pass to the service.
+    - **confirmation** (optional): Show HA's native confirmation dialog first.
+    - **confirmation_text** (optional): Custom text for the confirmation dialog.
+  - For **light-toggle** / **switch-toggle**:
+    - **entity_id** (required): The entity to toggle.
+    - **icon_on** (optional): Icon shown while the entity is on.
+    - **activeColor** (optional): Icon color while the entity is on.
+  - For **action-more-info**:
+    - **entity_id** (required): The entity ID to show more info for.
+  - For **action-ha**:
+    - **entity** (optional): Entity used by the `more-info` and `toggle` actions.
+    - **tap_action / hold_action / double_tap_action**: Standard HA action configs.
 
 ### Important Notes
 
 - Action bar and transportation cannot be displayed simultaneously - action bar takes precedence.
 - When the action bar is displayed, the clock will be adjusted upward to make room for the action bar.
-- Icons can be specified in two formats:
-  - Material Design Icons format using the `mdi:` prefix (e.g., `mdi:home`). You can browse available icons at [materialdesignicons.com](https://materialdesignicons.com/).
-  - SVG path data format for custom icons or more control.
+- Buttons support **tap**, **hold** and **double-tap** gestures. Hold and double-tap run the corresponding `hold_action` / `double_tap_action`.
 
 ## Examples
 
@@ -82,86 +98,80 @@ actionBar:
 
 ```yaml
 type: custom:wall-clock-card
-enableActionBar: true
 actionBar:
+  enabled: true
   alignment: center  # Center alignment (default)
   actions:
-    - type: navigate
-      path: /lovelace/0
+    - actionId: action-navigate
       title: Home
       icon: mdi:home
-    - type: navigate
-      path: /lovelace/1
+      path: /lovelace/0
+    - actionId: action-navigate
       title: Lights
       icon: mdi:lightbulb
-    - type: navigate
-      path: /lovelace/2
-      title: Climate
-      icon: mdi:thermostat
+      path: /lovelace/1
+    - actionId: action-navigate
+      title: Settings
+      icon: mdi:cog
+      path: /config
 ```
 
 ### Service Call Example
 
 ```yaml
 type: custom:wall-clock-card
-enableActionBar: true
 actionBar:
+  enabled: true
   alignment: right  # Right alignment
   actions:
-    - type: call-service
+    - actionId: call-service
+      title: Lights On
+      icon: mdi:lightbulb-on
       service: light.turn_on
       service_data:
         entity_id: light.living_room
-      title: Lights On
-      icon: mdi:lightbulb-on
-    - type: call-service
-      service: light.turn_off
-      service_data:
-        entity_id: light.living_room
-      title: Lights Off
-      icon: mdi:lightbulb-off
+    - actionId: call-service
+      title: Restart All
+      icon: mdi:restart
+      service: script.restart_all
+      confirmation: true
+      confirmation_text: Really restart everything?
+```
+
+### Toggle Example
+
+```yaml
+type: custom:wall-clock-card
+actionBar:
+  enabled: true
+  actions:
+    - actionId: light-toggle
+      title: Office
+      icon: mdi:lightbulb-outline
+      icon_on: mdi:lightbulb-on
+      entity_id: light.office_lights
+      activeColor: '#fff170'
+    - actionId: switch-toggle
+      title: Fan
+      icon: mdi:fan
+      entity_id: switch.bedroom_fan
 ```
 
 ### More Info Example
 
 ```yaml
 type: custom:wall-clock-card
-enableActionBar: true
 actionBar:
-  alignment: center
+  enabled: true
   actions:
-    - type: more-info
-      entity_id: weather.home
+    - actionId: action-more-info
       title: Weather
       icon: mdi:weather-partly-cloudy
-    - type: more-info
-      entity_id: climate.living_room
+      entity_id: weather.home
+    - actionId: action-more-info
       title: Climate
       icon: mdi:thermostat
-    - type: more-info
-      entity_id: media_player.living_room
-      title: Media
-      icon: mdi:television
-```
-
-### Left Alignment Example
-
-```yaml
-type: custom:wall-clock-card
-enableActionBar: true
-actionBar:
-  alignment: left  # Left alignment
-  actions:
-    - type: navigate
-      path: /lovelace/0
-      title: Home
-      icon: mdi:home
-    - type: call-service
-      service: light.toggle
-      service_data:
-        entity_id: light.living_room
-      title: Toggle
-      icon: mdi:toggle-switch
+      entity_id: climate.living_room
 ```
 
 ## Home Assistant Action (standard actions)
@@ -172,21 +182,17 @@ like actions on built-in HA cards. Use it to reach **any** HA route — includin
 system pages such as `/config`, `/history`, and `/logbook` — and to trigger the
 standard `navigate`, `call-service`, `more-info`, `url`, and `toggle` actions.
 
-The action is configured via a standard HA `tap_action` object. The `entity` field
-(used by `more-info` and `toggle`) is set at the top level, matching HA's own
-schema.
-
-> **Note**: These examples use `actionId` (the key the current card actually
-> reads). The older `type:` examples elsewhere in this document predate the plugin
-> system; prefer `actionId`.
+The action is configured via standard HA `tap_action` / `hold_action` /
+`double_tap_action` objects. The `entity` field (used by `more-info` and
+`toggle`) is set at the top level, matching HA's own schema. The visual editor
+uses HA's native action selector — the same UI as built-in cards.
 
 ```yaml
 type: custom:wall-clock-card
-enableActionBar: true
 actionBar:
   enabled: true
   actions:
-    # Navigate to a HA system route (works, unlike plain dashboard navigation)
+    # Navigate to a HA system route
     - actionId: action-ha
       title: Settings
       icon: mdi:cog
@@ -194,20 +200,14 @@ actionBar:
         action: navigate
         navigation_path: /config
 
-    # Open an entity's more-info dialog
-    - actionId: action-ha
-      title: Weather
-      icon: mdi:weather-partly-cloudy
-      entity: weather.home
-      tap_action:
-        action: more-info
-
-    # Toggle an entity
+    # Open an entity's more-info dialog on tap, toggle it on hold
     - actionId: action-ha
       title: Lamp
       icon: mdi:lightbulb
       entity: light.living_room
       tap_action:
+        action: more-info
+      hold_action:
         action: toggle
 
     # Call a service
@@ -229,11 +229,11 @@ actionBar:
         url_path: https://www.home-assistant.io
 ```
 
-### tap_action on any action
+### Standard HA actions on any button
 
-`tap_action` is not limited to `actionId: action-ha` — **any** action in the bar
-may carry a standard `tap_action`, and it then runs through HA's `handleAction()`
-instead of the plugin handler:
+`tap_action`, `hold_action` and `double_tap_action` are not limited to
+`actionId: action-ha` — **any** action in the bar may carry them, and they then
+run through HA's `handleAction()` instead of the plugin handler:
 
 ```yaml
 actionBar:
@@ -244,22 +244,9 @@ actionBar:
       tap_action:
         action: navigate
         navigation_path: /energy
-```
-
-### Confirmation for service calls
-
-Service call actions (`actionId: call-service`) support a native HA confirmation
-dialog:
-
-```yaml
-actionBar:
-  actions:
-    - actionId: call-service
-      title: Restart
-      icon: mdi:restart
-      service: script.restart_all
-      confirmation: true
-      confirmation_text: Really restart everything?
+      hold_action:
+        action: more-info
+        entity: sensor.energy_today
 ```
 
 ## Display Format
@@ -269,6 +256,7 @@ The action bar is displayed at the bottom of the card:
 - Each action is represented by a button with an icon and text
 - Buttons are arranged horizontally and can be aligned to the left, center, or right
 - Buttons have a semi-transparent background that highlights on hover
+- Buttons are keyboard-accessible (Tab + Enter/Space)
 - When the action bar is displayed, the clock is adjusted upward to make room
 
 ### Visual Example
