@@ -38,16 +38,13 @@ export class SensorComponent extends LitElement {
     }
 
     static styles = css`
+        /* Placement is provided by the hosting zone (wcc-zone); the component
+           only lays out its own items. */
         .sensor-container {
-            position: absolute;
-            top: 16px;
-            left: 16px;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            z-index: 3;
-            max-width: 40%;
-            max-height: 60%;
+            max-height: 100%;
             overflow-y: auto;
             padding-right: 8px;
         }

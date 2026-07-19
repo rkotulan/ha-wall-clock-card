@@ -27,6 +27,10 @@ export class ClockComponent extends LitElement {
     @property({ type: String }) clockSize?: string;
     @property({ type: String }) dateSize?: string;
     @property({ type: String }) clockTopMargin?: string;
+    // The zone layout splits time and date into two widgets; each widget renders
+    // one half of this component. Both default to true so v2 usage is unchanged.
+    @property({ type: Boolean }) showClock = true;
+    @property({ type: Boolean }) showDate = true;
 
     private logger = createLogger('clock-component');
     private clockController: ClockController;
@@ -204,20 +208,24 @@ export class ClockComponent extends LitElement {
         const dateSize = this.getDateSize();
 
         return html`
-            <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize}; margin-top: ${this.getClockTopMargin()};">
-                <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
-                ${shouldShowSeconds ? html`
-                    <div class="seconds-container">
-                        <span class="seconds" style="color: ${this.fontColor};">${seconds}</span>
-                        ${this.getAmPm() ? html`<span class="ampm" style="color: ${this.fontColor};">${this.getAmPm()}</span>` : ''}
-                    </div>
-                ` : this.getAmPm() ? html`
-                    <div class="seconds-container">
-                        <span class="ampm ampm-only" style="color: ${this.fontColor};">${this.getAmPm()}</span>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="date" style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
+            ${this.showClock ? html`
+                <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize}; margin-top: ${this.getClockTopMargin()};">
+                    <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
+                    ${shouldShowSeconds ? html`
+                        <div class="seconds-container">
+                            <span class="seconds" style="color: ${this.fontColor};">${seconds}</span>
+                            ${this.getAmPm() ? html`<span class="ampm" style="color: ${this.fontColor};">${this.getAmPm()}</span>` : ''}
+                        </div>
+                    ` : this.getAmPm() ? html`
+                        <div class="seconds-container">
+                            <span class="ampm ampm-only" style="color: ${this.fontColor};">${this.getAmPm()}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+            ${this.showDate ? html`
+                <div class="date" style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
+            ` : ''}
         `;
     }
 }
