@@ -1,6 +1,10 @@
 # Configuration
 
-You can customize the Wall Clock Card through the Lovelace UI or by editing your Lovelace configuration manually:
+You can customize the Wall Clock Card through the Lovelace UI or by editing your Lovelace configuration manually.
+
+> **3.0:** the card uses a zone layout — widgets placed into a 3×3 grid with a
+> drag & drop editor. Legacy configurations below keep working (they are migrated
+> automatically). See [Zone layout](layout.md) for the new format.
 
 ## UI Configuration
 

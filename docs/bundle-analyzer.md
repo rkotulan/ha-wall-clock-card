@@ -47,7 +47,9 @@ Based on the analyzer results, you can implement the following optimizations:
 
 ## Addressing the Current Bundle Size Issue
 
-As identified in the previous analysis, the main issue is that the `wall-clock-card.js` bundle (245 KiB) exceeds the recommended size limit of 244 KiB. The primary candidates for optimization are:
+As of 3.0.0-beta1 the bundle is ~301 KiB (the zone layout editor bundles SortableJS,
+~40 KiB minified — an accepted trade-off for touch-capable drag & drop). The
+recommended webpack limit is 244 KiB. The primary candidates for optimization are:
 
 1. **Editor Component**: The `wall-clock-card-editor.ts` file is very large (2192 lines) and is only needed when editing the card in the Lovelace UI, not during normal operation.
 

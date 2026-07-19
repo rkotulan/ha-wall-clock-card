@@ -139,6 +139,7 @@ type: 'custom:wall-clock-card'
 For detailed documentation, please see the following pages:
 
 - [Configuration](docs/configuration.md) - How to configure the card through UI or YAML
+- [Zone layout](docs/layout.md) - The 3.0 zone/widget layout and the drag & drop editor
 - [Sensors](docs/sensors.md) - How to configure sensors display
 - [Image Sources](docs/image-sources.md) - Available image sources and how to configure them
 - [Weather](docs/weather.md) - Weather configuration options
