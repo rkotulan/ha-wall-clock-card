@@ -38,7 +38,10 @@ export class WccLayout extends LitElement {
             width: 100%;
             height: 100%;
             position: relative;
-            z-index: 1;
+            /* Must sit above the background overlay (.background-overlay has
+               z-index: 2 inside ha-background-image, which does not create its
+               own stacking context) — matches the v2 component z-indexes. */
+            z-index: 3;
         }
 
         /* 1fr side tracks are equal (minmax(0, 1fr) caps their min-content),

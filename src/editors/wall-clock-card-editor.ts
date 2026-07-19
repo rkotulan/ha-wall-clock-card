@@ -45,6 +45,42 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         super.updated(changedProps);
     }
 
+    protected firstUpdated(changedProps: PropertyValues): void {
+        super.firstUpdated(changedProps);
+        this._openDialogEnlarged();
+    }
+
+    /**
+     * Opens the surrounding HA edit dialog in its enlarged (wide) mode right away
+     * instead of requiring the user to click the dialog header. Relies on the
+     * hui-dialog-edit-card internals; when HA changes them this silently degrades
+     * to the default narrow dialog (header click still works).
+     */
+    private _openDialogEnlarged(): void {
+        try {
+            let node: Element | undefined = this;
+            while (node) {
+                const root = node.getRootNode();
+                if (!(root instanceof ShadowRoot)) {
+                    return;
+                }
+                const host = root.host as HTMLElement & {large?: unknown; _large?: unknown; requestUpdate?: () => void};
+                if (host.localName === 'hui-dialog-edit-card') {
+                    if (typeof host.large === 'boolean') {
+                        host.large = true;
+                    } else if (typeof host._large === 'boolean') {
+                        host._large = true;
+                    }
+                    host.requestUpdate?.();
+                    return;
+                }
+                node = host;
+            }
+        } catch {
+            // HA internals changed — the user can still enlarge via the header click
+        }
+    }
+
 
 
     setConfig(config: LovelaceCardConfig): void {
