@@ -15,8 +15,12 @@ import '../components/editors';
 import '../components/action-bar/plugins/navigator/navigation-editor-plugin';
 import '../components/action-bar/plugins/service-call/service-call-editor-plugin';
 import '../components/action-bar/plugins/weather-update/weather-update-editor-plugin';
+import './layout-editor';
 import {getLanguageOptions, ExtendedDateTimeFormatOptions} from '../utils';
 import {setPropertyByPath} from '../utils';
+import {WallClockConfigV3} from '../core/layout-types';
+import {applyGeneralSetting} from './layout-editor-logic';
+import {fromBackgroundEditorConfig, toBackgroundEditorConfig} from './widget-editor-adapters';
 
 @customElement('wall-clock-card-editor')
 export class WallClockCardEditor extends LitElement implements LovelaceCardEditor {
@@ -46,6 +50,13 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
         const wallClockConfig = config as WallClockConfig;
+
+        // v3 (zone layout) configs are stored as-is: the v2 defaulting below would
+        // add legacy root keys that leak into the emitted YAML.
+        if (wallClockConfig.layout) {
+            this._config = wallClockConfig;
+            return;
+        }
 
         // Set default imageSource if not provided
         const imageSource = wallClockConfig.imageSource || 'none';
@@ -178,11 +189,60 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
 
 
+    /** True once the config uses the v3 zone layout shape. */
+    private get _isV3(): boolean {
+        return !!this._config?.layout;
+    }
+
+    /** General-section value: appearance.* for v3 configs, root key for v2. */
+    private _generalValue(key: 'fontColor' | 'language' | 'size'): unknown {
+        if (this._isV3) {
+            return (this._config as unknown as WallClockConfigV3).appearance?.[key];
+        }
+        return this._config?.[key];
+    }
+
+    /** Custom-size field value: v2 reads customSizes.*, v3 reads the owning widget. */
+    private _sizeValue(v2Key: string, widgetType: string, widgetKey: string, fallback: string): string {
+        if (this._isV3) {
+            // labelSize/valueSize live on both sensors and weather widgets
+            const alternate = widgetType === 'sensors' ? this._widgetSizeValue('weather', widgetKey) : undefined;
+            return this._widgetSizeValue(widgetType, widgetKey) ?? alternate ?? fallback;
+        }
+        const customSizes = (this._config?.customSizes ?? {}) as Record<string, string | undefined>;
+        return customSizes[v2Key] ?? fallback;
+    }
+
+    /** Custom-size value for v3 configs: read from the first widget of the type. */
+    private _widgetSizeValue(widgetType: string, key: string): string | undefined {
+        const zones = (this._config as unknown as WallClockConfigV3).layout?.zones ?? {};
+        for (const zone of Object.values(zones)) {
+            for (const widget of zone?.widgets ?? []) {
+                if (widget.type === widgetType && widget[key] !== undefined) {
+                    return widget[key] as string;
+                }
+            }
+        }
+        return undefined;
+    }
+
     // Handle form value changes
     private _handleFormValueChanged(ev: CustomEvent) {
         ev.stopPropagation();
 
         if (!this._config) return;
+
+        // v3 configs route General settings into appearance.* / the owning widgets
+        if (this._isV3) {
+            const updated = applyGeneralSetting(
+                this._config as unknown as WallClockConfigV3,
+                ev.detail.propertyName,
+                ev.detail.value,
+            );
+            this._config = updated as unknown as WallClockConfig;
+            fireEvent(this, 'config-changed', {config: this._config});
+            return;
+        }
 
         // Create a deep copy of the config and set the property value
         const newConfig = setPropertyByPath(this._config, ev.detail.propertyName, ev.detail.value);
@@ -223,6 +283,19 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
         return html`
             <div class="form-container">
+                <!-- Layout Section (zones + widgets + drag & drop) -->
+                <ha-expansion-panel outlined>
+                    <h3 slot="header">Layout</h3>
+                    <layout-editor
+                        .hass=${this.hass}
+                        .config=${this._config}
+                        @config-changed=${(ev: CustomEvent) => {
+                            this._config = ev.detail.config;
+                            fireEvent(this, 'config-changed', {config: this._config});
+                        }}
+                    ></layout-editor>
+                </ha-expansion-panel>
+
                 <!-- General Section -->
                 <ha-expansion-panel outlined>
                     <h3 slot="header">General</h3>
@@ -230,7 +303,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{color_hex: ""}}
-                                .value=${this._config.fontColor}
+                                .value=${this._generalValue('fontColor')}
                                 .label= ${"Font Color"}
                                 propertyName="fontColor"
                                 @value-changed=${this._handleFormValueChanged}
@@ -243,7 +316,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         mode: 'dropdown'
                                     }
                                 }}
-                                .value=${this._config.language || 'en'}
+                                .value=${this._generalValue('language') || 'en'}
                                 .label=${"Language"}
                                 propertyName="language"
                                 @value-changed=${this._handleFormValueChanged}
@@ -283,36 +356,38 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         mode: 'dropdown'
                                     }
                                 }}
-                                .value=${this._config.size || Size.Medium}
+                                .value=${this._generalValue('size') || Size.Medium}
                                 .label= ${"Size"}
                                 propertyName="size"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
-                        ${this._config.size === Size.Custom ? html`
+                        ${(this._generalValue('size') || Size.Medium) === Size.Custom ? html`
                             <h4>Custom Sizes</h4>
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.clockSize || '16rem'}
+                                    .value=${this._sizeValue('clockSize', 'clock', 'clockSize', '16rem')}
                                     .label= ${"Clock Size (e.g., 16rem)"}
                                     propertyName="customSizes.clockSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
 
-                            <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.clockTopMargin || '0rem'}
-                                    .label= ${"Clock Top Margin (e.g., 0rem)"}
-                                    propertyName="customSizes.clockTopMargin"
-                                    @value-changed=${this._handleFormValueChanged}
-                            ></ha-row-selector>
+                            ${!this._isV3 ? html`
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{ text: {} }}
+                                        .value=${this._config.customSizes?.clockTopMargin || '0rem'}
+                                        .label= ${"Clock Top Margin (e.g., 0rem)"}
+                                        propertyName="customSizes.clockTopMargin"
+                                        @value-changed=${this._handleFormValueChanged}
+                                ></ha-row-selector>
+                            ` : ''}
 
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.dateSize || '6rem'}
+                                    .value=${this._sizeValue('dateSize', 'date', 'dateSize', '6rem')}
                                     .label= ${"Date Size (e.g., 6rem)"}
                                     propertyName="customSizes.dateSize"
                                     @value-changed=${this._handleFormValueChanged}
@@ -321,7 +396,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.labelSize || '1.5rem'}
+                                    .value=${this._sizeValue('labelSize', 'sensors', 'labelSize', '1.5rem')}
                                     .label= ${"Label Size (e.g., 1.5rem)"}
                                     propertyName="customSizes.labelSize"
                                     @value-changed=${this._handleFormValueChanged}
@@ -330,7 +405,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.valueSize || '3rem'}
+                                    .value=${this._sizeValue('valueSize', 'sensors', 'valueSize', '3rem')}
                                     .label= ${"Value Size (e.g., 3rem)"}
                                     propertyName="customSizes.valueSize"
                                     @value-changed=${this._handleFormValueChanged}
@@ -339,7 +414,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
-                                    .value=${this._config.customSizes?.actionBarIconSize || '72px'}
+                                    .value=${this._sizeValue('actionBarIconSize', 'action-bar', 'iconSize', '72px')}
                                     .label= ${"Action Bar Icon Size (e.g., 72px)"}
                                     propertyName="customSizes.actionBarIconSize"
                                     @value-changed=${this._handleFormValueChanged}
@@ -348,106 +423,119 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     </div>
                 </ha-expansion-panel>
 
-                <!-- Time Format Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Time Format</h3>
-                    <time-format-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></time-format-editor>
-                </ha-expansion-panel>
-
-                <!-- Date Format Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Date Format</h3>
-                    <date-format-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></date-format-editor>
-                </ha-expansion-panel>
-
-                <!-- Background Section -->
+                <!-- Background Section (v3: adapted to background.* keys) -->
                 <ha-expansion-panel outlined>
                     <h3 slot="header">Background</h3>
                     <background-editor
                         .hass=${this.hass}
-                        .config=${this._config}
+                        .config=${this._isV3
+                            ? toBackgroundEditorConfig(this._config as unknown as WallClockConfigV3)
+                            : this._config}
                         @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            // Update local background images array
-                            this._loadBackgroundImages();
+                            if (this._isV3) {
+                                this._config = {
+                                    ...this._config,
+                                    background: fromBackgroundEditorConfig(ev.detail.config),
+                                } as WallClockConfig;
+                            } else {
+                                this._config = ev.detail.config;
+                                this._loadBackgroundImages();
+                            }
                             fireEvent(this, 'config-changed', {config: this._config});
                         }}
                     ></background-editor>
                 </ha-expansion-panel>
 
-                <!-- Sensors Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Sensors</h3>
-                    <sensors-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            // Update local sensors array
-                            this._loadSensors();
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></sensors-editor>
-                </ha-expansion-panel>
+                ${!this._isV3 ? html`
+                    <!-- Legacy sections: for zone layouts these settings are edited
+                         per widget in the Layout section above -->
 
-                <!-- Weather Settings Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Weather Forecast</h3>
-                    <weather-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></weather-editor>
-                </ha-expansion-panel>
-
-                <!-- Transportation Settings Section -->
-                ${this._config.transportation?.enabled === true ? html`
+                    <!-- Time Format Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Transportation Departures</h3>
-                        <transportation-editor
+                        <h3 slot="header">Time Format</h3>
+                        <time-format-editor
                             .hass=${this.hass}
                             .config=${this._config}
                             @config-changed=${(ev: CustomEvent) => {
                                 this._config = ev.detail.config;
-                                // Update local stops array
-                                this._loadStops();
                                 fireEvent(this, 'config-changed', {config: this._config});
                             }}
-                        ></transportation-editor>
+                        ></time-format-editor>
+                    </ha-expansion-panel>
+
+                    <!-- Date Format Section -->
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Date Format</h3>
+                        <date-format-editor
+                            .hass=${this.hass}
+                            .config=${this._config}
+                            @config-changed=${(ev: CustomEvent) => {
+                                this._config = ev.detail.config;
+                                fireEvent(this, 'config-changed', {config: this._config});
+                            }}
+                        ></date-format-editor>
+                    </ha-expansion-panel>
+
+                    <!-- Sensors Section -->
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Sensors</h3>
+                        <sensors-editor
+                            .hass=${this.hass}
+                            .config=${this._config}
+                            @config-changed=${(ev: CustomEvent) => {
+                                this._config = ev.detail.config;
+                                // Update local sensors array
+                                this._loadSensors();
+                                fireEvent(this, 'config-changed', {config: this._config});
+                            }}
+                        ></sensors-editor>
+                    </ha-expansion-panel>
+
+                    <!-- Weather Settings Section -->
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Weather Forecast</h3>
+                        <weather-editor
+                            .hass=${this.hass}
+                            .config=${this._config}
+                            @config-changed=${(ev: CustomEvent) => {
+                                this._config = ev.detail.config;
+                                fireEvent(this, 'config-changed', {config: this._config});
+                            }}
+                        ></weather-editor>
+                    </ha-expansion-panel>
+
+                    <!-- Transportation Settings Section -->
+                    ${this._config.transportation?.enabled === true ? html`
+                        <ha-expansion-panel outlined>
+                            <h3 slot="header">Transportation Departures</h3>
+                            <transportation-editor
+                                .hass=${this.hass}
+                                .config=${this._config}
+                                @config-changed=${(ev: CustomEvent) => {
+                                    this._config = ev.detail.config;
+                                    // Update local stops array
+                                    this._loadStops();
+                                    fireEvent(this, 'config-changed', {config: this._config});
+                                }}
+                            ></transportation-editor>
+                        </ha-expansion-panel>
+                    ` : ''}
+
+                    <!-- Action Bar Settings Section -->
+                    <ha-expansion-panel outlined>
+                        <h3 slot="header">Action Bar</h3>
+                        <action-bar-editor
+                            .hass=${this.hass}
+                            .config=${this._config}
+                            @config-changed=${(ev: CustomEvent) => {
+                                this._config = ev.detail.config;
+                                // Update local actions array
+                                this._loadActions();
+                                fireEvent(this, 'config-changed', {config: this._config});
+                            }}
+                        ></action-bar-editor>
                     </ha-expansion-panel>
                 ` : ''}
-
-                <!-- Action Bar Settings Section -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Action Bar</h3>
-                    <action-bar-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            // Update local actions array
-                            this._loadActions();
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></action-bar-editor>
-                </ha-expansion-panel>
             </div>
         `;
     }
