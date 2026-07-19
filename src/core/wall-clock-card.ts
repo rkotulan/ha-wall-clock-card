@@ -59,6 +59,8 @@ export class WallClockCard extends LitElement {
     }
 
     private previewObserver?: ResizeObserver;
+    private fitObserver?: ResizeObserver;
+    private onWindowResize = (): void => this.updateFitHeight();
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -66,6 +68,11 @@ export class WallClockCard extends LitElement {
             this.setAttribute('dialog-preview', '');
             this.setupPreviewScaling();
         }
+        window.addEventListener('resize', this.onWindowResize);
+        // A ResizeObserver (not rAF, which is throttled in background tabs)
+        // fires once the card is laid out and on every later resize.
+        this.fitObserver = new ResizeObserver(() => this.updateFitHeight());
+        this.fitObserver.observe(this);
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
         this.initConnectCallbackAsync();
@@ -75,6 +82,34 @@ export class WallClockCard extends LitElement {
         super.disconnectedCallback();
         this.previewObserver?.disconnect();
         this.previewObserver = undefined;
+        this.fitObserver?.disconnect();
+        this.fitObserver = undefined;
+        window.removeEventListener('resize', this.onWindowResize);
+    }
+
+    /**
+     * Caps the card to the space actually available below its top edge
+     * (viewport height minus the card's offset — e.g. an HA header). The CSS
+     * `max-height: 100dvh` ceiling is the whole viewport, which overflows a
+     * scroll container by the header height when the card sits below it and its
+     * container gives no definite height (masonry / min-height panel views);
+     * without a definite height the flex chain can't fit the grid on its own.
+     * No-op in the edit-dialog miniature, which sizes itself by transform.
+     * The >1px guard keeps the ResizeObserver from looping on its own write.
+     */
+    private updateFitHeight(): void {
+        if (this.hasAttribute('dialog-preview')) {
+            return;
+        }
+        const top = Math.max(0, this.getBoundingClientRect().top);
+        const available = window.innerHeight - top;
+        if (available <= 0) {
+            return;
+        }
+        const current = parseFloat(this.style.maxHeight);
+        if (isNaN(current) || Math.abs(current - available) > 1) {
+            this.style.maxHeight = `${available}px`;
+        }
     }
 
     /** The dialog preview renders the card at the browser viewport resolution
@@ -386,6 +421,12 @@ export class WallClockCard extends LitElement {
 
         if (changedProperties.has('config') && this.config) {
             this.configureCardLogger();
+        }
+
+        // Re-fit when the card may have moved/resized (edit-mode wrapping,
+        // dialog↔dashboard). Not on hass ticks — the offset is unaffected.
+        if (changedProperties.has('config') || changedProperties.has('preview')) {
+            this.updateFitHeight();
         }
     }
 
