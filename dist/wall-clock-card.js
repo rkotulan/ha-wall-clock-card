@@ -86,11 +86,11 @@
                 <div class="action-title">${e.title}</div>
             </div>
         `}_handleAction(e,t){this.hass?(this.logger.debug(`Action ${t}:`,e),function(e,t,i,o="tap"){let n="hold"===o?e.hold_action:"double_tap"===o?e.double_tap_action:e.tap_action;var a;if(n&&(!(a=n)||"object"!=typeof a||Array.isArray(a)||"string"!=typeof a.action)&&(console.warn(`Ignoring invalid ${o} action config (expected an object with an "action" key):`,n),n=void 0),n){const a={...e},r=n.entity||n.entity_id||e.entity_id;return!a.entity&&r&&(a.entity=r),void gt(i||document.body,t,a,o)}if("tap"!==o)return;const r=yt.getInstance().getHandler(e.actionId);r?r(e,t,i):console.warn(`No handler registered for action type: ${e.actionId}`)}(e,this.hass,this,t)):this.logger.error("Home Assistant instance not available")}};kt.styles=a`
+        /* Placement is provided by the hosting zone (wcc-zone); the component
+           only lays out its own content. */
         .action-bar-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            width: 100%;
+            box-sizing: border-box;
             display: flex;
             flex-direction: row;
             justify-content: center;
@@ -1329,7 +1329,7 @@
             ${"custom"===this.spacingPresetValue?B`
                 <ha-row-selector
                         .hass=${this.hass} .selector=${{text:{}}} .value=${e.padding}
-                        .label=${"Card padding (e.g., 16px)"}
+                        .label=${"Card padding — 1-4 values: top right bottom left (e.g., 16px or 8px 16px 24px 16px)"}
                         @value-changed=${e=>this.handleSpacingValueChanged("padding",e.detail.value)}
                 ></ha-row-selector>
                 <ha-row-selector
@@ -2171,11 +2171,11 @@
                     `})}
             </div>
         `}};Da.styles=a`
+        /* Placement is provided by the hosting zone (wcc-zone); the component
+           only lays out its own content. */
         .transportation-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            width: 100%;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;

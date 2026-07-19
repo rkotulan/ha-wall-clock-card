@@ -426,7 +426,7 @@ export class LayoutEditor extends LitElement {
             ${this.spacingPresetValue === 'custom' ? html`
                 <ha-row-selector
                         .hass=${this.hass} .selector=${{text: {}}} .value=${resolved.padding}
-                        .label=${'Card padding (e.g., 16px)'}
+                        .label=${'Card padding — 1-4 values: top right bottom left (e.g., 16px or 8px 16px 24px 16px)'}
                         @value-changed=${(ev: CustomEvent) => this.handleSpacingValueChanged('padding', ev.detail.value)}
                 ></ha-row-selector>
                 <ha-row-selector

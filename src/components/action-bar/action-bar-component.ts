@@ -67,11 +67,11 @@ export class ActionBarComponent extends BottomBarComponent {
     }
 
     static styles = css`
+        /* Placement is provided by the hosting zone (wcc-zone); the component
+           only lays out its own content. */
         .action-bar-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            width: 100%;
+            box-sizing: border-box;
             display: flex;
             flex-direction: row;
             justify-content: center;
