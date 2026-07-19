@@ -1,48 +1,28 @@
-import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult} from 'lit';
+import {css, CSSResult, html, LitElement, TemplateResult} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {fireEvent, HomeAssistant} from 'custom-card-helpers';
-import Sortable, {SortableEvent} from 'sortablejs';
 import {WallClockConfig} from '../core/types';
 import {
     LayoutConfig,
     SpacingConfig,
     SpacingPreset,
     WallClockConfigV3,
-    WidgetConfig,
     ZoneId,
-    ZONE_IDS,
 } from '../core/layout-types';
 import {migrateToLayout, resolveSpacing} from '../core/migrate-config';
 import {WidgetRegistry} from '../widgets/widget-registry';
-import {
-    addWidget,
-    moveWidget,
-    removeWidget,
-    setSpacing,
-    updateWidgetAt,
-    updateZoneSettings,
-} from './layout-editor-logic';
+import {setSpacing, updateWidgetAt, updateZoneSettings} from './layout-editor-logic';
 import {fromEditorConfig, toEditorConfig} from './widget-editor-adapters';
-
-const MDI_CLOSE_PATH = 'M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z';
-
-const ZONE_LABELS: Record<ZoneId, string> = {
-    'top-left': 'Top left', 'top-center': 'Top center', 'top-right': 'Top right',
-    'middle-left': 'Left', 'center': 'Center', 'middle-right': 'Right',
-    'bottom-left': 'Bottom left', 'bottom-center': 'Bottom center', 'bottom-right': 'Bottom right',
-};
-
-interface WidgetSelection {
-    zone: ZoneId;
-    index: number;
-}
+import {WidgetSelection, ZONE_LABELS} from './zone-overlay';
+import './zone-overlay';
 
 type PreviewCardElement = HTMLElement & {hass?: HomeAssistant; setConfig?: (c: unknown) => void};
 
 /**
- * Visual zone layout editor: a 3×3 grid preview with drag & drop (SortableJS)
- * between zones, a widget palette, spacing settings, and per-widget detail
- * editing that reuses the existing section editors through adapters.
+ * Visual zone layout editor for the edit dialog: a live card canvas with the
+ * wcc-zone-overlay on top (drag & drop, palette), spacing settings, and
+ * per-widget detail editing that reuses the existing section editors through
+ * adapters.
  *
  * Works on the migrated v3 shape; the first change emits the full v3 config
  * (the agreed auto-conversion of legacy configurations).
@@ -55,7 +35,6 @@ export class LayoutEditor extends LitElement {
     @state() private selectedWidget: WidgetSelection | null = null;
     @state() private selectedZone: ZoneId | null = null;
 
-    private sortables: Sortable[] = [];
     private widgetEditorCache: Map<string, HTMLElement> = new Map();
 
     // Live card rendered under the zone overlay (WYSIWYG canvas). Created by tag
@@ -83,7 +62,7 @@ export class LayoutEditor extends LitElement {
                 margin: 0 0 12px;
             }
 
-            /* WYSIWYG canvas: the live card renders underneath, the zone grid
+            /* WYSIWYG canvas: the live card renders underneath, the zone overlay
                lies transparently on top — editing happens "on the card". */
             .wysiwyg {
                 position: relative;
@@ -98,124 +77,9 @@ export class LayoutEditor extends LitElement {
                 pointer-events: none;
             }
 
-            .zone-grid {
-                display: grid;
-                grid-template-columns: 1fr 1.2fr 1fr;
-                grid-template-rows: 1fr 1.2fr 1fr;
-                gap: 6px;
+            .wysiwyg wcc-zone-overlay {
                 position: absolute;
                 inset: 0;
-                padding: 6px;
-                box-sizing: border-box;
-            }
-
-            .zone-cell {
-                border: 1px dashed rgba(255, 255, 255, 0.35);
-                border-radius: 8px;
-                padding: 4px 6px 6px;
-                min-width: 0;
-                min-height: 0;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-            }
-
-            .zone-cell:hover {
-                border-color: rgba(255, 255, 255, 0.7);
-                background-color: rgba(0, 0, 0, 0.15);
-            }
-
-            .zone-cell.selected {
-                border-color: var(--primary-color, #03a9f4);
-                border-style: solid;
-            }
-
-            .zone-label {
-                font-size: 0.7rem;
-                color: #fff;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-                opacity: 0.75;
-                cursor: pointer;
-                margin-bottom: 4px;
-                user-select: none;
-            }
-
-            .zone-label:hover {
-                opacity: 1;
-            }
-
-            .zone-grid .chip {
-                background-color: rgba(0, 0, 0, 0.65);
-                color: #fff;
-            }
-
-            .zone-list {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                flex: 1;
-                min-height: 24px;
-            }
-
-            .chip {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                border-radius: 6px;
-                padding: 2px 4px 2px 8px;
-                font-size: 0.85rem;
-                background-color: var(--secondary-background-color, rgba(127, 127, 127, 0.2));
-                cursor: grab;
-                user-select: none;
-                min-width: 0;
-            }
-
-            .chip span {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-            }
-
-            .chip ha-icon {
-                --mdc-icon-size: 16px;
-                flex-shrink: 0;
-            }
-
-            .chip ha-icon-button {
-                --mdc-icon-button-size: 24px;
-                --mdc-icon-size: 14px;
-                flex-shrink: 0;
-            }
-
-            .chip.selected {
-                outline: 2px solid var(--primary-color, #03a9f4);
-            }
-
-            .chip.sortable-ghost {
-                opacity: 0.4;
-            }
-
-            .palette {
-                margin-bottom: 12px;
-            }
-
-            .palette-title {
-                font-size: 0.8rem;
-                opacity: 0.7;
-                margin-bottom: 6px;
-            }
-
-            .palette-list {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .palette-list .chip {
-                border: 1px solid var(--divider-color, #666);
-                background: none;
-                padding: 4px 10px;
             }
 
             .detail {
@@ -236,16 +100,6 @@ export class LayoutEditor extends LitElement {
         `;
     }
 
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this.destroySortables();
-    }
-
-    updated(changedProperties: PropertyValues): void {
-        super.updated(changedProperties);
-        this.rebuildSortables();
-    }
-
     // ---------------------------------------------------------------- emit
 
     private emitLayout(layout: LayoutConfig): void {
@@ -254,105 +108,6 @@ export class LayoutEditor extends LitElement {
 
     private emitConfig(config: WallClockConfigV3): void {
         fireEvent(this, 'config-changed', {config});
-    }
-
-    // ---------------------------------------------------------------- drag & drop
-
-    private destroySortables(): void {
-        this.sortables.forEach(sortable => sortable.destroy());
-        this.sortables = [];
-    }
-
-    private rebuildSortables(): void {
-        this.destroySortables();
-        this.shadowRoot?.querySelectorAll<HTMLElement>('.zone-list').forEach(list => {
-            this.sortables.push(new Sortable(list, {
-                group: 'wcc-widgets',
-                animation: 150,
-                draggable: '.chip',
-                onEnd: evt => this.handleDragEnd(evt),
-            }));
-        });
-        const palette = this.shadowRoot?.querySelector<HTMLElement>('.palette-list');
-        if (palette) {
-            this.sortables.push(new Sortable(palette, {
-                group: {name: 'wcc-widgets', pull: 'clone', put: false},
-                sort: false,
-                animation: 150,
-                draggable: '.chip',
-                onEnd: evt => this.handlePaletteDrop(evt),
-            }));
-        }
-    }
-
-    /** Puts the dragged node back where it came from: after the state update Lit
-     * re-renders the lists and must find the DOM exactly as it left it. */
-    private revertDragDom(evt: SortableEvent): void {
-        const from = evt.from;
-        const reference = from.children[evt.oldIndex ?? 0] ?? null;
-        if (evt.item.parentElement !== from || evt.oldIndex !== evt.newIndex) {
-            from.insertBefore(evt.item, reference);
-        }
-    }
-
-    private handleDragEnd(evt: SortableEvent): void {
-        const fromZone = (evt.from as HTMLElement).dataset.zone as ZoneId | undefined;
-        const toZone = (evt.to as HTMLElement).dataset.zone as ZoneId | undefined;
-        this.revertDragDom(evt);
-        if (!fromZone || !toZone || evt.oldIndex == null || evt.newIndex == null) {
-            return;
-        }
-        if (fromZone === toZone && evt.oldIndex === evt.newIndex) {
-            return;
-        }
-        this.selectedWidget = null;
-        this.emitLayout(moveWidget(this.layout, fromZone, evt.oldIndex, toZone, evt.newIndex));
-    }
-
-    private handlePaletteDrop(evt: SortableEvent): void {
-        const toZone = (evt.to as HTMLElement).dataset.zone as ZoneId | undefined;
-        const widgetType = evt.item.dataset.widgetType;
-        // The dragged original lands in the target list as alien DOM — remove it;
-        // the real chip is rendered by Lit after the state update.
-        if (evt.item.parentElement !== evt.from) {
-            evt.item.remove();
-        }
-        if (!toZone || !widgetType) {
-            return;
-        }
-        const plugin = WidgetRegistry.getInstance().getWidget(widgetType);
-        if (!plugin) {
-            return;
-        }
-        this.emitLayout(addWidget(this.layout, toZone, plugin.defaultConfig(), evt.newIndex ?? undefined));
-    }
-
-    // ---------------------------------------------------------------- actions
-
-    private selectWidget(zone: ZoneId, index: number): void {
-        this.selectedZone = null;
-        this.selectedWidget = this.selectedWidget?.zone === zone && this.selectedWidget?.index === index
-            ? null
-            : {zone, index};
-    }
-
-    private selectZone(zone: ZoneId): void {
-        this.selectedWidget = null;
-        this.selectedZone = this.selectedZone === zone ? null : zone;
-    }
-
-    private removeWidgetAt(zone: ZoneId, index: number): void {
-        this.selectedWidget = null;
-        this.emitLayout(removeWidget(this.layout, zone, index));
-    }
-
-    private addFromPaletteClick(widgetType: string): void {
-        const plugin = WidgetRegistry.getInstance().getWidget(widgetType);
-        if (!plugin) {
-            return;
-        }
-        const target: ZoneId = this.selectedZone ?? 'center';
-        this.emitLayout(addWidget(this.layout, target, plugin.defaultConfig()));
     }
 
     // ---------------------------------------------------------------- spacing
@@ -407,27 +162,6 @@ export class LayoutEditor extends LitElement {
 
     // ---------------------------------------------------------------- render
 
-    private renderChip(zone: ZoneId, widget: WidgetConfig, index: number): TemplateResult {
-        const plugin = WidgetRegistry.getInstance().getWidget(widget.type);
-        const selected = this.selectedWidget?.zone === zone && this.selectedWidget?.index === index;
-        return html`
-            <div class="chip ${selected ? 'selected' : ''}"
-                 data-zone=${zone} data-index=${index}
-                 @click=${() => this.selectWidget(zone, index)}>
-                <ha-icon .icon=${plugin?.icon ?? 'mdi:puzzle'}></ha-icon>
-                <span>${plugin?.name ?? widget.type}</span>
-                <ha-icon-button
-                        .path=${MDI_CLOSE_PATH}
-                        title="Remove"
-                        @click=${(ev: Event) => {
-                            ev.stopPropagation();
-                            this.removeWidgetAt(zone, index);
-                        }}
-                ></ha-icon-button>
-            </div>
-        `;
-    }
-
     /** The live card behind the zone overlay; config applied only when it changed. */
     private getPreviewCard(): HTMLElement | undefined {
         if (!customElements.get('wall-clock-card')) {
@@ -444,20 +178,6 @@ export class LayoutEditor extends LitElement {
             this.previewCard.setConfig?.(JSON.parse(configJson));
         }
         return this.previewCard;
-    }
-
-    private renderZoneCell(zone: ZoneId): TemplateResult {
-        const zoneConfig = this.layout.zones[zone];
-        return html`
-            <div class="zone-cell ${this.selectedZone === zone ? 'selected' : ''}">
-                <span class="zone-label" @click=${() => this.selectZone(zone)}>
-                    ${ZONE_LABELS[zone]}${zoneConfig?.mode === 'exclusive' ? ' ⇄' : ''}
-                </span>
-                <div class="zone-list" data-zone=${zone}>
-                    ${(zoneConfig?.widgets ?? []).map((widget, index) => this.renderChip(zone, widget, index))}
-                </div>
-            </div>
-        `;
     }
 
     private renderSpacing(): TemplateResult {
@@ -588,7 +308,6 @@ export class LayoutEditor extends LitElement {
         if (!this.hass) {
             return html``;
         }
-        const registry = WidgetRegistry.getInstance();
         return html`
             <div class="content">
                 ${!this.config.layout ? html`
@@ -598,22 +317,28 @@ export class LayoutEditor extends LitElement {
                 ${this.renderSpacing()}
                 <div class="wysiwyg">
                     ${this.getPreviewCard()}
-                    <div class="zone-grid">
-                        ${ZONE_IDS.map(zone => this.renderZoneCell(zone))}
-                    </div>
-                </div>
-                <div class="palette">
-                    <div class="palette-title">Widgets — drag into a zone, or click to add to the ${this.selectedZone ? ZONE_LABELS[this.selectedZone] : 'Center'} zone</div>
-                    <div class="palette-list">
-                        ${registry.getAllWidgets().map(plugin => html`
-                            <div class="chip" data-widget-type=${plugin.widgetId}
-                                 title=${plugin.description ?? ''}
-                                 @click=${() => this.addFromPaletteClick(plugin.widgetId)}>
-                                <ha-icon .icon=${plugin.icon}></ha-icon>
-                                <span>${plugin.name}</span>
-                            </div>
-                        `)}
-                    </div>
+                    <wcc-zone-overlay
+                            .hass=${this.hass}
+                            .layout=${this.layout}
+                            .selectedWidget=${this.selectedWidget}
+                            .selectedZone=${this.selectedZone}
+                            selectable
+                            @layout-changed=${(ev: CustomEvent) => {
+                                ev.stopPropagation();
+                                this.selectedWidget = null;
+                                this.emitLayout(ev.detail.layout);
+                            }}
+                            @wcc-widget-selected=${(ev: CustomEvent) => {
+                                this.selectedZone = null;
+                                const {zone, index} = ev.detail;
+                                this.selectedWidget = this.selectedWidget?.zone === zone && this.selectedWidget?.index === index
+                                    ? null : {zone, index};
+                            }}
+                            @wcc-zone-selected=${(ev: CustomEvent) => {
+                                this.selectedWidget = null;
+                                this.selectedZone = this.selectedZone === ev.detail.zone ? null : ev.detail.zone;
+                            }}
+                    ></wcc-zone-overlay>
                 </div>
                 ${this.selectedZone ? this.renderZoneDetail(this.selectedZone) : ''}
                 ${this.selectedWidget ? this.renderWidgetDetail(this.selectedWidget) : ''}

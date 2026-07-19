@@ -1,5 +1,5 @@
 import {css, CSSResult, html, LitElement} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
+import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {ImageSourceConfig, Weather} from '../providers/image';
 
@@ -29,9 +29,16 @@ export class WallClockCard extends LitElement {
     /** The raw configuration as given by Lovelace (v2 or v3). */
     @property({type: Object}) config: WallClockConfig = {};
 
-    // NOTE: HA also sets a `preview` property on cards in dashboard edit mode —
-    // deliberately NOT declared here. Miniature scaling must only apply inside
-    // the edit dialog, which we detect ourselves (dialog-preview attribute).
+    /**
+     * Set by HA on cards while the dashboard is in edit mode. Used ONLY to offer
+     * the in-place layout editing; miniature scaling keys off the dialog-preview
+     * attribute instead (set when an edit dialog is among our shadow hosts).
+     */
+    @property({attribute: false}) preview = false;
+
+    /** In-place zone editing (edit mode overlay); saved via lovelace.saveConfig. */
+    @state() private layoutEditing = false;
+    private editBackup?: WallClockConfig;
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -254,7 +261,123 @@ export class WallClockCard extends LitElement {
         logger.debug('Background image component initialized');
     }
 
+    // ------------------------------------------------------ in-place layout editing
+
+    private startLayoutEditing(): void {
+        this.editBackup = this.config;
+        this.layoutEditing = true;
+    }
+
+    private onInplaceLayoutChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+        const newConfig = {...this.configV3, layout: ev.detail.layout};
+        this.applyConfig(newConfig as unknown as WallClockConfig);
+    }
+
+    private cancelLayoutEditing(): void {
+        this.layoutEditing = false;
+        if (this.editBackup) {
+            this.applyConfig(this.editBackup);
+        }
+        this.editBackup = undefined;
+    }
+
+    private async saveLayoutEditing(): Promise<void> {
+        this.layoutEditing = false;
+        const backup = this.editBackup;
+        this.editBackup = undefined;
+        if (!backup) {
+            return;
+        }
+        const saved = await this.saveConfigToLovelace(backup, this.configV3);
+        if (!saved) {
+            logger.warn('Could not persist the layout (dashboard save API not found) — the change is only visible until reload');
+        }
+    }
+
+    /**
+     * Persists the card's new config by locating hui-root and replacing this
+     * card inside lovelace.config (matched against the pre-edit config). This
+     * uses HA internals — cards have no official self-save API — and degrades
+     * to a logged warning when the internals are not found.
+     */
+    private async saveConfigToLovelace(original: WallClockConfig, updated: WallClockConfigV3): Promise<boolean> {
+        try {
+            const huiRoot = this.findHuiRoot() as (Element & {lovelace?: {config: unknown; saveConfig?: (c: unknown) => Promise<void>}}) | undefined;
+            const lovelace = huiRoot?.lovelace;
+            if (!lovelace?.saveConfig || !lovelace.config) {
+                return false;
+            }
+            const originalJson = JSON.stringify(original);
+            const cloned = JSON.parse(JSON.stringify(lovelace.config)) as {views?: unknown};
+            let replaced = false;
+            const visit = (node: unknown): void => {
+                if (replaced || !node || typeof node !== 'object') {
+                    return;
+                }
+                if (Array.isArray(node)) {
+                    node.forEach(visit);
+                    return;
+                }
+                const record = node as Record<string, unknown>;
+                if (Array.isArray(record.cards)) {
+                    const cards = record.cards as unknown[];
+                    for (let i = 0; i < cards.length; i++) {
+                        if (JSON.stringify(cards[i]) === originalJson) {
+                            cards[i] = updated;
+                            replaced = true;
+                            return;
+                        }
+                    }
+                }
+                Object.values(record).forEach(visit);
+            };
+            visit(cloned.views);
+            if (!replaced) {
+                return false;
+            }
+            await lovelace.saveConfig(cloned);
+            return true;
+        } catch (error) {
+            logger.warn('Saving layout to Lovelace failed:', error);
+            return false;
+        }
+    }
+
+    private findHuiRoot(): Element | undefined {
+        // Fast path through the known element chain, generic BFS as fallback
+        const direct = document.querySelector('home-assistant')?.shadowRoot
+            ?.querySelector('home-assistant-main')?.shadowRoot
+            ?.querySelector('ha-panel-lovelace')?.shadowRoot
+            ?.querySelector('hui-root');
+        if (direct) {
+            return direct;
+        }
+        const queue: (Document | ShadowRoot)[] = [document];
+        let steps = 0;
+        while (queue.length && steps < 5000) {
+            const root = queue.shift()!;
+            const found = root.querySelector('hui-root');
+            if (found) {
+                return found;
+            }
+            for (const el of root.querySelectorAll('*')) {
+                steps++;
+                if (el.shadowRoot) {
+                    queue.push(el.shadowRoot);
+                }
+            }
+        }
+        return undefined;
+    }
+
     updated(changedProperties: Map<string, any>): void {
+        // Leaving dashboard edit mode closes the in-place editing (discarding
+        // unsaved changes, same as HA's own edit flow)
+        if (changedProperties.has('preview') && !this.preview && this.layoutEditing) {
+            this.cancelLayoutEditing();
+        }
+
         if (changedProperties.has('hass') && this.hass) {
             this.backgroundImageComponent.hass = this.hass;
             // Re-sync appearance too: timeZone falls back to hass.config.time_zone
@@ -301,14 +424,94 @@ export class WallClockCard extends LitElement {
                 transform: scale(var(--wcc-preview-scale, 0.3));
                 transform-origin: top left;
             }
+
+            /* In-place layout editing (dashboard edit mode) */
+            .layout-edit-toggle {
+                position: absolute;
+                top: 8px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 6;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background-color: rgba(0, 0, 0, 0.6);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                border-radius: 16px;
+                padding: 4px 14px;
+                font: inherit;
+                font-size: 0.85rem;
+                cursor: pointer;
+            }
+
+            .layout-edit-toggle:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+
+            .layout-edit-toggle ha-icon {
+                --mdc-icon-size: 16px;
+            }
+
+            wcc-zone-overlay.inplace {
+                position: absolute;
+                inset: 0;
+                z-index: 6;
+            }
+
+            .layout-edit-actions {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                z-index: 7;
+                display: flex;
+                gap: 8px;
+            }
+
+            .layout-edit-actions button {
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                border-radius: 16px;
+                padding: 4px 14px;
+                font: inherit;
+                font-size: 0.85rem;
+                cursor: pointer;
+                background-color: rgba(0, 0, 0, 0.6);
+                color: #fff;
+            }
+
+            .layout-edit-actions button.primary {
+                background-color: var(--primary-color, #03a9f4);
+                border-color: var(--primary-color, #03a9f4);
+                color: #fff;
+            }
         `;
     }
 
     render() {
+        // In-place editing is offered only in dashboard edit mode (preview set
+        // by HA), never in the edit-dialog miniature.
+        const offerLayoutEditing = this.preview && !this.hasAttribute('dialog-preview') && !!this.hass;
         return html`
             <ha-card style="color: ${this.computeAppearance().fontColor};">
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
+                ${offerLayoutEditing && !this.layoutEditing ? html`
+                    <button class="layout-edit-toggle" @click=${this.startLayoutEditing}>
+                        <ha-icon icon="mdi:view-grid-plus-outline"></ha-icon>
+                        Edit layout
+                    </button>
+                ` : ''}
+                ${this.layoutEditing ? html`
+                    <wcc-zone-overlay class="inplace"
+                            .hass=${this.hass}
+                            .layout=${this.configV3.layout}
+                            @layout-changed=${this.onInplaceLayoutChanged}
+                    ></wcc-zone-overlay>
+                    <div class="layout-edit-actions">
+                        <button class="primary" @click=${this.saveLayoutEditing}>Save</button>
+                        <button @click=${this.cancelLayoutEditing}>Cancel</button>
+                    </div>
+                ` : ''}
             </ha-card>
         `;
     }
