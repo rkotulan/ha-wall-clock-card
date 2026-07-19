@@ -1,22 +1,20 @@
-import {css, CSSResult, html, LitElement, unsafeCSS} from 'lit';
+import {css, CSSResult, html, LitElement} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {ImageSourceConfig, Weather} from '../providers/image';
 
-import {configureLogger, getLogLevelFromString, logger, LogLevel, ExtendedDateTimeFormatOptions, loadTranslationsAsync} from '../utils';
-import {ClockComponent} from '../components/clock';
-import {SensorComponent} from '../components/sensors';
+import {configureLogger, getLogLevelFromString, logger, loadTranslationsAsync} from '../utils';
 import {BackgroundImageComponent} from '../components/background';
-import {WeatherComponent} from '../components/weather';
-import {TransportationComponent} from '../components/transportation';
-import {ActionBarComponent} from '../components/action-bar';
-import { BottomBarManager } from '../components/bottom-bar';
-import '../components/bottom-bar/bottom-bar-manager';
 import '../editors';
 import '../components/ha-selector';
-import {Messenger, WeatherMessage} from "../utils";
-import {resolveLanguage, resolveHour12} from '../utils/ha-locale';
-import { WallClockConfig, Size } from './types';
+import {Messenger, WeatherMessage} from '../utils';
+import {WallClockConfig, Size} from './types';
+import {AppearanceConfig, WallClockConfigV3} from './layout-types';
+import {migrateToLayout} from './migrate-config';
+import {WccLayout} from './wcc-layout';
+import './wcc-layout';
+// Eagerly registers all built-in widgets (side effect)
+import '../widgets';
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
@@ -25,25 +23,15 @@ declare const PACKAGE_VERSION: string;
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
+    /** The raw configuration as given by Lovelace (v2 or v3). */
     @property({type: Object}) config: WallClockConfig = {};
 
-    // Sensor values are now handled by the SensorComponent
-    @property({type: Number}) consecutiveFailures = 0; // Track consecutive image loading failures
-    @property({type: Boolean}) isRetrying = false; // Flag to track if we're in retry mode
-    // Weather data is now handled by the WeatherComponent
-    // Transportation data is now handled by the TransportationComponent
+    /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
+    private configV3: WallClockConfigV3 = {layout: {zones: {}}};
 
-    // Components
-    private clockComponent: ClockComponent = document.createElement('ha-clock') as ClockComponent;
-    private sensorComponent: SensorComponent = document.createElement('ha-sensors') as SensorComponent;
-    private weatherComponent: WeatherComponent = document.createElement('ha-weather') as WeatherComponent;
-    private backgroundImageComponent: BackgroundImageComponent = document.createElement('ha-background-image') as BackgroundImageComponent;
-    private transportationComponent: TransportationComponent = document.createElement('ha-transportation') as TransportationComponent;
-    private actionBarComponent: ActionBarComponent = document.createElement('ha-action-bar') as ActionBarComponent;
-
-    // Bottom bar manager to handle which bottom component is displayed
-    private bottomBarManager: BottomBarManager;
-
+    private backgroundImageComponent: BackgroundImageComponent =
+        document.createElement('ha-background-image') as BackgroundImageComponent;
+    private layoutElement: WccLayout = document.createElement('wcc-layout') as WccLayout;
 
     constructor() {
         super();
@@ -54,179 +42,19 @@ export class WallClockCard extends LitElement {
             "color: white; background: #3498db; font-weight: 700;",
             "color: #3498db; background: white; font-weight: 700;"
         );
-
-        // Initialize the clock component
-        this.clockComponent.timeFormat = this.config.timeFormat;
-        this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = this.config.language;
-        this.clockComponent.timeZone = this.config.timeZone;
-        this.clockComponent.fontColor = this.config.fontColor;
-        this.clockComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.clockComponent.clockSize = this.config.customSizes.clockSize;
-            this.clockComponent.dateSize = this.config.customSizes.dateSize;
-            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
-        }
-
-        // Initialize the sensor component
-        this.sensorComponent.sensors = this.config.sensors;
-        this.sensorComponent.fontColor = this.config.fontColor;
-        this.sensorComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
-            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        if (this.hass) {
-            this.sensorComponent.hass = this.hass;
-            this.weatherComponent.hass = this.hass;
-        }
-
-        // Initialize the weather component
-        this.weatherComponent.showWeather = this.config.showWeather;
-        this.weatherComponent.weatherProvider = this.config.weatherProvider;
-        this.weatherComponent.weatherConfig = this.config.weatherConfig;
-        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
-        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
-        this.weatherComponent.weatherTitle = this.config.weatherTitle;
-        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
-        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
-        this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = this.config.language;
-        this.weatherComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
-            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        this.transportationComponent.transportation = this.config.transportation;
-        this.transportationComponent.fontColor = this.config.fontColor;
-
-        // Initialize the action bar component; the config is normalized in applyConfig()
-        this.actionBarComponent.config = this.config.actionBar;
-        this.actionBarComponent.fontColor = this.config.fontColor;
-        this.actionBarComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
-        }
-
-        // Initialize the bottom bar manager
-        this.bottomBarManager = new BottomBarManager(this);
-
-        // Register components with the bottom bar manager
-        this.bottomBarManager.registerComponent(this.transportationComponent);
-        this.bottomBarManager.registerComponent(this.actionBarComponent);
     }
 
     connectedCallback(): void {
         super.connectedCallback();
-
-        // Initialize the background image component
         this.initBackgroundImageComponent();
-
-        // Initialize the clock component with the latest configuration
-        this.clockComponent.timeFormat = this.config.timeFormat;
-        this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = resolveLanguage(this.config.language, this.hass);
-        this.clockComponent.timeZone = this.config.timeZone;
-        this.clockComponent.fontColor = this.config.fontColor;
-        this.clockComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.clockComponent.clockSize = this.config.customSizes.clockSize;
-            this.clockComponent.dateSize = this.config.customSizes.dateSize;
-            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
-        }
-
-        // Initialize the sensor component with the latest configuration
-        this.sensorComponent.sensors = this.config.sensors;
-        this.sensorComponent.fontColor = this.config.fontColor;
-        this.sensorComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
-            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        if (this.hass) {
-            this.sensorComponent.hass = this.hass;
-            this.weatherComponent.hass = this.hass;
-            this.transportationComponent.hass = this.hass;
-            this.actionBarComponent.hass = this.hass;
-            this.backgroundImageComponent.hass = this.hass;
-        }
-
-        // Initialize the weather component with the latest configuration
-        this.weatherComponent.showWeather = this.config.showWeather;
-        this.weatherComponent.weatherProvider = this.config.weatherProvider;
-        this.weatherComponent.weatherConfig = this.config.weatherConfig;
-        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
-        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
-        this.weatherComponent.weatherTitle = this.config.weatherTitle;
-        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
-        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
-        this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = resolveLanguage(this.config.language, this.hass);
-        this.weatherComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
-            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        // Initialize the action bar component with the latest configuration
-        if (!this.config.actionBar) {
-            this.config.actionBar = { actions: [] };
-        }
-
-        this.actionBarComponent.config = this.config.actionBar;
-        this.actionBarComponent.fontColor = this.config.fontColor;
-        this.actionBarComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
-        }
-
+        this.syncLayoutElement();
         this.initConnectCallbackAsync();
     }
 
     async initConnectCallbackAsync(): Promise<void> {
-
-        // Wait for the components to be ready
-        await this.weatherComponent.controller.ready;
         await this.backgroundImageComponent.controller.ready;
-        await this.clockComponent.controller.ready;
-        await this.sensorComponent.controller.ready;
-        await this.transportationComponent.controller.ready;
-        await this.actionBarComponent.controller.ready;
 
-        this.transportationComponent.fontColor = this.config.fontColor;
-        this.transportationComponent.transportation = this.config.transportation;
-
-        // Configure the logger based on the configured log level
-        const logLevelString = this.config.logLevel || 'info';
-        const logLevel = getLogLevelFromString(logLevelString);
-
-        configureLogger({
-            level: logLevel,
-            prefix: 'wall-clock',
-            enableSourceTracking: true,
-            enableTimestamps: true,
-            logToConsole: true,
-            logToStorage: false
-        });
+        this.configureCardLogger();
 
         // Load translations for all supported languages
         try {
@@ -236,46 +64,8 @@ export class WallClockCard extends LitElement {
             logger.error('Error loading translations:', error);
         }
 
-        if(!this.config.showWeather) {
-            Messenger.getInstance().publish(new WeatherMessage(Weather.All));
-        }
-
-        // Transportation data is now handled by the TransportationComponent
+        this.publishWeatherFallbackIfNeeded();
     }
-
-    private initBackgroundImageComponent(): void {
-
-        // Create the full ImageSourceConfig
-        const imageSourceConfig: ImageSourceConfig = {
-            imageSourceId: this.config.imageSource || 'picsum',
-            backgroundImages: this.config.backgroundImages,
-            entity: this.config.imageConfig?.entity,
-            apiKey: this.config.imageConfig?.apiKey,
-            contentFilter: this.config.imageConfig?.contentFilter,
-            category: this.config.imageConfig?.category,
-            count: this.config.imageConfig?.count
-        };
-
-        // Set the properties
-        this.backgroundImageComponent.backgroundOpacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5;
-        this.backgroundImageComponent.objectFit = this.config.objectFit || 'cover';
-        this.backgroundImageComponent.config = {
-            imageSourceConfig: imageSourceConfig,
-            backgroundRotationInterval: this.config.backgroundRotationInterval,
-            objectFit: this.config.objectFit || 'cover'
-        };
-        this.backgroundImageComponent.hass = this.hass;
-
-        logger.debug('Background image component initialized');
-    }
-
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-    }
-
-    // Transportation data is now handled by the TransportationComponent
-
-    // Weather data is now handled by the WeatherComponent
 
     // Required for Home Assistant custom cards
     static getConfigElement() {
@@ -296,7 +86,6 @@ export class WallClockCard extends LitElement {
         };
     }
 
-    // Required for Home Assistant custom cards
     static getStubConfig(): WallClockConfig {
         return {
             timeFormat: {
@@ -325,275 +114,128 @@ export class WallClockCard extends LitElement {
     // Applies the config synchronously so setConfig() conforms to the
     // Lovelace contract (validate and apply before returning, throw on error).
     private applyConfig(config: WallClockConfig): void {
-        // Set default imageSource if not provided
-        const imageSource = config.imageSource || 'none';
+        this.config = config;
+        this.configV3 = migrateToLayout(config);
 
-        // Ensure timeFormat is properly processed. When hour12 is not set in
-        // the card config, it follows the user's HA profile (hass.locale.time_format).
-        let timeFormat: ExtendedDateTimeFormatOptions = {
-            hour: '2-digit' as const,
-            minute: '2-digit' as const,
-            second: '2-digit' as const,
-            hour12: resolveHour12(config.timeFormat?.hour12, this.hass)
-        };
-
-        if (config.timeFormat) {
-            // Create a new object to avoid reference issues
-            timeFormat = {...timeFormat, ...config.timeFormat, hour12: timeFormat.hour12};
-
-            // Explicitly handle the case when second is undefined
-            if (config.timeFormat.second === undefined) {
-                timeFormat.second = undefined;
-            }
-        }
-
-        // Ensure dateFormat is properly processed
-        let dateFormat: ExtendedDateTimeFormatOptions = {
-            weekday: 'long' as const,
-            year: 'numeric' as const,
-            month: 'long' as const,
-            day: 'numeric' as const
-        };
-
-        if (config.dateFormat) {
-            // Create a new object to avoid reference issues
-            dateFormat = {...dateFormat, ...config.dateFormat};
-
-            // Explicitly handle the case when year is undefined
-            if (config.dateFormat.year === undefined) {
-                dateFormat.year = undefined;
-            }
-        }
-
-        // Try to get time zone from config, then from Home Assistant, then default to browser's time zone
-        let timeZone = config.timeZone;
-        if (!timeZone && this.hass && this.hass.config && this.hass.config.time_zone) {
-            timeZone = this.hass.config.time_zone;
-        }
-
-        // Normalize the action bar config: actionBar.enabled wins; the legacy
-        // top-level enableActionBar is still honored for old configurations.
-        const actionBar = {
-            actions: [],
-            ...config.actionBar,
-            enabled: config.actionBar?.enabled ?? (config.enableActionBar === true),
-        };
-
-        this.config = {
-            ...config,
-            actionBar,
-            timeFormat,
-            dateFormat,
-            backgroundOpacity: config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.3,
-            imageSource,
-            imageConfig: config.imageConfig || {},
-            backgroundRotationInterval: config.backgroundRotationInterval || 90,
-            objectFit: config.objectFit || 'cover',
-            sensors: config.sensors || [],
-            fontColor: config.fontColor || '#FFFFFF', // Default to white
-            timeZone: timeZone,
-            size: config.size || Size.Medium, // Default to medium size
-            customSizes: config.customSizes || {} // Default to empty object
-        };
-
-        // Initialize the background image component
         this.initBackgroundImageComponent();
+        this.syncLayoutElement();
 
-        // Initialize the clock component with the new configuration
-        this.clockComponent.timeFormat = this.config.timeFormat;
-        this.clockComponent.dateFormat = this.config.dateFormat;
-        this.clockComponent.language = resolveLanguage(this.config.language, this.hass);
-        this.clockComponent.timeZone = this.config.timeZone;
-        this.clockComponent.fontColor = this.config.fontColor;
-        this.clockComponent.size = this.config.size;
+        this.backgroundImageComponent.controller.ready.then(() => {
+            this.publishWeatherFallbackIfNeeded();
+        });
+    }
 
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.clockComponent.clockSize = this.config.customSizes.clockSize;
-            this.clockComponent.dateSize = this.config.customSizes.dateSize;
-            this.clockComponent.clockTopMargin = this.config.customSizes.clockTopMargin;
-        }
+    /** Card-wide defaults handed to every widget through wcc-layout. */
+    private computeAppearance(): AppearanceConfig {
+        const appearance = this.configV3.appearance ?? {};
+        return {
+            fontColor: appearance.fontColor ?? '#FFFFFF',
+            language: appearance.language,
+            timeZone: appearance.timeZone ?? this.hass?.config?.time_zone,
+            size: appearance.size ?? Size.Medium,
+        };
+    }
 
-        // Initialize the sensor component with the new configuration
-        this.sensorComponent.sensors = this.config.sensors;
-        this.sensorComponent.fontColor = this.config.fontColor;
-        this.sensorComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.sensorComponent.labelSize = this.config.customSizes.labelSize;
-            this.sensorComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
+    private syncLayoutElement(): void {
+        this.layoutElement.layout = this.configV3.layout;
+        this.layoutElement.appearance = this.computeAppearance();
         if (this.hass) {
-            this.sensorComponent.hass = this.hass;
-            this.weatherComponent.hass = this.hass;
-            this.transportationComponent.hass = this.hass;
-            this.actionBarComponent.hass = this.hass;
-            this.backgroundImageComponent.hass = this.hass;
-        }
-
-        // Initialize the weather component with the new configuration
-        this.weatherComponent.showWeather = this.config.showWeather;
-        this.weatherComponent.weatherProvider = this.config.weatherProvider;
-        this.weatherComponent.weatherConfig = this.config.weatherConfig;
-        this.weatherComponent.weatherDisplayMode = this.config.weatherDisplayMode;
-        this.weatherComponent.weatherForecastDays = this.config.weatherForecastDays;
-        this.weatherComponent.weatherTitle = this.config.weatherTitle;
-        this.weatherComponent.weatherUpdateInterval = this.config.weatherUpdateInterval;
-        this.weatherComponent.weatherIconSet = this.config.weatherIconSet || this.config.weatherConfig?.iconSet;
-        this.weatherComponent.fontColor = this.config.fontColor;
-        this.weatherComponent.language = resolveLanguage(this.config.language, this.hass);
-        this.weatherComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.weatherComponent.labelSize = this.config.customSizes.labelSize;
-            this.weatherComponent.valueSize = this.config.customSizes.valueSize;
-        }
-
-        // Initialize the transportation component with the new configuration
-        this.transportationComponent.transportation = this.config.transportation;
-        this.transportationComponent.fontColor = this.config.fontColor;
-
-        this.actionBarComponent.config = this.config.actionBar;
-        this.actionBarComponent.fontColor = this.config.fontColor;
-        this.actionBarComponent.size = this.config.size;
-
-        // Pass custom sizes if configured
-        if (this.config.customSizes) {
-            this.actionBarComponent.iconSize = this.config.customSizes.actionBarIconSize;
-        }
-
-        if(!this.config.showWeather) {
-            this.backgroundImageComponent.controller.ready.then(() => {
-                Messenger.getInstance().publish(new WeatherMessage(Weather.All));
-            });
+            this.layoutElement.hass = this.hass;
         }
     }
 
-    // Update when hass changes to get latest sensor values
+    /** Without a weather widget, background image selection must not wait for weather data. */
+    private publishWeatherFallbackIfNeeded(): void {
+        const zones = this.configV3.layout.zones;
+        const hasWeather = Object.values(zones).some(
+            zone => zone?.widgets?.some(widget => widget.type === 'weather')
+        );
+        if (!hasWeather) {
+            Messenger.getInstance().publish(new WeatherMessage(Weather.All));
+        }
+    }
+
+    private configureCardLogger(): void {
+        const logLevelString = (this.configV3.logLevel as string | undefined) || 'info';
+        configureLogger({
+            level: getLogLevelFromString(logLevelString),
+            prefix: 'wall-clock',
+            enableSourceTracking: true,
+            enableTimestamps: true,
+            logToConsole: true,
+            logToStorage: false
+        });
+    }
+
+    private initBackgroundImageComponent(): void {
+        const background = this.configV3.background ?? {};
+
+        // Create the full ImageSourceConfig
+        const imageSourceConfig: ImageSourceConfig = {
+            imageSourceId: background.source || 'none',
+            backgroundImages: background.images,
+            entity: background.config?.entity,
+            apiKey: background.config?.apiKey,
+            contentFilter: background.config?.contentFilter,
+            category: background.config?.category,
+            count: background.config?.count
+        };
+
+        this.backgroundImageComponent.backgroundOpacity = background.opacity ?? 0.3;
+        this.backgroundImageComponent.objectFit = background.objectFit || 'cover';
+        this.backgroundImageComponent.config = {
+            imageSourceConfig: imageSourceConfig,
+            backgroundRotationInterval: background.rotationInterval ?? 90,
+            objectFit: background.objectFit || 'cover'
+        };
+        this.backgroundImageComponent.hass = this.hass;
+
+        logger.debug('Background image component initialized');
+    }
+
     updated(changedProperties: Map<string, any>): void {
         if (changedProperties.has('hass') && this.hass) {
-            // Update the sensor component with the new hass
-            this.sensorComponent.hass = this.hass;
-
-            // Update the weather component with the new hass
-            this.weatherComponent.hass = this.hass;
-
-            // Update the transportation component with the new hass
-            this.transportationComponent.hass = this.hass;
-
-            // Update the action bar component with the new hass
-            this.actionBarComponent.hass = this.hass;
-
-            // Update the background image component with the new hass
             this.backgroundImageComponent.hass = this.hass;
+            // Re-sync appearance too: timeZone falls back to hass.config.time_zone
+            this.syncLayoutElement();
         }
 
-        // If config changed, update the log level
         if (changedProperties.has('config') && this.config) {
-            // Configure the logger based on the configured log level
-            const logLevelString = this.config.logLevel || 'info';
-            const logLevel = getLogLevelFromString(logLevelString);
-
-            logger.debug(`Updating log level to ${logLevelString} (${LogLevel[logLevel]})`);
-
-            configureLogger({
-                level: logLevel,
-                prefix: 'wall-clock',
-                enableSourceTracking: true,
-                enableTimestamps: true,
-                logToConsole: true,
-                logToStorage: false
-            });
+            this.configureCardLogger();
         }
     }
-
 
     static get styles(): CSSResult {
         return css`
-            /* Include ClockComponent styles */
-            ${unsafeCSS(ClockComponent.styles)}
-            /* Include SensorComponent styles */
-            ${unsafeCSS(SensorComponent.styles)}
-            /* Include BackgroundImageComponent styles */
-            ${unsafeCSS(BackgroundImageComponent.styles)}
-            /* Include WeatherComponent styles */
-            ${unsafeCSS(WeatherComponent.styles)}
-            /* Include TransportationComponent styles */
-            ${unsafeCSS(TransportationComponent.styles)}
-            /* Include ActionBarComponent styles */
-            ${unsafeCSS(ActionBarComponent.styles)}
-            /* Include BottomBarManager styles */
-            ${unsafeCSS(BottomBarManager.styles)}
             :host {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
+                display: block;
                 height: 100%;
                 width: 100%;
-                // background-color: var(--card-background-color, var(--primary-background-color, #111));
                 color: var(--primary-text-color, #fff);
                 font-family: var(--paper-font-common-base_-_font-family, "Roboto", sans-serif);
                 position: relative;
                 overflow: hidden;
                 border-radius: var(--ha-card-border-radius, 4px);
-                padding: 0px;
                 box-sizing: border-box;
             }
 
             ha-card {
                 width: 100%;
-                overflow: hidden;
                 height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
+                overflow: hidden;
                 position: relative;
             }
-
         `;
     }
 
     render() {
-        // Calculate margin adjustment for clock based on whether a bottom bar component is active
-        const hasBottomBar = this.bottomBarManager.currentComponent !== null;
-
-        // Adjust clock margin if a bottom bar component is active
-        let clockMarginStyle = '';
-        if (hasBottomBar) {
-            // Adjust for bottom bar (approximately 80px)
-            clockMarginStyle = 'margin-top: -140px;';
-        }
-
         return html`
-            <ha-card style="color: ${this.config.fontColor};">
+            <ha-card style="color: ${this.computeAppearance().fontColor};">
                 ${this.backgroundImageComponent}
-                ${this.sensorComponent}
-                ${this.config.showWeather ?
-                        html`<div style="position: absolute; top: 16px; right: 16px; max-width: 40%; max-height: 60%; z-index: 3; padding-left: 8px;">
-                            ${this.weatherComponent}
-                        </div>` :
-                        ''
-                }
-                <div style="${clockMarginStyle}">
-                    ${this.clockComponent}
-                </div>
-                ${this.bottomBarManager.render()}
+                ${this.layoutElement}
             </ha-card>
         `;
     }
-
-    // Transportation content is now handled by the TransportationComponent
-
-    // Weather content is now handled by the WeatherComponent
-
-    // Transportation button click is now handled by the TransportationComponent
-
-    // Weather-related methods are now handled by the WeatherComponent
 }
 
 // Add card to window for type checking
