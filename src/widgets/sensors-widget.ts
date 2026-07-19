@@ -1,6 +1,8 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-import {SensorComponent} from '../components/sensors';
+// Side-effect import: registers the ha-sensors element (the class is used type-only)
+import '../components/sensors';
+import type {SensorComponent} from '../components/sensors';
 import {Size, SensorConfig} from '../core/types';
 import {WidgetConfig} from '../core/layout-types';
 import {WidgetElement} from './widget-element';

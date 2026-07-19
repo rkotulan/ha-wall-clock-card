@@ -4,7 +4,10 @@ import {HomeAssistant} from 'custom-card-helpers';
 import {ImageSourceConfig, Weather} from '../providers/image';
 
 import {configureLogger, getLogLevelFromString, logger, loadTranslationsAsync} from '../utils';
-import {BackgroundImageComponent} from '../components/background';
+// Side-effect import: registers the ha-background-image element. The class import
+// alone is type-only and would be elided by TypeScript.
+import '../components/background';
+import type {BackgroundImageComponent} from '../components/background';
 import '../editors';
 import '../components/ha-selector';
 import {Messenger, WeatherMessage} from '../utils';

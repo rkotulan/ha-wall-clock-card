@@ -1,6 +1,8 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-import {WeatherComponent} from '../components/weather';
+// Side-effect import: registers the ha-weather element (the class is used type-only)
+import '../components/weather';
+import type {WeatherComponent} from '../components/weather';
 import {WeatherProviderConfig} from '../weather-providers/types';
 import {resolveLanguage} from '../utils/ha-locale';
 import {Size} from '../core/types';

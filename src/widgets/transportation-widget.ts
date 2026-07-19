@@ -1,6 +1,8 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-import {TransportationComponent} from '../components/transportation';
+// Side-effect import: registers the ha-transportation element (the class is used type-only)
+import '../components/transportation';
+import type {TransportationComponent} from '../components/transportation';
 import {TransportationConfig} from '../transportation-providers/types';
 import {WidgetConfig} from '../core/layout-types';
 import {WidgetElement, widgetSpecificConfig} from './widget-element';

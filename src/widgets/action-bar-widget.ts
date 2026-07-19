@@ -1,6 +1,8 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-import {ActionBarComponent} from '../components/action-bar';
+// Side-effect import: registers the ha-action-bar element (the class is used type-only)
+import '../components/action-bar';
+import type {ActionBarComponent} from '../components/action-bar';
 import {ActionBarAlignment, ModuleActionConfig} from '../components/action-bar/types';
 import {Size} from '../core/types';
 import {WidgetConfig} from '../core/layout-types';

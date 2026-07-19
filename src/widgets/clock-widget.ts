@@ -1,6 +1,8 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-import {ClockComponent} from '../components/clock';
+// Side-effect import: registers the ha-clock element (the class is used type-only)
+import '../components/clock';
+import type {ClockComponent} from '../components/clock';
 import {ExtendedDateTimeFormatOptions} from '../utils';
 import {resolveLanguage} from '../utils/ha-locale';
 import {Size} from '../core/types';
