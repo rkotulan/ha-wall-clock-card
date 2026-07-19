@@ -1,5 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
+import {repeat} from 'lit/directives/repeat.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {createLogger} from '../utils/logger/logger';
 import {AppearanceConfig, LayoutConfig, ZoneConfig, ZoneId, ZONE_IDS} from './layout-types';
@@ -84,7 +85,11 @@ export class WccLayout extends LitElement {
             }
             const widgets: WidgetElement[] = [];
             zoneConfig.widgets.forEach((widgetConfig, index) => {
-                const key = widgetConfig.id ?? `${zoneId}:${index}:${widgetConfig.type}`;
+                // The zone is part of the cache key on purpose: moving a widget
+                // to another zone recreates its element. Reusing one element
+                // across two zones makes the old zone's Lit part remove the node
+                // from the new zone during cleanup (stale-owner artifact).
+                const key = `${zoneId}:${widgetConfig.id ?? `${index}:${widgetConfig.type}`}`;
                 let element = this.widgetCache.get(key);
                 if (element && element.config?.type === widgetConfig.type) {
                     element.config = widgetConfig;
@@ -153,7 +158,7 @@ export class WccLayout extends LitElement {
         return html`
             <div class="grid"
                  style="--wcc-padding: ${spacing.padding}; --wcc-zone-gap: ${spacing.zoneGap}; --wcc-widget-gap: ${spacing.widgetGap};">
-                ${this.zoneEntries.map(entry => html`
+                ${repeat(this.zoneEntries, entry => entry.zoneId, entry => html`
                     <wcc-zone style="${this.zonePlacement(entry.zoneId)}"
                               .zoneId=${entry.zoneId}
                               .zoneConfig=${entry.config}

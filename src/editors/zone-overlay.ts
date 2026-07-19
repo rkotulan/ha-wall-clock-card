@@ -1,6 +1,5 @@
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
-import {HomeAssistant} from 'custom-card-helpers';
 import Sortable, {SortableEvent} from 'sortablejs';
 import {LayoutConfig, WidgetConfig, ZoneId, ZONE_IDS} from '../core/layout-types';
 import {WidgetRegistry} from '../widgets/widget-registry';
@@ -31,7 +30,6 @@ export interface WidgetSelection {
  */
 @customElement('wcc-zone-overlay')
 export class WccZoneOverlay extends LitElement {
-    @property({attribute: false}) hass?: HomeAssistant;
     @property({attribute: false}) layout: LayoutConfig = {zones: {}};
     @property({attribute: false}) selectedWidget: WidgetSelection | null = null;
     @property({attribute: false}) selectedZone: ZoneId | null = null;
@@ -172,7 +170,11 @@ export class WccZoneOverlay extends LitElement {
 
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
-        this.rebuildSortables();
+        // Rebuild only when the zone lists' DOM actually changed — rebuilding on
+        // every render would destroy an in-progress drag (e.g. on a hass tick).
+        if (changedProperties.has('layout') || this.sortables.length === 0) {
+            this.rebuildSortables();
+        }
     }
 
     // ---------------------------------------------------------------- events

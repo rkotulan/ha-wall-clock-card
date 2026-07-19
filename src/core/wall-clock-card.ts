@@ -503,7 +503,6 @@ export class WallClockCard extends LitElement {
                 ` : ''}
                 ${this.layoutEditing ? html`
                     <wcc-zone-overlay class="inplace"
-                            .hass=${this.hass}
                             .layout=${this.configV3.layout}
                             @layout-changed=${this.onInplaceLayoutChanged}
                     ></wcc-zone-overlay>

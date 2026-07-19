@@ -318,7 +318,6 @@ export class LayoutEditor extends LitElement {
                 <div class="wysiwyg">
                     ${this.getPreviewCard()}
                     <wcc-zone-overlay
-                            .hass=${this.hass}
                             .layout=${this.layout}
                             .selectedWidget=${this.selectedWidget}
                             .selectedZone=${this.selectedZone}
