@@ -392,9 +392,18 @@ export class WallClockCard extends LitElement {
     static get styles(): CSSResult {
         return css`
             :host {
-                display: block;
+                display: flex;
+                flex-direction: column;
                 height: 100%;
                 width: 100%;
+                /* Ceiling for containers that give no definite height (kiosk /
+                   masonry views): without it the in-flow zone content — a large
+                   clock plus a multi-row forecast — grows the card past the
+                   viewport and the whole page scrolls. The flex chain below
+                   makes the grid adapt within this box instead. No-op when the
+                   parent already constrains the height (panel / sections). */
+                max-height: 100vh;
+                max-height: 100dvh;
                 color: var(--primary-text-color, #fff);
                 font-family: var(--paper-font-common-base_-_font-family, "Roboto", sans-serif);
                 position: relative;
@@ -404,10 +413,20 @@ export class WallClockCard extends LitElement {
             }
 
             ha-card {
+                display: flex;
+                flex-direction: column;
+                flex: 1 1 auto;
+                min-height: 0;
                 width: 100%;
-                height: 100%;
                 overflow: hidden;
                 position: relative;
+            }
+
+            /* The zone grid is the single in-flow child of ha-card; flex-fill it
+               so its height is definite and its rows redistribute to fit. */
+            wcc-layout {
+                flex: 1 1 auto;
+                min-height: 0;
             }
 
             /* Edit-dialog preview only (never dashboard edit mode): render the
@@ -415,7 +434,9 @@ export class WallClockCard extends LitElement {
                width — a faithful miniature with real dashboard proportions.
                Values come from updatePreviewScale(). */
             :host([dialog-preview]) {
+                display: block;
                 height: auto;
+                max-height: none;
             }
 
             :host([dialog-preview]) ha-card {

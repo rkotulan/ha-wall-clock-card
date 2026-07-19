@@ -35,7 +35,13 @@ export class WccLayout extends LitElement {
 
     static styles = css`
         :host {
-            display: block;
+            display: flex;
+            flex-direction: column;
+            /* Flex child of ha-card AND flex container for .grid: this keeps the
+               height definite down to the grid so its rows redistribute to fit
+               the card box instead of growing it (see wall-clock-card :host). */
+            flex: 1 1 auto;
+            min-height: 0;
             width: 100%;
             height: 100%;
             position: relative;
@@ -58,7 +64,10 @@ export class WccLayout extends LitElement {
             gap: var(--wcc-zone-gap);
             padding: var(--wcc-padding);
             width: 100%;
-            height: 100%;
+            /* flex-fill the layout host (not height:100%, which would not resolve
+               through the auto-height flex chain) so rows share a definite box. */
+            flex: 1 1 auto;
+            min-height: 0;
             box-sizing: border-box;
         }
     `;
