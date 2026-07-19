@@ -29,6 +29,14 @@ export class WallClockCard extends LitElement {
     /** The raw configuration as given by Lovelace (v2 or v3). */
     @property({type: Object}) config: WallClockConfig = {};
 
+    /**
+     * True when rendered inside the card editor preview. Newer HA sets this
+     * property itself; as a fallback we detect the edit dialog around us.
+     * Reflected so CSS can give the preview a sane 16:9 shape — without it the
+     * card has no height there and the zones pile up into a tall column.
+     */
+    @property({type: Boolean, reflect: true}) preview = false;
+
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
 
@@ -49,9 +57,29 @@ export class WallClockCard extends LitElement {
 
     connectedCallback(): void {
         super.connectedCallback();
+        if (!this.preview && this.isInEditPreview()) {
+            this.preview = true;
+        }
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
         this.initConnectCallbackAsync();
+    }
+
+    /** Fallback preview detection: is an edit/pick dialog among our shadow hosts? */
+    private isInEditPreview(): boolean {
+        let node: Element | undefined = this;
+        while (node) {
+            const root = node.getRootNode();
+            if (!(root instanceof ShadowRoot)) {
+                return false;
+            }
+            const tag = root.host.localName;
+            if (tag === 'hui-dialog-edit-card' || tag === 'hui-card-preview' || tag === 'hui-dialog-pick-card') {
+                return true;
+            }
+            node = root.host;
+        }
+        return false;
     }
 
     async initConnectCallbackAsync(): Promise<void> {
@@ -227,6 +255,15 @@ export class WallClockCard extends LitElement {
                 height: 100%;
                 overflow: hidden;
                 position: relative;
+            }
+
+            /* Editor preview: no parent gives us a height there, so keep the
+               card in a wall-panel-like 16:9 shape instead of a content-tall
+               column with overlapping zones. */
+            :host([preview]) {
+                height: auto;
+                aspect-ratio: 16 / 9;
+                min-height: 240px;
             }
         `;
     }

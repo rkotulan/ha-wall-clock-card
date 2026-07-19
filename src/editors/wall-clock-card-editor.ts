@@ -72,6 +72,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                         host._large = true;
                     }
                     host.requestUpdate?.();
+                    // Let the preview column take its full half of the dialog
+                    // (HA caps it otherwise). Runs after the dialog re-renders.
+                    requestAnimationFrame(() => {
+                        const preview = host.shadowRoot?.querySelector<HTMLElement>('.element-preview');
+                        if (preview) {
+                            preview.style.flex = '1 1 0';
+                            preview.style.maxWidth = 'none';
+                        }
+                    });
                     return;
                 }
                 node = host;
