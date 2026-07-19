@@ -55,14 +55,44 @@ export class WallClockCard extends LitElement {
         );
     }
 
+    /** The virtual width the 1280x720 preview miniature is rendered at, then scaled. */
+    private static readonly PREVIEW_BASE_WIDTH = 1280;
+    private previewObserver?: ResizeObserver;
+
     connectedCallback(): void {
         super.connectedCallback();
         if (!this.preview && this.isInEditPreview()) {
             this.preview = true;
         }
+        this.setupPreviewScaling();
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
         this.initConnectCallbackAsync();
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.previewObserver?.disconnect();
+        this.previewObserver = undefined;
+    }
+
+    /** The preview renders the card at full wall-panel size and scales it down
+     * to the pane width, so widget sizes (rem/px) look exactly like on the
+     * dashboard instead of overflowing the miniature. */
+    private setupPreviewScaling(): void {
+        if (!this.preview || this.previewObserver) {
+            return;
+        }
+        this.previewObserver = new ResizeObserver(() => this.updatePreviewScale());
+        this.previewObserver.observe(this);
+        this.updatePreviewScale();
+    }
+
+    private updatePreviewScale(): void {
+        const scale = this.clientWidth / WallClockCard.PREVIEW_BASE_WIDTH;
+        if (scale > 0) {
+            this.style.setProperty('--wcc-preview-scale', String(scale));
+        }
     }
 
     /** Fallback preview detection: is an edit/pick dialog among our shadow hosts? */
@@ -225,6 +255,11 @@ export class WallClockCard extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>): void {
+        // HA may set the preview property only after we are connected
+        if (changedProperties.has('preview') && this.preview) {
+            this.setupPreviewScaling();
+        }
+
         if (changedProperties.has('hass') && this.hass) {
             this.backgroundImageComponent.hass = this.hass;
             // Re-sync appearance too: timeZone falls back to hass.config.time_zone
@@ -257,13 +292,20 @@ export class WallClockCard extends LitElement {
                 position: relative;
             }
 
-            /* Editor preview: no parent gives us a height there, so keep the
-               card in a wall-panel-like 16:9 shape instead of a content-tall
-               column with overlapping zones. */
+            /* Editor preview: no parent gives us a height there. Render the card
+               at the full 1280x720 wall-panel resolution and scale the whole
+               thing down to the pane width — a faithful miniature instead of
+               oversized widgets overflowing a tiny box. */
             :host([preview]) {
                 height: auto;
                 aspect-ratio: 16 / 9;
-                min-height: 240px;
+            }
+
+            :host([preview]) ha-card {
+                width: 1280px;
+                height: 720px;
+                transform: scale(var(--wcc-preview-scale, 0.3));
+                transform-origin: top left;
             }
         `;
     }
