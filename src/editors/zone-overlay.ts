@@ -38,6 +38,11 @@ export class WccZoneOverlay extends LitElement {
 
     private sortables: Sortable[] = [];
 
+    /** Exact pre-drag position of the dragged node, captured in onStart. Reverting
+     * via children[oldIndex] is NOT safe: it ignores Lit's comment markers and can
+     * re-insert the node outside the part range, leaving a chip Lit cannot remove. */
+    private dragOrigin?: {parent: Node; next: Node | null};
+
     static get styles(): CSSResult {
         return css`
             :host {
@@ -206,6 +211,7 @@ export class WccZoneOverlay extends LitElement {
                 group: 'wcc-widgets',
                 animation: 150,
                 draggable: '.chip',
+                onStart: evt => this.captureDragOrigin(evt),
                 onEnd: evt => this.handleDragEnd(evt),
             }));
         });
@@ -216,18 +222,23 @@ export class WccZoneOverlay extends LitElement {
                 sort: false,
                 animation: 150,
                 draggable: '.chip',
+                onStart: evt => this.captureDragOrigin(evt),
                 onEnd: evt => this.handlePaletteDrop(evt),
             }));
         }
     }
 
-    /** Puts the dragged node back where it came from: after the state update Lit
-     * re-renders the lists and must find the DOM exactly as it left it. */
+    private captureDragOrigin(evt: SortableEvent): void {
+        this.dragOrigin = {parent: evt.from, next: evt.item.nextSibling};
+    }
+
+    /** Puts the dragged node back exactly where it came from (marker-safe): after
+     * the state update Lit re-renders the lists and must find the DOM as it left it. */
     private revertDragDom(evt: SortableEvent): void {
-        const from = evt.from;
-        const reference = from.children[evt.oldIndex ?? 0] ?? null;
-        if (evt.item.parentElement !== from || evt.oldIndex !== evt.newIndex) {
-            from.insertBefore(evt.item, reference);
+        const origin = this.dragOrigin;
+        this.dragOrigin = undefined;
+        if (origin) {
+            origin.parent.insertBefore(evt.item, origin.next);
         }
     }
 
@@ -247,11 +258,12 @@ export class WccZoneOverlay extends LitElement {
     private handlePaletteDrop(evt: SortableEvent): void {
         const toZone = (evt.to as HTMLElement).dataset.zone as ZoneId | undefined;
         const widgetType = evt.item.dataset.widgetType;
-        // The dragged original lands in the target list as alien DOM — remove it;
-        // the real chip is rendered by Lit after the state update.
-        if (evt.item.parentElement !== evt.from) {
-            evt.item.remove();
-        }
+        // Sortable leaves a clone (without Lit's event listeners) in the palette
+        // and drops the original into the target list as alien DOM. Discard the
+        // clone and put the original back — the real chip in the zone is
+        // rendered by Lit after the state update.
+        evt.clone?.remove();
+        this.revertDragDom(evt);
         if (!toZone || !widgetType) {
             return;
         }
