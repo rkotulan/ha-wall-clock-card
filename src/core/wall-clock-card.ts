@@ -29,13 +29,9 @@ export class WallClockCard extends LitElement {
     /** The raw configuration as given by Lovelace (v2 or v3). */
     @property({type: Object}) config: WallClockConfig = {};
 
-    /**
-     * True when rendered inside the card editor preview. Newer HA sets this
-     * property itself; as a fallback we detect the edit dialog around us.
-     * Reflected so CSS can give the preview a sane 16:9 shape — without it the
-     * card has no height there and the zones pile up into a tall column.
-     */
-    @property({type: Boolean, reflect: true}) preview = false;
+    // NOTE: HA also sets a `preview` property on cards in dashboard edit mode —
+    // deliberately NOT declared here. Miniature scaling must only apply inside
+    // the edit dialog, which we detect ourselves (dialog-preview attribute).
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -55,16 +51,14 @@ export class WallClockCard extends LitElement {
         );
     }
 
-    /** The virtual width the 1280x720 preview miniature is rendered at, then scaled. */
-    private static readonly PREVIEW_BASE_WIDTH = 1280;
     private previewObserver?: ResizeObserver;
 
     connectedCallback(): void {
         super.connectedCallback();
-        if (!this.preview && this.isInEditPreview()) {
-            this.preview = true;
+        if (this.isInEditPreview()) {
+            this.setAttribute('dialog-preview', '');
+            this.setupPreviewScaling();
         }
-        this.setupPreviewScaling();
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
         this.initConnectCallbackAsync();
@@ -76,11 +70,11 @@ export class WallClockCard extends LitElement {
         this.previewObserver = undefined;
     }
 
-    /** The preview renders the card at full wall-panel size and scales it down
-     * to the pane width, so widget sizes (rem/px) look exactly like on the
-     * dashboard instead of overflowing the miniature. */
+    /** The dialog preview renders the card at the browser viewport resolution
+     * (which is what the real wall panel shows) and scales it down to the pane
+     * width — a faithful miniature with the exact dashboard proportions. */
     private setupPreviewScaling(): void {
-        if (!this.preview || this.previewObserver) {
+        if (this.previewObserver) {
             return;
         }
         this.previewObserver = new ResizeObserver(() => this.updatePreviewScale());
@@ -89,10 +83,16 @@ export class WallClockCard extends LitElement {
     }
 
     private updatePreviewScale(): void {
-        const scale = this.clientWidth / WallClockCard.PREVIEW_BASE_WIDTH;
-        if (scale > 0) {
-            this.style.setProperty('--wcc-preview-scale', String(scale));
+        const baseWidth = window.innerWidth;
+        const baseHeight = window.innerHeight;
+        const scale = this.clientWidth / baseWidth;
+        if (scale <= 0 || !baseWidth || !baseHeight) {
+            return;
         }
+        this.style.setProperty('--wcc-preview-width', `${baseWidth}px`);
+        this.style.setProperty('--wcc-preview-height', `${baseHeight}px`);
+        this.style.setProperty('--wcc-preview-scale', String(scale));
+        this.style.aspectRatio = `${baseWidth} / ${baseHeight}`;
     }
 
     /** Fallback preview detection: is an edit/pick dialog among our shadow hosts? */
@@ -255,11 +255,6 @@ export class WallClockCard extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>): void {
-        // HA may set the preview property only after we are connected
-        if (changedProperties.has('preview') && this.preview) {
-            this.setupPreviewScaling();
-        }
-
         if (changedProperties.has('hass') && this.hass) {
             this.backgroundImageComponent.hass = this.hass;
             // Re-sync appearance too: timeZone falls back to hass.config.time_zone
@@ -292,18 +287,17 @@ export class WallClockCard extends LitElement {
                 position: relative;
             }
 
-            /* Editor preview: no parent gives us a height there. Render the card
-               at the full 1280x720 wall-panel resolution and scale the whole
-               thing down to the pane width — a faithful miniature instead of
-               oversized widgets overflowing a tiny box. */
-            :host([preview]) {
+            /* Edit-dialog preview only (never dashboard edit mode): render the
+               card at the viewport resolution and scale it down to the pane
+               width — a faithful miniature with real dashboard proportions.
+               Values come from updatePreviewScale(). */
+            :host([dialog-preview]) {
                 height: auto;
-                aspect-ratio: 16 / 9;
             }
 
-            :host([preview]) ha-card {
-                width: 1280px;
-                height: 720px;
+            :host([dialog-preview]) ha-card {
+                width: var(--wcc-preview-width, 1280px);
+                height: var(--wcc-preview-height, 720px);
                 transform: scale(var(--wcc-preview-scale, 0.3));
                 transform-origin: top left;
             }
