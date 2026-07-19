@@ -37,6 +37,8 @@ interface WidgetSelection {
     index: number;
 }
 
+type PreviewCardElement = HTMLElement & {hass?: HomeAssistant; setConfig?: (c: unknown) => void};
+
 /**
  * Visual zone layout editor: a 3×3 grid preview with drag & drop (SortableJS)
  * between zones, a widget palette, spacing settings, and per-widget detail
@@ -55,6 +57,11 @@ export class LayoutEditor extends LitElement {
 
     private sortables: Sortable[] = [];
     private widgetEditorCache: Map<string, HTMLElement> = new Map();
+
+    // Live card rendered under the zone overlay (WYSIWYG canvas). Created by tag
+    // name to avoid an import cycle with wall-clock-card.
+    private previewCard?: PreviewCardElement;
+    private previewCardConfigJson = '';
 
     private get v3(): WallClockConfigV3 {
         return migrateToLayout(this.config);
@@ -76,21 +83,46 @@ export class LayoutEditor extends LitElement {
                 margin: 0 0 12px;
             }
 
+            /* WYSIWYG canvas: the live card renders underneath, the zone grid
+               lies transparently on top — editing happens "on the card". */
+            .wysiwyg {
+                position: relative;
+                margin-bottom: 12px;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .wysiwyg .canvas-card {
+                display: block;
+                width: 100%;
+                pointer-events: none;
+            }
+
             .zone-grid {
                 display: grid;
                 grid-template-columns: 1fr 1.2fr 1fr;
-                grid-template-rows: minmax(72px, auto) minmax(96px, auto) minmax(72px, auto);
+                grid-template-rows: 1fr 1.2fr 1fr;
                 gap: 6px;
-                margin-bottom: 12px;
+                position: absolute;
+                inset: 0;
+                padding: 6px;
+                box-sizing: border-box;
             }
 
             .zone-cell {
-                border: 1px dashed var(--divider-color, #666);
+                border: 1px dashed rgba(255, 255, 255, 0.35);
                 border-radius: 8px;
                 padding: 4px 6px 6px;
                 min-width: 0;
+                min-height: 0;
                 display: flex;
                 flex-direction: column;
+                overflow: hidden;
+            }
+
+            .zone-cell:hover {
+                border-color: rgba(255, 255, 255, 0.7);
+                background-color: rgba(0, 0, 0, 0.15);
             }
 
             .zone-cell.selected {
@@ -100,7 +132,9 @@ export class LayoutEditor extends LitElement {
 
             .zone-label {
                 font-size: 0.7rem;
-                opacity: 0.6;
+                color: #fff;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+                opacity: 0.75;
                 cursor: pointer;
                 margin-bottom: 4px;
                 user-select: none;
@@ -108,6 +142,11 @@ export class LayoutEditor extends LitElement {
 
             .zone-label:hover {
                 opacity: 1;
+            }
+
+            .zone-grid .chip {
+                background-color: rgba(0, 0, 0, 0.65);
+                color: #fff;
             }
 
             .zone-list {
@@ -389,6 +428,24 @@ export class LayoutEditor extends LitElement {
         `;
     }
 
+    /** The live card behind the zone overlay; config applied only when it changed. */
+    private getPreviewCard(): HTMLElement | undefined {
+        if (!customElements.get('wall-clock-card')) {
+            return undefined;
+        }
+        if (!this.previewCard) {
+            this.previewCard = document.createElement('wall-clock-card') as PreviewCardElement;
+            this.previewCard.classList.add('canvas-card');
+        }
+        this.previewCard.hass = this.hass;
+        const configJson = JSON.stringify(this.v3);
+        if (configJson !== this.previewCardConfigJson) {
+            this.previewCardConfigJson = configJson;
+            this.previewCard.setConfig?.(JSON.parse(configJson));
+        }
+        return this.previewCard;
+    }
+
     private renderZoneCell(zone: ZoneId): TemplateResult {
         const zoneConfig = this.layout.zones[zone];
         return html`
@@ -539,8 +596,11 @@ export class LayoutEditor extends LitElement {
                         change converts it to the new zone format automatically.</p>
                 ` : ''}
                 ${this.renderSpacing()}
-                <div class="zone-grid">
-                    ${ZONE_IDS.map(zone => this.renderZoneCell(zone))}
+                <div class="wysiwyg">
+                    ${this.getPreviewCard()}
+                    <div class="zone-grid">
+                        ${ZONE_IDS.map(zone => this.renderZoneCell(zone))}
+                    </div>
                 </div>
                 <div class="palette">
                     <div class="palette-title">Widgets — drag into a zone, or click to add to the ${this.selectedZone ? ZONE_LABELS[this.selectedZone] : 'Center'} zone</div>
