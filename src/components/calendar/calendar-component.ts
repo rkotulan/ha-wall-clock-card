@@ -283,15 +283,51 @@ export class CalendarComponent extends LitElement {
 
     private eventTime(event: CalendarEventItem): string {
         if (event.allDay) {
-            return localize('editor.calendar.all_day', this.language, 'All day');
+            const label = localize('editor.calendar.all_day', this.language, 'All day');
+            const inclusiveEndDayKey = addDaysToKey(event.endDayKey, -1);
+            if (inclusiveEndDayKey === event.startDayKey) return label;
+
+            const includeYear = event.startDayKey.slice(0, 4) !== inclusiveEndDayKey.slice(0, 4);
+            return `${this.formatShortDayKey(event.startDayKey, includeYear)} – ` +
+                `${this.formatShortDayKey(inclusiveEndDayKey, includeYear)} · ${label}`;
         }
-        const formatter = new Intl.DateTimeFormat(this.language, {
+
+        const timeFormatter = new Intl.DateTimeFormat(this.language, {
             hour: 'numeric',
             minute: '2-digit',
             hour12: this.hour12,
             timeZone: this.timeZone,
         });
-        return `${formatter.format(event.start)} – ${formatter.format(event.end)}`;
+        if (event.startDayKey === event.endDayKey) {
+            return `${timeFormatter.format(event.start)} – ${timeFormatter.format(event.end)}`;
+        }
+
+        const includeYear = event.startDayKey.slice(0, 4) !== event.endDayKey.slice(0, 4);
+        const dateFormatter = new Intl.DateTimeFormat(this.language, {
+            day: 'numeric',
+            month: 'numeric',
+            year: includeYear ? 'numeric' : undefined,
+            timeZone: this.timeZone,
+        });
+        return `${dateFormatter.format(event.start)} ${timeFormatter.format(event.start)} – ` +
+            `${dateFormatter.format(event.end)} ${timeFormatter.format(event.end)}`;
+    }
+
+    private formatShortDayKey(value: string, includeYear: boolean): string {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Intl.DateTimeFormat(this.language, {
+            day: 'numeric',
+            month: 'numeric',
+            year: includeYear ? 'numeric' : undefined,
+            timeZone: 'UTC',
+        }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+    }
+
+    private eventSpansMultipleDays(event: CalendarEventItem): boolean {
+        const effectiveEndDayKey = event.allDay
+            ? addDaysToKey(event.endDayKey, -1)
+            : event.endDayKey;
+        return event.startDayKey !== effectiveEndDayKey;
     }
 
     private openEvent(event: CalendarEventItem): void {
@@ -308,7 +344,7 @@ export class CalendarComponent extends LitElement {
                 <span class="event-body">
                     <span class="event-summary">${event.summary}</span>
                     <span class="event-detail">
-                        <ha-icon icon="mdi:clock-outline"></ha-icon>
+                        <ha-icon icon=${this.eventSpansMultipleDays(event) ? 'mdi:calendar-range' : 'mdi:clock-outline'}></ha-icon>
                         <span class="event-detail-text">${this.eventTime(event)}</span>
                     </span>
                     ${this.config.showLocation !== false && event.location ? html`

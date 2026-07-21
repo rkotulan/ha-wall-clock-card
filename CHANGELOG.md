@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.0.2
+
+### Designer input and saving
+
+- Kept numeric fields empty while replacing their value instead of immediately
+  restoring a component default; leaving a required field empty restores its last
+  valid value.
+- Deferred Designer persistence while a text or number field is actively edited so
+  Home Assistant no longer recreates the card and steals focus during typing.
+- Updated the save-status explanation to distinguish prepared changes from the
+  final dashboard save performed by **Done**.
+
+### Calendar
+
+- Displayed explicit start and end dates for timed events spanning multiple days.
+- Displayed inclusive date ranges for multi-day all-day events.
+- Used a calendar-range icon for events that span multiple days while keeping the
+  clock icon for same-day events.
+
 ## 3.0.1
 
 ### Designer and persistence

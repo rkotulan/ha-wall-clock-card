@@ -79,6 +79,7 @@ export class WallClockCard extends LitElement {
     private layoutAutosaveTimer?: ReturnType<typeof setTimeout>;
     private layoutSavePath?: LovelaceConfigPath;
     private inlineEditSessionActive = false;
+    private layoutTextEditPending = false;
     private designerSessionKey?: string;
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
@@ -106,6 +107,28 @@ export class WallClockCard extends LitElement {
     private previewObserver?: ResizeObserver;
     private fitObserver?: ResizeObserver;
     private onWindowResize = (): void => this.updateFitHeight();
+    private readonly onDesignerFocusIn = (ev: Event): void => {
+        if (ev.composedPath().some(target => this.isTextEditingTarget(target))) {
+            this.layoutTextEditPending = true;
+        }
+    };
+    private readonly onDesignerPointerDown = (ev: Event): void => {
+        // Pointer events are composed across all nested HA shadow roots, unlike
+        // focus transitions between controls within the same custom element.
+        if (ev.composedPath().some(target => this.isTextEditingTarget(target))) {
+            this.layoutTextEditPending = true;
+        }
+    };
+    private readonly onCardFocusOut = (): void => {
+        // HA recreates the card after saveConfig(). Persisting is therefore safe
+        // only once focus has left the entire card, not merely one nested field.
+        setTimeout(() => {
+            if (!this.isActiveElementInsideThisCard() &&
+                this.layoutSaveRevision > this.layoutSavedRevision) {
+                void this.flushLayoutAutosave(true);
+            }
+        }, 0);
+    };
 
     connectedCallback(): void {
         super.connectedCallback();
@@ -122,6 +145,12 @@ export class WallClockCard extends LitElement {
             this.beginInlineEditing();
         }
         window.addEventListener('resize', this.onWindowResize);
+        // Listen inside our shadow root. Focus transitions between two controls
+        // in the same shadow tree are retargeted away from the custom-element
+        // host, so a listener on `this` can remain stuck in "text editing".
+        this.renderRoot.addEventListener('focusin', this.onDesignerFocusIn, {capture: true});
+        this.renderRoot.addEventListener('pointerdown', this.onDesignerPointerDown, {capture: true});
+        this.addEventListener('focusout', this.onCardFocusOut);
         // A ResizeObserver (not rAF, which is throttled in background tabs)
         // fires once the card is laid out and on every later resize.
         this.fitObserver = new ResizeObserver(() => this.updateFitHeight());
@@ -137,7 +166,7 @@ export class WallClockCard extends LitElement {
         this.designerOpen = false;
         if (this.inlineEditSessionActive) {
             this.inlineEditSessionActive = false;
-            void this.flushLayoutAutosave();
+            void this.flushLayoutAutosave(true);
         }
         super.disconnectedCallback();
         this.previewObserver?.disconnect();
@@ -145,6 +174,9 @@ export class WallClockCard extends LitElement {
         this.fitObserver?.disconnect();
         this.fitObserver = undefined;
         window.removeEventListener('resize', this.onWindowResize);
+        this.renderRoot.removeEventListener('focusin', this.onDesignerFocusIn, {capture: true});
+        this.renderRoot.removeEventListener('pointerdown', this.onDesignerPointerDown, {capture: true});
+        this.removeEventListener('focusout', this.onCardFocusOut);
     }
 
     /**
@@ -448,6 +480,7 @@ export class WallClockCard extends LitElement {
         this.layoutSavedRevision = 0;
         this.layoutSavePromise = undefined;
         this.layoutSavePath = undefined;
+        this.layoutTextEditPending = false;
         this.clearLayoutAutosaveTimer();
         this.layoutSaveStatus = 'idle';
         this.layoutSaveError = undefined;
@@ -462,7 +495,7 @@ export class WallClockCard extends LitElement {
         this.designerRequiresExplicitOpen = false;
         this.inlineEditSessionActive = false;
         this.clearRetainedDesignerContext();
-        void this.flushLayoutAutosave().then(saved => {
+        void this.flushLayoutAutosave(true).then(saved => {
             if (saved && !this.inlineEditSessionActive) {
                 this.layoutSaveBaseline = undefined;
                 this.layoutSavePath = undefined;
@@ -494,7 +527,7 @@ export class WallClockCard extends LitElement {
         this.removeAttribute('designer-fullscreen');
         this.designerOpen = false;
         this.clearRetainedDesignerContext();
-        void this.flushLayoutAutosave();
+        void this.flushLayoutAutosave(true);
         void this.updateComplete.then(() => this.updateFitHeight());
     }
 
@@ -508,11 +541,15 @@ export class WallClockCard extends LitElement {
         this.layoutSaveRevision++;
         this.layoutSaveStatus = 'pending';
         this.layoutSaveError = undefined;
+        this.scheduleLayoutAutosave();
+    }
+
+    private scheduleLayoutAutosave(delay = LAYOUT_AUTOSAVE_DELAY_MS): void {
         this.clearLayoutAutosaveTimer();
         this.layoutAutosaveTimer = setTimeout(() => {
             this.layoutAutosaveTimer = undefined;
             void this.flushLayoutAutosave();
-        }, LAYOUT_AUTOSAVE_DELAY_MS);
+        }, delay);
     }
 
     private clearLayoutAutosaveTimer(): void {
@@ -523,15 +560,19 @@ export class WallClockCard extends LitElement {
     }
 
     /** Serializes saves so rapid editor changes cannot overwrite a newer config. */
-    private async flushLayoutAutosave(): Promise<boolean> {
+    private async flushLayoutAutosave(force = false): Promise<boolean> {
         this.clearLayoutAutosaveTimer();
         if (!this.layoutSaveBaseline || this.layoutSaveRevision <= this.layoutSavedRevision) {
+            return true;
+        }
+        if (!force && this.layoutTextEditPending) {
+            this.layoutSaveStatus = 'pending';
             return true;
         }
         if (this.layoutSavePromise) {
             const activeSaved = await this.layoutSavePromise;
             if (!activeSaved) return false;
-            return this.flushLayoutAutosave();
+            return this.flushLayoutAutosave(force);
         }
 
         const baseline = this.layoutSaveBaseline;
@@ -558,10 +599,35 @@ export class WallClockCard extends LitElement {
         this.layoutSavedRevision = revision;
         if (this.layoutSaveRevision > revision) {
             this.layoutSaveStatus = 'pending';
-            return this.flushLayoutAutosave();
+            return this.flushLayoutAutosave(force);
         }
         this.layoutSaveStatus = 'saved';
+        this.layoutTextEditPending = false;
         return true;
+    }
+
+    private isTextEditingTarget(target: EventTarget): boolean {
+        if (target instanceof HTMLTextAreaElement) {
+            return true;
+        }
+        if (target instanceof HTMLInputElement) {
+            const nonTextTypes = new Set([
+                'button', 'checkbox', 'color', 'file', 'hidden', 'image',
+                'radio', 'range', 'reset', 'submit',
+            ]);
+            return !nonTextTypes.has(target.type.toLowerCase());
+        }
+        return target instanceof HTMLElement &&
+            (target.isContentEditable || target.getAttribute('role') === 'textbox');
+    }
+
+    private isActiveElementInsideThisCard(): boolean {
+        let active: Element | null = document.activeElement;
+        while (active) {
+            if (active === this) return true;
+            active = active.shadowRoot?.activeElement ?? null;
+        }
+        return false;
     }
 
     private onInplaceLayoutChanged(ev: CustomEvent): void {
@@ -1246,14 +1312,14 @@ export class WallClockCard extends LitElement {
                         <button class="layout-save-status ${this.layoutSaveStatus}"
                                 ?disabled=${this.layoutSaveStatus !== 'error'}
                                 title=${this.layoutSaveStatus === 'error' ? this.t('designer.retry_save', 'Retry save') : savePresentation.label}
-                                @click=${() => void this.flushLayoutAutosave()}>
+                                @click=${() => void this.flushLayoutAutosave(true)}>
                             <ha-icon .icon=${savePresentation.icon}></ha-icon>
                             ${savePresentation.label}
                         </button>
                         <span class="designer-status-hint">
                             ${this.hasAttribute('designer-fullscreen')
-                                ? this.t('designer.autosave_hint_local', 'Changes are saved continuously · close this editor with Done')
-                                : this.t('designer.autosave_hint', 'Changes are saved continuously · finish the dashboard with Done')}
+                                ? this.t('designer.autosave_hint_local', 'Changes are prepared continuously · save and close this editor with Done')
+                                : this.t('designer.autosave_hint', 'Changes are prepared continuously · save and finish the dashboard with Done')}
                         </span>
                     </div>
                 ` : ''}

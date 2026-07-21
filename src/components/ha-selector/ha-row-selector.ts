@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
 import {LabelPosition, Selector} from "./types";
 
@@ -65,19 +65,21 @@ declare global {
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
     private lastEmittedValue: unknown = Symbol('initial-value');
+    @state() private hasNumberDraft = false;
+    @state() private numberDraft: unknown = '';
     private readonly nativeInputListener = (ev: Event) => this._nativeInputChanged(ev);
-    private readonly textCommitListener = () => this._commitNestedTextValue();
+    private readonly fieldCommitListener = () => this._commitNestedFieldValue();
 
     public connectedCallback(): void {
         super.connectedCallback();
         // Capture before an HA/Web Awesome child can stop propagation.
         this.addEventListener('input', this.nativeInputListener, {capture: true});
-        this.addEventListener('focusout', this.textCommitListener, {capture: true});
+        this.addEventListener('focusout', this.fieldCommitListener, {capture: true});
     }
 
     public disconnectedCallback(): void {
         this.removeEventListener('input', this.nativeInputListener, {capture: true});
-        this.removeEventListener('focusout', this.textCommitListener, {capture: true});
+        this.removeEventListener('focusout', this.fieldCommitListener, {capture: true});
         super.disconnectedCallback();
     }
 
@@ -163,6 +165,17 @@ export class HaRowSelector extends LitElement {
         return !!this.selector && Object.prototype.hasOwnProperty.call(this.selector, 'boolean');
     }
 
+    private get isNumberBoxSelector(): boolean {
+        return !!this.selector && 'number' in this.selector &&
+            !!this.selector.number && this.selector.number.mode !== 'slider';
+    }
+
+    private get selectorValue(): unknown {
+        return this.isNumberBoxSelector && this.hasNumberDraft
+            ? this.numberDraft
+            : this.value ?? '';
+    }
+
     /**
      * Renders the component
      * @returns The rendered template
@@ -177,7 +190,7 @@ export class HaRowSelector extends LitElement {
                     <ha-selector
                         .hass=${this.hass}
                         .selector=${this.selector}
-                        .value=${this.value ?? ''}
+                        .value=${this.selectorValue}
                         .helper=${this.isBooleanSelector ? undefined : this.helper}
                         .disabled=${this.disabled}
                         .required=${this.required}
@@ -222,7 +235,21 @@ export class HaRowSelector extends LitElement {
      */
     private _valueChanged(ev: CustomEvent) {
         ev.stopPropagation();
-        this._emitValue(ev.detail.value);
+        const value = ev.detail.value;
+
+        // A number box temporarily becomes empty while its value is being
+        // replaced. Keep that draft local instead of writing `undefined` into
+        // the config, where the editor would immediately substitute a default.
+        if (this.isNumberBoxSelector && this._isEmptyNumberValue(value)) {
+            this.numberDraft = '';
+            this.hasNumberDraft = true;
+            return;
+        }
+
+        if (this.isNumberBoxSelector) {
+            this.hasNumberDraft = false;
+        }
+        this._emitValue(value);
     }
 
     /**
@@ -231,19 +258,46 @@ export class HaRowSelector extends LitElement {
      * Native input events are composed, so use them as a compatibility fallback.
      */
     private _nativeInputChanged(ev: Event) {
-        if (!this.selector || !Object.prototype.hasOwnProperty.call(this.selector, 'text')) {
+        const isTextSelector = !!this.selector && Object.prototype.hasOwnProperty.call(this.selector, 'text');
+        if (!isTextSelector && !this.isNumberBoxSelector) {
             return;
         }
 
         const source = ev.composedPath().find((item): item is HTMLInputElement =>
             typeof (item as HTMLInputElement | undefined)?.value === 'string'
         );
-        if (source) {
-            this._emitValue(source.value);
+        if (!source) {
+            return;
         }
+
+        if (this.isNumberBoxSelector) {
+            if (source.value === '') {
+                this.numberDraft = '';
+                this.hasNumberDraft = true;
+                return;
+            }
+
+            const value = Number(source.value);
+            if (Number.isFinite(value)) {
+                this.hasNumberDraft = false;
+                this._emitValue(value);
+            }
+            return;
+        }
+
+        this._emitValue(source.value);
     }
 
-    private _commitNestedTextValue() {
+    private _commitNestedFieldValue() {
+        if (this.isNumberBoxSelector) {
+            // Required numeric fields cannot be persisted empty. Leaving an
+            // empty draft restores the last valid configured value.
+            if (this.hasNumberDraft) {
+                this.hasNumberDraft = false;
+            }
+            return;
+        }
+
         if (!this.selector || !Object.prototype.hasOwnProperty.call(this.selector, 'text')) {
             return;
         }
@@ -259,6 +313,11 @@ export class HaRowSelector extends LitElement {
                 if (element.shadowRoot) queue.push(element.shadowRoot);
             }
         }
+    }
+
+    private _isEmptyNumberValue(value: unknown): boolean {
+        return value === '' || value === null || value === undefined ||
+            (typeof value === 'number' && Number.isNaN(value));
     }
 
     private _emitValue(inputValue: unknown) {

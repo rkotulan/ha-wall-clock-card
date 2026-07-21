@@ -67,8 +67,8 @@
     "edit_widget": "Upravit {name}", "remove_widget": "Odebrat {name}",
     "singleton": "Widget {name} lze přidat pouze jednou", "unsaved": "Neuložené změny", "saving": "Ukládám…",
     "save_failed": "Uložení selhalo — klikněte pro opakování", "retry_save": "Opakovat uložení",
-    "autosave_hint": "Změny se ukládají průběžně · dashboard dokončíte tlačítkem Hotovo",
-    "autosave_hint_local": "Změny se ukládají průběžně · editor zavřete tlačítkem Hotovo"
+    "autosave_hint": "Změny se připravují průběžně · uložíte je a dashboard dokončíte tlačítkem Hotovo",
+    "autosave_hint_local": "Změny se připravují průběžně · uložíte je a editor zavřete tlačítkem Hotovo"
   },
   "zones": {
     "top_left": "Vlevo nahoře", "top_center": "Uprostřed nahoře", "top_right": "Vpravo nahoře",

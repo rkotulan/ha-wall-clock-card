@@ -96,8 +96,8 @@
     "saving": "Saving…",
     "save_failed": "Save failed — click to retry",
     "retry_save": "Retry save",
-    "autosave_hint": "Changes are saved continuously · finish the dashboard with Done",
-    "autosave_hint_local": "Changes are saved continuously · close this editor with Done"
+    "autosave_hint": "Changes are prepared continuously · save and finish the dashboard with Done",
+    "autosave_hint_local": "Changes are prepared continuously · save and close this editor with Done"
   },
   "zones": {
     "top_left": "Top left",
