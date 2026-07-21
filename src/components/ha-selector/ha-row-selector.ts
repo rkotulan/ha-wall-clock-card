@@ -1,4 +1,4 @@
-import {css, html, LitElement} from "lit";
+import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {HomeAssistant, fireEvent} from "custom-card-helpers";
 import {LabelPosition, Selector} from "./types";
@@ -64,6 +64,23 @@ declare global {
  */
 @customElement("ha-row-selector")
 export class HaRowSelector extends LitElement {
+    private lastEmittedValue: unknown = Symbol('initial-value');
+    private readonly nativeInputListener = (ev: Event) => this._nativeInputChanged(ev);
+    private readonly textCommitListener = () => this._commitNestedTextValue();
+
+    public connectedCallback(): void {
+        super.connectedCallback();
+        // Capture before an HA/Web Awesome child can stop propagation.
+        this.addEventListener('input', this.nativeInputListener, {capture: true});
+        this.addEventListener('focusout', this.textCommitListener, {capture: true});
+    }
+
+    public disconnectedCallback(): void {
+        this.removeEventListener('input', this.nativeInputListener, {capture: true});
+        this.removeEventListener('focusout', this.textCommitListener, {capture: true});
+        super.disconnectedCallback();
+    }
+
     /**
      * The Home Assistant instance
      * Required for accessing entity states and services
@@ -205,18 +222,70 @@ export class HaRowSelector extends LitElement {
      */
     private _valueChanged(ev: CustomEvent) {
         ev.stopPropagation();
-        let value = ev.detail.value;
+        this._emitValue(ev.detail.value);
+    }
+
+    /**
+     * Text selectors in newer Home Assistant/Web Awesome combinations do not
+     * consistently re-emit `value-changed` from their nested native input.
+     * Native input events are composed, so use them as a compatibility fallback.
+     */
+    private _nativeInputChanged(ev: Event) {
+        if (!this.selector || !Object.prototype.hasOwnProperty.call(this.selector, 'text')) {
+            return;
+        }
+
+        const source = ev.composedPath().find((item): item is HTMLInputElement =>
+            typeof (item as HTMLInputElement | undefined)?.value === 'string'
+        );
+        if (source) {
+            this._emitValue(source.value);
+        }
+    }
+
+    private _commitNestedTextValue() {
+        if (!this.selector || !Object.prototype.hasOwnProperty.call(this.selector, 'text')) {
+            return;
+        }
+
+        const queue: ParentNode[] = [this.renderRoot];
+        while (queue.length) {
+            const root = queue.shift()!;
+            for (const element of Array.from(root.querySelectorAll('*'))) {
+                if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+                    this._emitValue(element.value);
+                    return;
+                }
+                if (element.shadowRoot) queue.push(element.shadowRoot);
+            }
+        }
+    }
+
+    private _emitValue(inputValue: unknown) {
+        let value = inputValue;
 
         // Apply transformation function if provided
         if (this.transformData) {
             value = this.transformData(value);
         }
 
+        // HA may emit both its custom event and the composed native input event.
+        if (Object.is(this.lastEmittedValue, value)) {
+            return;
+        }
+        this.lastEmittedValue = value;
+
         // Use type assertion to allow additional properties
         fireEvent(this, "value-changed", {
             value,
             propertyName: this.propertyName
         } as any);
+    }
+
+    protected updated(changedProperties: PropertyValues<this>): void {
+        if (changedProperties.has('value')) {
+            this.lastEmittedValue = this.value;
+        }
     }
 
     static styles = css`

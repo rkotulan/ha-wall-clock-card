@@ -24,6 +24,13 @@ import {
     updateZoneSettings,
 } from '../editors/layout-editor-logic';
 import {WidgetRegistry} from '../widgets/widget-registry';
+import {
+    cloneWithConfigAtPath,
+    configAtPath,
+    findConfigPath,
+    LovelaceConfigPath,
+    synchronizeLiveConfigAtPath,
+} from './lovelace-config-path';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
 
@@ -60,7 +67,7 @@ export class WallClockCard extends LitElement {
     private layoutSavedRevision = 0;
     private layoutSavePromise?: Promise<boolean>;
     private layoutAutosaveTimer?: ReturnType<typeof setTimeout>;
-    private layoutSavePath?: Array<string | number>;
+    private layoutSavePath?: LovelaceConfigPath;
     private inlineEditSessionActive = false;
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
@@ -606,32 +613,6 @@ export class WallClockCard extends LitElement {
         this.selectedZone = null;
     }
 
-    private findConfigPath(node: unknown, target: unknown, path: Array<string | number> = []): Array<string | number> | undefined {
-        if (node === target) return path;
-        if (!node || typeof node !== 'object') return undefined;
-
-        if (Array.isArray(node)) {
-            for (let index = 0; index < node.length; index++) {
-                const found = this.findConfigPath(node[index], target, [...path, index]);
-                if (found) return found;
-            }
-            return undefined;
-        }
-
-        for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-            const found = this.findConfigPath(value, target, [...path, key]);
-            if (found) return found;
-        }
-        return undefined;
-    }
-
-    private configAtPath(root: unknown, path: Array<string | number>): unknown {
-        return path.reduce<unknown>((node, segment) => {
-            if (!node || typeof node !== 'object') return undefined;
-            return (node as Record<string | number, unknown>)[segment];
-        }, root);
-    }
-
     /**
      * Persists only this exact card instance. The initial path is resolved by
      * object identity, never by JSON equality (multiple cards can legitimately
@@ -648,27 +629,32 @@ export class WallClockCard extends LitElement {
             const liveConfig = lovelace.config;
             let path = this.layoutSavePath;
             if (!path) {
-                path = this.findConfigPath(liveConfig, original);
+                path = findConfigPath(liveConfig, original);
             }
             if (!path?.length) {
                 logger.warn('Refusing layout save: the exact card instance was not found');
                 return false;
             }
 
-            const liveCard = this.configAtPath(liveConfig, path);
+            const liveCard = configAtPath(liveConfig, path);
             if (liveCard !== original && JSON.stringify(liveCard) !== JSON.stringify(original)) {
                 logger.warn('Refusing layout save: the dashboard changed at the card path');
                 return false;
             }
 
-            const cloned = JSON.parse(JSON.stringify(liveConfig)) as Record<string, unknown>;
-            const parentPath = path.slice(0, -1);
-            const parent = this.configAtPath(cloned, parentPath);
-            if (!parent || typeof parent !== 'object') {
+            const cloned = cloneWithConfigAtPath(liveConfig, path, updated);
+            if (!cloned) {
                 return false;
             }
-            (parent as Record<string | number, unknown>)[path[path.length - 1]] = updated;
             await lovelace.saveConfig(cloned);
+
+            // HA's global Done action saves the live edit model again. Keep that
+            // model aligned with the config just persisted, otherwise it can
+            // overwrite the autosave with the pre-edit card configuration.
+            if (!synchronizeLiveConfigAtPath(liveConfig, path, original, updated)) {
+                logger.warn('Refusing live config synchronization: the card changed during save');
+                return false;
+            }
             this.layoutSavePath = path;
             return true;
         } catch (error) {
