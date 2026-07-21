@@ -105,7 +105,17 @@ export class ClockComponent extends LitElement {
             opacity: 1;
             z-index: 2;
             position: relative;
-            line-height: 5rem;
+            /* Keep the line box proportional to the configured date size.
+               A fixed 5rem line-height left several rem of invisible height
+               around small custom dates, outside the control of widgetGap. */
+            line-height: 1;
+        }
+
+        /* In v2 date followed time inside this same component, so the small
+           top margin separated the two lines. Zone layout renders date as its
+           own widget and already supplies widgetGap; do not count both. */
+        .date.standalone {
+            margin-top: 0;
         }
     `;
 
@@ -224,7 +234,8 @@ export class ClockComponent extends LitElement {
                 </div>
             ` : ''}
             ${this.showDate ? html`
-                <div class="date" style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
+                <div class="date ${this.showClock ? '' : 'standalone'}"
+                     style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
             ` : ''}
         `;
     }

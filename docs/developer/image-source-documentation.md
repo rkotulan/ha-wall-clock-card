@@ -1,5 +1,11 @@
 # Image Source System Documentation
 
+> **Developer reference:** this document describes provider internals. For the
+> current 3.0 YAML shape and user-facing examples, see
+> [Image sources](../image-sources.md). Legacy root-level `imageSource` maps to
+> `background.source`, `imageConfig` to `background.config`, and
+> `backgroundImages` to `background.images`.
+
 ## Overview
 
 The Wall Clock Card uses a flexible image source system to fetch and display background images. This system allows for different sources of images (local files, online services, etc.) while providing a consistent interface for the card to interact with.

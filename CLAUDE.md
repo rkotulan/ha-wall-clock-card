@@ -54,7 +54,7 @@ To register a custom provider/source at runtime, call the exported helpers (`reg
 
 - **Logging** — `createLogger(name)` / global `logger` (`src/utils/logger/`). Levels configured from card config via `configureLogger` / `getLogLevelFromString`.
 - **Localization** — `src/utils/localize/`. `loadTranslationsAsync` loads translations; weather conditions are localized across many languages. Translation JSON lives outside `src` (see `docs/`/existing translation files) — add condition strings for every supported language when introducing a new weather condition.
-- **Config & types** — shared config shape and defaults in `src/core/config.ts` and `src/core/types.ts` (`WallClockConfig`).
+- **Config & types** — legacy/shared types live in `src/core/types.ts`; the normalized 3.0 shape and defaults live in `src/core/layout-types.ts`, with migration/resolution in `src/core/migrate-config.ts`.
 
 ## Testing
 

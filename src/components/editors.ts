@@ -1,6 +1,7 @@
 // Export all editor components from their new locations
 export * from './action-bar/action-bar-editor';
 export * from './background-image/background-editor';
+export * from './calendar/calendar-editor';
 export * from './clock/date-format-editor';
 export * from './clock/time-format-editor';
 export * from './sensor/sensors-editor';

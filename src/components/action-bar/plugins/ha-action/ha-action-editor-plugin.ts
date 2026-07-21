@@ -27,8 +27,8 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     .selector=${{ entity: {} }}
                     .value=${this.haAction.entity || ''}
                     .required=${false}
-                    .label=${'Entity'}
-                    .helper=${'Entity used by the more-info and toggle actions'}
+                    .label=${this.t('editor.action_plugin.entity', 'Entity')}
+                    .helper=${this.t('editor.action_plugin.entity_more_info_help', 'Entity used by the more-info and toggle actions')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('entity', ev)}
             ></ha-row-selector>
@@ -37,8 +37,8 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ ui_action: {} }}
                     .value=${this.haAction.tap_action}
-                    .label=${'Tap Action'}
-                    .helper=${'Standard Home Assistant action to run on tap'}
+                    .label=${this.t('editor.action_plugin.tap_action', 'Tap action')}
+                    .helper=${this.t('editor.action_plugin.tap_help', 'Standard Home Assistant action to run on tap')}
                     .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('tap_action', ev)}
             ></ha-row-selector>
@@ -48,8 +48,8 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     .selector=${{ ui_action: {} }}
                     .value=${this.haAction.hold_action}
                     .required=${false}
-                    .label=${'Hold Action'}
-                    .helper=${'Standard Home Assistant action to run on hold'}
+                    .label=${this.t('editor.action_plugin.hold_action', 'Hold action')}
+                    .helper=${this.t('editor.action_plugin.hold_help', 'Standard Home Assistant action to run on hold')}
                     .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('hold_action', ev)}
             ></ha-row-selector>
@@ -59,8 +59,8 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     .selector=${{ ui_action: {} }}
                     .value=${this.haAction.double_tap_action}
                     .required=${false}
-                    .label=${'Double Tap Action'}
-                    .helper=${'Standard Home Assistant action to run on double tap'}
+                    .label=${this.t('editor.action_plugin.double_action', 'Double tap action')}
+                    .helper=${this.t('editor.action_plugin.double_help', 'Standard Home Assistant action to run on double tap')}
                     .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('double_tap_action', ev)}
             ></ha-row-selector>
@@ -69,8 +69,8 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: '' }}
                     .value=${this.haAction.activeColor || '#ffeb3b'}
-                    .label=${'Active Color'}
-                    .helper=${'Color to use when the action is active'}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
+                    .helper=${this.t('editor.action_plugin.active_color_help', 'Color to use when the action is active')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>

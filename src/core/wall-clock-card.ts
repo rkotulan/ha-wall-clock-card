@@ -3,7 +3,7 @@ import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {ImageSourceConfig, Weather} from '../providers/image';
 
-import {configureLogger, getLogLevelFromString, logger, loadTranslationsAsync} from '../utils';
+import {configureLogger, getLogLevelFromString, localize, logger, loadTranslationsAsync} from '../utils';
 // Side-effect import: registers the ha-background-image element. The class import
 // alone is type-only and would be elided by TypeScript.
 import '../components/background';
@@ -12,17 +12,28 @@ import '../editors';
 import '../components/ha-selector';
 import {Messenger, WeatherMessage} from '../utils';
 import {WallClockConfig, Size} from './types';
-import {AppearanceConfig, WallClockConfigV3} from './layout-types';
+import {AppearanceConfig, LayoutConfig, WallClockConfigV3, ZoneId} from './layout-types';
 import {migrateToLayout} from './migrate-config';
 import {WccLayout} from './wcc-layout';
 import './wcc-layout';
+import {WidgetSelection} from '../editors/zone-overlay';
+import {
+    deduplicateWidgetTypes,
+    findWidgetById,
+    updateWidgetAt,
+    updateZoneSettings,
+} from '../editors/layout-editor-logic';
+import {WidgetRegistry} from '../widgets/widget-registry';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
 
 // Global constant injected by webpack.DefinePlugin
 declare const PACKAGE_VERSION: string;
 
-
+/** Height of HA's card edit actions ("Edit" + overflow menu), rendered below
+ * the custom card and therefore not included in this element's own bounds. */
+const DEFAULT_DASHBOARD_EDIT_FOOTER_HEIGHT = 64;
+const LAYOUT_AUTOSAVE_DELAY_MS = 700;
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
@@ -36,9 +47,21 @@ export class WallClockCard extends LitElement {
      */
     @property({attribute: false}) preview = false;
 
-    /** In-place zone editing (edit mode overlay); saved via lovelace.saveConfig. */
-    @state() private layoutEditing = false;
-    private editBackup?: WallClockConfig;
+    /** In-place editing is active automatically while HA is editing the dashboard. */
+    @state() private selectedWidget: WidgetSelection | null = null;
+    @state() private selectedZone: ZoneId | null = null;
+    @state() private designerPreview = false;
+    @state() private designerOpen = false;
+    @state() private designerRequiresExplicitOpen = false;
+    @state() private layoutSaveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' = 'idle';
+    @state() private layoutSaveError?: string;
+    private layoutSaveBaseline?: WallClockConfig;
+    private layoutSaveRevision = 0;
+    private layoutSavedRevision = 0;
+    private layoutSavePromise?: Promise<boolean>;
+    private layoutAutosaveTimer?: ReturnType<typeof setTimeout>;
+    private layoutSavePath?: Array<string | number>;
+    private inlineEditSessionActive = false;
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -46,6 +69,10 @@ export class WallClockCard extends LitElement {
     private backgroundImageComponent: BackgroundImageComponent =
         document.createElement('ha-background-image') as BackgroundImageComponent;
     private layoutElement: WccLayout = document.createElement('wcc-layout') as WccLayout;
+
+    private t(key: string, fallback: string): string {
+        return localize(key, this.hass, fallback);
+    }
 
     constructor() {
         super();
@@ -64,9 +91,17 @@ export class WallClockCard extends LitElement {
 
     connectedCallback(): void {
         super.connectedCallback();
+        // Fullscreen is a transient editor state, never persisted across HA's
+        // detach/reattach cycles or into normal dashboard rendering.
+        if (!this.preview) {
+            this.removeAttribute('designer-fullscreen');
+        }
         if (this.isInEditPreview()) {
             this.setAttribute('dialog-preview', '');
             this.setupPreviewScaling();
+        }
+        if (this.preview && !this.hasAttribute('dialog-preview') && this.hass && !this.inlineEditSessionActive) {
+            this.beginInlineEditing();
         }
         window.addEventListener('resize', this.onWindowResize);
         // A ResizeObserver (not rAF, which is throttled in background tabs)
@@ -79,6 +114,13 @@ export class WallClockCard extends LitElement {
     }
 
     disconnectedCallback(): void {
+        this.clearLayoutAutosaveTimer();
+        this.removeAttribute('designer-fullscreen');
+        this.designerOpen = false;
+        if (this.inlineEditSessionActive) {
+            this.inlineEditSessionActive = false;
+            void this.flushLayoutAutosave();
+        }
         super.disconnectedCallback();
         this.previewObserver?.disconnect();
         this.previewObserver = undefined;
@@ -92,8 +134,10 @@ export class WallClockCard extends LitElement {
      * (viewport height minus the card's offset — e.g. an HA header). The CSS
      * `max-height: 100dvh` ceiling is the whole viewport, which overflows a
      * scroll container by the header height when the card sits below it and its
-     * container gives no definite height (masonry / min-height panel views);
-     * without a definite height the flex chain can't fit the grid on its own.
+     * container gives no definite height (masonry / min-height panel views).
+     * Dashboard edit mode also adds a controls footer *outside* this element;
+     * its height has to be reserved here or that footer makes the page scroll.
+     * Without a definite height the flex chain can't fit the grid on its own.
      * No-op in the edit-dialog miniature, which sizes itself by transform.
      * The >1px guard keeps the ResizeObserver from looping on its own write.
      */
@@ -101,8 +145,13 @@ export class WallClockCard extends LitElement {
         if (this.hasAttribute('dialog-preview')) {
             return;
         }
+        if (this.hasAttribute('designer-fullscreen')) {
+            this.style.maxHeight = '';
+            return;
+        }
         const top = Math.max(0, this.getBoundingClientRect().top);
-        const available = window.innerHeight - top;
+        const editFooterHeight = this.dashboardEditFooterHeight();
+        const available = window.innerHeight - top - editFooterHeight;
         if (available <= 0) {
             return;
         }
@@ -110,6 +159,24 @@ export class WallClockCard extends LitElement {
         if (isNaN(current) || Math.abs(current - available) > 1) {
             this.style.maxHeight = `${available}px`;
         }
+    }
+
+    /**
+     * HA renders its edit controls as a sibling below the card. Keep a default
+     * matching that row, while allowing themes / future HA versions to override
+     * it through `--wcc-dashboard-edit-footer-height` on the card.
+     */
+    private dashboardEditFooterHeight(): number {
+        if (!this.preview || this.hasAttribute('dialog-preview')) {
+            return 0;
+        }
+
+        const customHeight = parseFloat(
+            getComputedStyle(this).getPropertyValue('--wcc-dashboard-edit-footer-height')
+        );
+        return Number.isFinite(customHeight)
+            ? Math.max(0, customHeight)
+            : DEFAULT_DASHBOARD_EDIT_FOOTER_HEIGHT;
     }
 
     /** The dialog preview renders the card at the browser viewport resolution
@@ -218,7 +285,14 @@ export class WallClockCard extends LitElement {
     // Lovelace contract (validate and apply before returning, throw on error).
     private applyConfig(config: WallClockConfig): void {
         this.config = config;
-        this.configV3 = migrateToLayout(config);
+        const migrated = migrateToLayout(config);
+        const singletonTypes = WidgetRegistry.getInstance().getAllWidgets()
+            .filter(plugin => plugin.singleton)
+            .map(plugin => plugin.widgetId);
+        this.configV3 = {
+            ...migrated,
+            layout: deduplicateWidgetTypes(migrated.layout, singletonTypes),
+        };
 
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
@@ -233,6 +307,7 @@ export class WallClockCard extends LitElement {
         const appearance = this.configV3.appearance ?? {};
         return {
             fontColor: appearance.fontColor ?? '#FFFFFF',
+            fontFamily: appearance.fontFamily,
             language: appearance.language,
             timeZone: appearance.timeZone ?? this.hass?.config?.time_zone,
             size: appearance.size ?? Size.Medium,
@@ -240,8 +315,12 @@ export class WallClockCard extends LitElement {
     }
 
     private syncLayoutElement(): void {
+        const appearance = this.computeAppearance();
         this.layoutElement.layout = this.configV3.layout;
-        this.layoutElement.appearance = this.computeAppearance();
+        this.layoutElement.appearance = appearance;
+        // Assign through CSSOM rather than interpolating a style attribute. An
+        // empty value restores the HA theme font from the static host rule.
+        this.style.fontFamily = appearance.fontFamily ?? '';
         if (this.hass) {
             this.layoutElement.hass = this.hass;
         }
@@ -298,43 +377,266 @@ export class WallClockCard extends LitElement {
 
     // ------------------------------------------------------ in-place layout editing
 
-    private startLayoutEditing(): void {
-        this.editBackup = this.config;
-        this.layoutEditing = true;
+    /** Panel views dedicate the entire view to this card and can host the
+     * designer directly. Every other Lovelace placement uses an explicit entry
+     * button, independent of monitor resolution or measured card dimensions. */
+    private isPanelPlacement(): boolean {
+        // Prefer the composed DOM: this also works while HA is rebuilding the
+        // Lovelace model during edit-mode transitions.
+        let element: Element | null = this;
+        while (element) {
+            if (element.localName === 'hui-panel-view') return true;
+            if (element.parentElement) {
+                element = element.parentElement;
+                continue;
+            }
+            const root = element.getRootNode();
+            element = root instanceof ShadowRoot ? root.host : null;
+        }
+
+        // Fallback to the active view config. Current HA stores panel views as
+        // `type: panel`; `panel: true` covers older Lovelace configurations.
+        const huiRoot = this.findHuiRoot() as (Element & {
+            ___curView?: number;
+            lovelace?: {config?: {views?: Array<{type?: string; panel?: boolean}>}};
+        }) | undefined;
+        const currentView = huiRoot?.___curView;
+        const view = currentView === undefined
+            ? undefined
+            : huiRoot?.lovelace?.config?.views?.[currentView];
+        return view?.type === 'panel' || view?.panel === true;
+    }
+
+    private beginInlineEditing(): void {
+        const useExplicitEntry = !this.isPanelPlacement();
+        // Panel cards keep the permanent in-place designer. A regular
+        // card stays unobtrusive until its own Configure button is pressed.
+        this.removeAttribute('designer-fullscreen');
+        this.designerRequiresExplicitOpen = useExplicitEntry;
+        this.designerOpen = !useExplicitEntry;
+        this.selectedWidget = null;
+        this.selectedZone = null;
+        this.designerPreview = false;
+        this.inlineEditSessionActive = true;
+        // Re-entering edit mode while the previous "Done" save is still running
+        // must keep that queue/baseline intact so a later retry can still match.
+        if (this.layoutSavePromise ||
+            (this.layoutSaveBaseline && this.layoutSaveRevision > this.layoutSavedRevision)) {
+            return;
+        }
+        this.layoutSaveBaseline = this.config;
+        this.layoutSaveRevision = 0;
+        this.layoutSavedRevision = 0;
+        this.layoutSavePromise = undefined;
+        this.layoutSavePath = undefined;
+        this.clearLayoutAutosaveTimer();
+        this.layoutSaveStatus = 'idle';
+        this.layoutSaveError = undefined;
+    }
+
+    private finishInlineEditing(): void {
+        this.clearLayoutAutosaveTimer();
+        this.removeAttribute('designer-fullscreen');
+        this.closeInplaceInspector();
+        this.designerPreview = false;
+        this.designerOpen = false;
+        this.designerRequiresExplicitOpen = false;
+        this.inlineEditSessionActive = false;
+        void this.flushLayoutAutosave().then(saved => {
+            if (saved && !this.inlineEditSessionActive) {
+                this.layoutSaveBaseline = undefined;
+                this.layoutSavePath = undefined;
+            } else {
+                if (!saved) {
+                    this.dispatchEvent(new CustomEvent('hass-notification', {
+                        detail: {message: 'Wall Clock: the last layout change could not be saved.'},
+                        bubbles: true,
+                        composed: true,
+                    }));
+                }
+            }
+        });
+    }
+
+    private openFullscreenDesigner(): void {
+        if (!this.designerRequiresExplicitOpen) return;
+        this.style.maxHeight = '';
+        this.setAttribute('designer-fullscreen', '');
+        this.designerOpen = true;
+    }
+
+    /** Closes only this card's promoted designer. HA remains in dashboard edit
+     * mode so the user can configure another card before using the global Done. */
+    private closeFullscreenDesigner(): void {
+        this.clearLayoutAutosaveTimer();
+        this.closeInplaceInspector();
+        this.designerPreview = false;
+        this.removeAttribute('designer-fullscreen');
+        this.designerOpen = false;
+        void this.flushLayoutAutosave();
+        void this.updateComplete.then(() => this.updateFitHeight());
+    }
+
+    private applyInplaceConfig(config: WallClockConfig): void {
+        this.applyConfig(config);
+        this.markLayoutDirty();
+    }
+
+    private markLayoutDirty(): void {
+        if (!this.inlineEditSessionActive) return;
+        this.layoutSaveRevision++;
+        this.layoutSaveStatus = 'pending';
+        this.layoutSaveError = undefined;
+        this.clearLayoutAutosaveTimer();
+        this.layoutAutosaveTimer = setTimeout(() => {
+            this.layoutAutosaveTimer = undefined;
+            void this.flushLayoutAutosave();
+        }, LAYOUT_AUTOSAVE_DELAY_MS);
+    }
+
+    private clearLayoutAutosaveTimer(): void {
+        if (this.layoutAutosaveTimer !== undefined) {
+            clearTimeout(this.layoutAutosaveTimer);
+            this.layoutAutosaveTimer = undefined;
+        }
+    }
+
+    /** Serializes saves so rapid editor changes cannot overwrite a newer config. */
+    private async flushLayoutAutosave(): Promise<boolean> {
+        this.clearLayoutAutosaveTimer();
+        if (!this.layoutSaveBaseline || this.layoutSaveRevision <= this.layoutSavedRevision) {
+            return true;
+        }
+        if (this.layoutSavePromise) {
+            const activeSaved = await this.layoutSavePromise;
+            if (!activeSaved) return false;
+            return this.flushLayoutAutosave();
+        }
+
+        const baseline = this.layoutSaveBaseline;
+        const updated = JSON.parse(JSON.stringify(this.configV3)) as WallClockConfigV3;
+        const revision = this.layoutSaveRevision;
+        this.layoutSaveStatus = 'saving';
+        this.layoutSaveError = undefined;
+
+        const savePromise = this.saveConfigToLovelace(baseline, updated);
+        this.layoutSavePromise = savePromise;
+        const saved = await savePromise;
+        if (this.layoutSavePromise === savePromise) {
+            this.layoutSavePromise = undefined;
+        }
+
+        if (!saved) {
+            this.layoutSaveStatus = 'error';
+            this.layoutSaveError = 'Save failed — click to retry';
+            logger.warn('Could not persist the layout (dashboard save API not found)');
+            return false;
+        }
+
+        this.layoutSaveBaseline = updated as unknown as WallClockConfig;
+        this.layoutSavedRevision = revision;
+        if (this.layoutSaveRevision > revision) {
+            this.layoutSaveStatus = 'pending';
+            return this.flushLayoutAutosave();
+        }
+        this.layoutSaveStatus = 'saved';
+        return true;
     }
 
     private onInplaceLayoutChanged(ev: CustomEvent): void {
         ev.stopPropagation();
-        const newConfig = {...this.configV3, layout: ev.detail.layout};
-        this.applyConfig(newConfig as unknown as WallClockConfig);
+        const layout = ev.detail.layout as LayoutConfig;
+        const focusWidgetId = ev.detail.focusWidgetId as string | undefined;
+        const selectedId = focusWidgetId ?? this.selectedWidget?.widgetId;
+        if (selectedId) {
+            const located = findWidgetById(layout, selectedId);
+            this.selectedWidget = located
+                ? {zone: located.zone, index: located.index, widgetId: selectedId}
+                : null;
+            if (focusWidgetId) this.selectedZone = null;
+        } else if (this.selectedWidget) {
+            this.selectedWidget = null;
+        }
+        const newConfig = {...this.configV3, layout};
+        this.applyInplaceConfig(newConfig as unknown as WallClockConfig);
     }
 
-    private cancelLayoutEditing(): void {
-        this.layoutEditing = false;
-        if (this.editBackup) {
-            this.applyConfig(this.editBackup);
-        }
-        this.editBackup = undefined;
+    private onInplaceWidgetSelected(ev: CustomEvent): void {
+        const selection = ev.detail as WidgetSelection;
+        this.selectedZone = null;
+        const same = selection.widgetId
+            ? this.selectedWidget?.widgetId === selection.widgetId
+            : this.selectedWidget?.zone === selection.zone && this.selectedWidget?.index === selection.index;
+        this.selectedWidget = same ? null : selection;
     }
 
-    private async saveLayoutEditing(): Promise<void> {
-        this.layoutEditing = false;
-        const backup = this.editBackup;
-        this.editBackup = undefined;
-        if (!backup) {
-            return;
+    private onInplaceZoneSelected(ev: CustomEvent): void {
+        const zone = ev.detail.zone as ZoneId;
+        this.selectedWidget = null;
+        this.selectedZone = this.selectedZone === zone ? null : zone;
+    }
+
+    private onInplaceWidgetConfigChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+        const {zone, index, widget} = ev.detail;
+        const layout = updateWidgetAt(this.configV3.layout, zone, index, widget);
+        this.applyInplaceConfig({...this.configV3, layout} as unknown as WallClockConfig);
+    }
+
+    private onInplaceZoneSettingsChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+        const {zone, settings} = ev.detail;
+        const layout = updateZoneSettings(this.configV3.layout, zone, settings);
+        this.applyInplaceConfig({...this.configV3, layout} as unknown as WallClockConfig);
+    }
+
+    private onInplaceCardConfigChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+        this.applyInplaceConfig(ev.detail.config as WallClockConfig);
+    }
+
+    private openCardSettings(): void {
+        this.designerPreview = false;
+        this.selectedWidget = null;
+        this.selectedZone = null;
+    }
+
+    private closeInplaceInspector(): void {
+        this.selectedWidget = null;
+        this.selectedZone = null;
+    }
+
+    private findConfigPath(node: unknown, target: unknown, path: Array<string | number> = []): Array<string | number> | undefined {
+        if (node === target) return path;
+        if (!node || typeof node !== 'object') return undefined;
+
+        if (Array.isArray(node)) {
+            for (let index = 0; index < node.length; index++) {
+                const found = this.findConfigPath(node[index], target, [...path, index]);
+                if (found) return found;
+            }
+            return undefined;
         }
-        const saved = await this.saveConfigToLovelace(backup, this.configV3);
-        if (!saved) {
-            logger.warn('Could not persist the layout (dashboard save API not found) — the change is only visible until reload');
+
+        for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+            const found = this.findConfigPath(value, target, [...path, key]);
+            if (found) return found;
         }
+        return undefined;
+    }
+
+    private configAtPath(root: unknown, path: Array<string | number>): unknown {
+        return path.reduce<unknown>((node, segment) => {
+            if (!node || typeof node !== 'object') return undefined;
+            return (node as Record<string | number, unknown>)[segment];
+        }, root);
     }
 
     /**
-     * Persists the card's new config by locating hui-root and replacing this
-     * card inside lovelace.config (matched against the pre-edit config). This
-     * uses HA internals — cards have no official self-save API — and degrades
-     * to a logged warning when the internals are not found.
+     * Persists only this exact card instance. The initial path is resolved by
+     * object identity, never by JSON equality (multiple cards can legitimately
+     * have identical configs). Later saves reuse that path only while its live
+     * value still matches our last baseline; otherwise saving fails closed.
      */
     private async saveConfigToLovelace(original: WallClockConfig, updated: WallClockConfigV3): Promise<boolean> {
         try {
@@ -343,35 +645,31 @@ export class WallClockCard extends LitElement {
             if (!lovelace?.saveConfig || !lovelace.config) {
                 return false;
             }
-            const originalJson = JSON.stringify(original);
-            const cloned = JSON.parse(JSON.stringify(lovelace.config)) as {views?: unknown};
-            let replaced = false;
-            const visit = (node: unknown): void => {
-                if (replaced || !node || typeof node !== 'object') {
-                    return;
-                }
-                if (Array.isArray(node)) {
-                    node.forEach(visit);
-                    return;
-                }
-                const record = node as Record<string, unknown>;
-                if (Array.isArray(record.cards)) {
-                    const cards = record.cards as unknown[];
-                    for (let i = 0; i < cards.length; i++) {
-                        if (JSON.stringify(cards[i]) === originalJson) {
-                            cards[i] = updated;
-                            replaced = true;
-                            return;
-                        }
-                    }
-                }
-                Object.values(record).forEach(visit);
-            };
-            visit(cloned.views);
-            if (!replaced) {
+            const liveConfig = lovelace.config;
+            let path = this.layoutSavePath;
+            if (!path) {
+                path = this.findConfigPath(liveConfig, original);
+            }
+            if (!path?.length) {
+                logger.warn('Refusing layout save: the exact card instance was not found');
                 return false;
             }
+
+            const liveCard = this.configAtPath(liveConfig, path);
+            if (liveCard !== original && JSON.stringify(liveCard) !== JSON.stringify(original)) {
+                logger.warn('Refusing layout save: the dashboard changed at the card path');
+                return false;
+            }
+
+            const cloned = JSON.parse(JSON.stringify(liveConfig)) as Record<string, unknown>;
+            const parentPath = path.slice(0, -1);
+            const parent = this.configAtPath(cloned, parentPath);
+            if (!parent || typeof parent !== 'object') {
+                return false;
+            }
+            (parent as Record<string | number, unknown>)[path[path.length - 1]] = updated;
             await lovelace.saveConfig(cloned);
+            this.layoutSavePath = path;
             return true;
         } catch (error) {
             logger.warn('Saving layout to Lovelace failed:', error);
@@ -407,10 +705,20 @@ export class WallClockCard extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>): void {
-        // Leaving dashboard edit mode closes the in-place editing (discarding
-        // unsaved changes, same as HA's own edit flow)
-        if (changedProperties.has('preview') && !this.preview && this.layoutEditing) {
-            this.cancelLayoutEditing();
+        if (changedProperties.has('preview') || changedProperties.has('hass')) {
+            const inlineEditing = this.preview && !this.hasAttribute('dialog-preview') && !!this.hass;
+            if (inlineEditing && !this.inlineEditSessionActive) {
+                this.beginInlineEditing();
+            } else if (!inlineEditing && this.inlineEditSessionActive) {
+                // HA's global "Done" ends the session; flush any pending debounce.
+                this.finishInlineEditing();
+            }
+            if (!inlineEditing) {
+                // Defensive cleanup even when HA changed lifecycle ordering and
+                // no active edit session was observed by this element.
+                this.removeAttribute('designer-fullscreen');
+                this.designerOpen = false;
+            }
         }
 
         if (changedProperties.has('hass') && this.hass) {
@@ -453,6 +761,28 @@ export class WallClockCard extends LitElement {
                 box-sizing: border-box;
             }
 
+            /* Standard card placements use the three-column designer in a
+               promoted viewport layer after an explicit user action. Keep it over the
+               available viewport below HA's header. The mode is latched when
+               editing starts, preventing layout flicker. */
+            :host([designer-fullscreen]) {
+                position: fixed;
+                top: var(--header-height, 56px);
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+                width: auto;
+                height: auto;
+                max-height: none;
+                border-radius: 0;
+                box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+            }
+
+            :host([designer-fullscreen]) ha-card {
+                border-radius: 0;
+            }
+
             ha-card {
                 display: flex;
                 flex-direction: column;
@@ -487,90 +817,387 @@ export class WallClockCard extends LitElement {
                 transform-origin: top left;
             }
 
-            /* In-place layout editing (dashboard edit mode) */
-            .layout-edit-toggle {
+            /* Permanent three-column designer in HA dashboard edit mode. */
+            .designer-toolbar {
                 position: absolute;
-                top: 8px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 6;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 10;
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                background-color: rgba(0, 0, 0, 0.6);
-                color: #fff;
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 16px;
-                padding: 4px 14px;
+                justify-content: space-between;
+                gap: 16px;
+                height: 44px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+                background: #0d0e13;
+                color: #f2f3f7;
+            }
+
+            .designer-heading {
+                display: flex;
+                align-items: baseline;
+                gap: 14px;
+                min-width: 0;
+            }
+
+            .designer-heading strong {
+                flex-shrink: 0;
+                color: var(--primary-color, #4f8cff);
+                font-size: 0.86rem;
+            }
+
+            .designer-heading span {
+                overflow: hidden;
+                color: #777d90;
+                font-size: 0.73rem;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .designer-card-settings {
+                display: inline-flex;
+                align-items: center;
+                flex-shrink: 0;
+                gap: 7px;
+                min-height: 32px;
+                padding: 0 12px;
+                border: 1px solid transparent;
+                border-radius: 7px;
+                background: transparent;
+                color: #a0a5b5;
                 font: inherit;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
+                font-weight: 700;
                 cursor: pointer;
             }
 
-            .layout-edit-toggle:hover {
-                background-color: rgba(0, 0, 0, 0.8);
+            .designer-card-settings ha-icon {
+                --mdc-icon-size: 17px;
             }
 
-            .layout-edit-toggle ha-icon {
-                --mdc-icon-size: 16px;
+            .designer-card-settings:hover,
+            .designer-card-settings:focus-visible {
+                color: #fff;
+                outline: none;
+            }
+
+            .designer-card-settings.active {
+                border-color: var(--primary-color, #3b82f6);
+                color: #e9f2ff;
+                background: rgba(59, 130, 246, 0.08);
+            }
+
+            .designer-toolbar-actions {
+                display: flex;
+                align-items: center;
+                flex-shrink: 0;
+                gap: 8px;
+            }
+
+            .designer-modes {
+                display: flex;
+                flex-shrink: 0;
+                gap: 5px;
+                padding: 3px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                background: #15161c;
+            }
+
+            .designer-mode {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                min-height: 34px;
+                padding: 0 14px;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: #777d90;
+                font: inherit;
+                font-size: 0.82rem;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .designer-mode ha-icon {
+                --mdc-icon-size: 18px;
+            }
+
+            .designer-mode:hover,
+            .designer-mode:focus-visible {
+                color: #fff;
+                outline: none;
+            }
+
+            .designer-mode.active {
+                background: #242631;
+                color: #f5f6fa;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
+            }
+
+            .designer-done,
+            .designer-launch {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                border: 0;
+                background: var(--primary-color, #03a9f4);
+                color: var(--text-primary-color, #fff);
+                font: inherit;
+                font-size: 0.82rem;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .designer-done {
+                min-height: 34px;
+                padding: 0 15px;
+                border-radius: 7px;
+            }
+
+            .designer-launch {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 7;
+                min-height: 36px;
+                padding: 0 14px;
+                border-radius: 18px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.42);
+            }
+
+            .designer-launch ha-icon {
+                --mdc-icon-size: 18px;
+            }
+
+            .designer-done:hover,
+            .designer-done:focus-visible,
+            .designer-launch:hover,
+            .designer-launch:focus-visible {
+                filter: brightness(1.12);
+                outline: 2px solid rgba(255, 255, 255, 0.5);
+                outline-offset: 1px;
             }
 
             wcc-zone-overlay.inplace {
                 position: absolute;
-                inset: 0;
+                top: 44px;
+                left: 0;
+                right: 400px;
+                bottom: 28px;
+                height: auto;
                 z-index: 6;
             }
 
-            .layout-edit-actions {
+            wcc-layout-inspector.inplace-inspector {
                 position: absolute;
-                top: 8px;
-                right: 8px;
-                z-index: 7;
+                top: 44px;
+                right: 0;
+                bottom: 28px;
+                height: auto;
+                z-index: 8;
+                width: 400px;
+                overflow: hidden;
+                border-left: 1px solid rgba(255, 255, 255, 0.09);
+            }
+
+            .designer-statusbar {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10;
                 display: flex;
-                gap: 8px;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                height: 28px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                border-top: 1px solid rgba(255, 255, 255, 0.09);
+                background: #0d0e13;
+                color: #747a8d;
+                font-size: 0.68rem;
             }
 
-            .layout-edit-actions button {
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 16px;
-                padding: 4px 14px;
+            .layout-save-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+                padding: 0;
+                border: 0;
+                background: transparent;
+                color: inherit;
                 font: inherit;
-                font-size: 0.85rem;
-                cursor: pointer;
-                background-color: rgba(0, 0, 0, 0.6);
-                color: #fff;
+                pointer-events: none;
             }
 
-            .layout-edit-actions button.primary {
-                background-color: var(--primary-color, #03a9f4);
-                border-color: var(--primary-color, #03a9f4);
-                color: #fff;
+            .layout-save-status ha-icon {
+                --mdc-icon-size: 14px;
+                color: var(--primary-color, #4f8cff);
+            }
+
+            .layout-save-status.saved ha-icon,
+            .layout-save-status.idle ha-icon {
+                color: #69d7a0;
+            }
+
+            .layout-save-status.pending ha-icon {
+                color: #fbc02d;
+            }
+
+            .layout-save-status.error {
+                color: var(--error-color, #ef5350);
+                pointer-events: auto;
+                cursor: pointer;
+            }
+
+            .layout-save-status.error ha-icon {
+                color: inherit;
+            }
+
+            .designer-status-hint {
+                overflow: hidden;
+                text-align: right;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            @media (max-width: 1050px) {
+                wcc-zone-overlay.inplace {
+                    right: 340px;
+                }
+
+                wcc-layout-inspector.inplace-inspector {
+                    width: 340px;
+                }
+            }
+
+            @media (max-width: 760px) {
+                .designer-heading span,
+                .designer-status-hint {
+                    display: none;
+                }
+
+                wcc-zone-overlay.inplace {
+                    right: 0;
+                }
+
+                wcc-layout-inspector.inplace-inspector {
+                    top: auto;
+                    left: 8px;
+                    right: 8px;
+                    bottom: 36px;
+                    width: auto;
+                    height: min(52%, 560px);
+                    border: 1px solid rgba(255, 255, 255, 0.14);
+                    border-radius: 12px 12px 0 0;
+                    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42);
+                }
             }
         `;
     }
 
     render() {
-        // In-place editing is offered only in dashboard edit mode (preview set
-        // by HA), never in the edit-dialog miniature.
-        const offerLayoutEditing = this.preview && !this.hasAttribute('dialog-preview') && !!this.hass;
+        // Panel cards expose the designer directly. Standard card placements first
+        // show an explicit Configure entry point so neighbouring cards remain
+        // accessible while HA is editing the dashboard.
+        const inlineEditing = this.preview && !this.hasAttribute('dialog-preview') && !!this.hass;
+        const designerVisible = inlineEditing && this.designerOpen;
+        const savePresentation = {
+            idle: {icon: 'mdi:check-circle-outline', label: this.t('ui.saved', 'Saved')},
+            pending: {icon: 'mdi:alert-outline', label: this.t('designer.unsaved', 'Unsaved changes')},
+            saving: {icon: 'mdi:content-save-sync-outline', label: this.t('designer.saving', 'Saving…')},
+            saved: {icon: 'mdi:check-circle', label: this.t('ui.saved', 'Saved')},
+            error: {icon: 'mdi:alert-circle-outline', label: this.layoutSaveError ?? this.t('designer.save_failed', 'Save failed — click to retry')},
+        }[this.layoutSaveStatus];
         return html`
             <ha-card style="color: ${this.computeAppearance().fontColor};">
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
-                ${offerLayoutEditing && !this.layoutEditing ? html`
-                    <button class="layout-edit-toggle" @click=${this.startLayoutEditing}>
-                        <ha-icon icon="mdi:view-grid-plus-outline"></ha-icon>
-                        Edit layout
+                ${inlineEditing && this.designerRequiresExplicitOpen && !this.designerOpen ? html`
+                    <button class="designer-launch" type="button" @click=${this.openFullscreenDesigner}>
+                        <ha-icon icon="mdi:tune-variant"></ha-icon>
+                        ${this.t('designer.configure_card', 'Configure card')}
                     </button>
                 ` : ''}
-                ${this.layoutEditing ? html`
-                    <wcc-zone-overlay class="inplace"
-                            .layout=${this.configV3.layout}
-                            @layout-changed=${this.onInplaceLayoutChanged}
-                    ></wcc-zone-overlay>
-                    <div class="layout-edit-actions">
-                        <button class="primary" @click=${this.saveLayoutEditing}>Save</button>
-                        <button @click=${this.cancelLayoutEditing}>Cancel</button>
+                ${designerVisible ? html`
+                    <div class="designer-toolbar">
+                        <div class="designer-heading">
+                            <button class="designer-card-settings ${!this.selectedWidget && !this.selectedZone ? 'active' : ''}"
+                                    type="button"
+                                    aria-pressed=${!this.selectedWidget && !this.selectedZone ? 'true' : 'false'}
+                                    @click=${this.openCardSettings}>
+                                <ha-icon icon="mdi:theme-light-dark"></ha-icon>
+                                ${this.t('designer.card_settings', 'Card settings')}
+                            </button>
+                            <span>${this.t('designer.drag_hint', 'Drag a widget by its handle · click it to select and configure it')}</span>
+                        </div>
+                        <div class="designer-toolbar-actions">
+                            <div class="designer-modes" role="group" aria-label=${this.t('designer.mode', 'Editor mode')}>
+                                <button class="designer-mode ${!this.designerPreview ? 'active' : ''}"
+                                        type="button"
+                                        aria-pressed=${!this.designerPreview ? 'true' : 'false'}
+                                        @click=${() => { this.designerPreview = false; }}>
+                                    <ha-icon icon="mdi:layers-outline"></ha-icon>
+                                    ${this.t('designer.designer', 'Designer')}
+                                </button>
+                                <button class="designer-mode ${this.designerPreview ? 'active' : ''}"
+                                        type="button"
+                                        aria-pressed=${this.designerPreview ? 'true' : 'false'}
+                                        @click=${() => { this.designerPreview = true; }}>
+                                    <ha-icon icon="mdi:eye-outline"></ha-icon>
+                                    ${this.t('designer.preview', 'Preview')}
+                                </button>
+                            </div>
+                            ${this.hasAttribute('designer-fullscreen') ? html`
+                                <button class="designer-done" type="button" @click=${this.closeFullscreenDesigner}>
+                                    ${this.t('ui.done', 'Done')}
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${!this.designerPreview ? html`
+                        <wcc-zone-overlay class="inplace"
+                                .hass=${this.hass}
+                                .layout=${this.configV3.layout}
+                                .selectedWidget=${this.selectedWidget}
+                                .selectedZone=${this.selectedZone}
+                                selectable
+                                @layout-changed=${this.onInplaceLayoutChanged}
+                                @wcc-widget-selected=${this.onInplaceWidgetSelected}
+                                @wcc-zone-selected=${this.onInplaceZoneSelected}
+                        ></wcc-zone-overlay>
+                        <wcc-layout-inspector class="inplace-inspector"
+                                .hass=${this.hass}
+                                .config=${this.configV3}
+                                .layout=${this.configV3.layout}
+                                .selectedWidget=${this.selectedWidget}
+                                .selectedZone=${this.selectedZone}
+                                @wcc-widget-config-changed=${this.onInplaceWidgetConfigChanged}
+                                @wcc-zone-settings-changed=${this.onInplaceZoneSettingsChanged}
+                                @wcc-card-config-changed=${this.onInplaceCardConfigChanged}
+                        ></wcc-layout-inspector>
+                    ` : ''}
+                    <div class="designer-statusbar">
+                        <button class="layout-save-status ${this.layoutSaveStatus}"
+                                ?disabled=${this.layoutSaveStatus !== 'error'}
+                                title=${this.layoutSaveStatus === 'error' ? this.t('designer.retry_save', 'Retry save') : savePresentation.label}
+                                @click=${() => void this.flushLayoutAutosave()}>
+                            <ha-icon .icon=${savePresentation.icon}></ha-icon>
+                            ${savePresentation.label}
+                        </button>
+                        <span class="designer-status-hint">
+                            ${this.hasAttribute('designer-fullscreen')
+                                ? this.t('designer.autosave_hint_local', 'Changes are saved continuously · close this editor with Done')
+                                : this.t('designer.autosave_hint', 'Changes are saved continuously · finish the dashboard with Done')}
+                        </span>
                     </div>
                 ` : ''}
             </ha-card>

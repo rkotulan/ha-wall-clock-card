@@ -1,237 +1,165 @@
 # Wall Clock Card for Home Assistant
 
-A simple, elegant card for Home Assistant's Lovelace UI that displays a clock with seconds and the current date. The card also features weather information display and customizable backgrounds with support for various image sources including local images, Picsum Photos, and Unsplash.
+Wall Clock Card is a full-screen-friendly Lovelace card for clocks, dashboards and
+wall panels. Version 3.0 introduces a visual Designer with a 3×3 zone grid: place
+clock, date, sensors, weather, calendars, public transport and action buttons where
+they make sense for your screen.
 
 ![Wall Clock Card](images/showcase-01.png)
 
-## Our Story
+## Highlights in 3.0
 
-We built this card to keep time, date, and weather in view on a kitchen tablet without compromising aesthetics. The project has since grown into a polished Home Assistant companion that we still rely on every day.
+- Nine responsive zones with touch-capable drag and drop.
+- Multiple instances of most widgets; transportation remains a singleton.
+- Card, zone and per-widget inspectors with continuous saving in dashboard edit mode.
+- Clock and date formatting, sensor orientation/alignment and configurable action bars.
+- Home Assistant and OpenWeatherMap weather providers.
+- Calendar agenda with multiple calendars and an event-detail dialog.
+- On-demand IDS JMK/DPMB departures.
+- Local, Picsum, Unsplash and Home Assistant sensor-backed backgrounds.
+- Automatic in-memory migration of existing 2.x configurations.
+- Czech and English Designer UI; weather-condition translations cover additional languages.
 
 ## Installation
 
-Choose the method that fits your setup. HACS keeps the card up to date automatically and is the recommended path for most users.
+### HACS (recommended)
 
-### HACS Installation
+[![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rkotulan&repository=ha-wall-clock-card&category=plugin)
 
-[![HASC](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rkotulan&repository=ha-wall-clock-card&category=plugin)
+1. Open HACS and search for **Wall Clock Card**.
+2. Download the card.
+3. Reload the browser if HACS asks you to do so.
 
-1. Open HACS in your Home Assistant instance
-2. Search for "Wall Clock Card"
-3. Click on the "Wall Clock Card" in the search results
-4. Click "Download" in the bottom right corner
-5. HACS will automatically add the required resource to your Lovelace configuration
-6. Restart Home Assistant if needed
+HACS normally registers the JavaScript resource automatically. A Home Assistant
+restart is not normally required.
 
-### Manual Installation
+### Manual installation
 
-1. Create a `www/wall-clock-card` folder in your Home Assistant configuration directory.
-2. Download the `wall-clock-card.js` file from the `dist` folder of this repository.
-3. Place the file in the `www/wall-clock-card` folder.
-4. Add the following resource entry to your `configuration.yaml` (or manage it through the Lovelace resources UI):
+1. Copy `dist/wall-clock-card.js` to
+   `/config/www/wall-clock-card/wall-clock-card.js`.
+2. In **Settings → Dashboards → Resources**, add:
+
+   ```text
+   /local/wall-clock-card/wall-clock-card.js
+   ```
+
+   Select **JavaScript module** as the resource type.
+3. Reload the dashboard. If an older bundle remains cached, append or increment a
+   query parameter such as `?v=3.0.0` and perform a hard refresh.
+
+For YAML-managed resources:
 
 ```yaml
 lovelace:
   resources:
-    - url: /local/wall-clock-card/wall-clock-card.js
+    - url: /local/wall-clock-card/wall-clock-card.js?v=3.0.0
       type: module
 ```
 
-5. Restart Home Assistant.
+## Add and edit the card
 
-## Features
-
-- **Beautiful clock display**:
-  - Large, centered clock with hours, minutes, and seconds
-  - Date display with weekday, month, day, and optional year
-  - Automatically updates every second
-  - Uses Home Assistant's theme colors
-  - Configurable date and time formats
-  - Configurable time zone (defaults to Home Assistant's time zone)
-  - Configurable font color (default: white)
-
-- **Sensor integration**:
-  - Display multiple sensors in the top left corner
-  - Customizable labels for each sensor
-  - Automatic updates when sensor values change
-
-- **Action bar**:
-  - Customizable buttons at the bottom of the card
-  - Navigate to different pages in Home Assistant
-  - Call services to control entities
-  - Custom actions for future extensibility
-  - Configurable button icons and titles
-
-- **Weather forecast**:
-  - Display current weather and forecast in the top right corner
-  - Current temperature and conditions with icon
-  - Multi-day forecast with temperature ranges (1-7 days)
-  - Configurable display mode (current, forecast, or both)
-  - Customizable weather section title
-  - Weather data automatically updates at configurable intervals (default: 30 minutes)
-  - Supports OpenWeatherMap API (free tier)
-  - Localization for weather conditions in multiple languages (English, Czech, German, Slovak, Polish, Spanish, French, Russian)
-  - Simplified weather categories for better readability
-
-- **Background images**:
-  - Multiple image sources with automatic rotation
-  - Adjustable black overlay for better text readability
-  - Configurable rotation interval
-  - Weather and time-of-day based image selection
-  - Lazy loading for improved performance
-  - Automatic preloading for smooth transitions
-
-- **Image sources**:
-  - **Extensible image source system**:
-    - Abstract base class for easy creation of custom image sources
-    - Factory pattern for image source instantiation
-    - Registry for managing image sources
-    - Comprehensive documentation in [image-source-documentation.md](docs/developer/image-source-documentation.md)
-  - **Local images**:
-    - Support for your own image collection
-    - Weather and time-of-day based image selection
-    - Directory-based image loading with automatic categorization
-    - Filename pattern matching for easy organization
-
-  - **Picsum Photos**:
-    - Random high-quality images
-    - No API key required
-    - Fast and reliable
-
-  - **Unsplash**:
-    - Beautiful, free photos from Unsplash collections
-    - Weather and time-of-day based image selection
-    - Temperature-based image queries (cold/hot modifiers)
-    - Fresh images on each rotation
-
-  - **Sensor Images**:
-    - Uses images from a Home Assistant sensor with a "files" attribute
-    - Images are automatically cached and refreshed every 10 minutes
-    - Supports weather and time-of-day recognition from image URLs
-    - Automatically filters images based on current weather conditions and time of day
-    - Supports Home Assistant media-source URLs (media-source://) and resolves them automatically via HA
-
-- **Configuration**:
-  - Full visual editor in Home Assistant UI
-  - Comprehensive YAML configuration options
-  - Individual background image management
-  - Language selection for weather conditions
-
-## Usage
-
-After installation, you can add the card to your Lovelace dashboard:
-
-1. Edit your dashboard
-2. Click the "+" button to add a new card
-3. Search for "Wall Clock" or scroll down to find it
-4. Configure the card as needed
-5. Click "Save" to add it to your dashboard
-
-Alternatively, you can add it manually to your Lovelace configuration:
+Add **Wall Clock** from Home Assistant's card picker, or start with YAML:
 
 ```yaml
-type: 'custom:wall-clock-card'
-# Additional configuration options...
+type: custom:wall-clock-card
+```
+
+The empty/default card contains clock and date widgets. To configure it:
+
+1. Put the dashboard in edit mode.
+2. On a regular dashboard card, select **Configure card**. Panel/full-screen cards open
+   the Designer directly.
+3. Use **Card settings** for general appearance, spacing and the background.
+4. Drag widgets from the palette into zones. Select a widget or zone to edit it.
+5. Changes are saved continuously. **Done** closes the card Designer; Home
+   Assistant's dashboard **Done** completes dashboard editing.
+
+Existing 2.x YAML is supported and is migrated in memory. Once the Designer saves a
+change, the stored configuration uses the 3.0 `appearance`, `background` and
+`layout.zones` structure.
+
+## Minimal 3.0 example
+
+```yaml
+type: custom:wall-clock-card
+appearance:
+  language: cs
+  fontColor: '#fff7bb'
+  size: medium
+background:
+  source: picsum
+  opacity: 0.3
+  rotationInterval: 90
+  objectFit: cover
+layout:
+  spacing: normal
+  zones:
+    top-left:
+      widgets:
+        - type: sensors
+          sensors:
+            - entity: sensor.living_room_temperature
+              label: Temperature
+    top-right:
+      widgets:
+        - type: weather
+          provider: homeassistant
+          providerConfig:
+            entityId: weather.home
+          displayMode: both
+          forecastDays: 5
+    center:
+      widgets:
+        - type: clock
+        - type: date
+    bottom-center:
+      widgets:
+        - type: action-bar
+          enabled: true
+          actions:
+            - actionId: action-ha
+              title: Home
+              icon: mdi:home
+              tap_action:
+                action: navigate
+                navigation_path: /lovelace/0
 ```
 
 ## Documentation
 
-For detailed documentation, please see the following pages:
+- [Configuration](docs/configuration.md) — Designer workflow, YAML and custom fonts
+- [Zone layout](docs/layout.md) — zones, spacing, widgets and 2.x migration
+- [Clock and date](docs/clock-date.md) — formatting, size and alignment
+- [Sensors](docs/sensors.md)
+- [Weather](docs/weather.md)
+- [Calendar](docs/calendar.md)
+- [Transportation](docs/transportation.md)
+- [Action bar](docs/action-bar.md)
+- [Action-bar plugin API](docs/action-bar-plugins.md)
+- [Image sources](docs/image-sources.md)
+- [Background behavior](docs/background-handling.md)
+- [Development](docs/developer/development.md)
+- [3.0.0 release checklist](docs/developer/release-checklist.md)
+- [Changelog](CHANGELOG.md)
 
-- [Configuration](docs/configuration.md) - How to configure the card through UI or YAML
-- [Zone layout](docs/layout.md) - The 3.0 zone/widget layout and the drag & drop editor
-- [Sensors](docs/sensors.md) - How to configure sensors display
-- [Image Sources](docs/image-sources.md) - Available image sources and how to configure them
-- [Weather](docs/weather.md) - Weather configuration options
-- [Action Bar](docs/action-bar.md) - How to configure the action bar
-- [Background Handling](docs/background-handling.md) - How background images are handled
-- [Bundle Analyzer](docs/bundle-analyzer.md) - How to analyze and optimize bundle size
-- [Development](docs/developer/development.md) - Information for developers
+## Architecture at a glance
 
-## Project Structure
+- `src/core/` — card shell, normalized configuration, migration and zone rendering
+- `src/widgets/` — widget registry, built-in widget adapters and shared widget layout
+- `src/components/` — feature components, controllers and feature editors
+- `src/editors/` — Designer, inspectors and editor adapters
+- `src/image-sources/` — background source registry and built-in sources
+- `src/weather-providers/` — weather provider registry
+- `src/transportation-providers/` — transport provider registry
+- `src/components/action-bar/plugins/` — action plugins and their editors
+- `src/utils/` — localization, logging and cross-component messaging
+- `src/translations/` — Designer translations
+- `tests/` — Jest tests for configuration and pure logic
+- `dist/` — production bundle loaded by Home Assistant
 
-- **src/**: Source code
-  - **core/**: Core components and logic
-    - **wall-clock-card.ts**: Main component
-    - **types.ts**: Shared types and interfaces
-    - **config.ts**: Configuration and default values
-  - **components/**: UI components
-    - **action-bar/**: Action bar components
-    - **background/**: Background image components
-    - **bottom-bar/**: Bottom bar components
-    - **clock/**: Clock components
-    - **sensors/**: Sensor components
-    - **ui-elements/**: Shared UI elements
-  - **providers/**: Data providers
-    - **image/**: Image source providers
-    - **weather/**: Weather data providers
-    - **transportation/**: Transportation data providers
-  - **services/**: Services and APIs
-    - **ha-api/**: Home Assistant API communication
-    - **localization/**: Translations and localization
-    - **messaging/**: Internal component communication
-  - **utils/**: Utility functions and helpers
-    - **date-time/**: Date and time utilities
-    - **dom/**: DOM manipulation utilities
-    - **logger/**: Logging utilities
-  - **editors/**: Configuration editors
-    - **components/**: Editor components
-    - **validators/**: Configuration validators
-- **dist/**: Compiled output
-- **tests/**: Test files
-- **docs/**: Documentation
-
-## Development Workflow
-
-### Setup
-1. Clone the repository
-2. Install dependencies: `npm install`
-
-### Development
-1. Start development server: `npm run watch`
-2. Make changes to the source code
-3. Test your changes in Home Assistant
-
-### Building
-1. Build the project: `npm run build`
-2. The output will be in the `dist/` directory
-
-### Testing
-1. Write tests in the `tests/` directory using Jest
-2. Run tests: `npm test`
-3. Tests should follow the pattern `*.test.ts`
-
-## Best Practices
-
-- Keep components small and focused on a single responsibility
-- Use TypeScript interfaces for configuration objects
-- Follow the component-based architecture
-- Place core logic and types in the `core/` directory
-- Use the appropriate provider directory for data sources
-- Implement services in the `services/` directory
-- Keep related functionality together in the directory structure
-- Write unit tests for all new functionality
-- Use strict type checking
-- Define interfaces for all data structures
-- Use type annotations for function parameters and return values
-- Extend LitElement for new components
-- Use decorators for properties
-- Follow the existing component patterns
-- Minimize DOM operations
-- Use efficient data structures
-- Avoid unnecessary re-renders
-- Write clear commit messages
-- Keep pull requests focused on a single feature or bug fix
-- Update documentation when changing functionality
+See [Development](docs/developer/development.md) for the build and verification
+workflow.
 
 ## License
 
 MIT
-
-## Tech Stack
-
-- **TypeScript**: Main programming language
-- **Lit**: Web components library for UI
-- **Webpack**: Module bundler
-- **Jest**: Testing framework
-- **Home Assistant Custom Card API**: Integration with Home Assistant

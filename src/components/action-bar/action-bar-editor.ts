@@ -1,7 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
-import { ActionBarAlignment, ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-bar';
+import { ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-bar';
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';
 
@@ -11,6 +11,7 @@ import { LabelPosition } from '../ha-selector/types';
 @customElement('action-bar-editor')
 export class ActionBarEditor extends BaseEditorSection {
     @property({ type: Array }) _actions: ModuleActionConfig[] = [];
+    @state() private _expandedActionIndex: number | null = 0;
     
     // Cache for editor components to prevent flickering
     private _editorComponentCache: Map<string, HTMLElement> = new Map();
@@ -27,6 +28,7 @@ export class ActionBarEditor extends BaseEditorSection {
     private _loadActions(): void {
         if (!this.config?.actionBar) {
             this._actions = [];
+            this._expandedActionIndex = null;
             return;
         }
 
@@ -36,6 +38,11 @@ export class ActionBarEditor extends BaseEditorSection {
         } else {
             // No actions configured
             this._actions = [];
+        }
+        if (this._actions.length === 0) {
+            this._expandedActionIndex = null;
+        } else if (this._expandedActionIndex !== null) {
+            this._expandedActionIndex = Math.min(this._expandedActionIndex, this._actions.length - 1);
         }
     }
 
@@ -49,7 +56,7 @@ export class ActionBarEditor extends BaseEditorSection {
 
         return plugins.map(plugin => ({
             value: plugin.actionId,
-            label: plugin.name
+            label: this.t(`editor.actions.types.${plugin.actionId.replace(/-/g, '_')}`, plugin.name)
         }));
     }
 
@@ -155,6 +162,7 @@ export class ActionBarEditor extends BaseEditorSection {
         // Clear the entire cache since adding an action changes indices
         this._editorComponentCache.clear();
 
+        this._expandedActionIndex = this._actions.length;
         this._actions = [...this._actions, newAction];
 
         // Update the config with a deep copy
@@ -208,6 +216,11 @@ export class ActionBarEditor extends BaseEditorSection {
         newActions[index] = newActions[index - 1];
         newActions[index - 1] = temp;
         this._actions = newActions;
+        if (this._expandedActionIndex === index) {
+            this._expandedActionIndex = index - 1;
+        } else if (this._expandedActionIndex === index - 1) {
+            this._expandedActionIndex = index;
+        }
 
         // Update the config with a deep copy
         if (this.config) {
@@ -257,6 +270,11 @@ export class ActionBarEditor extends BaseEditorSection {
         newActions[index] = newActions[index + 1];
         newActions[index + 1] = temp;
         this._actions = newActions;
+        if (this._expandedActionIndex === index) {
+            this._expandedActionIndex = index + 1;
+        } else if (this._expandedActionIndex === index + 1) {
+            this._expandedActionIndex = index;
+        }
 
         // Update the config with a deep copy
         if (this.config) {
@@ -292,6 +310,13 @@ export class ActionBarEditor extends BaseEditorSection {
         this._editorComponentCache.clear();
 
         this._actions = this._actions.filter((_, i) => i !== index);
+        if (this._actions.length === 0) {
+            this._expandedActionIndex = null;
+        } else if (this._expandedActionIndex === index) {
+            this._expandedActionIndex = Math.min(index, this._actions.length - 1);
+        } else if (this._expandedActionIndex !== null && this._expandedActionIndex > index) {
+            this._expandedActionIndex -= 1;
+        }
         // Update the config with a deep copy
         if (this.config) {
             // Create a deep copy of the config
@@ -327,6 +352,10 @@ export class ActionBarEditor extends BaseEditorSection {
                 detail: { config: newConfig }
             }));
         }
+    }
+
+    private _toggleAction(index: number): void {
+        this._expandedActionIndex = this._expandedActionIndex === index ? null : index;
     }
 
     private _actionChanged(index: number, property: string, value: any): void {
@@ -390,10 +419,77 @@ export class ActionBarEditor extends BaseEditorSection {
             }
             
             .action-item {
-                border: 1px solid var(--divider-color, #e0e0e0);
-                border-radius: 4px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.16));
+                border-radius: 8px;
                 padding: 10px;
-                margin-bottom: 15px;
+                margin: 10px 0;
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.035));
+            }
+
+            .action-item.collapsed .action-header { margin-bottom: 0; }
+
+            .action-header {
+                display: flex;
+                align-items: center;
+                min-height: 36px;
+                margin-bottom: 4px;
+            }
+
+            .action-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                flex: 1;
+                min-width: 0;
+                min-height: 32px;
+                padding: 0 4px;
+                border: 0;
+                background: transparent;
+                color: var(--primary-text-color, #fff);
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
+            }
+
+            .action-item-title {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.78rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .action-icon-button {
+                display: grid;
+                place-items: center;
+                flex: 0 0 32px;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--secondary-text-color, #aaa);
+                cursor: pointer;
+            }
+
+            .action-icon-button ha-icon { --mdc-icon-size: 18px; }
+
+            .action-icon-button:hover,
+            .action-icon-button:focus-visible {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-text-color, #fff);
+                outline: none;
+            }
+
+            .action-icon-button.remove:hover { color: var(--error-color, #db4437); }
+
+            .action-body {
+                padding-top: 4px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
             }
             
             .action-row {
@@ -411,6 +507,43 @@ export class ActionBarEditor extends BaseEditorSection {
                 flex: 0 0 40px;
                 text-align: center;
             }
+
+            .empty-actions {
+                margin: 8px 0;
+                padding: 12px;
+                border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
+                border-radius: 8px;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.85rem;
+                text-align: center;
+            }
+
+            .add-action {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                min-height: 42px;
+                margin-top: 10px;
+                border: 1px solid var(--primary-color, #03a9f4);
+                border-radius: 8px;
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, transparent);
+                color: var(--primary-color, #03a9f4);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .add-action:hover,
+            .add-action:focus-visible {
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 28%, transparent);
+                outline: none;
+            }
+
+            .add-action ha-icon {
+                --mdc-icon-size: 19px;
+            }
         `;
     }
 
@@ -425,61 +558,50 @@ export class ActionBarEditor extends BaseEditorSection {
                         .hass=${this.hass}
                         .selector=${{boolean: {}}}
                         .value=${this.config.actionBar?.enabled === true}
-                        .label= ${"Enable Action Bar"}
+                        .label=${this.t('editor.actions.enable', 'Enable action bar')}
                         propertyName="actionBar.enabled"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 
                 ${this.config.actionBar?.enabled === true ? html`
                     <div class="info-text">
-                        Configure action buttons that will appear at the bottom of the card.
-                        Action bar and transportation cannot be displayed simultaneously - action bar takes
-                        precedence.
+                        ${this.t('editor.actions.description', 'Configure action buttons displayed in this widget.')}
                     </div>
 
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{
-                                select: {
-                                    options: [
-                                        {value: ActionBarAlignment.Left, label: 'Left'},
-                                        {value: ActionBarAlignment.Center, label: 'Center'},
-                                        {value: ActionBarAlignment.Right, label: 'Right'}
-                                    ],
-                                    mode: 'dropdown'
-                                }
-                            }}
-                            .value=${this.config.actionBar?.alignment || ActionBarAlignment.Center}
-                            .label= ${"Button Alignment"}
-                            .helper= ${"Align buttons to the left, center, or right"}
-                            .labelPosition=${LabelPosition.Top}
-                            propertyName="actionBar.alignment"
-                            @value-changed=${this._handleFormValueChanged}
-                    ></ha-row-selector>
+                    <div class="section-subheader">${this.t('editor.actions.title', 'Actions')}</div>
 
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{
-                                number: {
-                                    min: 0,
-                                    max: 1,
-                                    step: 0.05,
-                                    mode: 'slider'
-                                }
-                            }}
-                            .value=${this.config.actionBar?.backgroundOpacity !== undefined ? this.config.actionBar.backgroundOpacity : 0.3}
-                            .label= ${"Background Opacity"}
-                            .helper= ${"Adjust the transparency of the action bar background (0 = fully transparent, 1 = fully opaque)"}
-                            .labelPosition=${LabelPosition.Top}
-                            propertyName="actionBar.backgroundOpacity"
-                            @value-changed=${this._handleFormValueChanged}
-                    ></ha-row-selector>
-
-                    <div class="section-subheader">Actions</div>
-
-                    ${this._actions.map((action, index) => html`
-                        ${index > 0 ? html`<hr style="width: 100%; border: none; border-top: 1px solid var(--divider-color, rgba(0,0,0,0.8)); margin: 8px 0 16px 0;">` : ''}
-
+                    ${this._actions.length === 0 ? html`
+                        <div class="empty-actions">${this.t('editor.actions.empty', 'No actions configured yet.')}</div>
+                    ` : ''}
+                    ${this._actions.map((action, index) => {
+                        const expanded = this._expandedActionIndex === index;
+                        const actionPlugin = PluginRegistry.getInstance().getPlugin(action.actionId);
+                        const pluginName = actionPlugin
+                            ? this.t(`editor.actions.types.${action.actionId.replace(/-/g, '_')}`, actionPlugin.name)
+                            : undefined;
+                        const title = action.title || pluginName || this.t('editor.actions.action', 'Action {number}', {number: index + 1});
+                        return html`
+                        <div class="action-item ${expanded ? '' : 'collapsed'}">
+                        <div class="action-header">
+                            <button class="action-toggle" type="button"
+                                    aria-expanded=${expanded}
+                                    @click=${() => this._toggleAction(index)}>
+                                <span class="action-item-title">${title}</span>
+                            </button>
+                            <button class="action-icon-button remove" type="button"
+                                    title=${this.t('editor.actions.remove', 'Remove action')}
+                                    aria-label=${this.t('editor.actions.remove', 'Remove action')}
+                                    @click=${() => this._removeAction(index)}>
+                                <ha-icon icon="mdi:delete-outline"></ha-icon>
+                            </button>
+                            <button class="action-icon-button" type="button"
+                                    title=${expanded ? this.t('editor.actions.collapse', 'Collapse action') : this.t('editor.actions.expand', 'Expand action')}
+                                    aria-label=${expanded ? this.t('editor.actions.collapse', 'Collapse action') : this.t('editor.actions.expand', 'Expand action')}
+                                    @click=${() => this._toggleAction(index)}>
+                                <ha-icon icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                            </button>
+                        </div>
+                        ${expanded ? html`<div class="action-body">
                         <ha-row-selector
                                 style="flex: 2;"
                                 .hass=${this.hass}
@@ -490,30 +612,24 @@ export class ActionBarEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${action.actionId}
-                                .label= ${"Action Type"}
+                                .label=${this.t('editor.actions.type', 'Action type')}
                                 .labelPosition=${LabelPosition.Hidden}
-                                .helper= ${"Select Action type"}
+                                .helper=${this.t('editor.actions.select_type', 'Select action type')}
                                 .actionButtons=${[
-                                    {
-                                        icon: 'M19,13H5V11H19V13Z',
-                                        tooltip: "Remove action",
-                                        eventName: "action-click"
-                                    },
                                     ...(index > 0 ? [{
                                         icon: 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z',
-                                        tooltip: "Move action up",
+                                        tooltip: this.t('editor.actions.move_up', 'Move action up'),
                                         eventName: "action-click-0"
                                     }] : []),
                                     ...(index < this._actions.length - 1 ? [{
                                         icon: 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z',
-                                        tooltip: "Move action down",
+                                        tooltip: this.t('editor.actions.move_down', 'Move action down'),
                                         eventName: "action-click-1"
                                     }] : [])
                                 ]}
                                 @value-changed=${(ev: CustomEvent) => {
                                     this._actionChanged(index, 'actionId', ev.detail.value);
                                 }}
-                                @action-click=${() => this._removeAction(index)}
                                 @action-click-0=${index > 0 ? () => this._moveActionUp(index) : null}
                                 @action-click-1=${index < this._actions.length - 1 ? () => this._moveActionDown(index) : null}
                         ></ha-row-selector>
@@ -526,8 +642,8 @@ export class ActionBarEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${action.title || ''}
-                                .label=${"Title"}
-                                .helper= ${"Title for the action button"}
+                                .label=${this.t('editor.actions.button_title', 'Title')}
+                                .helper=${this.t('editor.actions.title_help', 'Title for the action button')}
                                 .labelPosition=${LabelPosition.Hidden}
                                 @value-changed=${(ev: CustomEvent) => {
                                     ev.stopPropagation();
@@ -545,8 +661,8 @@ export class ActionBarEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${action.icon || ''}
-                                .label=${"Icon"}
-                                .helper= ${"Icon for the action button"}
+                                .label=${this.t('editor.actions.icon', 'Icon')}
+                                .helper=${this.t('editor.actions.icon_help', 'Icon for the action button')}
                                 .labelPosition=${LabelPosition.Hidden}
                                 @value-changed=${(ev: CustomEvent) => {
                                     ev.stopPropagation();
@@ -558,9 +674,14 @@ export class ActionBarEditor extends BaseEditorSection {
 
                         <!-- Editor components are now dynamically created by the factory pattern -->
                         ${this._createEditorTagComponent(action, index)}
-                    `)}
+                        </div>` : ''}
+                        </div>
+                    `;})}
 
-                    <mwc-button @click=${this._addAction}>Add Action</mwc-button>
+                    <button class="add-action" type="button" @click=${this._addAction}>
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                        ${this.t('editor.actions.add', 'Add action')}
+                    </button>
                 ` : ''}
             </div>
         `;

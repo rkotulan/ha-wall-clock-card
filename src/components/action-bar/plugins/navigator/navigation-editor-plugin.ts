@@ -29,9 +29,9 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.navigationAction.path || ''}
-                    .label= ${"Navigation Path"}
+                    .label=${this.t('editor.action_plugin.navigation_path', 'Navigation path')}
                     .labelPosition=${LabelPosition.Hidden}
-                    .helper= ${"Choose where to open the link"}
+                    .helper=${this.t('editor.action_plugin.navigation_help', 'Path or URL to open')}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('path', ev)}
             ></ha-row-selector>
 
@@ -40,16 +40,16 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                     .selector=${{
                         select: {
                             options: [
-                                {value: '_self', label: 'Current Tab'},
-                                {value: '_blank', label: 'New Tab'}
+                                {value: '_self', label: this.t('editor.action_plugin.current_tab', 'Current tab')},
+                                {value: '_blank', label: this.t('editor.action_plugin.new_tab', 'New tab')}
                             ],
                             mode: 'dropdown'
                         }
                     }}
                     .value=${this.navigationAction.target || '_self'}
-                    .label= ${"Open In"}
+                    .label=${this.t('editor.action_plugin.open_in', 'Open in')}
                     .labelPosition=${LabelPosition.Hidden}
-                    .helper= ${"Choose where to open the link"}
+                    .helper=${this.t('editor.action_plugin.navigation_help', 'Path or URL to open')}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('target', ev)}
             ></ha-row-selector>
 
@@ -57,8 +57,8 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.navigationAction.activeColor || '#ffeb3b'}
-                    .label=${"Active Color"}
-                    .helper=${"Color to use when the navigation action is active"}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
+                    .helper=${this.t('editor.action_plugin.active_color_help', 'Color to use when the action is active')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>

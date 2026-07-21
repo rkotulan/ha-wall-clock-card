@@ -9,6 +9,7 @@ import './sensors-widget';
 import './weather-widget';
 import './transportation-widget';
 import './action-bar-widget';
+import './calendar-widget';
 
 export * from './widget-registry';
 export * from './widget-element';
@@ -19,6 +20,9 @@ export {SensorsWidget, SensorsWidgetConfig} from './sensors-widget';
 export {WeatherWidget, WeatherWidgetConfig} from './weather-widget';
 export {TransportationWidget, TransportationWidgetConfig} from './transportation-widget';
 export {ActionBarWidget, ActionBarWidgetConfig} from './action-bar-widget';
+export {CalendarWidget, CalendarWidgetConfig} from './calendar-widget';
+export * from './calendar/calendar-types';
+export * from './calendar/calendar-data';
 
 const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     {
@@ -64,6 +68,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
         icon: 'mdi:bus',
         elementTag: 'wcc-transportation-widget',
         editorTag: 'transportation-editor',
+        singleton: true,
         defaultConfig: () => ({type: 'transportation', provider: '', stops: []}),
     },
     {
@@ -74,6 +79,29 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
         elementTag: 'wcc-action-bar-widget',
         editorTag: 'action-bar-editor',
         defaultConfig: () => ({type: 'action-bar', enabled: true, actions: []}),
+    },
+    {
+        widgetId: 'calendar',
+        name: 'Calendar',
+        description: 'Upcoming Home Assistant calendar events',
+        icon: 'mdi:calendar-month-outline',
+        elementTag: 'wcc-calendar-widget',
+        editorTag: 'calendar-editor',
+        defaultConfig: () => ({
+            type: 'calendar',
+            entities: [],
+            displayMode: 'agenda',
+            daysAhead: 7,
+            maxEvents: 8,
+            showAllDay: true,
+            showLocation: true,
+            showDescription: false,
+            hidePastTodayEvents: true,
+            hideWhenEmpty: false,
+            updateInterval: 300,
+            eventBackgroundColor: '#202020',
+            eventBackgroundOpacity: 0.76,
+        }),
     },
 ];
 

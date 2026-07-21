@@ -3,6 +3,9 @@
 import {
     addWidget,
     applyGeneralSetting,
+    deduplicateWidgetTypes,
+    findWidgetById,
+    hasWidgetType,
     moveWidget,
     removeWidget,
     setSpacing,
@@ -10,8 +13,15 @@ import {
     updateWidgetAt,
     updateZoneSettings,
 } from '../src/editors/layout-editor-logic';
-import {toEditorConfig, fromEditorConfig} from '../src/editors/widget-editor-adapters';
-import {LayoutConfig, WallClockConfigV3} from '../src/core/layout-types';
+import {
+    fromBackgroundEditorConfig,
+    fromEditorConfig,
+    toBackgroundEditorConfig,
+    toEditorConfig,
+} from '../src/editors/widget-editor-adapters';
+import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3} from '../src/core/layout-types';
+import {TimeOfDay, Weather} from '../src/image-sources/types';
+import {resolveWidgetAlignment, resolveWidgetOrientation} from '../src/widgets/widget-layout';
 
 const layout = (): LayoutConfig => ({
     zones: {
@@ -21,6 +31,12 @@ const layout = (): LayoutConfig => ({
 });
 
 describe('layout editor logic', () => {
+    it('derives horizontal alignment from the zone column', () => {
+        expect(defaultZoneAlignment('middle-left')).toBe('start');
+        expect(defaultZoneAlignment('center')).toBe('center');
+        expect(defaultZoneAlignment('top-right')).toBe('end');
+    });
+
     it('moves a widget between zones and drops the emptied source zone', () => {
         const result = moveWidget(layout(), 'bottom-center', 0, 'top-left', 0);
 
@@ -52,6 +68,44 @@ describe('layout editor logic', () => {
         expect(withClock2.zones['top-right']?.widgets[0].id).toBe('clock-2');
         expect(uniqueWidgetId(withClock2, 'clock')).toBe('clock-3');
         expect(uniqueWidgetId(layout(), 'weather')).toBe('weather');
+    });
+
+    it('detects widget types anywhere in the layout', () => {
+        expect(hasWidgetType(layout(), 'transportation')).toBe(true);
+        expect(hasWidgetType(layout(), 'weather')).toBe(false);
+    });
+
+    it('deduplicates singleton types and keeps the canonical configured instance', () => {
+        const duplicated: LayoutConfig = {
+            zones: {
+                'top-center': {widgets: [
+                    {type: 'transportation', id: 'transportation-2', stops: []},
+                    {type: 'action-bar', id: 'action-bar-2', actions: []},
+                ]},
+                'bottom-center': {mode: 'exclusive', widgets: [
+                    {type: 'transportation', id: 'transportation', stops: [{stopId: 123}]},
+                    {type: 'action-bar', id: 'action-bar', actions: [{actionId: 'transportation'}]},
+                ]},
+            },
+        };
+
+        const result = deduplicateWidgetTypes(duplicated, ['transportation']);
+
+        expect(result.zones['top-center']?.widgets).toEqual([
+            {type: 'action-bar', id: 'action-bar-2', actions: []},
+        ]);
+        expect(result.zones['bottom-center']).toEqual(duplicated.zones['bottom-center']);
+        expect(duplicated.zones['top-center']?.widgets).toHaveLength(2);
+    });
+
+    it('finds a selected widget by stable id after it moves', () => {
+        const moved = moveWidget(layout(), 'center', 0, 'top-right', 0);
+
+        expect(findWidgetById(moved, 'clock')).toEqual({
+            zone: 'top-right',
+            index: 0,
+            widget: {type: 'clock', id: 'clock'},
+        });
     });
 
     it('inserts at the requested index and clamps out-of-range indices', () => {
@@ -94,6 +148,27 @@ describe('layout editor logic', () => {
     });
 });
 
+describe('widget internal layout', () => {
+    it('uses horizontal auto orientation in center-column zones', () => {
+        expect(resolveWidgetOrientation(undefined, 'top-center')).toBe('horizontal');
+        expect(resolveWidgetOrientation('auto', 'center')).toBe('horizontal');
+        expect(resolveWidgetOrientation('auto', 'bottom-center')).toBe('horizontal');
+    });
+
+    it('uses vertical auto orientation in side-column zones', () => {
+        expect(resolveWidgetOrientation(undefined, 'top-left')).toBe('vertical');
+        expect(resolveWidgetOrientation('auto', 'middle-right')).toBe('vertical');
+        expect(resolveWidgetOrientation('horizontal', 'top-left')).toBe('horizontal');
+    });
+
+    it('resolves auto alignment from the zone and honors widget overrides', () => {
+        expect(resolveWidgetAlignment('auto', 'top-left')).toBe('left');
+        expect(resolveWidgetAlignment(undefined, 'top-right')).toBe('right');
+        expect(resolveWidgetAlignment('auto', 'top-left', 'end')).toBe('right');
+        expect(resolveWidgetAlignment('center', 'top-right', 'end')).toBe('center');
+    });
+});
+
 describe('applyGeneralSetting', () => {
     const v3 = (): WallClockConfigV3 => ({
         layout: layout(),
@@ -103,6 +178,11 @@ describe('applyGeneralSetting', () => {
     it('routes appearance keys under appearance.*', () => {
         const result = applyGeneralSetting(v3(), 'language', 'cs');
         expect(result.appearance).toEqual({fontColor: '#FFF', language: 'cs'});
+    });
+
+    it('routes the card font family under appearance.*', () => {
+        const result = applyGeneralSetting(v3(), 'fontFamily', 'Inter, sans-serif');
+        expect(result.appearance).toEqual({fontColor: '#FFF', fontFamily: 'Inter, sans-serif'});
     });
 
     it('keeps logLevel top-level', () => {
@@ -157,6 +237,18 @@ describe('widget editor adapters', () => {
         });
     });
 
+    it('preserves the weather visibility switch and treats provider none as disabled', () => {
+        const disabled = {type: 'weather', id: 'weather', enabled: false, provider: 'homeassistant'};
+        expect(toEditorConfig(disabled)).toMatchObject({showWeather: false, weatherProvider: 'homeassistant'});
+
+        expect(fromEditorConfig(disabled, {
+            showWeather: true,
+            weatherProvider: 'none',
+        })).toEqual({
+            type: 'weather', id: 'weather', enabled: false, provider: 'none',
+        });
+    });
+
     it('round-trips a transportation widget (flat widget keys <-> nested transportation)', () => {
         const widget = {
             type: 'transportation', id: 'transportation', priority: 10,
@@ -177,6 +269,18 @@ describe('widget editor adapters', () => {
         });
     });
 
+    it('keeps transportation settings when the last stop is removed', () => {
+        const widget = {
+            type: 'transportation', id: 'transportation',
+            provider: 'idsjmk', maxDepartures: 2, stops: [{stopId: 1}],
+        };
+
+        expect(fromEditorConfig(widget, {transportation: undefined})).toEqual({
+            type: 'transportation', id: 'transportation',
+            provider: 'idsjmk', maxDepartures: 2, stops: [],
+        });
+    });
+
     it('round-trips an action-bar widget and preserves iconSize', () => {
         const widget = {
             type: 'action-bar', id: 'action-bar', priority: 5,
@@ -193,11 +297,72 @@ describe('widget editor adapters', () => {
         });
     });
 
+    it('round-trips sensor and action-bar internal layout settings', () => {
+        const sensors = {
+            type: 'sensors', id: 'sensors', sensors: [],
+            orientation: 'horizontal', alignment: 'right',
+        };
+        expect(toEditorConfig(sensors)).toEqual({
+            sensors: [], orientation: 'horizontal', alignment: 'right',
+        });
+        expect(fromEditorConfig(sensors, {
+            sensors: [], orientation: 'vertical', alignment: 'center',
+        })).toEqual({
+            type: 'sensors', id: 'sensors', sensors: [],
+            orientation: 'vertical', alignment: 'center',
+        });
+
+        const actions = {
+            type: 'action-bar', id: 'actions', enabled: true, actions: [],
+            orientation: 'vertical', alignment: 'left', buttonGap: '12px', padding: '8px 16px',
+        };
+        expect(toEditorConfig(actions)).toEqual({
+            actionBar: {
+                enabled: true, actions: [], orientation: 'vertical', alignment: 'left',
+                buttonGap: '12px', padding: '8px 16px',
+            },
+        });
+        expect(fromEditorConfig(actions, {
+            actionBar: {
+                enabled: true, actions: [], orientation: 'horizontal', alignment: 'right',
+                buttonGap: '20px', padding: '4px',
+            },
+        })).toEqual({
+            type: 'action-bar', id: 'actions', enabled: true, actions: [],
+            orientation: 'horizontal', alignment: 'right', buttonGap: '20px', padding: '4px',
+        });
+    });
+
     it('passes custom widget configs through unchanged', () => {
         const widget = {type: 'my-custom', id: 'my-custom', foo: 'bar'};
         expect(toEditorConfig(widget)).toEqual(widget);
         expect(fromEditorConfig(widget, {type: 'my-custom', foo: 'baz'})).toEqual({
             type: 'my-custom', id: 'my-custom', foo: 'baz',
         });
+    });
+
+    it('round-trips every v2 background setting through background.*', () => {
+        const config: WallClockConfigV3 = {
+            layout: layout(),
+            background: {
+                source: 'unsplash',
+                config: {category: 'nature', count: 7},
+                images: [{url: '/local/a.jpg', weather: Weather.All, timeOfDay: TimeOfDay.Unspecified}],
+                opacity: 0,
+                rotationInterval: 60,
+                objectFit: 'contain',
+            },
+        };
+
+        const editorConfig = toBackgroundEditorConfig(config);
+        expect(editorConfig).toEqual({
+            imageSource: 'unsplash',
+            imageConfig: {category: 'nature', count: 7},
+            backgroundImages: [{url: '/local/a.jpg', weather: Weather.All, timeOfDay: TimeOfDay.Unspecified}],
+            backgroundOpacity: 0,
+            backgroundRotationInterval: 60,
+            objectFit: 'contain',
+        });
+        expect(fromBackgroundEditorConfig(editorConfig)).toEqual(config.background);
     });
 });

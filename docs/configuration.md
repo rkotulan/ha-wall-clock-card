@@ -1,104 +1,148 @@
 # Configuration
 
-You can customize the Wall Clock Card through the Lovelace UI or by editing your Lovelace configuration manually.
+Version 3.0 stores the card as card-wide settings plus widgets in a 3×3 zone grid.
+The visual Designer is the recommended configuration method; YAML exposes the same
+model. Existing 2.x configuration is migrated automatically.
 
-> **3.0:** the card uses a zone layout — widgets placed into a 3×3 grid with a
-> drag & drop editor. Legacy configurations below keep working (they are migrated
-> automatically). See [Zone layout](layout.md) for the new format.
+## Designer workflow
 
-## UI Configuration
+1. Put the Home Assistant dashboard in edit mode.
+2. Select **Configure card** on a regular card. Panel/full-screen placements open the
+   Designer directly.
+3. The Designer initially selects **Card settings**:
+   - **General** — font color, custom font, language, time zone, logging and size;
+   - **Spacing** — preset or explicit card padding, zone gap and widget gap;
+   - **Background** — image source, overlay, rotation and image fitting.
+4. Drag a widget by its handle. Select a widget to edit its **Content**,
+   **Appearance** and **Behavior** tabs. Select a zone label to edit the zone.
+5. The lower-left status shows **Saved** or **Unsaved changes**. Changes are written
+   continuously; use the Designer **Done** button to return to the dashboard editor.
 
-The card now includes a full visual editor for easy configuration:
+The compact Home Assistant card editor deliberately contains only a link/instruction
+to use the Designer. It does not duplicate the full 3.0 settings UI.
 
-1. Add the card to your dashboard
-2. Click the three dots in the top-right corner of the card
-3. Click "Edit"
-4. Use the visual editor to configure all options:
-   - Time format (12/24 hour, display of seconds)
-   - Date format (weekday, month, day, year display options)
-   - Background images (local or online sources)
-   - Individual background image management with add/remove functionality
-   - Background opacity and rotation interval
-   - Font color
-   - Sensors to display
-5. Click "Save" to apply your changes
-
-## YAML Configuration
-
-Add the card to your Lovelace configuration:
+## 3.0 YAML structure
 
 ```yaml
-type: 'custom:wall-clock-card'
-# Optional: Custom time format
-timeFormat:
-  hour: '2-digit'
-  minute: '2-digit'
-  second: '2-digit'
-  hour12: false  # Set to true for 12-hour format with AM/PM
-# Optional: Time zone for the clock
-timeZone: 'America/New_York'  # IANA time zone name (e.g., 'Europe/London', 'Asia/Tokyo')
-# Optional: Custom date format
-dateFormat:
-  weekday: 'long'  # 'long', 'short', or 'narrow'
-  year: 'numeric'  # 'numeric' or '2-digit', omit this line to hide the year
-  month: 'long'    # 'numeric', '2-digit', 'long', 'short', or 'narrow'
-  day: 'numeric'   # 'numeric' or '2-digit'
+type: custom:wall-clock-card
+logLevel: info
 
-# Example: Date format without year (shows only weekday, month, and day)
-# dateFormat:
-#   weekday: 'long'
-#   month: 'long'
-#   day: 'numeric'
-# Optional: Background images configuration
+appearance:
+  fontColor: '#FFFFFF'
+  fontFamily: 'Roboto, sans-serif'
+  language: cs
+  timeZone: Europe/Prague
+  size: medium              # small | medium | large | custom
 
-# Unified background images with weather and time-of-day support
-backgroundImages:
-  - url: '/local/images/sunrise-clear.jpg'
-    weather: 'clear sky'
-    timeOfDay: 'sunrise-sunset'
-  - url: '/local/images/default.jpg'
-    weather: 'all'
-    timeOfDay: 'unspecified'
-# Optional: Background overlay opacity (0-1, default: 0.5)
-backgroundOpacity: 0.5
-# Optional: Image source ('none', 'picsum', 'local', default: 'none')
-imageSource: 'picsum'
-# Optional: Configuration for the image source
-imageConfig:
-  # Additional source-specific configuration options
+background:
+  source: local             # none | local | picsum | unsplash | sensor
+  opacity: 0.3              # black overlay, 0–1
+  rotationInterval: 90      # seconds
+  objectFit: cover          # fill | contain | cover | none | scale-down
+  images:
+    - url: /local/images/day.jpg
+      weather: all
+      timeOfDay: day
+    - url: /local/images/night.jpg
+      weather: all
+      timeOfDay: night
 
-# Optional: Background image rotation interval in seconds (default: 90)
-backgroundRotationInterval: 90
-# Optional: Multiple sensors to display in the top left corner
-sensors:
-  - entity: 'sensor.living_room_temperature'
-    label: 'Temperature'
-  - entity: 'sensor.living_room_humidity'
-    label: 'Humidity'
-  - entity: 'sensor.weather_forecast_condition'
-    label: 'Weather'
-# Optional: Font color for all text elements (default: white)
-fontColor: '#FFFFFF'
-
-# Optional: Action bar configuration (see action-bar.md for all options)
-actionBar:
-  enabled: true
-  alignment: center  # Optional: 'left', 'center' (default), or 'right'
-  actions:
-    - actionId: action-navigate
-      title: Home
-      icon: mdi:home
-      path: /lovelace/0
-    - actionId: call-service
-      title: Lights
-      icon: mdi:lightbulb
-      service: light.turn_on
-      service_data:
-        entity_id: light.living_room
-
-# Legacy sensor configuration (still supported for backward compatibility)
-# sensorEntity: 'sensor.living_room_temperature'
-# sensorLabel: 'Temperature'
+layout:
+  spacing: normal           # compact | normal | spacious
+  zones:
+    center:
+      widgets:
+        - type: clock
+          timeFormat:
+            hour: 2-digit
+            minute: 2-digit
+            second: 2-digit
+            hour12: false
+        - type: date
+          dateFormat:
+            weekday: long
+            year: numeric
+            month: long
+            day: numeric
 ```
 
-The background images will rotate automatically. The rotation interval can be configured (default is 30 seconds).
+`background.opacity` defaults to `0.3`, rotation to `90` seconds and
+`objectFit` to `cover`. See [Zone layout](layout.md) for all zone/widget fields and
+[Image sources](image-sources.md) for source-specific settings.
+
+## Common appearance values
+
+| Key | Default | Description |
+|---|---|---|
+| `appearance.fontColor` | `#FFFFFF` | Card-wide text color |
+| `appearance.fontFamily` | Home Assistant font | CSS font family/stack; the font must already be loaded |
+| `appearance.language` | HA language | UI/date/weather language where supported |
+| `appearance.timeZone` | HA time zone | IANA time-zone name such as `Europe/Prague` |
+| `appearance.size` | `medium` | Built-in component size preset |
+| `logLevel` | `info` | `debug`, `info`, `warn`, `error` or `none` |
+
+Per-widget appearance can override the card defaults. Widget-specific size controls
+(for example `clockSize`, `dateSize`, `labelSize`, `valueSize` or `iconSize`) take
+precedence over `appearance.size`.
+
+## Loading custom fonts
+
+`fontFamily` only selects a font already available in the browser. The card does not
+download font files itself.
+
+### Google Fonts
+
+In **Settings → Dashboards → Resources**, add a stylesheet URL and select
+**CSS / Stylesheet**:
+
+```text
+https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap
+```
+
+Then use the exact CSS family name:
+
+```yaml
+appearance:
+  fontFamily: '"Roboto Condensed", sans-serif'
+```
+
+Every display device must be able to reach Google Fonts.
+
+### Locally hosted font
+
+Store the files under `/config/www`, for example:
+
+```text
+/config/www/fonts/my-font.woff2
+/config/www/fonts/fonts.css
+```
+
+`fonts.css`:
+
+```css
+@font-face {
+  font-family: "My Custom Font";
+  src: url("/local/fonts/my-font.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+Register `/local/fonts/fonts.css?v=1` as a CSS dashboard resource, then configure:
+
+```yaml
+appearance:
+  fontFamily: '"My Custom Font", sans-serif'
+```
+
+Increment the resource query (`?v=2`, `?v=3`, …) after replacing the CSS or font
+file to invalidate browser caches.
+
+## Compatibility with 2.x
+
+The 2.x root keys (`timeFormat`, `dateFormat`, `sensors`, `showWeather`,
+`weather*`, `transportation`, `actionBar`, `imageSource`, `backgroundImages`,
+`fontColor`, `language`, `size` and `customSizes`) remain accepted. They are converted
+in memory to the equivalent 3.0 layout. The Designer writes the normalized 3.0 form
+after the first change. See the [migration table](layout.md#migration-from-2x).

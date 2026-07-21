@@ -3,7 +3,7 @@ import {customElement, property} from 'lit/decorators.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {createLogger} from '../utils/logger/logger';
-import {AppearanceConfig, LayoutConfig, ZoneConfig, ZoneId, ZONE_IDS} from './layout-types';
+import {AppearanceConfig, defaultZoneAlignment, LayoutConfig, ZoneConfig, ZoneId, ZONE_IDS} from './layout-types';
 import {resolveSpacing} from './migrate-config';
 import {WidgetRegistry} from '../widgets/widget-registry';
 import {WidgetElement} from '../widgets/widget-element';
@@ -108,6 +108,8 @@ export class WccLayout extends LitElement {
                         return; // unknown type: logged by the registry, ignore
                     }
                 }
+                element.zoneId = zoneId;
+                element.zoneAlignment = zoneConfig.align ?? defaultZoneAlignment(zoneId);
                 element.appearance = this.appearance;
                 if (this.hass) {
                     element.hass = this.hass;
@@ -155,11 +157,10 @@ export class WccLayout extends LitElement {
             return `grid-row: 1; grid-column: 1 / -1; align-self: start; justify-self: stretch;`;
         }
 
-        const justifySelf = zoneId.endsWith('-left') ? 'start'
-            : zoneId.endsWith('-right') ? 'end'
-            : zoneId === 'top-center' || zoneId === 'bottom-center' ? 'stretch'
-            : 'center';
-        return `grid-area: ${zoneId}; align-self: ${alignSelf}; justify-self: ${justifySelf};`;
+        // Every zone fills its grid track. Horizontal placement of its widgets
+        // belongs to WccZone (`align`) so left/right/center actually have room
+        // to differ instead of operating inside a shrink-wrapped zone host.
+        return `grid-area: ${zoneId}; align-self: ${alignSelf}; justify-self: stretch;`;
     }
 
     render(): TemplateResult {

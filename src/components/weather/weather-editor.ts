@@ -8,24 +8,24 @@ import { BaseEditorSection } from '../../editors/editor-base/base-editor-section
 @customElement('weather-editor')
 export class WeatherEditor extends BaseEditorSection {
     // Weather provider options
-    private _weatherProviderOptions = [
-        {value: 'none', label: 'None (Disable Weather)'},
-        {value: 'homeassistant', label: 'Home Assistant Entity'},
+    private _weatherProviderOptions() { return [
+        {value: 'none', label: this.t('editor.weather.provider_none', 'None (disable weather)')},
+        {value: 'homeassistant', label: this.t('editor.weather.provider_ha', 'Home Assistant entity')},
         {value: 'openweathermap', label: 'OpenWeatherMap'},
-    ];
+    ]; }
 
     // Units options
-    private _unitsOptions = [
-        {value: 'metric', label: 'Metric (°C, m/s)'},
-        {value: 'imperial', label: 'Imperial (°F, mph)'},
-    ];
+    private _unitsOptions() { return [
+        {value: 'metric', label: this.t('editor.weather.metric', 'Metric (°C, m/s)')},
+        {value: 'imperial', label: this.t('editor.weather.imperial', 'Imperial (°F, mph)')},
+    ]; }
 
     // Weather display mode options
-    private _weatherDisplayModeOptions = [
-        {value: 'current', label: 'Current Weather Only'},
-        {value: 'forecast', label: 'Forecast Only'},
-        {value: 'both', label: 'Current and Forecast'},
-    ];
+    private _weatherDisplayModeOptions() { return [
+        {value: 'current', label: this.t('editor.weather.current', 'Current weather only')},
+        {value: 'forecast', label: this.t('editor.weather.forecast', 'Forecast only')},
+        {value: 'both', label: this.t('editor.weather.both', 'Current and forecast')},
+    ]; }
 
     // Weather icon set options
     private _weatherIconSetOptions = [
@@ -53,8 +53,8 @@ export class WeatherEditor extends BaseEditorSection {
                         .hass=${this.hass}
                         .selector=${{boolean: {}}}
                         .value=${this.config.showWeather || false}
-                        .label= ${"Show Weather"}
-                        .helper= ${"Display weather forecast"}
+                        .label=${this.t('editor.weather.show', 'Show weather')}
+                        .helper=${this.t('editor.weather.show_help', 'Display current weather and forecast')}
                         propertyName="showWeather"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -67,8 +67,8 @@ export class WeatherEditor extends BaseEditorSection {
                                     type: "text"
                                 }
                             }}
-                            .value=${this.config.weatherTitle || 'Weather'}
-                            .label= ${"Weather Title"}
+                            .value=${this.config.weatherTitle || this.t('common.title', 'Weather')}
+                            .label=${this.t('editor.weather.title', 'Weather title')}
                             propertyName="weatherTitle"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
@@ -77,12 +77,12 @@ export class WeatherEditor extends BaseEditorSection {
                             .hass=${this.hass}
                             .selector=${{
                                 select: {
-                                    options: this._weatherProviderOptions,
+                                    options: this._weatherProviderOptions(),
                                     mode: 'dropdown'
                                 }
                             }}
                             .value=${this.config.weatherProvider || 'openweathermap'}
-                            .label= ${"Weather Provider"}
+                            .label=${this.t('editor.weather.provider', 'Weather provider')}
                             propertyName="weatherProvider"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
@@ -96,7 +96,7 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${this.config.weatherConfig?.entityId || ''}
-                                .label=${"Weather Entity"}
+                                .label=${this.t('editor.weather.entity', 'Weather entity')}
                                 propertyName="weatherConfig.entityId"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -112,8 +112,8 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${this.config.weatherConfig?.apiKey || ''}
-                                .label= ${"API Key"}
-                                .helper= ${"OpenWeatherMap API Key"}
+                                .label=${this.t('editor.weather.api_key', 'API key')}
+                                .helper=${this.t('editor.weather.api_key_help', 'OpenWeatherMap API key')}
                                 propertyName="weatherConfig.apiKey"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -131,7 +131,7 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${this.config.weatherConfig?.latitude || 50.0755}
-                                .label=${"Latitude"}
+                                .label=${this.t('editor.weather.latitude', 'Latitude')}
                                 propertyName="weatherConfig.latitude"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -147,7 +147,7 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${this.config.weatherConfig?.longitude || 14.4378}
-                                .label=${"Longitude"}
+                                .label=${this.t('editor.weather.longitude', 'Longitude')}
                                 propertyName="weatherConfig.longitude"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -156,12 +156,12 @@ export class WeatherEditor extends BaseEditorSection {
                                 .hass=${this.hass}
                                 .selector=${{
                                     select: {
-                                        options: this._unitsOptions,
+                                        options: this._unitsOptions(),
                                         mode: 'dropdown'
                                     }
                                 }}
                                 .value=${this.config.weatherConfig?.units || 'metric'}
-                                .label=${"Units"}
+                                .label=${this.t('editor.weather.units', 'Units')}
                                 propertyName="weatherConfig.units"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -171,12 +171,12 @@ export class WeatherEditor extends BaseEditorSection {
                             .hass=${this.hass}
                             .selector=${{
                                 select: {
-                                    options: this._weatherDisplayModeOptions,
+                                    options: this._weatherDisplayModeOptions(),
                                     mode: 'dropdown'
                                 }
                             }}
                             .value=${this.config.weatherDisplayMode || 'both'}
-                            .label= ${"Display Mode"}
+                            .label=${this.t('editor.weather.display_mode', 'Display mode')}
                             propertyName="weatherDisplayMode"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
@@ -190,7 +190,7 @@ export class WeatherEditor extends BaseEditorSection {
                                 }
                             }}
                             .value=${this.config.weatherIconSet || (this.config.weatherProvider === 'homeassistant' ? 'metno' : 'openweathermap')}
-                            .label= ${"Weather Icon Set"}
+                            .label=${this.t('editor.weather.icon_set', 'Weather icon set')}
                             propertyName="weatherIconSet"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
@@ -208,8 +208,8 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${this.config.weatherForecastDays || 3}
-                                .label= ${"Forecast Days"}
-                                .helper=${`${this.config.weatherForecastDays || 3} days`}
+                                .label=${this.t('editor.weather.forecast_days', 'Forecast days')}
+                                .helper=${this.t('editor.weather.days', '{count} days', {count: this.config.weatherForecastDays || 3})}
                                 propertyName="weatherForecastDays"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -224,8 +224,8 @@ export class WeatherEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${Math.floor((this.config.weatherUpdateInterval || 1800) / 60)}
-                                .label= ${"Update Interval"}
-                                .helper= ${"Update interval in minutes (min: 1)"}
+                                .label=${this.t('editor.weather.update_interval', 'Update interval')}
+                                .helper=${this.t('editor.weather.update_help', 'Update interval in minutes (minimum 1)')}
                                 propertyName="weatherUpdateInterval"
                                 .transformData=${(value: number) => value * 60}
                                 @value-changed=${this._handleFormValueChanged}

@@ -12,7 +12,7 @@ import {normalizeTimeFormat} from './format-defaults';
 
 export interface ClockWidgetConfig extends WidgetConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
-    /** Custom font size; only applied when appearance.size is 'custom'. */
+    /** Per-widget clock size; overrides the card-wide size preset when present. */
     clockSize?: string;
 }
 
@@ -28,13 +28,14 @@ export class ClockWidget extends WidgetElement<ClockWidgetConfig> {
     `;
 
     protected applyWidgetState(): void {
+        const clockSize = this.config.clockSize ?? this.config.style?.fontSize;
         this.clock.showDate = false;
         this.clock.timeFormat = normalizeTimeFormat(this.config.timeFormat, this.hass);
         this.clock.language = resolveLanguage(this.appearance?.language, this.hass);
         this.clock.timeZone = this.appearance?.timeZone ?? this.hass?.config?.time_zone;
         this.clock.fontColor = this.fontColor;
-        this.clock.size = this.appearance?.size ?? Size.Medium;
-        this.clock.clockSize = this.config.clockSize;
+        this.clock.size = clockSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
+        this.clock.clockSize = clockSize;
     }
 
     render() {

@@ -1,9 +1,11 @@
 import {HomeAssistant, ActionConfig, handleAction} from 'custom-card-helpers';
+import type {WidgetOrientation} from '../../core/layout-types';
 
 /**
  * Alignment options for action bar buttons
  */
 export enum ActionBarAlignment {
+    Auto = 'auto',
     Left = 'left',
     Center = 'center',
     Right = 'right'
@@ -111,7 +113,12 @@ export interface ActionBarConfig {
     enabled?: boolean;
     actions: ModuleActionConfig[];
     alignment?: ActionBarAlignment;
+    orientation?: WidgetOrientation;
     backgroundOpacity?: number; // Controls the opacity of the action bar background (0-1)
+    /** CSS gap between action buttons (for example, `12px` or `0.75rem`). */
+    buttonGap?: string;
+    /** CSS padding shorthand inside the action bar panel. */
+    padding?: string;
 }
 
 /**

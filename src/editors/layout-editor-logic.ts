@@ -25,6 +25,50 @@ export function collectWidgetIds(layout: LayoutConfig): Set<string> {
     return ids;
 }
 
+/** Whether a widget type is already present anywhere in the card layout. */
+export function hasWidgetType(layout: LayoutConfig, type: string): boolean {
+    return Object.values(layout.zones).some(zone =>
+        zone?.widgets?.some(widget => widget.type === type)
+    );
+}
+
+/**
+ * Removes duplicate instances of singleton widget types. The canonical id
+ * (`type`) wins over generated ids (`type-2`), so an accidentally added copy
+ * never replaces the user's original configured widget.
+ */
+export function deduplicateWidgetTypes(layout: LayoutConfig, singletonTypes: Iterable<string>): LayoutConfig {
+    const singleton = new Set(singletonTypes);
+    const owner = new Map<string, {zone: ZoneId; index: number; canonical: boolean}>();
+
+    for (const [zoneId, zone] of Object.entries(layout.zones) as [ZoneId, ZoneConfig | undefined][]) {
+        zone?.widgets.forEach((widget, index) => {
+            if (!singleton.has(widget.type)) return;
+            const canonical = widget.id === widget.type;
+            const current = owner.get(widget.type);
+            if (!current || (canonical && !current.canonical)) {
+                owner.set(widget.type, {zone: zoneId, index, canonical});
+            }
+        });
+    }
+
+    const result = clone(layout);
+    for (const [zoneId, sourceZone] of Object.entries(layout.zones) as [ZoneId, ZoneConfig | undefined][]) {
+        if (!sourceZone) continue;
+        const targetZone = result.zones[zoneId];
+        if (!targetZone) continue;
+        targetZone.widgets = sourceZone.widgets
+            .filter((widget, index) => {
+                if (!singleton.has(widget.type)) return true;
+                const selected = owner.get(widget.type);
+                return selected?.zone === zoneId && selected.index === index;
+            })
+            .map(widget => clone(widget));
+        if (targetZone.widgets.length === 0) delete result.zones[zoneId];
+    }
+    return result;
+}
+
 /** Generates a unique widget id derived from the widget type ('clock', 'clock-2', ...). */
 export function uniqueWidgetId(layout: LayoutConfig, type: string): string {
     const ids = collectWidgetIds(layout);
@@ -36,6 +80,20 @@ export function uniqueWidgetId(layout: LayoutConfig, type: string): string {
         counter++;
     }
     return `${type}-${counter}`;
+}
+
+/** Finds a widget by its stable editor id, regardless of its current zone/order. */
+export function findWidgetById(
+    layout: LayoutConfig,
+    widgetId: string,
+): {zone: ZoneId; index: number; widget: WidgetConfig} | undefined {
+    for (const [zone, zoneConfig] of Object.entries(layout.zones) as [ZoneId, ZoneConfig | undefined][]) {
+        const index = zoneConfig?.widgets.findIndex(widget => widget.id === widgetId) ?? -1;
+        if (index >= 0 && zoneConfig) {
+            return {zone, index, widget: zoneConfig.widgets[index]};
+        }
+    }
+    return undefined;
 }
 
 /** Adds a widget to a zone (at `index`, or appended). Assigns a unique id. */
@@ -157,6 +215,7 @@ export function applyGeneralSetting(config: WallClockConfigV3, propertyPath: str
     const result = clone(config);
     switch (propertyPath) {
         case 'fontColor':
+        case 'fontFamily':
         case 'language':
         case 'size':
             result.appearance = {...result.appearance, [propertyPath]: value};

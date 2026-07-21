@@ -1,6 +1,14 @@
 import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import {createLogger, getSizeValue, getButtonSizeValue, Messenger, BottomBarRequestUpdateMessage} from '../../utils';
+import { customElement, property, state } from 'lit/decorators.js';
+import {
+    ActiveComponentChangedMessage,
+    ActiveComponentState,
+    BottomBarRequestUpdateMessage,
+    createLogger,
+    getButtonSizeValue,
+    getSizeValue,
+    Messenger,
+} from '../../utils';
 import { ActionBarController } from './action-bar-controller';
 import {
     ActionBarConfig,
@@ -34,7 +42,9 @@ export class ActionBarComponent extends BottomBarComponent {
      * Whether this component wants to be displayed
      */
     get isActive(): boolean {
-        return this.config?.enabled===true && this.config.actions && this.config.actions.length > 0;
+        return !this.transportationActive
+            && this.config?.enabled === true
+            && !!this.config.actions?.length;
     }
 
     @property({ type: Object }) config?: ActionBarConfig;
@@ -42,6 +52,7 @@ export class ActionBarComponent extends BottomBarComponent {
     @property({ type: Object }) hass?: HomeAssistant;
     @property({ type: String }) size?: Size;
     @property({ type: String }) iconSize?: string;
+    @state() private transportationActive = false;
 
     private logger = createLogger('action-bar-component');
     private actionBarController: ActionBarController;
@@ -52,6 +63,22 @@ export class ActionBarComponent extends BottomBarComponent {
         this.actionBarController = new ActionBarController(this, {
             actionBar: this.config
         });
+    }
+
+    private readonly onActiveComponentChanged = (message: ActiveComponentChangedMessage): void => {
+        if (message.componentName !== 'transportation' || this.transportationActive === message.state) return;
+        this.transportationActive = message.state;
+    };
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.transportationActive = ActiveComponentState.getInstance().isActive('transportation');
+        Messenger.getInstance().subscribe(ActiveComponentChangedMessage, this.onActiveComponentChanged);
+    }
+
+    disconnectedCallback(): void {
+        Messenger.getInstance().unsubscribe(ActiveComponentChangedMessage, this.onActiveComponentChanged);
+        super.disconnectedCallback();
     }
 
     get controller(): ActionBarController {
@@ -67,22 +94,53 @@ export class ActionBarComponent extends BottomBarComponent {
     }
 
     static styles = css`
+        :host {
+            display: block;
+            width: 100%;
+        }
+
         /* Placement is provided by the hosting zone (wcc-zone); the component
            only lays out its own content. */
         .action-bar-container {
             width: 100%;
             box-sizing: border-box;
             display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center;
             z-index: 3;
-            padding: 16px;
+            padding: var(--action-bar-padding, 16px);
             background-color: rgba(0, 0, 0, 0.3);
             border-radius: 0 0 var(--ha-card-border-radius, 4px) var(--ha-card-border-radius, 4px);
-            gap: 16px;
+            gap: var(--action-button-gap, 16px);
             height: auto;
             min-height: var(--action-button-size, 144px);
+        }
+
+        .action-bar-container.horizontal {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .action-bar-container.vertical {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: fit-content;
+            max-width: 100%;
+            border-radius: var(--ha-card-border-radius, 4px);
+        }
+
+        .action-bar-container.vertical.align-left {
+            margin-left: 0;
+            margin-right: auto;
+        }
+
+        .action-bar-container.vertical.align-center {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .action-bar-container.vertical.align-right {
+            margin-left: auto;
+            margin-right: 0;
         }
 
         .action-button {
@@ -154,7 +212,7 @@ export class ActionBarComponent extends BottomBarComponent {
     /**
      * Get the CSS justify-content value based on the alignment setting
      */
-    private getJustifyContent(): string {
+    private getFlexAlignment(): string {
         if (!this.config || !this.config.alignment) {
             return 'center'; // Default to center for backward compatibility
         }
@@ -171,24 +229,39 @@ export class ActionBarComponent extends BottomBarComponent {
     }
 
     render() {
-        if (!this.config || this.config.enabled === false || !this.config.actions || this.config.actions.length === 0) {
+        if (this.transportationActive
+            || !this.config
+            || this.config.enabled === false
+            || !this.config.actions
+            || this.config.actions.length === 0) {
             return html``;
         }
 
-        const justifyContent = this.getJustifyContent();
+        const orientation = this.config.orientation ?? 'horizontal';
+        const flexAlignment = this.getFlexAlignment();
+        const alignmentStyle = orientation === 'vertical'
+            ? 'justify-content: center; align-items: center;'
+            : `justify-content: ${flexAlignment}; align-items: center;`;
+        const alignment = !this.config.alignment || this.config.alignment === ActionBarAlignment.Auto
+            ? ActionBarAlignment.Center
+            : this.config.alignment;
         const buttonSize = this.getButtonSize();
 
         // Use the configured backgroundOpacity or default to 0.3
         const opacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.3;
+        const buttonGap = this.config.buttonGap?.trim() || '16px';
+        const padding = this.config.padding?.trim() || '16px';
 
         this.logger.debug(`Rendering action bar - ButtonSize: ${buttonSize}`);
 
         return html`
-            <div class="action-bar-container" 
+            <div class="action-bar-container ${orientation} align-${alignment}"
                 style="color: ${this.fontColor}; 
-                       justify-content: ${justifyContent}; 
+                       ${alignmentStyle}
                        background-color: rgba(0, 0, 0, ${opacity});
-                       --action-button-size: ${buttonSize};">
+                       --action-button-size: ${buttonSize};
+                       --action-button-gap: ${buttonGap};
+                       --action-bar-padding: ${padding};">
                 ${this.config.actions.map(action => this.renderActionButton(action))}
             </div>
         `;

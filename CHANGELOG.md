@@ -1,5 +1,53 @@
 # Changelog
 
+## 3.0.0
+
+### Major changes
+
+- Replaced the fixed 2.x layout with a responsive 3×3 zone/widget system.
+- Added the full-screen Designer with touch drag and drop, widget/zone inspectors,
+  card settings and continuous saving while the dashboard is in edit mode.
+- Added automatic in-memory migration from supported 2.x configuration keys.
+- Added the calendar widget with multiple calendars, agenda/today modes, event
+  colors, event background controls, font sizes and a custom event-detail dialog.
+- Made action bars reusable in multiple zones; transportation remains a singleton.
+- Added automatic horizontal/vertical orientation and zone-aware alignment for
+  sensors and action bars.
+- Added card-wide and per-widget font-family support, plus documentation for Google
+  Fonts and locally hosted fonts.
+
+### Action bar
+
+- Added standard Home Assistant actions (`tap_action`, `hold_action` and
+  `double_tap_action`) through Home Assistant's native action handler.
+- Added `buttonGap` and `padding` layout controls.
+- Added/updated navigation, service call, more-info, light/switch toggle, weather
+  refresh, transportation and next-background plugins.
+- Fixed stale active overlays and transportation/action-bar transitions that could
+  block later button clicks.
+
+### Designer and widgets
+
+- Added localized Czech and English Designer labels.
+- Added collapsible list items, consistent remove icons and sticky inspector headers.
+- Added clock/date alignment and explicit size controls without inherited line-height
+  gaps.
+- Added sensor precision, orientation and alignment controls.
+- Added weather provider/display/icon settings and improved editor contrast.
+- Fixed drag-and-drop initialization after opening/closing inspectors.
+- Fixed transportation configuration persistence and on-demand display lifecycle.
+- Improved compact/embedded card editing so the Designer no longer takes over the
+  complete dashboard editor automatically.
+
+### Upgrade notes
+
+- Existing 2.x YAML remains accepted. Saving in the 3.0 Designer writes the new
+  `appearance`, `background` and `layout.zones` structure.
+- The obsolete single-sensor `sensorEntity` / `sensorLabel` form is not part of the
+  3.0 schema; use a `sensors` array.
+- Widget visibility conditions are reserved in the schema but are not evaluated in
+  3.0.0.
+
 ## 2.5.0
 
 ### What's Changed

@@ -18,6 +18,12 @@ export const ZONE_IDS: ZoneId[] = [
     'bottom-left', 'bottom-center', 'bottom-right',
 ];
 
+/** Layout of repeated items inside widgets that support it. */
+export type WidgetOrientation = 'auto' | 'horizontal' | 'vertical';
+
+/** Horizontal placement of a widget's own content. */
+export type WidgetAlignment = 'auto' | 'left' | 'center' | 'right';
+
 /**
  * Reserved for HA-style visibility conditions (state / time / user / ...).
  * The key is accepted in configs but NOT evaluated yet; evaluation lands after 3.0.0-beta.
@@ -30,6 +36,8 @@ export interface WidgetCondition {
 /** Small set of safe per-widget style overrides. */
 export interface WidgetStyle {
     fontSize?: string;
+    /** CSS font-family value; the font itself must be available in HA/browser. */
+    fontFamily?: string;
     color?: string;
     maxWidth?: string;
     maxHeight?: string;
@@ -64,6 +72,13 @@ export interface ZoneConfig {
     gap?: string;
     /** Inner inset of the zone box. */
     padding?: string;
+}
+
+/** Horizontal default follows the grid column unless the zone overrides it. */
+export function defaultZoneAlignment(zoneId?: ZoneId): NonNullable<ZoneConfig['align']> {
+    if (zoneId?.endsWith('-left')) return 'start';
+    if (zoneId?.endsWith('-right')) return 'end';
+    return 'center';
 }
 
 export type SpacingPreset = 'compact' | 'normal' | 'spacious';
@@ -103,6 +118,8 @@ export interface BackgroundConfig {
 /** Card-wide appearance defaults; widgets may override via WidgetStyle. */
 export interface AppearanceConfig {
     fontColor?: string;
+    /** Card-wide CSS font-family value inherited by widgets. */
+    fontFamily?: string;
     language?: string;
     timeZone?: string;
     size?: Size;
@@ -117,4 +134,3 @@ export interface WallClockConfigV3 {
     /** Lovelace card type and any passthrough keys (e.g. grid_options). */
     [key: string]: unknown;
 }
-

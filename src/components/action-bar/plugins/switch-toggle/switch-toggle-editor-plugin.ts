@@ -47,8 +47,8 @@ export class SwitchToggleEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.switchToggleAction.entity_id || ''}
-                    .label=${"Switch Entity"}
-                    .helper=${"Select a switch entity to toggle"}
+                    .label=${this.t('editor.action_plugin.switch_entity', 'Switch entity')}
+                    .helper=${this.t('editor.action_plugin.switch_help', 'Select a switch entity to toggle')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('entity_id', ev)}
             ></ha-row-selector>
@@ -61,8 +61,8 @@ export class SwitchToggleEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.switchToggleAction.icon_on || ''}
-                    .label=${"Icon (On State)"}
-                    .helper=${"Icon to show when switch is on"}
+                    .label=${this.t('editor.action_plugin.icon_on', 'Icon (on state)')}
+                    .helper=${this.t('editor.action_plugin.switch_icon_help', 'Icon to show when the switch is on')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('icon_on', ev)}
             ></ha-row-selector>
@@ -71,8 +71,8 @@ export class SwitchToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.switchToggleAction.activeColor || '#4CAF50'}
-                    .label=${"Active Color"}
-                    .helper=${"Color to use when the switch is on (active state)"}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
+                    .helper=${this.t('editor.action_plugin.switch_color_help', 'Color to use when the switch is on')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>

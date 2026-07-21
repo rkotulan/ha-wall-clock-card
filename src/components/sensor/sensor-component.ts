@@ -4,6 +4,7 @@ import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { createLogger, getSizeValue } from '../../utils';
 import { SensorController, SensorConfig } from './sensor-controller';
 import { Size } from '../../core/types';
+import type {ResolvedWidgetAlignment, ResolvedWidgetOrientation} from '../../widgets/widget-layout';
 
 export interface SensorComponentConfig {
     sensors?: SensorConfig[];
@@ -11,6 +12,8 @@ export interface SensorComponentConfig {
     size?: Size;
     labelSize?: string;
     valueSize?: string;
+    orientation?: ResolvedWidgetOrientation;
+    alignment?: ResolvedWidgetAlignment;
 }
 
 @customElement('ha-sensors')
@@ -21,6 +24,8 @@ export class SensorComponent extends LitElement {
     @property({ type: String }) size?: Size;
     @property({ type: String }) labelSize?: string;
     @property({ type: String }) valueSize?: string;
+    @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
+    @property({ type: String }) alignment: ResolvedWidgetAlignment = 'left';
 
     private logger = createLogger('sensor-component');
     private sensorController: SensorController;
@@ -38,22 +43,52 @@ export class SensorComponent extends LitElement {
     }
 
     static styles = css`
+        :host {
+            display: block;
+            width: 100%;
+            max-height: 100%;
+        }
+
         /* Placement is provided by the hosting zone (wcc-zone); the component
            only lays out its own items. */
         .sensor-container {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
             max-height: 100%;
-            overflow-y: auto;
-            padding-right: 8px;
+            gap: 16px;
         }
 
         .sensor-item {
-            margin-bottom: 16px;
-            width: 100%;
+            flex: 0 0 auto;
+            min-width: 0;
+            max-width: 100%;
             cursor: pointer;
         }
+
+        .sensor-container.horizontal {
+            flex-direction: row;
+            align-items: flex-start;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .sensor-container.vertical {
+            flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .sensor-container.horizontal.align-left { justify-content: flex-start; }
+        .sensor-container.horizontal.align-center { justify-content: center; }
+        .sensor-container.horizontal.align-right { justify-content: flex-end; }
+        .sensor-container.vertical.align-left { align-items: flex-start; }
+        .sensor-container.vertical.align-center { align-items: center; }
+        .sensor-container.vertical.align-right { align-items: flex-end; }
+
+        .sensor-container.align-left .sensor-item { text-align: left; }
+        .sensor-container.align-center .sensor-item { text-align: center; }
+        .sensor-container.align-right .sensor-item { text-align: right; }
 
         .sensor-label {
             font-size: 1.0rem;
@@ -159,7 +194,8 @@ export class SensorComponent extends LitElement {
         this.logger.debug(`Rendering sensors - LabelSize: ${labelSize}, ValueSize: ${valueSize}`);
 
         return html`
-            <div class="sensor-container" style="color: ${this.fontColor};">
+            <div class="sensor-container ${this.orientation} align-${this.alignment}"
+                 style="color: ${this.fontColor};">
                 ${sensorValues.map(sensor => html`
                     <div class="sensor-item"
                          role="button"

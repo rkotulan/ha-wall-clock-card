@@ -177,6 +177,16 @@ describe('ClockController', () => {
         expect(controller.ampm).toBe('PM');
       });
 
+      it('should keep 12-hour conversion while hiding AM/PM when requested', () => {
+        const controller = new ClockController(mockHost, {
+          timeFormat: {hour12: true, showAmPm: false}
+        });
+
+        controller['updateTime'](new Date(2023, 0, 1, 15, 30, 45), undefined);
+        expect(controller.hours).toBe('03');
+        expect(controller.ampm).toBe('');
+      });
+
       it('should handle midnight (12 AM) correctly in 12-hour format', () => {
         const controller = new ClockController(mockHost, { 
           timeFormat: { hour12: true } 

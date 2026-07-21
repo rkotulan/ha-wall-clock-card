@@ -2,6 +2,7 @@ import { LitElement, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WallClockConfig } from '../../core/types';
+import { localize } from '../../utils/localize';
 
 /**
  * Interface for editor section components
@@ -31,6 +32,11 @@ export interface EditorSectionInterface {
 export abstract class BaseEditorSection extends LitElement implements EditorSectionInterface {
     @property({ type: Object }) hass!: HomeAssistant;
     @property({ type: Object }) config!: WallClockConfig;
+
+    /** Translate editor text using the active Home Assistant profile language. */
+    protected t(key: string, fallback?: string, replacements: Record<string, string | number> = {}): string {
+        return localize(key, this.hass, fallback ?? key, replacements);
+    }
 
     /**
      * Update callback

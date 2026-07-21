@@ -6,6 +6,7 @@ import type {TransportationComponent} from '../components/transportation';
 import {TransportationConfig} from '../transportation-providers/types';
 import {WidgetConfig} from '../core/layout-types';
 import {WidgetElement, widgetSpecificConfig} from './widget-element';
+import {resolveLanguage} from '../utils/ha-locale';
 
 /** TransportationConfig keys ride along at the widget's top level (see migration). */
 export type TransportationWidgetConfig = WidgetConfig & Partial<TransportationConfig>;
@@ -13,6 +14,7 @@ export type TransportationWidgetConfig = WidgetConfig & Partial<TransportationCo
 @customElement('wcc-transportation-widget')
 export class TransportationWidget extends WidgetElement<TransportationWidgetConfig> {
     private transportation = document.createElement('ha-transportation') as TransportationComponent;
+    private appliedConfig?: TransportationWidgetConfig;
 
     static styles = css`
         :host {
@@ -35,9 +37,21 @@ export class TransportationWidget extends WidgetElement<TransportationWidgetConf
     }
 
     protected applyWidgetState(): void {
-        this.transportation.transportation = widgetSpecificConfig<TransportationConfig>(this.config);
-        this.transportation.fontColor = this.fontColor;
-        if (this.hass) {
+        // `applyWidgetState` also runs on every HA state update. Recreating the
+        // config object there made TransportationController treat each hass tick
+        // as a real config change, clear its timers and hide active departures.
+        if (this.appliedConfig !== this.config) {
+            this.transportation.transportation = widgetSpecificConfig<TransportationConfig>(this.config);
+            this.appliedConfig = this.config;
+        }
+        if (this.transportation.fontColor !== this.fontColor) {
+            this.transportation.fontColor = this.fontColor;
+        }
+        const language = resolveLanguage(this.appearance?.language, this.hass);
+        if (this.transportation.language !== language) {
+            this.transportation.language = language;
+        }
+        if (this.hass && this.transportation.hass !== this.hass) {
             this.transportation.hass = this.hass;
         }
     }

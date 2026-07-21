@@ -28,8 +28,7 @@ export class WeatherUpdateEditorPlugin extends BasePluginEditor {
     render() {
         return html`
             <div class="helper-text">
-                This action will trigger an immediate weather update when clicked.
-                No additional configuration is needed.
+                ${this.t('editor.action_plugin.weather_update_help', 'This action triggers an immediate weather update. No additional configuration is needed.')}
             </div>
         `;
     }

@@ -1,4 +1,4 @@
-import {LitElement, html, css, PropertyValues} from 'lit';
+import {LitElement, html, css} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
@@ -16,7 +16,7 @@ import '../components/action-bar/plugins/navigator/navigation-editor-plugin';
 import '../components/action-bar/plugins/service-call/service-call-editor-plugin';
 import '../components/action-bar/plugins/weather-update/weather-update-editor-plugin';
 import './layout-editor';
-import {getLanguageOptions, ExtendedDateTimeFormatOptions} from '../utils';
+import {getLanguageOptions, ExtendedDateTimeFormatOptions, localize, normalizeLanguage} from '../utils';
 import {setPropertyByPath} from '../utils';
 import {WallClockConfigV3} from '../core/layout-types';
 import {applyGeneralSetting} from './layout-editor-logic';
@@ -33,6 +33,10 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
     // Language options from lokalify
     private _languageOptions: { value: string, label: string }[] = [];
+
+    private t(key: string, fallback: string): string {
+        return localize(key, this.hass, fallback);
+    }
     connectedCallback(): void {
         super.connectedCallback();
         // Color picker and other HA form elements are now automatically loaded
@@ -40,57 +44,6 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
         // Initialize language options from lokalify
         this._languageOptions = getLanguageOptions();
     }
-
-    updated(changedProps: PropertyValues) {
-        super.updated(changedProps);
-    }
-
-    protected firstUpdated(changedProps: PropertyValues): void {
-        super.firstUpdated(changedProps);
-        this._openDialogEnlarged();
-    }
-
-    /**
-     * Opens the surrounding HA edit dialog in its enlarged (wide) mode right away
-     * instead of requiring the user to click the dialog header. Relies on the
-     * hui-dialog-edit-card internals; when HA changes them this silently degrades
-     * to the default narrow dialog (header click still works).
-     */
-    private _openDialogEnlarged(): void {
-        try {
-            let node: Element | undefined = this;
-            while (node) {
-                const root = node.getRootNode();
-                if (!(root instanceof ShadowRoot)) {
-                    return;
-                }
-                const host = root.host as HTMLElement & {large?: unknown; _large?: unknown; requestUpdate?: () => void};
-                if (host.localName === 'hui-dialog-edit-card') {
-                    if (typeof host.large === 'boolean') {
-                        host.large = true;
-                    } else if (typeof host._large === 'boolean') {
-                        host._large = true;
-                    }
-                    host.requestUpdate?.();
-                    // Let the preview column take its full half of the dialog
-                    // (HA caps it otherwise). Runs after the dialog re-renders.
-                    requestAnimationFrame(() => {
-                        const preview = host.shadowRoot?.querySelector<HTMLElement>('.element-preview');
-                        if (preview) {
-                            preview.style.flex = '1 1 0';
-                            preview.style.maxWidth = 'none';
-                        }
-                    });
-                    return;
-                }
-                node = host;
-            }
-        } catch {
-            // HA internals changed — the user can still enlarge via the header click
-        }
-    }
-
-
 
     setConfig(config: LovelaceCardConfig): void {
         // Cast the config to WallClockConfig
@@ -240,7 +193,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     /** General-section value: appearance.* for v3 configs, root key for v2. */
-    private _generalValue(key: 'fontColor' | 'language' | 'size'): unknown {
+    private _generalValue(key: 'fontColor' | 'fontFamily' | 'language' | 'size'): unknown {
         if (this._isV3) {
             return (this._config as unknown as WallClockConfigV3).appearance?.[key];
         }
@@ -318,6 +271,46 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             ha-selector, ha-textfield, ha-select {
                 width: 100%;
             }
+
+            .designer-notice {
+                display: grid;
+                grid-template-columns: 44px minmax(0, 1fr);
+                gap: 14px;
+                align-items: start;
+                margin: 16px;
+                padding: 16px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+                border-radius: 12px;
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.035));
+            }
+
+            .designer-notice-icon {
+                display: grid;
+                place-items: center;
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background: var(--primary-color, #2878d8);
+                color: var(--text-primary-color, #fff);
+            }
+
+            .designer-notice-icon ha-icon {
+                --mdc-icon-size: 24px;
+            }
+
+            .designer-notice strong {
+                display: block;
+                margin: 2px 0 6px;
+                color: var(--primary-text-color, #fff);
+                font-size: 1rem;
+            }
+
+            .designer-notice p {
+                margin: 0;
+                color: var(--secondary-text-color, #a0a0a0);
+                font-size: 0.86rem;
+                line-height: 1.5;
+            }
         `;
     }
 
@@ -326,31 +319,53 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             return html``;
         }
 
+        // Zone-layout configurations are edited in the in-place Designer. Keep
+        // the old form only as a migration path for untouched 2.x configs.
+        if (!this._isV3) {
+            return this.renderLegacyEditor();
+        }
+
+        return html`
+            <div class="designer-notice">
+                <span class="designer-notice-icon"><ha-icon icon="mdi:layers-edit"></ha-icon></span>
+                <div>
+                    <strong>${this.t('designer.use_designer_title', 'Configure this card in Designer')}</strong>
+                    <p>${this.t(
+                        'designer.use_designer_help',
+                        'Close this dialog. In dashboard edit mode, open the card with Configure card and use Card settings or select a widget.',
+                    )}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    /** Kept as a migration fallback while legacy 2.x configurations remain supported. */
+    private renderLegacyEditor(): TemplateResult {
+        if (!this.hass || !this._config) {
+            return html``;
+        }
+
         return html`
             <div class="form-container">
-                <!-- Layout Section (zones + widgets + drag & drop) -->
-                <ha-expansion-panel outlined>
-                    <h3 slot="header">Layout</h3>
-                    <layout-editor
-                        .hass=${this.hass}
-                        .config=${this._config}
-                        @config-changed=${(ev: CustomEvent) => {
-                            this._config = ev.detail.config;
-                            fireEvent(this, 'config-changed', {config: this._config});
-                        }}
-                    ></layout-editor>
-                </ha-expansion-panel>
-
                 <!-- General Section -->
                 <ha-expansion-panel outlined>
-                    <h3 slot="header">General</h3>
+                    <h3 slot="header">${this.t('general.title', 'General')}</h3>
                     <div class="content">
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{color_hex: ""}}
                                 .value=${this._generalValue('fontColor')}
-                                .label= ${"Font Color"}
+                                .label=${this.t('general.font_color', 'Font color')}
                                 propertyName="fontColor"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{text: {}}}
+                                .value=${this._generalValue('fontFamily') ?? ''}
+                                .label=${this.t('general.font_family', 'Font family')}
+                                .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
+                                propertyName="fontFamily"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector
@@ -361,8 +376,8 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         mode: 'dropdown'
                                     }
                                 }}
-                                .value=${this._generalValue('language') || 'en'}
-                                .label=${"Language"}
+                                .value=${normalizeLanguage(String(this._generalValue('language') || this.hass.locale?.language || this.hass.language || 'en'))}
+                                .label=${this.t('general.language', 'Language')}
                                 propertyName="language"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -382,7 +397,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     }
                                 }}
                                 .value=${this._config.logLevel || 'info'}
-                                .label= ${"Log Level"}
+                                .label=${this.t('general.log_level', 'Log level')}
                                 propertyName="logLevel"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
@@ -393,27 +408,27 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 .selector=${{
                                     select: {
                                         options: [
-                                            {value: Size.Large, label: "Large"},
-                                            {value: Size.Medium, label: "Medium"},
-                                            {value: Size.Small, label: "Small"},
-                                            {value: Size.Custom, label: "Custom"}
+                                            {value: Size.Large, label: this.t('general.large', 'Large')},
+                                            {value: Size.Medium, label: this.t('general.medium', 'Medium')},
+                                            {value: Size.Small, label: this.t('general.small', 'Small')},
+                                            {value: Size.Custom, label: this.t('spacing.custom', 'Custom')}
                                         ],
                                         mode: 'dropdown'
                                     }
                                 }}
                                 .value=${this._generalValue('size') || Size.Medium}
-                                .label= ${"Size"}
+                                .label=${this.t('general.size', 'Size')}
                                 propertyName="size"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
 
                         ${(this._generalValue('size') || Size.Medium) === Size.Custom ? html`
-                            <h4>Custom Sizes</h4>
+                            <h4>${this.t('general.custom_sizes', 'Custom sizes')}</h4>
                             <ha-row-selector
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
                                     .value=${this._sizeValue('clockSize', 'clock', 'clockSize', '16rem')}
-                                    .label= ${"Clock Size (e.g., 16rem)"}
+                                    .label=${this.t('inspector.clock_size', 'Clock size (e.g., 16rem)')}
                                     propertyName="customSizes.clockSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
@@ -423,7 +438,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                         .hass=${this.hass}
                                         .selector=${{ text: {} }}
                                         .value=${this._config.customSizes?.clockTopMargin || '0rem'}
-                                        .label= ${"Clock Top Margin (e.g., 0rem)"}
+                                        .label=${this.t('general.clock_top_margin', 'Clock top margin (e.g., 0rem)')}
                                         propertyName="customSizes.clockTopMargin"
                                         @value-changed=${this._handleFormValueChanged}
                                 ></ha-row-selector>
@@ -433,7 +448,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
                                     .value=${this._sizeValue('dateSize', 'date', 'dateSize', '6rem')}
-                                    .label= ${"Date Size (e.g., 6rem)"}
+                                    .label=${this.t('inspector.date_size', 'Date size (e.g., 6rem)')}
                                     propertyName="customSizes.dateSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
@@ -442,7 +457,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
                                     .value=${this._sizeValue('labelSize', 'sensors', 'labelSize', '1.5rem')}
-                                    .label= ${"Label Size (e.g., 1.5rem)"}
+                                    .label=${this.t('inspector.label_size', 'Label size (e.g., 1.5rem)')}
                                     propertyName="customSizes.labelSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
@@ -451,7 +466,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
                                     .value=${this._sizeValue('valueSize', 'sensors', 'valueSize', '3rem')}
-                                    .label= ${"Value Size (e.g., 3rem)"}
+                                    .label=${this.t('inspector.value_size', 'Value size (e.g., 3rem)')}
                                     propertyName="customSizes.valueSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
@@ -460,7 +475,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .hass=${this.hass}
                                     .selector=${{ text: {} }}
                                     .value=${this._sizeValue('actionBarIconSize', 'action-bar', 'iconSize', '72px')}
-                                    .label= ${"Action Bar Icon Size (e.g., 72px)"}
+                                    .label=${this.t('inspector.icon_size', 'Action bar icon size (e.g., 72px)')}
                                     propertyName="customSizes.actionBarIconSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
@@ -468,9 +483,22 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     </div>
                 </ha-expansion-panel>
 
+                <!-- Spacing Section (widget placement/configuration is edited in-place) -->
+                <ha-expansion-panel outlined>
+                    <h3 slot="header">${this.t('general.spacing', 'Spacing')}</h3>
+                    <layout-editor
+                        .hass=${this.hass}
+                        .config=${this._config}
+                        @config-changed=${(ev: CustomEvent) => {
+                            this._config = ev.detail.config;
+                            fireEvent(this, 'config-changed', {config: this._config});
+                        }}
+                    ></layout-editor>
+                </ha-expansion-panel>
+
                 <!-- Background Section (v3: adapted to background.* keys) -->
                 <ha-expansion-panel outlined>
-                    <h3 slot="header">Background</h3>
+                    <h3 slot="header">${this.t('general.background', 'Background')}</h3>
                     <background-editor
                         .hass=${this.hass}
                         .config=${this._isV3
@@ -497,7 +525,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                     <!-- Time Format Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Time Format</h3>
+                        <h3 slot="header">${this.t('general.time_format', 'Time format')}</h3>
                         <time-format-editor
                             .hass=${this.hass}
                             .config=${this._config}
@@ -510,7 +538,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                     <!-- Date Format Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Date Format</h3>
+                        <h3 slot="header">${this.t('general.date_format', 'Date format')}</h3>
                         <date-format-editor
                             .hass=${this.hass}
                             .config=${this._config}
@@ -523,7 +551,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                     <!-- Sensors Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Sensors</h3>
+                        <h3 slot="header">${this.t('widgets.sensors', 'Sensors')}</h3>
                         <sensors-editor
                             .hass=${this.hass}
                             .config=${this._config}
@@ -538,7 +566,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                     <!-- Weather Settings Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Weather Forecast</h3>
+                        <h3 slot="header">${this.t('widgets.weather', 'Weather')}</h3>
                         <weather-editor
                             .hass=${this.hass}
                             .config=${this._config}
@@ -552,7 +580,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     <!-- Transportation Settings Section -->
                     ${this._config.transportation?.enabled === true ? html`
                         <ha-expansion-panel outlined>
-                            <h3 slot="header">Transportation Departures</h3>
+                            <h3 slot="header">${this.t('widgets.transportation', 'Transportation')}</h3>
                             <transportation-editor
                                 .hass=${this.hass}
                                 .config=${this._config}
@@ -568,7 +596,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
 
                     <!-- Action Bar Settings Section -->
                     <ha-expansion-panel outlined>
-                        <h3 slot="header">Action Bar</h3>
+                        <h3 slot="header">${this.t('widgets.action_bar', 'Action bar')}</h3>
                         <action-bar-editor
                             .hass=${this.hass}
                             .config=${this._config}

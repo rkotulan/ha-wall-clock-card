@@ -10,6 +10,7 @@ import {WidgetConfig} from '../core/layout-types';
 import {WidgetElement} from './widget-element';
 
 export interface WeatherWidgetConfig extends WidgetConfig {
+    enabled?: boolean;
     /** Weather provider plugin id ('openweathermap', 'homeassistant', ...). */
     provider?: string;
     providerConfig?: WeatherProviderConfig;
@@ -34,8 +35,10 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
     `;
 
     protected applyWidgetState(): void {
-        // The widget's presence in a zone is what enables weather display.
-        this.weather.showWeather = true;
+        const hasCustomSize = !!(this.config.labelSize || this.config.valueSize);
+        // Presence enables the widget by default; keep the v2 Show Weather
+        // switch meaningful when it is explicitly turned off in the inspector.
+        this.weather.showWeather = this.config.enabled !== false;
         this.weather.weatherProvider = this.config.provider;
         this.weather.weatherConfig = this.config.providerConfig;
         this.weather.weatherDisplayMode = this.config.displayMode;
@@ -45,7 +48,7 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         this.weather.weatherIconSet = this.config.iconSet ?? this.config.providerConfig?.iconSet;
         this.weather.fontColor = this.fontColor;
         this.weather.language = resolveLanguage(this.appearance?.language, this.hass);
-        this.weather.size = this.appearance?.size ?? Size.Medium;
+        this.weather.size = hasCustomSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
         this.weather.labelSize = this.config.labelSize;
         this.weather.valueSize = this.config.valueSize;
         if (this.hass) {

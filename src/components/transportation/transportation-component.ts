@@ -1,6 +1,6 @@
 import {html, css, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
-import {createLogger} from '../../utils';
+import {createLogger, localize} from '../../utils';
 import {TransportationController} from './transportation-controller';
 import {
     TransportationConfig,
@@ -33,6 +33,7 @@ export class TransportationComponent extends BottomBarComponent {
 
     @property({type: Object}) transportation?: TransportationConfig;
     @property({type: String}) fontColor?: string;
+    @property({type: String}) language?: string;
     @property({type: Object}) hass?: any;
 
     private logger = createLogger('transportation-component');
@@ -273,7 +274,10 @@ export class TransportationComponent extends BottomBarComponent {
     }
 
     render() {                
-        if (!this.transportation || this.transportation.enabled !== true) {
+        // In the v3 zone layout the presence of the widget means "enabled";
+        // `enabled` is therefore commonly omitted from its flat widget config.
+        // Keep honoring an explicit false for legacy configurations.
+        if (!this.transportation || this.transportation.enabled === false) {
             return html``;
         }
 
@@ -297,7 +301,7 @@ export class TransportationComponent extends BottomBarComponent {
                                         class="transportation-container"
                                         style="color: ${this.fontColor};"
                                 >
-                                    <div class="transportation-loading">Loading transportation data...</div>
+                                    <div class="transportation-loading">${localize('runtime.loading_transportation', this.language || this.hass, 'Loading transportation data…')}</div>
                                 </div>`)
                     : html``}
         `;
@@ -309,7 +313,7 @@ export class TransportationComponent extends BottomBarComponent {
     private renderTransportationContent(transportationData: TransportationData): any {
         if (transportationData.loading) {
             return html`
-                <div class="transportation-loading">Loading transportation data...</div>`;
+                <div class="transportation-loading">${localize('runtime.loading_transportation', this.language || this.hass, 'Loading transportation data…')}</div>`;
         }
 
         if (transportationData.error) {
@@ -319,7 +323,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         if (!transportationData.departures || transportationData.departures.length === 0) {
             return html`
-                <div class="transportation-loading">No departures available.</div>`;
+                <div class="transportation-loading">${localize('runtime.no_departures', this.language || this.hass, 'No departures available.')}</div>`;
         }
 
         // Group departures by stop name and postId

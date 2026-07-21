@@ -1,7 +1,7 @@
 import {LitElement, PropertyValues} from 'lit';
 import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
-import {AppearanceConfig, WidgetConfig} from '../core/layout-types';
+import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
 
 /**
  * Base class for zone layout widgets.
@@ -15,6 +15,9 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     @property({type: Object}) hass?: HomeAssistant;
     @property({type: Object}) config!: C;
     @property({type: Object}) appearance: AppearanceConfig = {};
+    /** Hosting zone context used by widgets with responsive internal layout. */
+    @property({attribute: false}) zoneId?: ZoneId;
+    @property({attribute: false}) zoneAlignment?: NonNullable<ZoneConfig['align']>;
 
     /** Priority inside an 'exclusive' zone; higher wins. */
     get priority(): number {
@@ -44,7 +47,8 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         if (!this.config) {
             return;
         }
-        if (changedProperties.has('config') || changedProperties.has('hass') || changedProperties.has('appearance')) {
+        if (changedProperties.has('config') || changedProperties.has('hass') || changedProperties.has('appearance')
+            || changedProperties.has('zoneId') || changedProperties.has('zoneAlignment')) {
             this.applyWidgetState();
             this.applyStyleOverrides();
         }
@@ -53,10 +57,15 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     /** Applies the WidgetStyle escape hatches on the host element. */
     private applyStyleOverrides(): void {
         const style = this.config?.style;
+        const supportsBoundedWidth = !['sensors', 'weather', 'calendar'].includes(this.config?.type);
+        const supportsBoundedHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(this.config?.type);
         this.style.margin = style?.margin ?? '';
-        this.style.maxWidth = style?.maxWidth ?? '';
-        this.style.maxHeight = style?.maxHeight ?? '';
+        this.style.maxWidth = supportsBoundedWidth ? (style?.maxWidth ?? '') : '';
+        this.style.maxHeight = supportsBoundedHeight ? (style?.maxHeight ?? '') : '';
+        this.style.overflow = supportsBoundedHeight && style?.maxHeight ? 'auto' : '';
         this.style.fontSize = style?.fontSize ?? '';
+        this.style.fontFamily = style?.fontFamily ?? this.appearance?.fontFamily ?? '';
+        this.style.color = style?.color ?? '';
     }
 
     /** Forwards config/hass/appearance to the underlying feature component. */

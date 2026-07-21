@@ -1,5 +1,5 @@
 import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import { getAllTransportationProviders, StopConfig as TransportationStopConfig } from '../../transportation-providers';
 
@@ -9,6 +9,7 @@ import { getAllTransportationProviders, StopConfig as TransportationStopConfig }
 @customElement('transportation-editor')
 export class TransportationEditor extends BaseEditorSection {
     @property({ type: Array }) _stops: TransportationStopConfig[] = [];
+    @state() private _expandedStopIndex: number | null = 0;
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -22,6 +23,7 @@ export class TransportationEditor extends BaseEditorSection {
     private _loadStops(): void {
         if (!this.config?.transportation) {
             this._stops = [];
+            this._expandedStopIndex = null;
             return;
         }
 
@@ -32,9 +34,15 @@ export class TransportationEditor extends BaseEditorSection {
             // No stops configured
             this._stops = [];
         }
+        if (this._stops.length === 0) {
+            this._expandedStopIndex = null;
+        } else if (this._expandedStopIndex !== null) {
+            this._expandedStopIndex = Math.min(this._expandedStopIndex, this._stops.length - 1);
+        }
     }
 
     private _addStop(): void {
+        this._expandedStopIndex = this._stops.length;
         this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
         // Update the config with a deep copy
         if (this.config) {
@@ -67,6 +75,13 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _removeStop(index: number): void {
         this._stops = this._stops.filter((_, i) => i !== index);
+        if (this._stops.length === 0) {
+            this._expandedStopIndex = null;
+        } else if (this._expandedStopIndex === index) {
+            this._expandedStopIndex = Math.min(index, this._stops.length - 1);
+        } else if (this._expandedStopIndex !== null && this._expandedStopIndex > index) {
+            this._expandedStopIndex -= 1;
+        }
         // Update the config with a deep copy
         if (this.config && this.config.transportation) {
             // Create a deep copy of the config
@@ -137,6 +152,17 @@ export class TransportationEditor extends BaseEditorSection {
         }
     }
 
+    private _toggleStop(index: number): void {
+        this._expandedStopIndex = this._expandedStopIndex === index ? null : index;
+    }
+
+    /** Stop/platform IDs may be numeric or textual depending on the provider. */
+    private _normalizeStopId(value: unknown): number | string | undefined {
+        const text = String(value ?? '').trim();
+        if (!text) return undefined;
+        return /^-?\d+$/.test(text) ? Number(text) : text;
+    }
+
     // Transportation provider options
     private _getTransportationProviderOptions(): { value: string, label: string }[] {
         const providers = getAllTransportationProviders();
@@ -166,26 +192,82 @@ export class TransportationEditor extends BaseEditorSection {
                 margin: 25px 0 5px 0;
             }
             
-            .sensor-row {
+            .stop-card {
+                margin: 10px 0;
+                padding: 8px 10px 10px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.16));
+                border-radius: 8px;
+                background: var(--card-background-color, rgba(255, 255, 255, 0.04));
+            }
+
+            .stop-card.collapsed .stop-header {
+                margin-bottom: 0;
+            }
+
+            .stop-header {
                 display: flex;
-                margin-bottom: 8px;
                 align-items: center;
+                min-height: 36px;
+                margin-bottom: 2px;
             }
-            
-            .sensor-entity {
-                flex: 2;
-                margin-right: 8px;
-            }
-            
-            .sensor-label {
+
+            .stop-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
                 flex: 1;
-                margin-right: 8px;
+                min-width: 0;
+                min-height: 32px;
+                padding: 0 4px;
+                border: 0;
+                background: transparent;
+                color: var(--primary-text-color, #fff);
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
             }
-            
-            .sensor-actions {
-                flex: 0 0 40px;
-                text-align: center;
-                margin-top: 20px;
+
+            .stop-toggle strong {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 0.9rem;
+            }
+
+            .stop-icon-button {
+                display: grid;
+                place-items: center;
+                flex: 0 0 32px;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--secondary-text-color, #aaa);
+                cursor: pointer;
+            }
+
+            .stop-icon-button ha-icon { --mdc-icon-size: 18px; }
+
+            .stop-icon-button:hover,
+            .stop-icon-button:focus-visible {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-text-color, #fff);
+                outline: none;
+            }
+
+            .stop-icon-button.remove:hover { color: var(--error-color, #db4437); }
+
+            .stop-body {
+                padding-top: 4px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+            }
+
+            .stop-card ha-row-selector {
+                display: block;
+                width: 100%;
+                padding: 3px 0;
             }
         `;
     }
@@ -211,7 +293,7 @@ export class TransportationEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.transportation?.provider || 'idsjmk'}
-                        .label= ${"Transportation Provider"}
+                        .label=${this.t('editor.transportation.provider', 'Transportation provider')}
                         propertyName="transportation.provider"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -227,8 +309,8 @@ export class TransportationEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.transportation?.maxDepartures || 2}
-                        .label= ${"Global Max Departures"}
-                        .helper=${`${this.config.transportation?.maxDepartures || 2} departures`}
+                        .label=${this.t('editor.transportation.max_departures', 'Global maximum departures')}
+                        .helper=${this.t('editor.transportation.departures', '{count} departures', {count: this.config.transportation?.maxDepartures || 2})}
                         propertyName="transportation.maxDepartures"
                         @value-changed=${(ev: CustomEvent) => {
                             this._handleFormValueChanged(ev);
@@ -248,8 +330,8 @@ export class TransportationEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.transportation?.autoHideTimeout || 5}
-                        .label= ${"Auto-Hide Timeout"}
-                        .helper= ${"Auto-hide timeout in minutes (1-10)"}
+                        .label=${this.t('editor.transportation.auto_hide', 'Auto-hide timeout')}
+                        .helper=${this.t('editor.transportation.auto_hide_help', 'Auto-hide timeout in minutes (1–10)')}
                         propertyName="transportation.autoHideTimeout"
                         .transformData=${(value: number) => {
                             // Ensure value is between 1 and 10 minutes
@@ -268,8 +350,8 @@ export class TransportationEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${Math.floor((this.config.transportation.updateInterval || 60) / 60)}
-                        .label= ${"Update Interval"}
-                        .helper= ${"Update interval in minutes (min: 1)"}
+                        .label=${this.t('editor.transportation.update_interval', 'Update interval')}
+                        .helper=${this.t('editor.transportation.update_help', 'Update interval in minutes (minimum 1)')}
                         propertyName="transportation.updateInterval"
                         .transformData=${(value: number) => {
                             // Ensure minimum of 1 minute
@@ -280,75 +362,66 @@ export class TransportationEditor extends BaseEditorSection {
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 
-                <div class="section-subheader">Stops</div>
+                <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
-                ${this._stops.map((stop, index) => html`
-                    <div class="sensor-row">
-                        <div class="sensor-entity">
-                            <ha-textfield
-                                    label="Stop ID"
-                                    type="number"
-                                    .value=${stop.stopId || 1793}
-                                    @input=${(ev: CustomEvent) => {
-                                        ev.stopPropagation();
-                                        ev.preventDefault();
-
-                                        const target = ev.target as HTMLElement & { value?: string };
-                                        if (!target) return;
-
-                                        this._stopChanged(index, 'stopId', parseInt(target.value || '1793', 10));
-                                    }}
-                            ></ha-textfield>
+                ${this._stops.map((stop, index) => {
+                    const expanded = this._expandedStopIndex === index;
+                    return html`
+                    <div class="stop-card ${expanded ? '' : 'collapsed'}">
+                        <div class="stop-header">
+                            <button class="stop-toggle" type="button"
+                                    aria-expanded=${expanded}
+                                    @click=${() => this._toggleStop(index)}>
+                                <strong>${stop.name || this.t('editor.transportation.stop', 'Stop {number}', {number: index + 1})}</strong>
+                            </button>
+                            <button class="stop-icon-button remove" type="button"
+                                    title=${this.t('editor.transportation.remove_stop', 'Remove stop')}
+                                    aria-label=${this.t('editor.transportation.remove_stop', 'Remove stop')}
+                                    @click=${() => this._removeStop(index)}>
+                                <ha-icon icon="mdi:delete-outline"></ha-icon>
+                            </button>
+                            <button class="stop-icon-button" type="button"
+                                    title=${expanded ? this.t('editor.transportation.collapse_stop', 'Collapse stop') : this.t('editor.transportation.expand_stop', 'Expand stop')}
+                                    aria-label=${expanded ? this.t('editor.transportation.collapse_stop', 'Collapse stop') : this.t('editor.transportation.expand_stop', 'Expand stop')}
+                                    @click=${() => this._toggleStop(index)}>
+                                <ha-icon icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                            </button>
                         </div>
-                        <div class="sensor-label">
-                            <ha-textfield
-                                    label="Post ID"
-                                    type="number"
-                                    .value=${stop.postId || 3}
-                                    @input=${(ev: CustomEvent) => {
-                                        ev.stopPropagation();
-                                        ev.preventDefault();
-
-                                        const target = ev.target as HTMLElement & { value?: string };
-                                        if (!target) return;
-
-                                        this._stopChanged(index, 'postId', parseInt(target.value || '3', 10));
-                                    }}
-                            ></ha-textfield>
-                        </div>
+                        ${expanded ? html`<div class="stop-body">
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{text: {}}}
+                                .value=${String(stop.stopId ?? '')}
+                                .label=${this.t('editor.transportation.stop_id', 'Stop ID')}
+                                @value-changed=${(ev: CustomEvent) =>
+                                    this._stopChanged(index, 'stopId', this._normalizeStopId(ev.detail.value))}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{text: {}}}
+                                .value=${String(stop.postId ?? '')}
+                                .label=${this.t('editor.transportation.post_id', 'Post ID')}
+                                @value-changed=${(ev: CustomEvent) =>
+                                    this._stopChanged(index, 'postId', this._normalizeStopId(ev.detail.value))}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{text: {}}}
+                                .value=${stop.name ?? ''}
+                                .label=${this.t('editor.transportation.stop_name', 'Stop name (optional)')}
+                                @value-changed=${(ev: CustomEvent) =>
+                                    this._stopChanged(index, 'name', ev.detail.value || '')}>
+                        </ha-row-selector>
+                        </div>` : ''}
                     </div>
-                    <div class="sensor-row" style="margin-bottom: 16px; padding-bottom: 16px;">
-                        <div class="sensor-entity" style="width: 100%;">
-                            <ha-textfield
-                                    label="Stop Name (optional)"
-                                    .value=${stop.name || ''}
-                                    style="width: 100%;"
-                                    @input=${(ev: CustomEvent) => {
-                                        ev.stopPropagation();
-                                        ev.preventDefault();
+                `;})}
 
-                                        const target = ev.target as HTMLElement & { value?: string };
-                                        if (!target) return;
-
-                                        this._stopChanged(index, 'name', target.value || '');
-                                    }}
-                            ></ha-textfield>
-                        </div>
-                        <div class="sensor-actions">
-                            <ha-icon-button
-                                    .path=${'M19,13H5V11H19V13Z'}
-                                    @click=${() => this._removeStop(index)}
-                            ></ha-icon-button>
-                        </div>
-                    </div>
-                `)}
-
-                <mwc-button @click=${this._addStop}>Add Stop</mwc-button>
+                <mwc-button @click=${this._addStop}>${this.t('editor.transportation.add_stop', 'Add stop')}</mwc-button>
 
                 <div class="info-text">
-                    For detailed documentation on transportation configuration, see <a
+                    <a
                         href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
-                        target="_blank">transportation.md</a>
+                        target="_blank">${this.t('editor.transportation.documentation', 'Transportation configuration documentation')}</a>
                 </div>
             </div>
         `;

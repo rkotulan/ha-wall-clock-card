@@ -151,7 +151,9 @@ export class ClockController extends BaseController {
             const isPM = hours >= 12;
             hours = hours % 12;
             hours = hours ? hours : 12; // Convert 0 to 12 for 12 AM
-            this._ampm = isPM ? 'PM' : 'AM';
+            this._ampm = this.config.timeFormat?.showAmPm === false
+                ? ''
+                : (isPM ? 'PM' : 'AM');
         } else {
             this._ampm = ''; // Clear AM/PM for 24-hour format
         }

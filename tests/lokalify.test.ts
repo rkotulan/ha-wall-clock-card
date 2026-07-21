@@ -10,8 +10,12 @@ import {
   formatTime, 
   formatDateTime, 
   translate,
+  localize,
+  normalizeLanguage,
   ExtendedDateTimeFormatOptions
 } from '../src/utils/localize/lokalify';
+import enTranslations from '../src/translations/en.json';
+import csTranslations from '../src/translations/cs.json';
 
 // Helper function to create a fixed date for testing
 function createTestDate(): Date {
@@ -342,5 +346,29 @@ describe('translate function', () => {
 
   test('should fall back to key if translation missing', () => {
     expect(translate('non.existent.key', 'bg')).toBe('non.existent.key');
+  });
+
+  test('should fall back to English for keys missing in another language', () => {
+    expect(translate('designer.widgets', 'de')).toBe('Widgets');
+  });
+
+  test('should normalize HA locale values and interpolate replacements', () => {
+    expect(normalizeLanguage('cs-CZ')).toBe('cs');
+    expect(normalizeLanguage('nb-NO')).toBe('no');
+    expect(localize('designer.remove_widget', 'cs-CZ', undefined, {name: 'Kalendář'}))
+      .toBe('Odebrat Kalendář');
+  });
+
+  test('Czech UI catalog should contain every English key', () => {
+    const flatten = (value: Record<string, unknown>, prefix = ''): string[] =>
+      Object.entries(value).flatMap(([key, child]) => {
+        const path = prefix ? `${prefix}.${key}` : key;
+        return child && typeof child === 'object'
+          ? flatten(child as Record<string, unknown>, path)
+          : [path];
+      });
+    const englishKeys = flatten(enTranslations).sort();
+    const czechKeys = new Set(flatten(csTranslations));
+    expect(englishKeys.filter(key => !czechKeys.has(key))).toEqual([]);
   });
 });

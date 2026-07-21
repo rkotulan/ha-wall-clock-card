@@ -45,8 +45,8 @@ export class MoreInfoEditorPlugin extends BasePluginEditor {
                         entity: {}
                     }}
                     .value=${this.moreInfoAction.entity_id || ''}
-                    .label=${"Entity"}
-                    .helper=${"Select an entity to show more info for"}
+                    .label=${this.t('editor.action_plugin.entity', 'Entity')}
+                    .helper=${this.t('editor.action_plugin.more_info_help', 'Select an entity to show more information for')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('entity_id', ev)}
             ></ha-row-selector>

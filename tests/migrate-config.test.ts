@@ -1,7 +1,7 @@
 // Golden tests for the v2 -> v3 zone layout migration.
 // Import directly from the source files (not barrels): the barrels pull in
 // LitElement components whose ESM Jest cannot load in the node environment.
-import {migrateToLayout, isV3Config, resolveSpacing} from '../src/core/migrate-config';
+import {isValidSpacingValue, migrateToLayout, isV3Config, resolveSpacing} from '../src/core/migrate-config';
 import {SPACING_PRESETS, WallClockConfigV3} from '../src/core/layout-types';
 import {Size} from '../src/core/types';
 
@@ -43,6 +43,7 @@ describe('migrateToLayout', () => {
             backgroundRotationInterval: 60,
             objectFit: 'cover',
             fontColor: '#EEEEEE',
+            fontFamily: '"Roboto Condensed", sans-serif',
             language: 'cs',
             timeZone: 'Europe/Prague',
             size: Size.Large,
@@ -123,6 +124,7 @@ describe('migrateToLayout', () => {
             },
             appearance: {
                 fontColor: '#EEEEEE',
+                fontFamily: '"Roboto Condensed", sans-serif',
                 language: 'cs',
                 timeZone: 'Europe/Prague',
                 size: Size.Large,
@@ -182,6 +184,12 @@ describe('migrateToLayout', () => {
 });
 
 describe('resolveSpacing', () => {
+    it('accepts a complete four-value card padding while rejecting partial invalid input', () => {
+        expect(isValidSpacingValue('padding', '60px 60px 60px 16px')).toBe(true);
+        expect(isValidSpacingValue('padding', '60p')).toBe(false);
+        expect(isValidSpacingValue('zoneGap', '16px 24px')).toBe(false);
+    });
+
     it('defaults to the normal preset', () => {
         expect(resolveSpacing()).toEqual(SPACING_PRESETS.normal);
         expect(resolveSpacing({zones: {}})).toEqual(SPACING_PRESETS.normal);

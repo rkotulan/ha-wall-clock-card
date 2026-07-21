@@ -2,6 +2,7 @@ import { LitElement, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {ModuleActionConfig} from "../../types";
+import {localize} from '../../../../utils/localize';
 
 /**
  * Interface for plugin editor components
@@ -46,6 +47,10 @@ export abstract class BasePluginEditor extends LitElement implements PluginEdito
     @property({ type: Object }) actionConfig!: ModuleActionConfig;
     @property({ type: Number }) index!: number;
     @property({ type: Function }) actionChanged!: (index: number, property: string, value: any) => void;
+
+    protected t(key: string, fallback: string): string {
+        return localize(key, this.hass, fallback);
+    }
 
     /**
      * Update callback

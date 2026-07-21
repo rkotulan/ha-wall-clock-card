@@ -47,8 +47,8 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.lightToggleAction.entity_id || ''}
-                    .label=${"Light Entity"}
-                    .helper=${"Select a light entity to toggle"}
+                    .label=${this.t('editor.action_plugin.light_entity', 'Light entity')}
+                    .helper=${this.t('editor.action_plugin.light_help', 'Select a light entity to toggle')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('entity_id', ev)}
             ></ha-row-selector>
@@ -61,8 +61,8 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.lightToggleAction.icon_on || ''}
-                    .label=${"Icon (On State)"}
-                    .helper=${"Icon to show when light is on"}
+                    .label=${this.t('editor.action_plugin.icon_on', 'Icon (on state)')}
+                    .helper=${this.t('editor.action_plugin.light_icon_help', 'Icon to show when the light is on')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('icon_on', ev)}
             ></ha-row-selector>
@@ -71,8 +71,8 @@ export class LightToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.lightToggleAction.activeColor || '#ffeb3b'}
-                    .label=${"Active Color"}
-                    .helper=${"Color to use when the light is on (active state)"}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
+                    .helper=${this.t('editor.action_plugin.light_color_help', 'Color to use when the light is on')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>

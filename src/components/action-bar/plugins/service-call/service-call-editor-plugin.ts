@@ -59,8 +59,8 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
                         }
                     }}
                     .value=${this.uiActionValue}
-                    .label=${"Service"}
-                    .helper=${"Service to call, including data and target"}
+                    .label=${this.t('editor.action_plugin.service', 'Service')}
+                    .helper=${this.t('editor.action_plugin.service_help', 'Service to call, including data and target')}
                     .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this._serviceChanged(ev)}
             ></ha-row-selector>
@@ -69,8 +69,8 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ boolean: {} }}
                     .value=${this.serviceCallAction.confirmation || false}
-                    .label=${"Ask for confirmation"}
-                    .helper=${"Show a confirmation dialog before calling the service"}
+                    .label=${this.t('editor.action_plugin.confirmation', 'Ask for confirmation')}
+                    .helper=${this.t('editor.action_plugin.confirmation_help', 'Show a confirmation dialog before calling the service')}
                     .labelPosition=${LabelPosition.Left}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('confirmation', ev)}
             ></ha-row-selector>
@@ -81,8 +81,8 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
                         .selector=${{ text: { type: 'text' } }}
                         .value=${this.serviceCallAction.confirmation_text || ''}
                         .required=${false}
-                        .label=${"Confirmation Text"}
-                        .helper=${"Custom text for the confirmation dialog"}
+                        .label=${this.t('editor.action_plugin.confirmation_text', 'Confirmation text')}
+                        .helper=${this.t('editor.action_plugin.confirmation_text_help', 'Custom text for the confirmation dialog')}
                         .labelPosition=${LabelPosition.Hidden}
                         @value-changed=${(ev: CustomEvent) => this.handleValueChange('confirmation_text', ev)}
                 ></ha-row-selector>
@@ -92,8 +92,8 @@ export class ServiceCallEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.serviceCallAction.activeColor || '#ffeb3b'}
-                    .label=${"Active Color"}
-                    .helper=${"Color to use when the service call action is active"}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
+                    .helper=${this.t('editor.action_plugin.active_color_help', 'Color to use when the action is active')}
                     .labelPosition=${LabelPosition.Hidden}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>

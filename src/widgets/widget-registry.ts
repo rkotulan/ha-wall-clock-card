@@ -19,6 +19,8 @@ export interface WidgetPlugin<C extends WidgetConfig = WidgetConfig> {
     readonly elementTag: string;
     /** Custom element tag of the widget's config editor section. */
     readonly editorTag?: string;
+    /** Only one instance may exist in a card layout. */
+    readonly singleton?: boolean;
     /** Default configuration used when the widget is added from the palette. */
     defaultConfig(): C;
 }

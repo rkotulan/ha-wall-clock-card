@@ -20,6 +20,7 @@ export interface WallClockConfig {
     objectFit?: string;
     sensors?: SensorConfig[]; // Multiple sensors
     fontColor?: string; // Font color for all text elements
+    fontFamily?: string; // CSS font-family; font must be loaded by HA/theme/browser
     language?: string; // Language for translations
     timeZone?: string; // Time zone for clock (e.g., 'America/New_York')
     logLevel?: string; // Log level for the logger (debug, info, warn, error, none)
@@ -70,6 +71,7 @@ export interface WallClockCardConfig {
     showSeconds?: boolean;
     hideYear?: boolean;
     fontColor?: string;
+    fontFamily?: string;
     sensors?: SensorConfig[];
     imageSource?: string;
     backgroundImages?: BackgroundImageConfig[];

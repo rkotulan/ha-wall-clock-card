@@ -5,7 +5,12 @@ import {
     TransportationData,
     getTransportationProvider
 } from '../../transportation-providers';
-import {BottomBarRequestUpdateMessage, Messenger, ShowTransportationMessage} from "../../utils";
+import {
+    ActiveComponentState,
+    BottomBarRequestUpdateMessage,
+    Messenger,
+    ShowTransportationMessage,
+} from "../../utils";
 
 export interface TransportationControllerConfig {
     transportation?: TransportationConfig;
@@ -17,6 +22,9 @@ export interface TransportationControllerConfig {
 export class TransportationController extends BaseController {
     private intervalId?: number;
     private autoHideTimerId?: number;
+    private readonly onShowTransportation = (): void => {
+        void this.handleTransportationClick();
+    };
 
     // Reactive properties for transportation data
     private _transportationData: TransportationData = { departures: [], loading: false };
@@ -37,7 +45,7 @@ export class TransportationController extends BaseController {
         // Subscribe to transportation click messages
         Messenger.getInstance().subscribe(
             ShowTransportationMessage,
-            () => this.handleTransportationClick()
+            this.onShowTransportation
         );
     }
 
@@ -50,7 +58,7 @@ export class TransportationController extends BaseController {
         // Unsubscribe from transportation click messages
         Messenger.getInstance().unsubscribe(
             ShowTransportationMessage,
-            () => this.handleTransportationClick()
+            this.onShowTransportation
         );
     }
 
@@ -268,14 +276,18 @@ export class TransportationController extends BaseController {
     }
 
     private setInactive(): void {
+        if (!this._isActive) return;
         this.logger.info("Transportation set to inactive, clearing timers and sending message to bottom bar to hide departures");
         this._isActive = false;
+        ActiveComponentState.getInstance().setActive('transportation', false);
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
 
     private setActive(): void {
+        if (this._isActive) return;
         this.logger.info("Transportation set to active, sending message to bottom bar to show departures");
         this._isActive = true;
+        ActiveComponentState.getInstance().setActive('transportation', true);
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
     }
 }

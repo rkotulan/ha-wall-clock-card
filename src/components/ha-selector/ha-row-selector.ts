@@ -46,7 +46,7 @@ declare global {
  *   .label=${"My Label"}
  *   .actionButtons=${[
  *     {
- *       icon: 'M19,13H5V11H19V13Z',
+ *       icon: 'M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z',
  *       tooltip: "Remove",
  *       eventName: "action-click"
  *     },
@@ -79,7 +79,7 @@ export class HaRowSelector extends LitElement {
     /**
      * The current value of the input
      */
-    @property() public value?: string;
+    @property({attribute: false}) public value?: unknown;
 
     /**
      * The label to display next to the input
@@ -129,7 +129,7 @@ export class HaRowSelector extends LitElement {
      * ```typescript
      * [
      *   {
-     *     icon: 'M19,13H5V11H19V13Z', // SVG path for the icon
+     *     icon: 'M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z', // SVG path for the icon
      *     tooltip: "Remove item",      // Tooltip text
      *     eventName: "action-click"    // Event to fire when clicked
      *   }
@@ -142,13 +142,17 @@ export class HaRowSelector extends LitElement {
         eventName?: string;
     }>;
 
+    private get isBooleanSelector(): boolean {
+        return !!this.selector && Object.prototype.hasOwnProperty.call(this.selector, 'boolean');
+    }
+
     /**
      * Renders the component
      * @returns The rendered template
      */
     protected render() {
         return html`
-            <div class="row ${this.labelPosition.toLowerCase()}">
+            <div class="row ${this.labelPosition.toLowerCase()} ${this.isBooleanSelector ? 'boolean' : ''}">
                 ${this.label && this.labelPosition !== LabelPosition.Hidden ? html`
                     <div class="label">${this.label}</div>
                 ` : ''}
@@ -156,8 +160,8 @@ export class HaRowSelector extends LitElement {
                     <ha-selector
                         .hass=${this.hass}
                         .selector=${this.selector}
-                        .value=${this.value || ''}
-                        .helper=${this.helper}
+                        .value=${this.value ?? ''}
+                        .helper=${this.isBooleanSelector ? undefined : this.helper}
                         .disabled=${this.disabled}
                         .required=${this.required}
                         @value-changed=${this._valueChanged}
@@ -176,6 +180,9 @@ export class HaRowSelector extends LitElement {
                         `) 
                     : ''}
                 </div>
+                ${this.isBooleanSelector && this.helper ? html`
+                    <div class="boolean-helper">${this.helper}</div>
+                ` : ''}
             </div>
         `;
     }
@@ -229,6 +236,38 @@ export class HaRowSelector extends LitElement {
             font-weight: 500;
         }
 
+        .row.left.boolean {
+            display: grid;
+            grid-template-columns: minmax(0, 30%) minmax(0, 1fr) auto;
+            column-gap: 8px;
+            row-gap: 4px;
+        }
+
+        .row.left.boolean .value {
+            min-width: 0;
+            justify-content: flex-end;
+            overflow: visible;
+        }
+
+        .row.left.boolean .value ha-selector {
+            flex: 0 0 auto;
+            width: auto;
+            overflow: visible;
+        }
+
+        .row.left.boolean .action-buttons {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        .row.boolean .action-buttons:empty {
+            display: none;
+        }
+
+        .row.left.boolean .boolean-helper {
+            grid-column: 2 / -1;
+        }
+
         /* Style for top position */
         .row.top {
             flex-direction: column;
@@ -242,6 +281,25 @@ export class HaRowSelector extends LitElement {
 
         .row.top .value {
             width: 100%;
+        }
+
+        .row.top.boolean .value {
+            width: auto;
+            align-self: flex-end;
+            overflow: visible;
+        }
+
+        .row.top.boolean .value ha-selector {
+            width: auto;
+            overflow: visible;
+        }
+
+        .boolean-helper {
+            min-width: 0;
+            color: var(--secondary-text-color, #727272);
+            font-size: 0.75rem;
+            line-height: 1.35;
+            white-space: normal;
         }
 
         /* Common styles */

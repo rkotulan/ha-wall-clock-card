@@ -1,6 +1,13 @@
 # Design: Zone layout system (3.0.0)
 
-Status: **draft / discussion**
+> **Status:** historical implementation design. The 3.0 system is implemented; this
+> document records the original decisions and may mention beta sequencing or planned
+> extensions that are not part of the public contract. In particular, 3.0 uses
+> SortableJS (not `ha-sortable`), has no generic HA-card widget, and accepts but does
+> not yet evaluate `visibility`. Use
+> [Zone layout](../layout.md) and `src/core/layout-types.ts` for current behavior.
+
+Status: **implemented / historical design record**
 Target: 3.0.0
 
 ## 1. Overview
@@ -20,7 +27,7 @@ Goals:
 - New features become widgets — no more edits to `WallClockCard.render()`.
 - Community can register custom widgets at runtime (`registerWidget()`).
 - Old configurations keep working unchanged (in-memory migration).
-- Visual editor with drag & drop between zones (HA `ha-sortable`).
+- Visual editor with drag & drop between zones (implemented with SortableJS).
 
 Non-goals for 3.0.0:
 
@@ -141,14 +148,12 @@ export interface WallClockConfigV3 {
 
 Notes:
 
-- `visibility` deliberately copies the Home Assistant frontend condition schema
-  (introduced for cards in 2024.x) so we can (a) reuse `ha-card-conditions-editor` in
-  our editor and (b) users can copy conditions between HA cards and this card.
-- `mode: 'exclusive'` is the generalization of today's `BottomBarManager`: among the
-  widgets whose `visibility` currently evaluates true, the highest `priority` renders;
-  transitions crossfade (same 500 ms fade the manager uses today).
-- Global `size` / `customSizes` survive as defaults; `style.fontSize` overrides per
-  widget instance.
+- `visibility` reserves a Home Assistant-like condition shape, but 3.0.0 does not
+  evaluate it or expose a condition editor.
+- `mode: 'exclusive'` generalizes the former `BottomBarManager`: among widgets whose
+  `isActive` flag is true, the highest `priority` renders; transitions crossfade.
+- Global `size` survives as a default. Legacy `customSizes` migrate into the named
+  size property of the corresponding built-in widget.
 
 ### 2.3 Spacing model
 
@@ -360,8 +365,8 @@ Display modes:
 
 ### 4.5 Synergies
 
-- `visibility` conditions: calendar shown only in the morning, or only when
-  `person.home` — no code needed, comes free with §2.
+- Future evaluated `visibility` conditions could show a calendar only in the morning
+  or while `person.home`; this is not implemented in 3.0.0.
 - Exclusive zone: rotate transportation (rush hours) ↔ calendar (rest of day).
 - Holiday integration (`calendar.svatky`) gives name-day/holiday display for free.
 
@@ -375,7 +380,7 @@ Display modes:
   in-memory. Rendering code only ever sees v3. **The user's stored YAML is never
   rewritten implicitly.**
 - **Editor:** shows a one-time banner "Tato karta používá starší konfiguraci" with a
-  *Convert to zones* button that fires `config-changed` with the explicit v3 YAML.
+  first saved Designer change that writes the normalized v3 YAML.
   Until pressed, the editor keeps editing legacy keys (existing editors keep working).
 - Legacy keys stay honored for the whole 3.x line; documented as deprecated.
 
@@ -460,25 +465,23 @@ of 3.0.0 and the cheapest to test exhaustively.
   generalized `BottomBarManager` logic (priority + visibility + crossfade), which then
   gets deleted as a special case.
 - Background stays a sibling layer under the grid (z-index 0), exactly as today.
-- Responsiveness via container queries (`@container`) — the card is resized by HA
-  sections view, not the viewport, so media queries are wrong here.
+- The implemented grid uses intrinsic CSS Grid sizing; the Designer adds targeted
+  viewport breakpoints for its own toolbar/inspector chrome.
 
 ## 7. Editor
 
-- Zone editor = miniature 3×3 preview; widget chips draggable between zones via
-  HA `ha-sortable` (the same element the sections view uses).
-- Click on a chip opens the widget's `editorTag` in a dialog/expandable — existing
-  per-feature editors are reused unchanged.
+- Zone editor = full 3×3 canvas; widget items are draggable between zones via
+  SortableJS and touch fallbacks.
+- Clicking an item opens its `editorTag` in a persistent side inspector; feature
+  editors are adapted into Content, Appearance and Behavior tabs.
 - Palette lists `WidgetRegistry.getAllWidgets()` (name + icon); the `card` widget
   opens `hui-card-picker`.
-- Visibility editing embeds `ha-card-conditions-editor`.
+- Visibility editing was deferred; the schema field is reserved only.
 
-## 8. Phasing
+## 8. Implementation outcome
 
-1. **3.0.0-beta1** — types, `migrateToLayout` + golden tests, `wcc-layout`/`wcc-zone`,
-   widgets: clock, date, sensors, weather, transportation, action-bar (YAML only,
-   editor still legacy).
-2. **beta2** — widget registry public API (`registerWidget`), zone drag & drop editor,
-   *Convert to zones* flow.
-3. **beta3** — `card` widget, `visibility` conditions + editor, calendar widget.
-4. **3.1** — `template` widget, profiles/scenes, `mini-month` calendar mode.
+3.0.0 includes the zone renderer, migration, public widget registry, Designer,
+clock/date/sensors/weather/transportation/action-bar widgets and the agenda calendar.
+Generic HA-card and template widgets, evaluated visibility conditions,
+profiles/scenes and a mini-month calendar remain possible post-3.0 extensions; they
+must not be documented as available features until implemented.

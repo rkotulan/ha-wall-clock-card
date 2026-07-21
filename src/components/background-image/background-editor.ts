@@ -1,5 +1,5 @@
 import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 
@@ -9,23 +9,28 @@ import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 @customElement('background-editor')
 export class BackgroundEditor extends BaseEditorSection {
     @property({ type: Array }) _backgroundImages: BackgroundImage[] = [];
+    @state() private _expandedImageIndex: number | null = 0;
 
     // Image source options
-    private _imageSourceOptions = [
-        {value: 'none', label: 'None (No Background Images)'},
-        {value: 'picsum', label: 'Picsum Photos'},
-        {value: 'local', label: 'Local Images'},
-        {value: 'unsplash', label: 'Unsplash'},
-        {value: 'sensor', label: 'Sensor Images'},
-    ];
+    private _imageSourceOptions() {
+        return [
+            {value: 'none', label: this.t('editor.background.source_none', 'None (no background images)')},
+            {value: 'picsum', label: this.t('editor.background.source_picsum', 'Picsum photos')},
+            {value: 'local', label: this.t('editor.background.source_local', 'Local images')},
+            {value: 'unsplash', label: 'Unsplash'},
+            {value: 'sensor', label: this.t('editor.background.source_sensor', 'Sensor images')},
+        ];
+    }
 
-    private _objectFitOptions = [
-        {value: 'fill', label: 'Fill'},
-        {value: 'contain', label: 'Contain'},
-        {value: 'cover', label: 'Cover'},
-        {value: 'none', label: 'None'},
-        {value: 'scale-down', label: 'Scale Down'},
-    ];
+    private _objectFitOptions() {
+        return [
+            {value: 'fill', label: this.t('editor.background.fit_fill', 'Fill')},
+            {value: 'contain', label: this.t('editor.background.fit_contain', 'Contain')},
+            {value: 'cover', label: this.t('editor.background.fit_cover', 'Cover')},
+            {value: 'none', label: this.t('ui.none', 'None')},
+            {value: 'scale-down', label: this.t('editor.background.fit_scale_down', 'Scale down')},
+        ];
+    }
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -44,9 +49,15 @@ export class BackgroundEditor extends BaseEditorSection {
             // Initialize empty array
             this._backgroundImages = [];
         }
+        if (this._backgroundImages.length === 0) {
+            this._expandedImageIndex = null;
+        } else if (this._expandedImageIndex !== null) {
+            this._expandedImageIndex = Math.min(this._expandedImageIndex, this._backgroundImages.length - 1);
+        }
     }
 
     private _addBackgroundImage(): void {
+        this._expandedImageIndex = this._backgroundImages.length;
         this._backgroundImages = [
             ...this._backgroundImages,
             {
@@ -60,7 +71,18 @@ export class BackgroundEditor extends BaseEditorSection {
 
     private _removeBackgroundImage(index: number): void {
         this._backgroundImages = this._backgroundImages.filter((_, i) => i !== index);
+        if (this._backgroundImages.length === 0) {
+            this._expandedImageIndex = null;
+        } else if (this._expandedImageIndex === index) {
+            this._expandedImageIndex = Math.min(index, this._backgroundImages.length - 1);
+        } else if (this._expandedImageIndex !== null && this._expandedImageIndex > index) {
+            this._expandedImageIndex -= 1;
+        }
         this._updateBackgroundImagesConfig();
+    }
+
+    private _toggleImage(index: number): void {
+        this._expandedImageIndex = this._expandedImageIndex === index ? null : index;
     }
 
     private _updateBackgroundImagesConfig(): void {
@@ -95,29 +117,81 @@ export class BackgroundEditor extends BaseEditorSection {
                 margin: 25px 0 5px 0;
             }
             
-            .image-row {
+            .image-card {
+                margin: 10px 0;
+                padding: 8px 10px 10px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.16));
+                border-radius: 8px;
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.035));
+            }
+
+            .image-card.collapsed .image-header { margin-bottom: 0; }
+
+            .image-header {
                 display: flex;
-                margin-bottom: 16px;
                 align-items: center;
-                flex-wrap: wrap;
-                gap: 8px;
+                min-height: 36px;
+                margin-bottom: 2px;
             }
-            
-            .image-url {
-                flex: 1 1 calc(100% - 60px);
+
+            .image-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                flex: 1;
+                min-width: 0;
+                min-height: 32px;
+                padding: 0 4px;
+                border: 0;
+                background: transparent;
+                color: var(--primary-text-color, #fff);
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
             }
-            
-            .image-actions {
-                flex: 0 0 40px;
-                text-align: center;
+
+            .image-title {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 0.9rem;
+                font-weight: 600;
             }
-            
-            .image-weather {
-                flex: 1 1 45%;
+
+            .image-icon-button {
+                display: grid;
+                place-items: center;
+                flex: 0 0 32px;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--secondary-text-color, #aaa);
+                cursor: pointer;
             }
-            
-            .image-time {
-                flex: 1 1 45%;
+
+            .image-icon-button ha-icon { --mdc-icon-size: 18px; }
+
+            .image-icon-button:hover,
+            .image-icon-button:focus-visible {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-text-color, #fff);
+                outline: none;
+            }
+
+            .image-icon-button.remove:hover { color: var(--error-color, #db4437); }
+
+            .image-body {
+                padding-top: 4px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+            }
+
+            .image-body ha-row-selector {
+                display: block;
+                width: 100%;
+                padding: 3px 0;
             }
         `;
     }
@@ -133,12 +207,12 @@ export class BackgroundEditor extends BaseEditorSection {
                         .hass=${this.hass}
                         .selector=${{
                             select: {
-                                options: this._imageSourceOptions,
+                                options: this._imageSourceOptions(),
                                 mode: 'dropdown'
                             }
                         }}
                         .value=${this.config.imageSource || 'none'}
-                        .label= ${"Image Source"}
+                        .label=${this.t('editor.background.source', 'Image source')}
                         propertyName="imageSource"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -154,7 +228,7 @@ export class BackgroundEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.5}
-                        .label= ${"Background Opacity"}
+                        .label=${this.t('editor.background.opacity', 'Background opacity')}
                         propertyName="backgroundOpacity"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -171,7 +245,7 @@ export class BackgroundEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.backgroundRotationInterval || 90}
-                        .label= ${"Rotation Interval (sec)"}
+                        .label=${this.t('editor.background.rotation', 'Rotation interval (seconds)')}
                         propertyName="backgroundRotationInterval"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -180,12 +254,12 @@ export class BackgroundEditor extends BaseEditorSection {
                         .hass=${this.hass}
                         .selector=${{
                             select: {
-                                options: this._objectFitOptions,
+                                options: this._objectFitOptions(),
                                 mode: 'dropdown'
                             }
                         }}
                         .value=${this.config.objectFit || 'cover'}
-                        .label= ${"Background Image Fit (object-fit)"}
+                        .label=${this.t('editor.background.fit', 'Background image fit')}
                         propertyName="objectFit"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
@@ -200,17 +274,36 @@ export class BackgroundEditor extends BaseEditorSection {
     private _renderLocalImagesSection() {
         return html`
             <div class="info-text">
-                Configure local image URLs. Images will be automatically categorized by weather
-                condition and time of day based on their file paths.
-                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
-                (sunrise-sunset, day, night) in your file paths.
+                ${this.t('editor.background.local_help', 'Configure local image URLs. Weather and time-of-day conditions can be selected for each image.')}
             </div>
 
-            <div class="section-subheader">Background Images</div>
+            <div class="section-subheader">${this.t('editor.background.images', 'Background images')}</div>
 
-            ${this._backgroundImages.map((image, index) => html`
-                <div class="image-row">
-                    <div class="image-url">
+            ${this._backgroundImages.map((image, index) => {
+                const expanded = this._expandedImageIndex === index;
+                const title = image.url || this.t('editor.background.image', 'Background image {number}', {number: index + 1});
+                return html`
+                <div class="image-card ${expanded ? '' : 'collapsed'}">
+                    <div class="image-header">
+                        <button class="image-toggle" type="button"
+                                aria-expanded=${expanded}
+                                @click=${() => this._toggleImage(index)}>
+                            <span class="image-title">${title}</span>
+                        </button>
+                        <button class="image-icon-button remove" type="button"
+                                title=${this.t('editor.background.remove', 'Remove background image')}
+                                aria-label=${this.t('editor.background.remove', 'Remove background image')}
+                                @click=${() => this._removeBackgroundImage(index)}>
+                            <ha-icon icon="mdi:delete-outline"></ha-icon>
+                        </button>
+                        <button class="image-icon-button" type="button"
+                                title=${expanded ? this.t('editor.background.collapse', 'Collapse background image') : this.t('editor.background.expand', 'Expand background image')}
+                                aria-label=${expanded ? this.t('editor.background.collapse', 'Collapse background image') : this.t('editor.background.expand', 'Expand background image')}
+                                @click=${() => this._toggleImage(index)}>
+                            <ha-icon icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                        </button>
+                    </div>
+                    ${expanded ? html`<div class="image-body">
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -219,18 +312,10 @@ export class BackgroundEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${image.url || ''}
-                                .label= ${"Image URL"}
+                                .label=${this.t('editor.background.url', 'Image URL')}
                                 propertyName="backgroundImages.${index}.url"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
-                    </div>
-                    <div class="image-actions">
-                        <ha-icon-button
-                                .path=${'M19,13H5V11H19V13Z'}
-                                @click=${() => this._removeBackgroundImage(index)}
-                        ></ha-icon-button>
-                    </div>
-                    <div class="image-weather">
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -242,12 +327,10 @@ export class BackgroundEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${image.weather}
-                                .label= ${"Weather Condition"}
+                                .label=${this.t('editor.background.weather', 'Weather condition')}
                                 propertyName="backgroundImages.${index}.weather"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
-                    </div>
-                    <div class="image-time">
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -259,57 +342,32 @@ export class BackgroundEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${image.timeOfDay}
-                                .label= ${"Time of Day"}
+                                .label=${this.t('editor.background.time', 'Time of day')}
                                 propertyName="backgroundImages.${index}.timeOfDay"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
-                    </div>
+                    </div>` : ''}
                 </div>
-            `)}
+            `;})}
 
-            <mwc-button @click=${this._addBackgroundImage}>Add Background Image</mwc-button>
+            <mwc-button @click=${this._addBackgroundImage}>${this.t('editor.background.add', 'Add background image')}</mwc-button>
         `;
     }
 
     private _renderUnsplashSection() {
         return html`
             <div class="info-text">
-                Configure Unsplash image source settings. An API key is required to use Unsplash.
-                You can obtain a free API key from the Unsplash Developer portal.
+                ${this.t('editor.background.unsplash_help', 'Configure Unsplash image source settings. An API key is required.')}
             </div>
 
-            <div class="row">
-                <div class="label">Category</div>
-                <div class="value">
-                    <ha-textfield
-                            label="Category"
-                            .value=${this.config.imageConfig?.category || 'nature'}
-                            @input=${(ev: CustomEvent) => {
-                                ev.stopPropagation();
-                                ev.preventDefault();
-
-                                const target = ev.target as HTMLElement & { value?: string };
-                                if (!target || !this.config) return;
-
-                                // Create a deep copy of the config
-                                const newConfig = JSON.parse(JSON.stringify(this.config));
-
-                                // Ensure imageConfig exists
-                                if (!newConfig.imageConfig) {
-                                    newConfig.imageConfig = {};
-                                }
-
-                                // Update the category
-                                newConfig.imageConfig.category = target.value || 'nature';
-
-                                // Fire the config-changed event with the new config
-                                this.dispatchEvent(new CustomEvent('config-changed', {
-                                    detail: { config: newConfig }
-                                }));
-                            }}
-                    ></ha-textfield>
-                </div>
-            </div>
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{text: {type: 'text'}}}
+                    .value=${this.config.imageConfig?.category || 'nature'}
+                    .label=${this.t('editor.background.category', 'Category')}
+                    propertyName="imageConfig.category"
+                    @value-changed=${this._handleFormValueChanged}
+            ></ha-row-selector>
 
             <ha-row-selector
                     min="1"
@@ -321,9 +379,9 @@ export class BackgroundEditor extends BaseEditorSection {
                         }
                     }}
                     .value=${this.config.imageConfig?.count || '5'}
-                    .label= ${"Number of Photos"}
+                    .label=${this.t('editor.background.photo_count', 'Number of photos')}
                     propertyName="imageConfig.count"
-                    transformData=${(value: any) => {
+                    .transformData=${(value: any) => {
                         // Parse the value as a number and ensure it's within range
                         let count = parseInt(value || '5', 10);
                         if (isNaN(count) || count < 1) count = 1;
@@ -334,88 +392,36 @@ export class BackgroundEditor extends BaseEditorSection {
             ></ha-row-selector>
 
             <div class="info-text">
-                An API key is required. Without a valid API key, the Unsplash image source will not
-                work.
+                ${this.t('editor.background.api_help', 'Without a valid API key, the Unsplash image source will not work.')}
             </div>
 
-            <div class="row">
-                <div class="label">API Key</div>
-                <div class="value">
-                    <ha-textfield
-                            label="API Key"
-                            .value=${this.config.imageConfig?.apiKey || ''}
-                            @input=${(ev: CustomEvent) => {
-                                ev.stopPropagation();
-                                ev.preventDefault();
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{text: {type: 'password'}}}
+                    .value=${this.config.imageConfig?.apiKey || ''}
+                    .label=${this.t('editor.background.api_key', 'API key')}
+                    propertyName="imageConfig.apiKey"
+                    @value-changed=${this._handleFormValueChanged}
+            ></ha-row-selector>
 
-                                const target = ev.target as HTMLElement & { value?: string };
-                                if (!target || !this.config) return;
-
-                                // Create a deep copy of the config
-                                const newConfig = JSON.parse(JSON.stringify(this.config));
-
-                                // Ensure imageConfig exists
-                                if (!newConfig.imageConfig) {
-                                    newConfig.imageConfig = {};
-                                }
-
-                                // Update the API key
-                                newConfig.imageConfig.apiKey = target.value || '';
-
-                                // Fire the config-changed event with the new config
-                                this.dispatchEvent(new CustomEvent('config-changed', {
-                                    detail: { config: newConfig }
-                                }));
-                            }}
-                    ></ha-textfield>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="label">Content Filter</div>
-                <div class="value">
-                    <ha-select
-                            label="Content Filter"
-                            .value=${this.config.imageConfig?.contentFilter || 'high'}
-                            @click=${(ev: CustomEvent) => {
-                                ev.stopPropagation();
-                            }}
-                            @closed=${(ev: CustomEvent) => {
-                                ev.stopPropagation();
-
-                                const target = ev.target as HTMLElement & { value?: string };
-                                if (!target || !this.config) return;
-
-                                // Create a deep copy of the config
-                                const newConfig = JSON.parse(JSON.stringify(this.config));
-
-                                // Ensure imageConfig exists
-                                if (!newConfig.imageConfig) {
-                                    newConfig.imageConfig = {};
-                                }
-
-                                // Update the content filter
-                                newConfig.imageConfig.contentFilter = target.value || 'high';
-
-                                // Fire the config-changed event with the new config
-                                this.dispatchEvent(new CustomEvent('config-changed', {
-                                    detail: { config: newConfig }
-                                }));
-                            }}
-                    >
-                        <mwc-list-item .value=${'low'}>Low</mwc-list-item>
-                        <mwc-list-item .value=${'high'}>High</mwc-list-item>
-                    </ha-select>
-                </div>
-            </div>
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{select: {options: [
+                        {value: 'low', label: 'Low'},
+                        {value: 'high', label: 'High'},
+                    ], mode: 'dropdown'}}}
+                    .value=${this.config.imageConfig?.contentFilter || 'high'}
+                    .label=${this.t('editor.background.content_filter', 'Content filter')}
+                    propertyName="imageConfig.contentFilter"
+                    @value-changed=${this._handleFormValueChanged}
+            ></ha-row-selector>
         `;
     }
 
     private _renderSensorImagesSection() {
         return html`
             <div class="info-text">
-                Configure the sensor that provides the image list. The sensor should have a "files"
-                attribute that contains an array of image URLs.
+                ${this.t('editor.background.sensor_help', 'Select a sensor whose files attribute contains an array of image URLs.')}
             </div>
 
             <ha-row-selector
@@ -435,17 +441,13 @@ export class BackgroundEditor extends BaseEditorSection {
                         }
                     }}
                     .value=${this.config.imageConfig?.entity || ''}
-                    .label= ${"Sensor Entity"}
+                    .label=${this.t('editor.background.sensor_entity', 'Sensor entity')}
                     propertyName="imageConfig.entity"
                     @value-changed=${this._handleFormValueChanged}
             ></ha-row-selector>
 
             <div class="info-text">
-                The sensor should have a "files" attribute that contains an array of image URLs.
-                Images will be automatically categorized by weather condition and time of day based on
-                their file paths.
-                Include weather conditions (clear sky, clouds, rain, snow, mist) and time of day
-                (sunrise-sunset, day, night) in your file paths.
+                ${this.t('editor.background.sensor_files_help', 'The sensor must expose a files attribute containing image URLs.')}
             </div>
         `;
     }

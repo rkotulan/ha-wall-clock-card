@@ -1,10 +1,21 @@
-# Background Image Handling
+# Background behavior
 
-The Wall Clock Card uses lazy loading for background images to improve performance and reduce memory usage:
+The background is a card-wide layer below all zones. Configuration and source
+examples are in [Image sources](image-sources.md).
 
-1. **Lazy Loading**: Images are only loaded when they are needed for display, not all at once
-2. **Preloading**: The next image in the rotation is preloaded shortly before it's needed to ensure smooth transitions
-3. **Error Handling**: If an image fails to load, the component will automatically try the next image
-4. **Memory Efficient**: Only the URLs of all images are stored initially, with actual image data loaded on demand
+- `opacity` controls the black readability overlay (`0` transparent, `1` black;
+  default `0.3`).
+- `rotationInterval` is measured in seconds and defaults to `90`.
+- `objectFit` accepts `fill`, `contain`, `cover`, `none` or `scale-down`; default is
+  `cover`.
+- Images load on demand. Before a transition, the next URL is prepared so the old
+  image can crossfade instead of disappearing abruptly.
+- A failed/empty source is logged and does not block widget rendering.
+- `media-source://` entries are resolved through Home Assistant's media-source API.
+- Weather/time filtering uses the current weather message and the card/HA time
+  context when a source supports it.
 
-When `imageSource` is set to an online source like 'picsum', the component will fetch the specified number of image URLs from the selected source when it loads. If you also have local images configured in `backgroundImages`, both sets of images will be used in the rotation. If you don't want any background images, you can set `imageSource: 'none'`.
+The card stores URLs rather than decoded image data. Browser caching and memory use
+therefore remain under browser control; very large originals can still consume
+substantial memory on wall tablets and should be resized near the target display
+resolution.

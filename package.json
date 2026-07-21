@@ -1,7 +1,7 @@
 {
   "name": "wall-clock-card",
-  "version": "3.0.0-beta1",
-  "description": "A Wall Clock Card for Home Assistant's Lovelace UI that displays a clock with seconds and date",
+  "version": "3.0.0",
+  "description": "A customizable Home Assistant wall dashboard with zone-based clock, sensor, weather, calendar, transport, and action widgets",
   "main": "dist/wall-clock-card.js",
   "scripts": {
     "build": "webpack",
@@ -18,7 +18,10 @@
     "lovelace",
     "clock",
     "card",
-    "custom-card"
+    "custom-card",
+    "dashboard",
+    "weather",
+    "calendar"
   ],
   "author": "",
   "license": "MIT",

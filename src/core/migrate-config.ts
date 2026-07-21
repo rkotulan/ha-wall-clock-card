@@ -41,7 +41,7 @@ const CONSUMED_V2_KEYS = [
     'weatherIconSet', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
     'backgroundRotationInterval', 'objectFit',
-    'fontColor', 'language', 'timeZone', 'size', 'customSizes',
+    'fontColor', 'fontFamily', 'language', 'timeZone', 'size', 'customSizes',
 ];
 
 /**
@@ -156,6 +156,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
 
     const appearance = definedProps({
         fontColor: config.fontColor,
+        fontFamily: config.fontFamily,
         language: config.language,
         timeZone: config.timeZone,
         size: config.size,
@@ -194,6 +195,11 @@ function isValidCssShorthand(value: string, maxParts: number): boolean {
     return parts.length >= 1 && parts.length <= maxParts && parts.every(p => CSS_LENGTH.test(p));
 }
 
+/** Validates a value exactly as resolveSpacing() will consume it. */
+export function isValidSpacingValue(key: keyof SpacingConfig, value: string): boolean {
+    return isValidCssShorthand(value, key === 'padding' ? 4 : 1);
+}
+
 /**
  * Resolves the effective spacing values from preset + explicit overrides.
  * Invalid CSS lengths log a warning and fall back to the preset value
@@ -210,15 +216,11 @@ export function resolveSpacing(layout?: LayoutConfig): Required<SpacingConfig> {
     const resolved = {...SPACING_PRESETS[preset]};
 
     if (spacing && typeof spacing === 'object') {
-        const overrides: Array<[keyof SpacingConfig, number]> = [
-            ['padding', 4],
-            ['zoneGap', 1],
-            ['widgetGap', 1],
-        ];
-        for (const [key, maxParts] of overrides) {
+        const overrides: (keyof SpacingConfig)[] = ['padding', 'zoneGap', 'widgetGap'];
+        for (const key of overrides) {
             const value = spacing[key];
             if (value === undefined) continue;
-            if (typeof value === 'string' && isValidCssShorthand(value, maxParts)) {
+            if (typeof value === 'string' && isValidSpacingValue(key, value)) {
                 resolved[key] = value;
             } else {
                 logger.warn(`Invalid spacing.${key} value '${value}', falling back to '${resolved[key]}'`);

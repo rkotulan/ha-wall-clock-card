@@ -12,7 +12,7 @@ import {normalizeDateFormat} from './format-defaults';
 
 export interface DateWidgetConfig extends WidgetConfig {
     dateFormat?: ExtendedDateTimeFormatOptions;
-    /** Custom font size; only applied when appearance.size is 'custom'. */
+    /** Per-widget date size; overrides the card-wide size preset when present. */
     dateSize?: string;
 }
 
@@ -28,13 +28,14 @@ export class DateWidget extends WidgetElement<DateWidgetConfig> {
     `;
 
     protected applyWidgetState(): void {
+        const dateSize = this.config.dateSize ?? this.config.style?.fontSize;
         this.clock.showClock = false;
         this.clock.dateFormat = normalizeDateFormat(this.config.dateFormat);
         this.clock.language = resolveLanguage(this.appearance?.language, this.hass);
         this.clock.timeZone = this.appearance?.timeZone ?? this.hass?.config?.time_zone;
         this.clock.fontColor = this.fontColor;
-        this.clock.size = this.appearance?.size ?? Size.Medium;
-        this.clock.dateSize = this.config.dateSize;
+        this.clock.size = dateSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
+        this.clock.dateSize = dateSize;
     }
 
     render() {

@@ -2,7 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
-import {createLogger, formatDate, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
+import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
 
@@ -313,13 +313,13 @@ export class WeatherComponent extends LitElement {
         if (this.weatherController.isLoading || !weatherData) {
             return html`
                 <div class="weather-container" style="color: ${this.fontColor};">
-                    <div class="weather-loading">Loading weather data...</div>
+                    <div class="weather-loading">${localize('runtime.loading_weather', this.language, 'Loading weather data…')}</div>
                 </div>`;
         }
 
         const displayMode = this.weatherDisplayMode || 'both';
         const forecastDays = this.weatherForecastDays || 3;
-        const weatherTitle = this.weatherTitle || 'Weather';
+        const weatherTitle = this.weatherTitle || localize('common.title', this.language, 'Weather');
 
         // Limit forecast days to available data (max 7 days)
         const limitedForecastDays = Math.min(forecastDays, weatherData.daily.length);

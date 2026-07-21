@@ -29,10 +29,14 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
         case 'date':
             return defined({dateFormat: widget.dateFormat});
         case 'sensors':
-            return defined({sensors: widget.sensors ?? []});
+            return defined({
+                sensors: widget.sensors ?? [],
+                orientation: widget.orientation,
+                alignment: widget.alignment,
+            });
         case 'weather':
             return defined({
-                showWeather: true,
+                showWeather: widget.enabled !== false,
                 weatherProvider: widget.provider,
                 weatherConfig: widget.providerConfig,
                 weatherDisplayMode: widget.displayMode,
@@ -51,7 +55,10 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                     enabled: widget.enabled ?? true,
                     actions: widget.actions ?? [],
                     alignment: widget.alignment,
+                    orientation: widget.orientation,
                     backgroundOpacity: widget.backgroundOpacity,
+                    buttonGap: widget.buttonGap,
+                    padding: widget.padding,
                 }),
             };
         default:
@@ -81,10 +88,15 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 labelSize: widget.labelSize,
                 valueSize: widget.valueSize,
                 sensors: editorConfig.sensors ?? [],
+                orientation: editorConfig.orientation,
+                alignment: editorConfig.alignment,
             }) as WidgetConfig;
         case 'weather':
             return defined({
                 ...preservedFields(widget),
+                enabled: editorConfig.showWeather === false || editorConfig.weatherProvider === 'none'
+                    ? false
+                    : undefined,
                 labelSize: widget.labelSize,
                 valueSize: widget.valueSize,
                 provider: editorConfig.weatherProvider,
@@ -96,9 +108,12 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 iconSet: editorConfig.weatherIconSet,
             }) as WidgetConfig;
         case 'transportation': {
-            const transportation = (editorConfig.transportation ?? {}) as Record<string, unknown>;
+            if (!editorConfig.transportation) {
+                return {...widget, stops: []};
+            }
+            const transportation = editorConfig.transportation as Record<string, unknown>;
             const {enabled, ...rest} = transportation;
-            return {...preservedFields(widget), ...rest} as WidgetConfig;
+            return {...preservedFields(widget), ...rest, stops: rest.stops ?? []} as WidgetConfig;
         }
         case 'action-bar': {
             const actionBar = (editorConfig.actionBar ?? {}) as Record<string, unknown>;
@@ -108,7 +123,10 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 enabled: actionBar.enabled ?? true,
                 actions: actionBar.actions ?? [],
                 alignment: actionBar.alignment,
+                orientation: actionBar.orientation,
                 backgroundOpacity: actionBar.backgroundOpacity,
+                buttonGap: actionBar.buttonGap,
+                padding: actionBar.padding,
             }) as WidgetConfig;
         }
         default:

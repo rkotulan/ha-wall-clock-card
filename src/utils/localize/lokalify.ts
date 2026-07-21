@@ -3,6 +3,7 @@
  * Provides translations directly embedded in the JS file
  */
 import { logger } from '../logger';
+import type { HomeAssistant } from 'custom-card-helpers';
 
 // Define the structure of the translations
 // This allows for both flat key-value pairs and nested objects
@@ -134,39 +135,64 @@ function getNestedValue(obj: any, path: string): any {
  * @returns The translated string, or the default value if not found
  */
 export function translate(key: string, language: string, defaultValue: string | null = key): string {
-  // Default to English if language is not supported
-  if (!getSupportedLanguages().includes(language)) {
-    return defaultValue !== null ? defaultValue : key;
-  }
+  const normalizedLanguage = normalizeLanguage(language);
 
-  // Get the translations for the specified language
-  let translations = loadedTranslations[language];
+  // Get the translations for the specified language. Unknown and incomplete
+  // locales fall back to English so newly added UI keys can be rolled out
+  // without exposing raw translation keys.
+  let translations = loadedTranslations[normalizedLanguage];
 
   // If translations for this language aren't loaded yet, load them synchronously
   if (!translations) {
     // Use embedded translations directly
-    if (embeddedTranslations[language]) {
-      loadedTranslations[language] = embeddedTranslations[language];
-      translations = loadedTranslations[language];
-      logger.debug(`Loaded translations for ${language} on-demand`);
+    if (embeddedTranslations[normalizedLanguage]) {
+      loadedTranslations[normalizedLanguage] = embeddedTranslations[normalizedLanguage];
+      translations = loadedTranslations[normalizedLanguage];
+      logger.debug(`Loaded translations for ${normalizedLanguage} on-demand`);
     } else {
-      logger.warn(`No embedded translations found for ${language}`);
-      return defaultValue !== null ? defaultValue : key;
+      translations = embeddedTranslations.en;
     }
   }
 
   // Try to get the translation using the nested path
   const translation = getNestedValue(translations, key);
+  const englishTranslation = normalizedLanguage === 'en'
+    ? translation
+    : getNestedValue(embeddedTranslations.en, key);
 
   // Log the result for debugging
   if (typeof translation === 'string') {
-    logger.debug(`Translation found for key "${key}" in language "${language}": "${translation}"`);
+    logger.debug(`Translation found for key "${key}" in language "${normalizedLanguage}": "${translation}"`);
   } else {
-    logger.debug(`No translation found for key "${key}" in language "${language}", using default: "${defaultValue !== null ? defaultValue : key}"`);
+    logger.debug(`No translation found for key "${key}" in language "${normalizedLanguage}", using English/default fallback`);
   }
 
-  // Return the translation if it exists and is a string, otherwise return the default value
-  return typeof translation === 'string' ? translation : (defaultValue !== null ? defaultValue : key);
+  if (typeof translation === 'string') return translation;
+  if (typeof englishTranslation === 'string') return englishTranslation;
+  return defaultValue !== null ? defaultValue : key;
+}
+
+/** Normalize HA/browser locale values (for example cs-CZ) to card language keys. */
+export function normalizeLanguage(language?: string): string {
+  const code = (language || 'en').toLowerCase().split(/[-_]/)[0];
+  if (code === 'cz') return 'cs';
+  if (code === 'nb' || code === 'nn') return 'no';
+  return getSupportedLanguages().includes(code) ? code : 'en';
+}
+
+/** Translate UI text using an explicit language or the active HA profile. */
+export function localize(
+  key: string,
+  hassOrLanguage?: HomeAssistant | string,
+  defaultValue: string | null = key,
+  replacements: Record<string, string | number> = {},
+): string {
+  const language = typeof hassOrLanguage === 'string'
+    ? hassOrLanguage
+    : hassOrLanguage?.locale?.language || hassOrLanguage?.language || 'en';
+  const value = translate(key, language, defaultValue);
+  return value.replace(/\{([^}]+)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(replacements, name) ? String(replacements[name]) : match);
 }
 
 /**
@@ -195,7 +221,7 @@ export function getLanguageOptions(): { value: string, label: string }[] {
  */
 export function getLocaleForLanguage(language: string): string {
   // Find the language in SUPPORTED_LANGUAGES
-  const langDef = SUPPORTED_LANGUAGES.find(lang => lang.code === language);
+  const langDef = SUPPORTED_LANGUAGES.find(lang => lang.code === normalizeLanguage(language));
 
   // Return the locale if found, otherwise default to English (en-US)
   return langDef?.locale || 'en-US';
@@ -211,6 +237,8 @@ export type ExtendedDateTimeFormatOptions = Omit<
   month?: 'numeric' | '2-digit' | 'long' | 'short' | 'narrow' | 'hidden';
   day?: 'numeric' | '2-digit' | 'hidden';
   second?: 'numeric' | '2-digit' | 'hidden';
+  /** Whether the AM/PM period is rendered in 12-hour mode (default: true). */
+  showAmPm?: boolean;
   custom?: string;
 };
 
@@ -291,8 +319,8 @@ export function formatDate(
   options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
-  // Create a copy of the options to avoid modifying the original
-  const formatOptions = { ...options };
+  // `showAmPm` controls our clock markup and is not an Intl option.
+  const {showAmPm: _showAmPm, ...formatOptions} = options;
 
   // If custom format is specified, use it
   if (formatOptions.custom) {

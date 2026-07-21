@@ -2,15 +2,8 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {createLogger} from '../utils/logger/logger';
 import {BottomBarRequestUpdateMessage, Messenger} from '../utils';
-import {ZoneConfig, ZoneId} from './layout-types';
+import {defaultZoneAlignment, ZoneConfig, ZoneId} from './layout-types';
 import {WidgetElement} from '../widgets/widget-element';
-
-/** Default cross-axis alignment of widgets by zone column. */
-function defaultAlign(zoneId?: ZoneId): 'flex-start' | 'center' | 'flex-end' {
-    if (zoneId?.endsWith('-left')) return 'flex-start';
-    if (zoneId?.endsWith('-right')) return 'flex-end';
-    return 'center';
-}
 
 /**
  * One zone of the 3×3 layout grid.
@@ -28,6 +21,8 @@ export class WccZone extends LitElement {
 
     @state() private activeWidget: WidgetElement | null = null;
     private previousWidget: WidgetElement | null = null;
+    private transitionRevision = 0;
+    private transitionAnimations: Animation[] = [];
     private messenger = Messenger.getInstance();
     private logger = createLogger('wcc-zone');
 
@@ -78,6 +73,12 @@ export class WccZone extends LitElement {
         .exclusive > .item.previous {
             display: block;
         }
+
+        /* The outgoing layer is visual only. It must never intercept a click
+           intended for the newly active action bar underneath/above it. */
+        .exclusive > .item.previous {
+            pointer-events: none;
+        }
     `;
 
     connectedCallback(): void {
@@ -89,6 +90,7 @@ export class WccZone extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this.messenger.unsubscribe(BottomBarRequestUpdateMessage, this.onRequestUpdate);
+        this.cancelTransition();
     }
 
     private onRequestUpdate = (_msg: BottomBarRequestUpdateMessage) => {
@@ -118,33 +120,72 @@ export class WccZone extends LitElement {
         }
         this.logger.debug(`Exclusive zone ${this.zoneId}: switching to ${next?.config?.type ?? 'none'}`);
 
-        this.previousWidget = this.activeWidget;
-        this.activeWidget?.deactivate();
+        this.cancelTransition();
+        const previous = this.activeWidget;
+
+        // Commit state before lifecycle hooks. A hook may synchronously publish
+        // BottomBarRequestUpdateMessage; the nested evaluation must already see
+        // the new active widget and return instead of starting the switch again.
         this.activeWidget = next;
+        this.previousWidget = previous;
+        previous?.deactivate();
         next?.activate();
 
-        if (this.previousWidget && this.activeWidget) {
-            this.updateComplete.then(() => this.animateTransition());
+        if (previous && next) {
+            const revision = this.transitionRevision;
+            void this.updateComplete.then(() => this.animateTransition(revision));
+        } else {
+            this.previousWidget = null;
         }
     }
 
-    private animateTransition(): void {
+    private cancelTransition(): void {
+        this.transitionRevision++;
+        for (const animation of this.transitionAnimations) animation.cancel();
+        this.transitionAnimations = [];
+    }
+
+    private async animateTransition(revision: number): Promise<void> {
+        if (revision !== this.transitionRevision) return;
         const current = this.shadowRoot?.querySelector('.item.active');
         const previous = this.shadowRoot?.querySelector('.item.previous');
         if (!current || !previous) {
+            this.previousWidget = null;
+            this.requestUpdate();
             return;
         }
-        previous.animate([{opacity: 1}, {opacity: 0}], {...this.animationOptions, easing: 'ease-out'});
-        current.animate([{opacity: 0}, {opacity: 1}], {...this.animationOptions, easing: 'ease-in'});
+
+        const animations = [
+            previous.animate([{opacity: 1}, {opacity: 0}], {...this.animationOptions, easing: 'ease-out'}),
+            current.animate([{opacity: 0}, {opacity: 1}], {...this.animationOptions, easing: 'ease-in'}),
+        ];
+        this.transitionAnimations = animations;
+
+        try {
+            await Promise.all(animations.map(animation => animation.finished));
+        } catch {
+            // A newer switch or disconnect cancelled this transition.
+            return;
+        }
+        if (revision !== this.transitionRevision) return;
+
+        // Remove the outgoing item from the rendered layer, then release the
+        // finished animation effects so no invisible element remains on top.
+        this.previousWidget = null;
+        this.requestUpdate();
+        await this.updateComplete;
+        if (revision !== this.transitionRevision) return;
+        for (const animation of animations) animation.cancel();
+        this.transitionAnimations = [];
     }
 
     render(): TemplateResult {
         const config = this.zoneConfig;
         const gap = config?.gap ? `--zone-gap: ${config.gap};` : '';
         const padding = config?.padding ? `padding: ${config.padding};` : '';
-        const align = config?.align
-            ? ({start: 'flex-start', center: 'center', end: 'flex-end'} as const)[config.align]
-            : defaultAlign(this.zoneId);
+        const align = ({start: 'flex-start', center: 'center', end: 'flex-end'} as const)[
+            config?.align ?? defaultZoneAlignment(this.zoneId)
+        ];
 
         if (this.isExclusive) {
             return html`

@@ -1,5 +1,5 @@
 import { html, css, PropertyValues } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import { SensorConfig } from '../../core/types';
 import { LabelPosition } from '../ha-selector/types';
@@ -10,6 +10,7 @@ import { LabelPosition } from '../ha-selector/types';
 @customElement('sensors-editor')
 export class SensorsEditor extends BaseEditorSection {
     @property({ type: Array }) _sensors: SensorConfig[] = [];
+    @state() private _expandedSensorIndex: number | null = 0;
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -26,9 +27,15 @@ export class SensorsEditor extends BaseEditorSection {
         } else {
             this._sensors = [];
         }
+        if (this._sensors.length === 0) {
+            this._expandedSensorIndex = null;
+        } else if (this._expandedSensorIndex !== null) {
+            this._expandedSensorIndex = Math.min(this._expandedSensorIndex, this._sensors.length - 1);
+        }
     }
 
     private _addSensor(): void {
+        this._expandedSensorIndex = this._sensors.length;
         this._sensors = [...this._sensors, {entity: '', label: ''}];
         // Update the config with a deep copy
         if (this.config) {
@@ -45,6 +52,13 @@ export class SensorsEditor extends BaseEditorSection {
 
     private _removeSensor(index: number): void {
         this._sensors = this._sensors.filter((_, i) => i !== index);
+        if (this._sensors.length === 0) {
+            this._expandedSensorIndex = null;
+        } else if (this._expandedSensorIndex === index) {
+            this._expandedSensorIndex = Math.min(index, this._sensors.length - 1);
+        } else if (this._expandedSensorIndex !== null && this._expandedSensorIndex > index) {
+            this._expandedSensorIndex -= 1;
+        }
         // Update the config with a deep copy
         if (this.config) {
             // Create a deep copy of the config
@@ -58,32 +72,137 @@ export class SensorsEditor extends BaseEditorSection {
         }
     }
 
+    private _toggleSensor(index: number): void {
+        this._expandedSensorIndex = this._expandedSensorIndex === index ? null : index;
+    }
+
     static get styles() {
         return css`
             .content {
                 padding: 12px;
             }
 
-            .sensor-row {
+            .sensor-card {
+                margin: 0 0 10px;
+                padding: 10px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.16));
+                border-radius: 8px;
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.035));
+            }
+
+            .sensor-card.collapsed .sensor-header {
+                margin-bottom: 0;
+            }
+
+            .sensor-header {
                 display: flex;
-                margin-bottom: 8px;
                 align-items: center;
+                min-height: 34px;
+                margin-bottom: 4px;
             }
 
-            .sensor-entity {
-                flex: 2;
-                margin-right: 8px;
-            }
-
-            .sensor-label {
+            .sensor-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
                 flex: 1;
-                margin-right: 8px;
+                min-width: 0;
+                min-height: 32px;
+                padding: 0 4px;
+                border: 0;
+                background: transparent;
+                color: var(--primary-text-color, #fff);
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
             }
 
-            .sensor-actions {
-                flex: 0 0 40px;
+            .sensor-title {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.78rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .sensor-icon-button {
+                display: grid;
+                place-items: center;
+                flex: 0 0 32px;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--secondary-text-color, #aaa);
+                cursor: pointer;
+            }
+
+            .sensor-icon-button ha-icon {
+                --mdc-icon-size: 18px;
+            }
+
+            .sensor-icon-button:hover,
+            .sensor-icon-button:focus-visible {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-text-color, #fff);
+                outline: none;
+            }
+
+            .sensor-icon-button.remove:hover {
+                color: var(--error-color, #db4437);
+            }
+
+            .sensor-body {
+                padding-top: 4px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+            }
+
+            .sensor-card ha-row-selector {
+                display: block;
+                width: 100%;
+                padding: 2px 0;
+            }
+
+            .empty-sensors {
+                margin: 0 0 10px;
+                padding: 12px;
+                border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
+                border-radius: 8px;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.85rem;
                 text-align: center;
-                margin-top: 20px;
+            }
+
+            .add-sensor {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                min-height: 42px;
+                margin-top: 10px;
+                border: 1px solid var(--primary-color, #03a9f4);
+                border-radius: 8px;
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, transparent);
+                color: var(--primary-color, #03a9f4);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .add-sensor:hover,
+            .add-sensor:focus-visible {
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 28%, transparent);
+                outline: none;
+            }
+
+            .add-sensor ha-icon {
+                --mdc-icon-size: 19px;
             }
         `;
     }
@@ -95,8 +214,34 @@ export class SensorsEditor extends BaseEditorSection {
 
         return html`
             <div class="content">
-                ${this._sensors.map((sensor, index) => html`
-                    <div class="sensor-row">
+                ${this._sensors.length === 0 ? html`
+                    <div class="empty-sensors">${this.t('editor.sensors.empty', 'No sensors configured.')}</div>
+                ` : ''}
+                ${this._sensors.map((sensor, index) => {
+                    const expanded = this._expandedSensorIndex === index;
+                    const title = sensor.label || sensor.entity || this.t('editor.sensors.sensor', 'Sensor {number}', {number: index + 1});
+                    return html`
+                    <div class="sensor-card ${expanded ? '' : 'collapsed'}">
+                        <div class="sensor-header">
+                            <button class="sensor-toggle" type="button"
+                                    aria-expanded=${expanded}
+                                    @click=${() => this._toggleSensor(index)}>
+                                <span class="sensor-title">${title}</span>
+                            </button>
+                            <button class="sensor-icon-button remove" type="button"
+                                    title=${this.t('editor.sensors.remove', 'Remove sensor')}
+                                    aria-label=${this.t('editor.sensors.remove', 'Remove sensor')}
+                                    @click=${() => this._removeSensor(index)}>
+                                <ha-icon icon="mdi:delete-outline"></ha-icon>
+                            </button>
+                            <button class="sensor-icon-button" type="button"
+                                    title=${expanded ? this.t('editor.sensors.collapse', 'Collapse sensor') : this.t('editor.sensors.expand', 'Expand sensor')}
+                                    aria-label=${expanded ? this.t('editor.sensors.collapse', 'Collapse sensor') : this.t('editor.sensors.expand', 'Expand sensor')}
+                                    @click=${() => this._toggleSensor(index)}>
+                                <ha-icon icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                            </button>
+                        </div>
+                        ${expanded ? html`<div class="sensor-body">
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{
@@ -105,11 +250,10 @@ export class SensorsEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${sensor.label || ''}
-                                .label=${"Label"}
+                                .label=${this.t('editor.sensors.label', 'Label')}
                                 .labelPosition=${LabelPosition.Top}
                                 propertyName="sensors.${index}.label"
                                 @value-changed=${this._handleFormValueChanged}
-                                style="flex: 0 0 30%; margin-right: 8px; overflow: hidden;"
                         ></ha-row-selector>
 
                         <ha-row-selector
@@ -122,23 +266,19 @@ export class SensorsEditor extends BaseEditorSection {
                                     }
                                 }}
                                 .value=${sensor.entity || ''}
-                                .label=${"Entity"}
+                                .label=${this.t('editor.sensors.entity', 'Entity')}
                                 .labelPosition=${LabelPosition.Top}
                                 propertyName="sensors.${index}.entity"
                                 @value-changed=${this._handleFormValueChanged}
-                                style="flex: 0 0 60%; overflow: hidden;"
                         ></ha-row-selector>
-
-                        <div class="sensor-actions">
-                            <ha-icon-button
-                                    .path=${'M19,13H5V11H19V13Z'}
-                                    @click=${() => this._removeSensor(index)}
-                            ></ha-icon-button>
-                        </div>
+                        </div>` : ''}
                     </div>
-                `)}
+                `;})}
 
-                <mwc-button @click=${this._addSensor}>Add Sensor</mwc-button>
+                <button class="add-sensor" type="button" @click=${this._addSensor}>
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    ${this.t('editor.sensors.add', 'Add sensor')}
+                </button>
             </div>
         `;
     }

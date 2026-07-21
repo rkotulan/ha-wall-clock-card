@@ -1,44 +1,75 @@
-# Weather Configuration
+# Weather widget
 
-You can configure the weather forecast display in the top right corner of the card:
+The `weather` widget shows current conditions, a forecast, or both. It can be placed
+in any zone and added more than once.
 
 ```yaml
-type: 'custom:wall-clock-card'
-# Weather settings
-showWeather: true  # Set to true to enable weather display
-weatherTitle: 'Weather'  # Custom title for the weather section
-weatherProvider: 'homeassistant'  # Supports 'homeassistant' or 'openweathermap'
-weatherConfig:
-  entityId: 'weather.forecast_home'  # Required for Home Assistant provider
-  apiKey: 'your-openweathermap-api-key'  # Required for OpenWeatherMap, not used for others
-  latitude: 50.0755  # Used for OpenWeatherMap
-  longitude: 14.4378
-  units: 'metric'  # 'metric' or 'imperial'
-  language: 'cs'  # Language code (cs for Czech, en for English, etc.)
-weatherDisplayMode: 'both'  # 'current', 'forecast', or 'both'
-weatherForecastDays: 3  # Number of days to show in forecast (1-7)
-weatherUpdateInterval: 30  # Update interval in minutes (minimum: 1, default: 30)
+layout:
+  zones:
+    top-right:
+      widgets:
+        - type: weather
+          enabled: true
+          provider: homeassistant
+          providerConfig:
+            entityId: weather.home
+          displayMode: both
+          forecastDays: 5
+          title: Weather forecast
+          updateInterval: 1800
+          iconSet: basmilius
 ```
 
-## Weather Providers
+## Options
 
-The card supports multiple weather providers:
+| Key | Default | Description |
+|---|---:|---|
+| `enabled` | `true` | Show or hide this widget |
+| `provider` | `homeassistant` | `homeassistant` or `openweathermap` |
+| `providerConfig` | — | Provider-specific settings |
+| `displayMode` | `current` for a newly added widget | `current`, `forecast` or `both` |
+| `forecastDays` | `3` | Forecast rows to show (1–7) |
+| `title` | localized “Weather” | Section title |
+| `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
+| `iconSet` | provider default | `basmilius`, `openweathermap` or `metno` |
+| `labelSize` | size preset | CSS size for labels/title |
+| `valueSize` | size preset | CSS size for values |
 
-### Home Assistant Entity
+Clicking Home Assistant-backed current weather opens that entity's native more-info
+dialog.
 
-This is the recommended provider as it uses your existing Home Assistant weather entities.
-- **Entity ID**: The ID of your weather entity (e.g., `weather.forecast_home`).
-- **Data**: Uses the data provided by the entity, including forecasts.
+## Home Assistant provider
 
-### OpenWeatherMap
+This is the recommended provider because it reuses an existing `weather.*` entity
+and Home Assistant's forecast API.
 
-[OpenWeatherMap](https://openweathermap.org/) provides weather data with a free tier.
-- **API Key**: Required.
-- **Setup**:
-    1. Create an account at [OpenWeatherMap](https://openweathermap.org/)
-    2. Get an API key from your account dashboard (the free tier is sufficient)
-    3. Make sure your API key is activated (can take a few hours)
+```yaml
+- type: weather
+  provider: homeassistant
+  providerConfig:
+    entityId: weather.forecast_home
+  displayMode: both
+```
 
-The weather data is automatically updated at configurable intervals (default: 30 minutes) to avoid excessive API calls. You can adjust this with the `weatherUpdateInterval` option (in minutes, minimum: 1).
+## OpenWeatherMap provider
 
-> **Note**: This card uses the OpenWeatherMap One Call API 2.5, which is included in the free tier. No special subscription is required.
+The direct provider calls OpenWeatherMap's 5-day/3-hour forecast endpoint. It needs
+an API key and coordinates; account availability and pricing are controlled by
+OpenWeatherMap and can change independently of this card.
+
+```yaml
+- type: weather
+  provider: openweathermap
+  providerConfig:
+    apiKey: YOUR_API_KEY
+    latitude: 49.1951
+    longitude: 16.6068
+    units: metric          # metric or imperial
+    language: cs
+  displayMode: both
+  updateInterval: 1800
+```
+
+Legacy 2.x `showWeather`, `weatherProvider`, `weatherConfig`,
+`weatherDisplayMode`, `weatherForecastDays`, `weatherTitle`,
+`weatherUpdateInterval` and `weatherIconSet` keys are migrated automatically.
