@@ -11,6 +11,7 @@ layout:
         - type: sensors
           orientation: auto
           alignment: auto
+          itemGap: 16px
           labelSize: 1.1rem
           valueSize: 2rem
           sensors:
@@ -28,6 +29,7 @@ layout:
 | `sensors` | `[]` | Sensor entries to render |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `alignment` | `auto` | `auto`, `left`, `center` or `right` |
+| `itemGap` | `16px` | CSS length between sensor items in either orientation |
 | `labelSize` | size preset | CSS size of labels |
 | `valueSize` | size preset | CSS size of values |
 

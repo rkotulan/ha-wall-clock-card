@@ -90,7 +90,7 @@ Explicit values win over the preset. Invalid CSS lengths are ignored with a warn
 |---|---|
 | `clock` | `timeFormat` (`hour12`, `showAmPm`, ...), `clockSize` (see [clock-date.md](clock-date.md)) |
 | `date` | `dateFormat`, `dateSize` (see [clock-date.md](clock-date.md)) |
-| `sensors` | `sensors`, `orientation`, `alignment`, `labelSize`, `valueSize` (see [sensors.md](sensors.md)) |
+| `sensors` | `sensors`, `orientation`, `alignment`, `itemGap`, `labelSize`, `valueSize` (see [sensors.md](sensors.md)) |
 | `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `forecastDays`, `title`, `updateInterval`, `iconSet`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
 | `transportation` | the [transportation config](transportation.md) keys, flattened |
 | `action-bar` | `enabled`, `actions`, `alignment`, `orientation`, `backgroundOpacity`, `buttonGap`, `padding`, `iconSize` (see [action-bar.md](action-bar.md)) |

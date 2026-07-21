@@ -33,6 +33,7 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                 sensors: widget.sensors ?? [],
                 orientation: widget.orientation,
                 alignment: widget.alignment,
+                itemGap: widget.itemGap,
             });
         case 'weather':
             return defined({
@@ -90,6 +91,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 sensors: editorConfig.sensors ?? [],
                 orientation: editorConfig.orientation,
                 alignment: editorConfig.alignment,
+                itemGap: editorConfig.itemGap,
             }) as WidgetConfig;
         case 'weather':
             return defined({

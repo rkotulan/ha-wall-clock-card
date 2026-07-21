@@ -158,7 +158,7 @@ export function updateWidgetAt(layout: LayoutConfig, zoneId: ZoneId, index: numb
     return result;
 }
 
-/** Updates zone-level settings (mode/direction/align/gap/padding); undefined removes the key. */
+/** Updates zone-level settings; undefined or an empty string removes the key. */
 export function updateZoneSettings(
     layout: LayoutConfig,
     zoneId: ZoneId,

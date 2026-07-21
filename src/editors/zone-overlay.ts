@@ -42,7 +42,7 @@ export class WccZoneOverlay extends LitElement {
     @property({attribute: false}) layout: LayoutConfig = {zones: {}};
     @property({attribute: false}) selectedWidget: WidgetSelection | null = null;
     @property({attribute: false}) selectedZone: ZoneId | null = null;
-    /** Whether clicking chips/zone labels emits selection events (dialog mode). */
+    /** Whether clicking widgets or zone cells emits selection events (dialog mode). */
     @property({type: Boolean}) selectable = false;
     @state() private paletteQuery = '';
 
@@ -107,6 +107,7 @@ export class WccZoneOverlay extends LitElement {
                 border-radius: 12px;
                 background: rgba(255, 255, 255, 0.012);
                 overflow: visible;
+                cursor: pointer;
                 transition: border-color 120ms ease, background-color 120ms ease;
             }
 
@@ -119,6 +120,11 @@ export class WccZoneOverlay extends LitElement {
                 border-color: var(--primary-color, #3b82f6);
                 border-style: solid;
                 background-color: color-mix(in srgb, var(--primary-color, #3b82f6) 7%, transparent);
+            }
+
+            .zone-cell:focus-visible {
+                outline: 2px solid var(--primary-color, #3b82f6);
+                outline-offset: 2px;
             }
 
             .zone-label {
@@ -445,6 +451,19 @@ export class WccZoneOverlay extends LitElement {
         this.dispatchEvent(new CustomEvent(type, {detail, bubbles: true, composed: true}));
     }
 
+    private selectZoneFromCell(event: MouseEvent | KeyboardEvent, zone: ZoneId): void {
+        // Widget controls keep their own click/keyboard behavior. Everything
+        // else inside the outlined cell is a convenient target for the zone.
+        if (event.composedPath().some(item => item instanceof Element && item.classList.contains('chip'))) {
+            return;
+        }
+        if (event instanceof KeyboardEvent) {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+        }
+        this.emitSelection('wcc-zone-selected', {zone});
+    }
+
     // ---------------------------------------------------------------- drag & drop
 
     private destroySortables(): void {
@@ -627,8 +646,13 @@ export class WccZoneOverlay extends LitElement {
         const zoneConfig = this.layout.zones[zone];
         const widgets = zoneConfig?.widgets ?? [];
         return html`
-            <div class="zone-cell ${this.selectedZone === zone ? 'selected' : ''}">
-                <span class="zone-label" @click=${() => this.emitSelection('wcc-zone-selected', {zone})}>
+            <div class="zone-cell ${this.selectedZone === zone ? 'selected' : ''}"
+                    role="button"
+                    tabindex="0"
+                    aria-label=${this.t('inspector.edit_zone', 'Edit zone {name}', {name: this.zoneLabel(zone)})}
+                    @click=${(event: MouseEvent) => this.selectZoneFromCell(event, zone)}
+                    @keydown=${(event: KeyboardEvent) => this.selectZoneFromCell(event, zone)}>
+                <span class="zone-label">
                     ${this.zoneLabel(zone)}${zoneConfig?.mode === 'exclusive' ? ' ↔' : ''}
                 </span>
                 <div class="zone-list" data-zone=${zone}>

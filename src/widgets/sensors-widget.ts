@@ -12,6 +12,7 @@ export interface SensorsWidgetConfig extends WidgetConfig {
     sensors?: SensorConfig[];
     labelSize?: string;
     valueSize?: string;
+    itemGap?: string;
     orientation?: WidgetOrientation;
     alignment?: WidgetAlignment;
 }
@@ -35,6 +36,7 @@ export class SensorsWidget extends WidgetElement<SensorsWidgetConfig> {
         this.sensors.size = hasCustomSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
         this.sensors.labelSize = this.config.labelSize;
         this.sensors.valueSize = this.config.valueSize;
+        this.sensors.itemGap = this.config.itemGap;
         this.sensors.orientation = resolveWidgetOrientation(this.config.orientation, this.zoneId);
         this.sensors.alignment = resolveWidgetAlignment(
             this.config.alignment,

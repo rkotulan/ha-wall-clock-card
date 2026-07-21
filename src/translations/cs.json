@@ -91,7 +91,7 @@
     "no_content": "Tento widget nemá žádné nastavení obsahu.",
     "no_behavior": "Tento widget nemá žádné další nastavení chování.",
     "select_hint": "Vyberte widget nebo zónu, kterou chcete upravit.", "layout_designer": "Designer rozložení",
-    "zone": "Zóna: {name}", "layout_settings": "Nastavení rozložení",
+    "zone": "Zóna: {name}", "edit_zone": "Upravit zónu {name}", "layout_settings": "Nastavení rozložení",
     "add_widget_first": "Před změnou nastavení přidejte do této zóny widget.",
     "color": "Vlastní barva", "display_priority": "Priorita zobrazení",
     "priority_help": "V exkluzivní zóně se zobrazí aktivní widget s vyšší hodnotou",
@@ -101,6 +101,7 @@
     "exclusive": "Exkluzivní (aktivní widget s nejvyšší prioritou)", "direction": "Směr",
     "column": "Sloupec", "row": "Řádek", "horizontal_alignment": "Vodorovné zarovnání",
     "widget_gap": "Vlastní mezera mezi widgety (např. 4px)", "zone_padding": "Odsazení zóny (např. 0 16px)",
+    "vertical_offset": "Svislý posun zóny (např. -8vh)", "vertical_offset_help": "Záporná hodnota posune celou zónu nahoru, kladná dolů.",
     "clock_size": "Velikost hodin (např. 16rem)", "date_size": "Velikost data (např. 6rem)",
     "label_size": "Velikost popisku (např. 1.2rem)", "value_size": "Velikost hodnoty (např. 2rem)",
     "icon_size": "Velikost ikony (tlačítko je 2× větší, např. 72px)",
@@ -158,7 +159,8 @@
       "empty": "Nejsou nastaveny žádné senzory.", "sensor": "Senzor {number}", "label": "Popisek", "entity": "Entita",
       "add": "Přidat senzor", "remove": "Odebrat senzor", "expand": "Rozbalit senzor", "collapse": "Sbalit senzor",
       "orientation": "Orientace položek", "orientation_help": "Automaticky použije řádek ve středních zónách a sloupec v bočních zónách.",
-      "alignment": "Zarovnání položek", "alignment_help": "Použije zarovnání zóny, nebo jej nastavte jen pro tento widget."
+      "alignment": "Zarovnání položek", "alignment_help": "Použije zarovnání zóny, nebo jej nastavte jen pro tento widget.",
+      "item_gap": "Mezera mezi senzory", "item_gap_help": "CSS délka mezi senzory (výchozí: 16px)"
     },
     "transportation": {
       "provider": "Poskytovatel dopravy", "max_departures": "Celkový maximální počet odjezdů", "departures": "Počet odjezdů: {count}",

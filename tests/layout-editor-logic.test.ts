@@ -132,13 +132,15 @@ describe('layout editor logic', () => {
     });
 
     it('updates and clears zone settings', () => {
-        const withGap = updateZoneSettings(layout(), 'center', {gap: '0px', mode: 'exclusive'});
+        const withGap = updateZoneSettings(layout(), 'center', {gap: '0px', mode: 'exclusive', offsetY: '-8vh'});
         expect(withGap.zones.center?.gap).toBe('0px');
         expect(withGap.zones.center?.mode).toBe('exclusive');
+        expect(withGap.zones.center?.offsetY).toBe('-8vh');
 
-        const cleared = updateZoneSettings(withGap, 'center', {gap: undefined, mode: undefined});
+        const cleared = updateZoneSettings(withGap, 'center', {gap: undefined, mode: undefined, offsetY: ''});
         expect(cleared.zones.center?.gap).toBeUndefined();
         expect(cleared.zones.center?.mode).toBeUndefined();
+        expect(cleared.zones.center?.offsetY).toBeUndefined();
     });
 
     it('sets and clears spacing', () => {
@@ -300,16 +302,16 @@ describe('widget editor adapters', () => {
     it('round-trips sensor and action-bar internal layout settings', () => {
         const sensors = {
             type: 'sensors', id: 'sensors', sensors: [],
-            orientation: 'horizontal', alignment: 'right',
+            orientation: 'horizontal', alignment: 'right', itemGap: '12px',
         };
         expect(toEditorConfig(sensors)).toEqual({
-            sensors: [], orientation: 'horizontal', alignment: 'right',
+            sensors: [], orientation: 'horizontal', alignment: 'right', itemGap: '12px',
         });
         expect(fromEditorConfig(sensors, {
-            sensors: [], orientation: 'vertical', alignment: 'center',
+            sensors: [], orientation: 'vertical', alignment: 'center', itemGap: '20px',
         })).toEqual({
             type: 'sensors', id: 'sensors', sensors: [],
-            orientation: 'vertical', alignment: 'center',
+            orientation: 'vertical', alignment: 'center', itemGap: '20px',
         });
 
         const actions = {

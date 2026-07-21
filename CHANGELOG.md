@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.0.1
+
+### Designer and persistence
+
+- Fixed text settings not being committed reliably by current Home Assistant text
+  selectors.
+- Fixed continuous Designer saves so they update only the exact edited Lovelace
+  card and do not overwrite sibling cards when dashboard editing is completed.
+- Preserved the selected widget or zone and its active settings tab while Home
+  Assistant recreates the card after an automatic save.
+- Made the complete zone cell clickable and keyboard accessible without interfering
+  with widget controls or drag handles.
+
+### Layout and sensors
+
+- Added a per-zone vertical offset (`offsetY`) for moving a complete zone up or down.
+- Added a sensor item gap (`itemGap`) that works with horizontal and vertical sensor
+  layouts and defaults to `16px`.
+- Added Czech and English labels and documentation for the new layout controls.
+
 ## 3.0.0
 
 ### Major changes

@@ -129,6 +129,7 @@
     "select_hint": "Select a widget or zone to configure it.",
     "layout_designer": "Layout designer",
     "zone": "Zone: {name}",
+    "edit_zone": "Edit zone {name}",
     "layout_settings": "Layout settings",
     "add_widget_first": "Add a widget to this zone before changing its settings.",
     "color": "Color override",
@@ -146,6 +147,8 @@
     "horizontal_alignment": "Horizontal alignment",
     "widget_gap": "Widget gap override (e.g., 4px)",
     "zone_padding": "Zone padding (e.g., 0 16px)",
+    "vertical_offset": "Vertical offset (e.g., -8vh)",
+    "vertical_offset_help": "Negative values move the complete zone up; positive values move it down.",
     "clock_size": "Clock size (e.g., 16rem)",
     "date_size": "Date size (e.g., 6rem)",
     "label_size": "Label size (e.g., 1.2rem)",
@@ -211,7 +214,8 @@
       "empty": "No sensors configured.", "sensor": "Sensor {number}", "label": "Label", "entity": "Entity",
       "add": "Add sensor", "remove": "Remove sensor", "expand": "Expand sensor", "collapse": "Collapse sensor",
       "orientation": "Item orientation", "orientation_help": "Auto uses a row in center zones and a column in side zones.",
-      "alignment": "Item alignment", "alignment_help": "Use the zone alignment or override it for this widget."
+      "alignment": "Item alignment", "alignment_help": "Use the zone alignment or override it for this widget.",
+      "item_gap": "Sensor item gap", "item_gap_help": "CSS length between sensors (default: 16px)"
     },
     "transportation": {
       "provider": "Transportation provider", "max_departures": "Global maximum departures", "departures": "{count} departures",

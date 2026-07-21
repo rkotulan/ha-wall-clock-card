@@ -13,6 +13,13 @@ import './layout-editor';
 import '../components/background-image/background-editor';
 
 type EditorElement = HTMLElement & {hass?: HomeAssistant; config?: unknown};
+type CardSettingsTab = 'general' | 'spacing' | 'background';
+type WidgetSettingsTab = 'content' | 'appearance' | 'behavior';
+
+// Lovelace rebuilds the card after an autosave. Keep this transient UI state
+// outside the element so the newly-created inspector returns to the same tab.
+let retainedCardSettingsTab: CardSettingsTab = 'general';
+const retainedWidgetSettingsTabs = new Map<string, WidgetSettingsTab>();
 
 /** Shared contextual inspector used by the edit dialog and in-place card editor. */
 @customElement('wcc-layout-inspector')
@@ -22,8 +29,8 @@ export class WccLayoutInspector extends LitElement {
     @property({attribute: false}) layout: LayoutConfig = {zones: {}};
     @property({attribute: false}) selectedWidget: WidgetSelection | null = null;
     @property({attribute: false}) selectedZone: ZoneId | null = null;
-    @state() private activeTab: 'content' | 'appearance' | 'behavior' = 'content';
-    @state() private activeCardTab: 'general' | 'spacing' | 'background' = 'general';
+    @state() private activeTab: WidgetSettingsTab = 'content';
+    @state() private activeCardTab: CardSettingsTab = retainedCardSettingsTab;
 
     private editorCache = new Map<string, EditorElement>();
     private readonly languageOptions = getLanguageOptions();
@@ -285,9 +292,20 @@ export class WccLayoutInspector extends LitElement {
     updated(changedProperties: PropertyValues): void {
         super.updated(changedProperties);
         if (changedProperties.has('selectedWidget') || changedProperties.has('selectedZone')) {
-            if (this.selectedWidget || this.selectedZone) {
-                this.activeTab = 'content';
-            }
+            this.activeTab = this.selectedWidget
+                ? retainedWidgetSettingsTabs.get(this.widgetSelectionKey(this.selectedWidget)) ?? 'content'
+                : 'content';
+        }
+    }
+
+    private widgetSelectionKey(selection: WidgetSelection): string {
+        return selection.widgetId ?? `${selection.zone}:${selection.index}`;
+    }
+
+    private selectWidgetTab(tab: WidgetSettingsTab): void {
+        this.activeTab = tab;
+        if (this.selectedWidget) {
+            retainedWidgetSettingsTabs.set(this.widgetSelectionKey(this.selectedWidget), tab);
         }
     }
 
@@ -434,7 +452,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private renderTabs(): TemplateResult {
-        const tabs: {id: 'content' | 'appearance' | 'behavior'; label: string}[] = [
+        const tabs: {id: WidgetSettingsTab; label: string}[] = [
             {id: 'content', label: this.t('ui.content', 'Content')},
             {id: 'appearance', label: this.t('ui.appearance', 'Appearance')},
             {id: 'behavior', label: this.t('ui.behavior', 'Behavior')},
@@ -446,7 +464,7 @@ export class WccLayoutInspector extends LitElement {
                             class="tab ${this.activeTab === tab.id ? 'active' : ''}"
                             role="tab"
                             aria-selected=${this.activeTab === tab.id ? 'true' : 'false'}
-                            @click=${() => { this.activeTab = tab.id; }}>
+                            @click=${() => this.selectWidgetTab(tab.id)}>
                         ${tab.label}
                     </button>
                 `)}
@@ -484,6 +502,16 @@ export class WccLayoutInspector extends LitElement {
                     @value-changed=${(ev: CustomEvent) =>
                         this.updateWidgetField('alignment', ev.detail.value === 'auto' ? undefined : ev.detail.value)}>
             </ha-row-selector>
+            ${widget.type === 'sensors' ? html`
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{text: {}}}
+                        .value=${widget.itemGap ?? ''}
+                        .label=${this.t('editor.sensors.item_gap', 'Sensor item gap')}
+                        .helper=${this.t('editor.sensors.item_gap_help', 'CSS length between sensors (default: 16px)')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('itemGap', ev.detail.value?.trim() || undefined)}>
+                </ha-row-selector>
+            ` : ''}
             ${widget.type === 'action-bar' ? html`
                 <ha-row-selector .hass=${this.hass}
                         .selector=${{text: {}}}
@@ -693,6 +721,11 @@ export class WccLayoutInspector extends LitElement {
                             .value=${config.padding ?? ''} .label=${this.t('inspector.zone_padding', 'Zone padding (e.g., 0 16px)')}
                             @value-changed=${(ev: CustomEvent) => this.updateZone({padding: ev.detail.value})}>
                     </ha-row-selector>
+                    <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
+                            .value=${config.offsetY ?? ''} .label=${this.t('inspector.vertical_offset', 'Vertical offset (e.g., -8vh)')}
+                            .helper=${this.t('inspector.vertical_offset_help', 'Negative values move the complete zone up; positive values move it down.')}
+                            @value-changed=${(ev: CustomEvent) => this.updateZone({offsetY: ev.detail.value})}>
+                    </ha-row-selector>
                 `}
                 </section>
             </div>
@@ -700,7 +733,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private renderCardTabs(): TemplateResult {
-        const tabs: {id: 'general' | 'spacing' | 'background'; label: string}[] = [
+        const tabs: {id: CardSettingsTab; label: string}[] = [
             {id: 'general', label: this.t('general.title', 'General')},
             {id: 'spacing', label: this.t('general.spacing', 'Spacing')},
             {id: 'background', label: this.t('general.background', 'Background')},
@@ -712,7 +745,10 @@ export class WccLayoutInspector extends LitElement {
                             class="tab ${this.activeCardTab === tab.id ? 'active' : ''}"
                             role="tab"
                             aria-selected=${this.activeCardTab === tab.id ? 'true' : 'false'}
-                            @click=${() => { this.activeCardTab = tab.id; }}>
+                            @click=${() => {
+                                retainedCardSettingsTab = tab.id;
+                                this.activeCardTab = tab.id;
+                            }}>
                         ${tab.label}
                     </button>
                 `)}

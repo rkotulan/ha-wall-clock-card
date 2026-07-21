@@ -12,6 +12,7 @@ export interface SensorComponentConfig {
     size?: Size;
     labelSize?: string;
     valueSize?: string;
+    itemGap?: string;
     orientation?: ResolvedWidgetOrientation;
     alignment?: ResolvedWidgetAlignment;
 }
@@ -24,6 +25,7 @@ export class SensorComponent extends LitElement {
     @property({ type: String }) size?: Size;
     @property({ type: String }) labelSize?: string;
     @property({ type: String }) valueSize?: string;
+    @property({ type: String }) itemGap?: string;
     @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
     @property({ type: String }) alignment: ResolvedWidgetAlignment = 'left';
 
@@ -56,7 +58,7 @@ export class SensorComponent extends LitElement {
             width: 100%;
             box-sizing: border-box;
             max-height: 100%;
-            gap: 16px;
+            gap: var(--sensor-item-gap, 16px);
         }
 
         .sensor-item {
@@ -190,12 +192,13 @@ export class SensorComponent extends LitElement {
 
         const labelSize = this.getLabelSize();
         const valueSize = this.getValueSize();
+        const itemGap = this.itemGap?.trim() || '16px';
 
         this.logger.debug(`Rendering sensors - LabelSize: ${labelSize}, ValueSize: ${valueSize}`);
 
         return html`
             <div class="sensor-container ${this.orientation} align-${this.alignment}"
-                 style="color: ${this.fontColor};">
+                 style="color: ${this.fontColor}; --sensor-item-gap: ${itemGap};">
                 ${sensorValues.map(sensor => html`
                     <div class="sensor-item"
                          role="button"

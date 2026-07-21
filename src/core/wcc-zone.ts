@@ -43,6 +43,7 @@ export class WccZone extends LitElement {
             width: 100%;
             height: 100%;
             gap: var(--zone-gap, var(--wcc-widget-gap, 8px));
+            transform: translateY(var(--zone-offset-y, 0));
         }
 
         .stack.column {
@@ -60,6 +61,7 @@ export class WccZone extends LitElement {
         .exclusive {
             display: grid;
             width: 100%;
+            transform: translateY(var(--zone-offset-y, 0));
         }
 
         .exclusive > .item {
@@ -183,13 +185,14 @@ export class WccZone extends LitElement {
         const config = this.zoneConfig;
         const gap = config?.gap ? `--zone-gap: ${config.gap};` : '';
         const padding = config?.padding ? `padding: ${config.padding};` : '';
+        const offsetY = config?.offsetY ? `--zone-offset-y: ${config.offsetY};` : '';
         const align = ({start: 'flex-start', center: 'center', end: 'flex-end'} as const)[
             config?.align ?? defaultZoneAlignment(this.zoneId)
         ];
 
         if (this.isExclusive) {
             return html`
-                <div class="exclusive" style="${padding}">
+                <div class="exclusive" style="${padding} ${offsetY}">
                     ${this.widgets.map(widget => html`
                         <div class="item
                                     ${widget === this.activeWidget ? 'active' : ''}
@@ -204,7 +207,7 @@ export class WccZone extends LitElement {
         const direction = config?.direction === 'row' ? 'row' : 'column';
         const alignStyle = direction === 'column' ? `align-items: ${align};` : `justify-content: ${align};`;
         return html`
-            <div class="stack ${direction}" style="${gap} ${padding} ${alignStyle}">
+            <div class="stack ${direction}" style="${gap} ${padding} ${offsetY} ${alignStyle}">
                 ${this.widgets}
             </div>
         `;

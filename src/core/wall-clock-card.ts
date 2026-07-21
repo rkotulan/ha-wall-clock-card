@@ -41,6 +41,16 @@ declare const PACKAGE_VERSION: string;
  * the custom card and therefore not included in this element's own bounds. */
 const DEFAULT_DASHBOARD_EDIT_FOOTER_HEIGHT = 64;
 const LAYOUT_AUTOSAVE_DELAY_MS = 700;
+
+interface RetainedDesignerContext {
+    selectedWidget: WidgetSelection | null;
+    selectedZone: ZoneId | null;
+}
+
+// HA replaces card elements after saveConfig(). Preserve only transient editor
+// selection, keyed by dashboard route + exact Lovelace card path.
+const retainedDesignerContexts = new Map<string, RetainedDesignerContext>();
+
 @customElement('wall-clock-card')
 export class WallClockCard extends LitElement {
     @property({type: Object}) hass?: HomeAssistant;
@@ -69,6 +79,7 @@ export class WallClockCard extends LitElement {
     private layoutAutosaveTimer?: ReturnType<typeof setTimeout>;
     private layoutSavePath?: LovelaceConfigPath;
     private inlineEditSessionActive = false;
+    private designerSessionKey?: string;
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -425,6 +436,7 @@ export class WallClockCard extends LitElement {
         this.selectedZone = null;
         this.designerPreview = false;
         this.inlineEditSessionActive = true;
+        this.restoreDesignerContext();
         // Re-entering edit mode while the previous "Done" save is still running
         // must keep that queue/baseline intact so a later retry can still match.
         if (this.layoutSavePromise ||
@@ -449,6 +461,7 @@ export class WallClockCard extends LitElement {
         this.designerOpen = false;
         this.designerRequiresExplicitOpen = false;
         this.inlineEditSessionActive = false;
+        this.clearRetainedDesignerContext();
         void this.flushLayoutAutosave().then(saved => {
             if (saved && !this.inlineEditSessionActive) {
                 this.layoutSaveBaseline = undefined;
@@ -480,6 +493,7 @@ export class WallClockCard extends LitElement {
         this.designerPreview = false;
         this.removeAttribute('designer-fullscreen');
         this.designerOpen = false;
+        this.clearRetainedDesignerContext();
         void this.flushLayoutAutosave();
         void this.updateComplete.then(() => this.updateFitHeight());
     }
@@ -564,6 +578,7 @@ export class WallClockCard extends LitElement {
         } else if (this.selectedWidget) {
             this.selectedWidget = null;
         }
+        this.retainDesignerContext();
         const newConfig = {...this.configV3, layout};
         this.applyInplaceConfig(newConfig as unknown as WallClockConfig);
     }
@@ -575,12 +590,14 @@ export class WallClockCard extends LitElement {
             ? this.selectedWidget?.widgetId === selection.widgetId
             : this.selectedWidget?.zone === selection.zone && this.selectedWidget?.index === selection.index;
         this.selectedWidget = same ? null : selection;
+        this.retainDesignerContext();
     }
 
     private onInplaceZoneSelected(ev: CustomEvent): void {
         const zone = ev.detail.zone as ZoneId;
         this.selectedWidget = null;
         this.selectedZone = this.selectedZone === zone ? null : zone;
+        this.retainDesignerContext();
     }
 
     private onInplaceWidgetConfigChanged(ev: CustomEvent): void {
@@ -606,11 +623,65 @@ export class WallClockCard extends LitElement {
         this.designerPreview = false;
         this.selectedWidget = null;
         this.selectedZone = null;
+        this.retainDesignerContext();
     }
 
     private closeInplaceInspector(): void {
         this.selectedWidget = null;
         this.selectedZone = null;
+    }
+
+    private resolveDesignerSessionKey(): string | undefined {
+        if (this.designerSessionKey) return this.designerSessionKey;
+        const huiRoot = this.findHuiRoot() as (Element & {lovelace?: {config?: unknown}}) | undefined;
+        const liveConfig = huiRoot?.lovelace?.config;
+        const path = liveConfig ? findConfigPath(liveConfig, this.config) : undefined;
+        if (!path?.length) return undefined;
+        this.designerSessionKey = `${window.location.pathname}:${JSON.stringify(path)}`;
+        return this.designerSessionKey;
+    }
+
+    private retainDesignerContext(): void {
+        const key = this.resolveDesignerSessionKey();
+        if (!key) return;
+        retainedDesignerContexts.set(key, {
+            selectedWidget: this.selectedWidget ? {...this.selectedWidget} : null,
+            selectedZone: this.selectedZone,
+        });
+    }
+
+    private restoreDesignerContext(): void {
+        const key = this.resolveDesignerSessionKey();
+        if (!key) return;
+        const retained = retainedDesignerContexts.get(key);
+        if (!retained) return;
+
+        if (retained.selectedWidget) {
+            const selection = retained.selectedWidget;
+            const located = selection.widgetId
+                ? findWidgetById(this.configV3.layout, selection.widgetId)
+                : this.configV3.layout.zones[selection.zone]?.widgets[selection.index]
+                    ? {zone: selection.zone, index: selection.index}
+                    : undefined;
+            if (located) {
+                this.selectedWidget = {
+                    zone: located.zone,
+                    index: located.index,
+                    widgetId: selection.widgetId,
+                };
+                this.selectedZone = null;
+                return;
+            }
+        }
+
+        this.selectedWidget = null;
+        this.selectedZone = retained.selectedZone;
+    }
+
+    private clearRetainedDesignerContext(): void {
+        const key = this.designerSessionKey;
+        if (key) retainedDesignerContexts.delete(key);
+        this.designerSessionKey = undefined;
     }
 
     /**

@@ -72,6 +72,8 @@ export interface ZoneConfig {
     gap?: string;
     /** Inner inset of the zone box. */
     padding?: string;
+    /** CSS length translating the complete zone vertically; negative moves it up. */
+    offsetY?: string;
 }
 
 /** Horizontal default follows the grid column unless the zone overrides it. */
