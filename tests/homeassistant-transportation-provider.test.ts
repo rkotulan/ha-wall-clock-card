@@ -1,6 +1,12 @@
 import { HomeAssistantTransportationProvider } from '../src/transportation-providers/homeassistant-transportation-provider';
 
-function departureState(state: string, line: string, destination: string): any {
+function departureState(
+    state: string,
+    line: string,
+    destination: string,
+    stopName = 'Schodová (město)',
+    postId = 2,
+): any {
     return {
         state,
         last_updated: '2026-07-22T12:00:00+00:00',
@@ -9,8 +15,8 @@ function departureState(state: string, line: string, destination: string): any {
             unit_of_measurement: 'min',
             line,
             destination,
-            stop_name: 'Schodová (město)',
-            post_id: 2,
+            stop_name: stopName,
+            post_id: postId,
             is_low_floor: true,
         },
     };
@@ -69,5 +75,56 @@ describe('HomeAssistantTransportationProvider', () => {
         }, []);
 
         expect(result).toEqual({departures: [], loading: false});
+    });
+
+    it('activates multiple profiles and applies the limit to each stop', async () => {
+        const callService = jest.fn().mockResolvedValue(undefined);
+        const hass: any = {
+            callService,
+            states: {
+                'button.schodova': {state: 'unknown', attributes: {}},
+                'button.za_luzankami': {state: 'unknown', attributes: {}},
+                'sensor.schodova_1': departureState('4', '67', 'Avion'),
+                'sensor.schodova_2': departureState('11', '67', 'Avion'),
+                'sensor.schodova_3': departureState('18', '67', 'Avion'),
+                'sensor.za_luzankami_1': departureState(
+                    '3', '25', 'Líšeň, Jírova', 'Za Lužánkami (Vinohrady)', 1,
+                ),
+                'sensor.za_luzankami_2': departureState(
+                    '9', '26', 'Štefánikova čtvrť', 'Za Lužánkami (Vinohrady)', 1,
+                ),
+                'sensor.za_luzankami_3': departureState(
+                    '15', '25', 'Osová', 'Za Lužánkami (Vinohrady)', 1,
+                ),
+            },
+        };
+        const provider = new HomeAssistantTransportationProvider();
+        provider.setHass(hass);
+        const config = {
+            refreshButtonEntities: ['button.schodova', 'button.za_luzankami'],
+            departureEntities: [
+                'sensor.schodova_1',
+                'sensor.schodova_2',
+                'sensor.schodova_3',
+                'sensor.za_luzankami_1',
+                'sensor.za_luzankami_2',
+                'sensor.za_luzankami_3',
+            ],
+            maxDepartures: 2,
+        };
+
+        await provider.activateAsync(config);
+        const result = await provider.fetchTransportationAsync(config, []);
+
+        expect(callService).toHaveBeenCalledWith('button', 'press', {
+            entity_id: ['button.schodova', 'button.za_luzankami'],
+        });
+        expect(result.departures).toHaveLength(4);
+        expect(result.departures.map(item => item.stopName)).toEqual([
+            'Schodová (město)',
+            'Schodová (město)',
+            'Za Lužánkami (Vinohrady)',
+            'Za Lužánkami (Vinohrady)',
+        ]);
     });
 });

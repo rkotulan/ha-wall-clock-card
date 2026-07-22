@@ -9,6 +9,8 @@ import {
 
 export interface HomeAssistantTransportationConfig extends TransportationProviderConfig {
   departureEntities?: string[];
+  refreshButtonEntities?: string[];
+  /** @deprecated Use refreshButtonEntities. */
   refreshButtonEntity?: string;
 }
 
@@ -27,15 +29,19 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
 
   async activateAsync(config: HomeAssistantTransportationConfig): Promise<void> {
     const hass = this.requireHass();
-    const entityId = config.refreshButtonEntity?.trim();
-    if (!entityId) {
-      throw new Error('Home Assistant refresh button entity is required');
+    const entityIds = this.getButtonEntityIds(config);
+    if (entityIds.length === 0) {
+      throw new Error('At least one Home Assistant refresh button entity is required');
     }
-    if (!hass.states[entityId]) {
-      throw new Error(`Entity ${entityId} not found`);
+    for (const entityId of entityIds) {
+      if (!hass.states[entityId]) {
+        throw new Error(`Entity ${entityId} not found`);
+      }
     }
 
-    await hass.callService('button', 'press', { entity_id: entityId });
+    await hass.callService('button', 'press', {
+      entity_id: entityIds.length === 1 ? entityIds[0] : entityIds,
+    });
   }
 
   async fetchTransportationAsync(
@@ -51,6 +57,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
 
       const maxDepartures = Math.max(1, Math.min(Number(config.maxDepartures) || 2, 5));
       const departures: TransportationDeparture[] = [];
+      const departureCounts = new Map<string, number>();
 
       for (const entityId of entityIds) {
         const state = hass.states[entityId];
@@ -68,14 +75,24 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
           continue;
         }
 
+        const stopName = String(
+          attributes.stop_name || state.attributes.friendly_name || entityId,
+        );
+        const postId = this.optionalIdentifier(attributes.post_id);
+        const groupKey = `${stopName}\u0000${postId ?? ''}`;
+        const groupCount = departureCounts.get(groupKey) || 0;
+        if (groupCount >= maxDepartures) {
+          continue;
+        }
+
         departures.push({
           lineId: String(line),
           lineName: String(line),
           finalStop: String(destination),
           isLowFloor: attributes.is_low_floor === true,
           timeMark: this.formatState(hass, state),
-          stopName: String(attributes.stop_name || state.attributes.friendly_name || entityId),
-          postId: this.optionalIdentifier(attributes.post_id),
+          stopName,
+          postId,
           entityId,
           departureAt: attributes.departure_at,
           hasAirConditioning: attributes.has_air_conditioning === true,
@@ -83,10 +100,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
           occupancyPercent: attributes.occupancy_percent,
           vehicleId: attributes.vehicle_id,
         });
-
-        if (departures.length >= maxDepartures) {
-          break;
-        }
+        departureCounts.set(groupKey, groupCount + 1);
       }
 
       return { departures, loading: false };
@@ -114,7 +128,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
   getDefaultConfig(): HomeAssistantTransportationConfig {
     return {
       departureEntities: [],
-      refreshButtonEntity: '',
+      refreshButtonEntities: [],
     };
   }
 
@@ -127,6 +141,13 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
 
   private getEntityIds(config: HomeAssistantTransportationConfig): string[] {
     return (config.departureEntities || []).map(entityId => entityId.trim()).filter(Boolean);
+  }
+
+  private getButtonEntityIds(config: HomeAssistantTransportationConfig): string[] {
+    const configured = config.refreshButtonEntities?.length
+      ? config.refreshButtonEntities
+      : [config.refreshButtonEntity || ''];
+    return [...new Set(configured.map(entityId => entityId.trim()).filter(Boolean))];
   }
 
   private formatState(hass: HomeAssistant, state: HomeAssistant['states'][string]): string {

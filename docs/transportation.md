@@ -52,8 +52,8 @@ Add the trigger to any action bar:
 
 ## Home Assistant departure entities
 
-The entity-backed provider presses one Home Assistant button when the widget is
-opened, then reads one or more duration sensors. While the view remains open,
+The entity-backed provider presses one or more Home Assistant buttons when the widget is
+opened, then reads duration sensors from every selected profile. While the view remains open,
 sensor changes are pushed from Home Assistant; the card does not start its own
 polling interval.
 
@@ -63,17 +63,25 @@ polling interval.
   maxDepartures: 2
   autoHideTimeout: 5
   providerConfig:
-    refreshButtonEntity: button.schodova_mesto_refresh
+    refreshButtonEntities:
+      - button.schodova_mesto_refresh
+      - button.za_luzankami_vinohrady_refresh
+      - button.za_luzankami_mendlovo_namesti_refresh
     departureEntities:
       - sensor.schodova_mesto_departure_1
       - sensor.schodova_mesto_departure_2
+      - sensor.za_luzankami_vinohrady_departure_1
+      - sensor.za_luzankami_vinohrady_departure_2
+      - sensor.za_luzankami_mendlovo_namesti_departure_1
+      - sensor.za_luzankami_mendlovo_namesti_departure_2
   stops: []
 ```
 
-Both entity IDs can be selected in the Designer. Exact IDs depend on the names
-assigned by Home Assistant when the integration is configured. Pressing the
-same button from another dashboard also activates the sensors for a watch or
-automation.
+All entity IDs can be selected in the Designer. Exact IDs depend on the names
+assigned by Home Assistant when each integration profile is configured. The
+maximum departure setting applies separately to every stop/platform group.
+Pressing the same buttons from another dashboard also activates the sensors for
+a watch or automation.
 
 For the `idsjmk` provider, each stop requires `stopId` and `postId`; both may be
 numeric or text identifiers. `name` overrides the name returned by the provider.

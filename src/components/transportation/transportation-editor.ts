@@ -303,11 +303,14 @@ export class TransportationEditor extends BaseEditorSection {
                 ${isHomeAssistant ? html`
                     <ha-row-selector
                             .hass=${this.hass}
-                            .selector=${{entity: {domain: "button"}}}
-                            .value=${this.config.transportation.providerConfig?.refreshButtonEntity || ''}
-                            .label=${this.t('editor.transportation.refresh_button', 'Refresh button entity')}
-                            .helper=${this.t('editor.transportation.refresh_button_help', 'Pressed when departures are opened')}
-                            propertyName="transportation.providerConfig.refreshButtonEntity"
+                            .selector=${{entity: {domain: "button", multiple: true}}}
+                            .value=${this.config.transportation.providerConfig?.refreshButtonEntities
+                                || (this.config.transportation.providerConfig?.refreshButtonEntity
+                                    ? [this.config.transportation.providerConfig.refreshButtonEntity]
+                                    : [])}
+                            .label=${this.t('editor.transportation.refresh_buttons', 'Refresh button entities')}
+                            .helper=${this.t('editor.transportation.refresh_button_help', 'All selected profiles are activated when departures are opened')}
+                            propertyName="transportation.providerConfig.refreshButtonEntities"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
 
@@ -337,7 +340,7 @@ export class TransportationEditor extends BaseEditorSection {
                             }
                         }}
                         .value=${this.config.transportation?.maxDepartures || 2}
-                        .label=${this.t('editor.transportation.max_departures', 'Global maximum departures')}
+                        .label=${this.t('editor.transportation.max_departures', 'Maximum departures per stop')}
                         .helper=${this.t('editor.transportation.departures', '{count} departures', {count: this.config.transportation?.maxDepartures || 2})}
                         propertyName="transportation.maxDepartures"
                         @value-changed=${(ev: CustomEvent) => {

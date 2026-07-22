@@ -218,13 +218,13 @@
       "item_gap": "Sensor item gap", "item_gap_help": "CSS length between sensors (default: 16px)"
     },
     "transportation": {
-      "provider": "Transportation provider", "max_departures": "Global maximum departures", "departures": "{count} departures",
+      "provider": "Transportation provider", "max_departures": "Maximum departures per stop", "departures": "{count} departures",
       "auto_hide": "Auto-hide timeout", "auto_hide_help": "Auto-hide timeout in minutes (1–10)",
       "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)",
       "stops": "Stops", "stop": "Stop {number}", "stop_id": "Stop ID", "post_id": "Post ID",
       "stop_name": "Stop name (optional)", "add_stop": "Add stop", "remove_stop": "Remove stop",
       "expand_stop": "Expand stop", "collapse_stop": "Collapse stop", "documentation": "Transportation configuration documentation",
-      "refresh_button": "Refresh button entity", "refresh_button_help": "Pressed when departures are opened",
+      "refresh_buttons": "Refresh button entities", "refresh_button_help": "All selected profiles are activated when departures are opened",
       "departure_entities": "Departure sensor entities", "departure_entities_help": "Select the sensors in display order",
       "ha_provider_help": "The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant."
     },

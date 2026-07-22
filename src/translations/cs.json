@@ -163,13 +163,13 @@
       "item_gap": "Mezera mezi senzory", "item_gap_help": "CSS délka mezi senzory (výchozí: 16px)"
     },
     "transportation": {
-      "provider": "Poskytovatel dopravy", "max_departures": "Celkový maximální počet odjezdů", "departures": "Počet odjezdů: {count}",
+      "provider": "Poskytovatel dopravy", "max_departures": "Maximum odjezdů na zastávku", "departures": "Počet odjezdů: {count}",
       "auto_hide": "Automaticky skrýt po", "auto_hide_help": "Čas v minutách (1–10)",
       "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)",
       "stops": "Zastávky", "stop": "Zastávka {number}", "stop_id": "ID zastávky", "post_id": "ID stanoviště",
       "stop_name": "Název zastávky (volitelné)", "add_stop": "Přidat zastávku", "remove_stop": "Odebrat zastávku",
       "expand_stop": "Rozbalit zastávku", "collapse_stop": "Sbalit zastávku", "documentation": "Dokumentace nastavení dopravy",
-      "refresh_button": "Entita tlačítka aktualizace", "refresh_button_help": "Stiskne se při otevření odjezdů",
+      "refresh_buttons": "Entity tlačítek aktualizace", "refresh_button_help": "Při otevření odjezdů se aktivují všechny vybrané profily",
       "departure_entities": "Entity senzorů odjezdů", "departure_entities_help": "Vyberte senzory v pořadí zobrazení",
       "ha_provider_help": "Tlačítko aktivuje dotazování na serveru; další změny stavů pak posílá Home Assistant."
     },
