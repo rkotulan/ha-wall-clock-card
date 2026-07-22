@@ -163,7 +163,7 @@
       "item_gap": "Mezera mezi senzory", "item_gap_help": "CSS délka mezi senzory (výchozí: 16px)"
     },
     "transportation": {
-      "provider": "Poskytovatel dopravy", "max_departures": "Maximum odjezdů na zastávku", "max_departures_for_stop": "Maximum odjezdů", "departures": "Počet odjezdů: {count}",
+      "provider": "Poskytovatel dopravy", "max_departures": "Maximum odjezdů na zastávku", "departures": "Počet odjezdů: {count}",
       "auto_hide": "Automaticky skrýt po", "auto_hide_help": "Čas v minutách (1–10)",
       "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)",
       "stops": "Zastávky", "stop": "Zastávka {number}", "stop_id": "ID zastávky", "post_id": "ID stanoviště",

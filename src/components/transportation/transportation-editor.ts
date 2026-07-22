@@ -7,6 +7,11 @@ import {
     StopConfig as TransportationStopConfig,
 } from '../../transportation-providers';
 
+// The HA editor may recreate the custom card after every staged config change.
+// Retain the open section across that recreation, just like the layout inspector
+// retains its selected settings tab.
+let retainedExpandedHaProfileIndex: number | null = 0;
+
 /**
  * Editor component for transportation settings
  */
@@ -15,7 +20,7 @@ export class TransportationEditor extends BaseEditorSection {
     @property({ type: Array }) _stops: TransportationStopConfig[] = [];
     @state() private _expandedStopIndex: number | null = 0;
     @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
-    @state() private _expandedHaProfileIndex: number | null = 0;
+    @state() private _expandedHaProfileIndex: number | null = retainedExpandedHaProfileIndex;
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -49,7 +54,6 @@ export class TransportationEditor extends BaseEditorSection {
                 this._haProfiles = buttons.length || entities.length ? [{
                     refreshButtonEntity: buttons[0],
                     departureEntities: entities,
-                    maxDepartures: transportation?.maxDepartures || 2,
                 }] : [];
             } else {
                 // Legacy configuration stored two unrelated flat arrays. Their
@@ -60,7 +64,6 @@ export class TransportationEditor extends BaseEditorSection {
                     departureEntities: chunkSize
                         ? entities.slice(index * chunkSize, (index + 1) * chunkSize)
                         : [],
-                    maxDepartures: transportation?.maxDepartures || 2,
                 }));
             }
         }
@@ -73,6 +76,7 @@ export class TransportationEditor extends BaseEditorSection {
                 this._haProfiles.length - 1,
             );
         }
+        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
     }
 
     private _saveHaProfiles(): void {
@@ -80,16 +84,20 @@ export class TransportationEditor extends BaseEditorSection {
 
         const newConfig = JSON.parse(JSON.stringify(this.config));
         newConfig.transportation.providerConfig ||= {};
-        newConfig.transportation.providerConfig.profiles = this._haProfiles.map(profile => ({
-            ...profile,
-            departureEntities: [...(profile.departureEntities || [])],
-        }));
+        newConfig.transportation.providerConfig.profiles = this._haProfiles.map(profile => {
+            const {maxDepartures: _legacyMaxDepartures, ...profileConfig} = profile;
+            return {
+                ...profileConfig,
+                departureEntities: [...(profile.departureEntities || [])],
+            };
+        });
 
         // Once edited, persist only the grouped format. The provider continues
         // to read these legacy keys for existing YAML configurations.
         delete newConfig.transportation.providerConfig.refreshButtonEntity;
         delete newConfig.transportation.providerConfig.refreshButtonEntities;
         delete newConfig.transportation.providerConfig.departureEntities;
+        delete newConfig.transportation.maxDepartures;
 
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: {config: newConfig},
@@ -98,11 +106,11 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _addHaProfile(): void {
         this._expandedHaProfileIndex = this._haProfiles.length;
+        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
         this._haProfiles = [...this._haProfiles, {
             name: '',
             refreshButtonEntity: '',
             departureEntities: [],
-            maxDepartures: 2,
         }];
         this._saveHaProfiles();
     }
@@ -116,6 +124,7 @@ export class TransportationEditor extends BaseEditorSection {
         } else if (this._expandedHaProfileIndex !== null && this._expandedHaProfileIndex > index) {
             this._expandedHaProfileIndex -= 1;
         }
+        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
         this._saveHaProfiles();
     }
 
@@ -132,6 +141,7 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _toggleHaProfile(index: number): void {
         this._expandedHaProfileIndex = this._expandedHaProfileIndex === index ? null : index;
+        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
     }
 
     private _haProfileLabel(profile: HomeAssistantTransportationProfile, index: number): string {
@@ -483,15 +493,6 @@ export class TransportationEditor extends BaseEditorSection {
                                         .helper=${this.t('editor.transportation.departure_entities_help', 'Select the sensors in display order')}
                                         @value-changed=${(ev: CustomEvent) =>
                                             this._haProfileChanged(index, 'departureEntities', ev.detail.value || [])}>
-                                </ha-row-selector>
-                                <ha-row-selector
-                                        .hass=${this.hass}
-                                        .selector=${{number: {min: 1, max: 5, step: 1, mode: "slider"}}}
-                                        .value=${profile.maxDepartures || 2}
-                                        .label=${this.t('editor.transportation.max_departures_for_stop', 'Maximum departures')}
-                                        .helper=${this.t('editor.transportation.departures', '{count} departures', {count: profile.maxDepartures || 2})}
-                                        @value-changed=${(ev: CustomEvent) =>
-                                            this._haProfileChanged(index, 'maxDepartures', Number(ev.detail.value) || 2)}>
                                 </ha-row-selector>
                             </div>` : ''}
                         </div>

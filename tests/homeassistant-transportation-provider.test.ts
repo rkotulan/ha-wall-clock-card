@@ -77,7 +77,7 @@ describe('HomeAssistantTransportationProvider', () => {
         expect(result).toEqual({departures: [], loading: false});
     });
 
-    it('activates grouped profiles and applies each stop limit independently', async () => {
+    it('activates grouped profiles and displays every selected departure entity', async () => {
         const callService = jest.fn().mockResolvedValue(undefined);
         const hass: any = {
             callService,
@@ -131,15 +131,21 @@ describe('HomeAssistantTransportationProvider', () => {
         expect(callService).toHaveBeenCalledWith('button', 'press', {
             entity_id: ['button.schodova', 'button.za_luzankami'],
         });
-        expect(result.departures).toHaveLength(3);
+        expect(result.departures).toHaveLength(6);
         expect(result.departures.map(item => item.stopName)).toEqual([
             'Schodová (město)',
             'Schodová (město)',
+            'Schodová (město)',
+            'Za Lužánkami (Vinohrady)',
+            'Za Lužánkami (Vinohrady)',
             'Za Lužánkami (Vinohrady)',
         ]);
         expect(result.departures.map(item => item.groupId)).toEqual([
             'homeassistant-profile-0',
             'homeassistant-profile-0',
+            'homeassistant-profile-0',
+            'homeassistant-profile-1',
+            'homeassistant-profile-1',
             'homeassistant-profile-1',
         ]);
     });

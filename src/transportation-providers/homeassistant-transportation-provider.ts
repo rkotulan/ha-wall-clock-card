@@ -21,6 +21,7 @@ export interface HomeAssistantTransportationProfile {
   name?: string;
   refreshButtonEntity?: string;
   departureEntities?: string[];
+  /** @deprecated Every selected departure entity is displayed. */
   maxDepartures?: number;
 }
 
@@ -69,14 +70,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
       const departures: TransportationDeparture[] = [];
 
       for (const [profileIndex, profile] of profiles.entries()) {
-        const maxDepartures = this.normalizeMaxDepartures(
-          profile.maxDepartures ?? config.maxDepartures,
-        );
-        let profileCount = 0;
-
         for (const entityId of this.getProfileEntityIds(profile)) {
-          if (profileCount >= maxDepartures) break;
-
           const state = hass.states[entityId];
           if (!state) {
             throw new Error(`Entity ${entityId} not found`);
@@ -116,7 +110,6 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
             occupancyPercent: attributes.occupancy_percent,
             vehicleId: attributes.vehicle_id,
           });
-          profileCount += 1;
         }
       }
 
@@ -174,16 +167,11 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
     if (config.profiles?.length) return config.profiles;
     return [{
       departureEntities: config.departureEntities || [],
-      maxDepartures: config.maxDepartures,
     }];
   }
 
   private getProfileEntityIds(profile: HomeAssistantTransportationProfile): string[] {
     return (profile.departureEntities || []).map(entityId => entityId.trim()).filter(Boolean);
-  }
-
-  private normalizeMaxDepartures(value: unknown): number {
-    return Math.max(1, Math.min(Number(value) || 2, 5));
   }
 
   private formatState(hass: HomeAssistant, state: HomeAssistant['states'][string]): string {
