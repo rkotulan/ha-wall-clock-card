@@ -8,10 +8,20 @@ import {
 } from './transportation-provider';
 
 export interface HomeAssistantTransportationConfig extends TransportationProviderConfig {
+  profiles?: HomeAssistantTransportationProfile[];
+  /** @deprecated Use profiles. */
   departureEntities?: string[];
+  /** @deprecated Use profiles. */
   refreshButtonEntities?: string[];
   /** @deprecated Use refreshButtonEntities. */
   refreshButtonEntity?: string;
+}
+
+export interface HomeAssistantTransportationProfile {
+  name?: string;
+  refreshButtonEntity?: string;
+  departureEntities?: string[];
+  maxDepartures?: number;
 }
 
 /** Reads on-demand departure sensors created by the Transit Departures integration. */
@@ -50,57 +60,64 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
   ): Promise<TransportationData> {
     try {
       const hass = this.requireHass();
-      const entityIds = this.getEntityIds(config);
+      const profiles = this.getConfiguredProfiles(config);
+      const entityIds = profiles.flatMap(profile => this.getProfileEntityIds(profile));
       if (entityIds.length === 0) {
         throw new Error('At least one Home Assistant departure sensor is required');
       }
 
-      const maxDepartures = Math.max(1, Math.min(Number(config.maxDepartures) || 2, 5));
       const departures: TransportationDeparture[] = [];
-      const departureCounts = new Map<string, number>();
 
-      for (const entityId of entityIds) {
-        const state = hass.states[entityId];
-        if (!state) {
-          throw new Error(`Entity ${entityId} not found`);
-        }
-        if (state.state === 'unknown' || state.state === 'unavailable') {
-          continue;
-        }
-
-        const attributes = state.attributes as Record<string, unknown>;
-        const line = attributes.line;
-        const destination = attributes.destination;
-        if (line === undefined || !destination) {
-          continue;
-        }
-
-        const stopName = String(
-          attributes.stop_name || state.attributes.friendly_name || entityId,
+      for (const [profileIndex, profile] of profiles.entries()) {
+        const maxDepartures = this.normalizeMaxDepartures(
+          profile.maxDepartures ?? config.maxDepartures,
         );
-        const postId = this.optionalIdentifier(attributes.post_id);
-        const groupKey = `${stopName}\u0000${postId ?? ''}`;
-        const groupCount = departureCounts.get(groupKey) || 0;
-        if (groupCount >= maxDepartures) {
-          continue;
-        }
+        let profileCount = 0;
 
-        departures.push({
-          lineId: String(line),
-          lineName: String(line),
-          finalStop: String(destination),
-          isLowFloor: attributes.is_low_floor === true,
-          timeMark: this.formatState(hass, state),
-          stopName,
-          postId,
-          entityId,
-          departureAt: attributes.departure_at,
-          hasAirConditioning: attributes.has_air_conditioning === true,
-          occupancy: attributes.occupancy,
-          occupancyPercent: attributes.occupancy_percent,
-          vehicleId: attributes.vehicle_id,
-        });
-        departureCounts.set(groupKey, groupCount + 1);
+        for (const entityId of this.getProfileEntityIds(profile)) {
+          if (profileCount >= maxDepartures) break;
+
+          const state = hass.states[entityId];
+          if (!state) {
+            throw new Error(`Entity ${entityId} not found`);
+          }
+          if (state.state === 'unknown' || state.state === 'unavailable') {
+            continue;
+          }
+
+          const attributes = state.attributes as Record<string, unknown>;
+          const line = attributes.line;
+          const destination = attributes.destination;
+          if (line === undefined || !destination) {
+            continue;
+          }
+
+          const stopName = String(
+            profile.name?.trim()
+              || attributes.stop_name
+              || state.attributes.friendly_name
+              || entityId,
+          );
+          const postId = this.optionalIdentifier(attributes.post_id);
+
+          departures.push({
+            lineId: String(line),
+            lineName: String(line),
+            finalStop: String(destination),
+            isLowFloor: attributes.is_low_floor === true,
+            timeMark: this.formatState(hass, state),
+            stopName,
+            postId,
+            groupId: `homeassistant-profile-${profileIndex}`,
+            entityId,
+            departureAt: attributes.departure_at,
+            hasAirConditioning: attributes.has_air_conditioning === true,
+            occupancy: attributes.occupancy,
+            occupancyPercent: attributes.occupancy_percent,
+            vehicleId: attributes.vehicle_id,
+          });
+          profileCount += 1;
+        }
       }
 
       return { departures, loading: false };
@@ -127,8 +144,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
 
   getDefaultConfig(): HomeAssistantTransportationConfig {
     return {
-      departureEntities: [],
-      refreshButtonEntities: [],
+      profiles: [],
     };
   }
 
@@ -140,14 +156,34 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
   }
 
   private getEntityIds(config: HomeAssistantTransportationConfig): string[] {
-    return (config.departureEntities || []).map(entityId => entityId.trim()).filter(Boolean);
+    return this.getConfiguredProfiles(config).flatMap(profile => this.getProfileEntityIds(profile));
   }
 
   private getButtonEntityIds(config: HomeAssistantTransportationConfig): string[] {
-    const configured = config.refreshButtonEntities?.length
-      ? config.refreshButtonEntities
-      : [config.refreshButtonEntity || ''];
+    const configured = config.profiles?.length
+      ? config.profiles.map(profile => profile.refreshButtonEntity || '')
+      : config.refreshButtonEntities?.length
+        ? config.refreshButtonEntities
+        : [config.refreshButtonEntity || ''];
     return [...new Set(configured.map(entityId => entityId.trim()).filter(Boolean))];
+  }
+
+  private getConfiguredProfiles(
+    config: HomeAssistantTransportationConfig,
+  ): HomeAssistantTransportationProfile[] {
+    if (config.profiles?.length) return config.profiles;
+    return [{
+      departureEntities: config.departureEntities || [],
+      maxDepartures: config.maxDepartures,
+    }];
+  }
+
+  private getProfileEntityIds(profile: HomeAssistantTransportationProfile): string[] {
+    return (profile.departureEntities || []).map(entityId => entityId.trim()).filter(Boolean);
+  }
+
+  private normalizeMaxDepartures(value: unknown): number {
+    return Math.max(1, Math.min(Number(value) || 2, 5));
   }
 
   private formatState(hass: HomeAssistant, state: HomeAssistant['states'][string]): string {

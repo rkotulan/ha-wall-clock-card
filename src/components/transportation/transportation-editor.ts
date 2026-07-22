@@ -1,7 +1,11 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
-import { getAllTransportationProviders, StopConfig as TransportationStopConfig } from '../../transportation-providers';
+import {
+    getAllTransportationProviders,
+    HomeAssistantTransportationProfile,
+    StopConfig as TransportationStopConfig,
+} from '../../transportation-providers';
 
 /**
  * Editor component for transportation settings
@@ -10,6 +14,8 @@ import { getAllTransportationProviders, StopConfig as TransportationStopConfig }
 export class TransportationEditor extends BaseEditorSection {
     @property({ type: Array }) _stops: TransportationStopConfig[] = [];
     @state() private _expandedStopIndex: number | null = 0;
+    @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
+    @state() private _expandedHaProfileIndex: number | null = 0;
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -17,7 +23,132 @@ export class TransportationEditor extends BaseEditorSection {
         // Load stops from config when config changes
         if (changedProps.has('config') && this.config) {
             this._loadStops();
+            this._loadHaProfiles();
         }
+    }
+
+    private _loadHaProfiles(): void {
+        const transportation = this.config?.transportation;
+        const providerConfig = transportation?.providerConfig;
+        const configuredProfiles = providerConfig?.profiles as HomeAssistantTransportationProfile[] | undefined;
+
+        if (configuredProfiles?.length) {
+            this._haProfiles = configuredProfiles.map(profile => ({
+                ...profile,
+                departureEntities: [...(profile.departureEntities || [])],
+            }));
+        } else {
+            const buttons: string[] = providerConfig?.refreshButtonEntities?.length
+                ? providerConfig.refreshButtonEntities
+                : providerConfig?.refreshButtonEntity
+                    ? [providerConfig.refreshButtonEntity]
+                    : [];
+            const entities: string[] = [...(providerConfig?.departureEntities || [])];
+
+            if (buttons.length <= 1) {
+                this._haProfiles = buttons.length || entities.length ? [{
+                    refreshButtonEntity: buttons[0],
+                    departureEntities: entities,
+                    maxDepartures: transportation?.maxDepartures || 2,
+                }] : [];
+            } else {
+                // Legacy configuration stored two unrelated flat arrays. Their
+                // display order is the only available association between them.
+                const chunkSize = Math.ceil(entities.length / buttons.length);
+                this._haProfiles = buttons.map((button, index) => ({
+                    refreshButtonEntity: button,
+                    departureEntities: chunkSize
+                        ? entities.slice(index * chunkSize, (index + 1) * chunkSize)
+                        : [],
+                    maxDepartures: transportation?.maxDepartures || 2,
+                }));
+            }
+        }
+
+        if (this._haProfiles.length === 0) {
+            this._expandedHaProfileIndex = null;
+        } else if (this._expandedHaProfileIndex !== null) {
+            this._expandedHaProfileIndex = Math.min(
+                this._expandedHaProfileIndex,
+                this._haProfiles.length - 1,
+            );
+        }
+    }
+
+    private _saveHaProfiles(): void {
+        if (!this.config?.transportation) return;
+
+        const newConfig = JSON.parse(JSON.stringify(this.config));
+        newConfig.transportation.providerConfig ||= {};
+        newConfig.transportation.providerConfig.profiles = this._haProfiles.map(profile => ({
+            ...profile,
+            departureEntities: [...(profile.departureEntities || [])],
+        }));
+
+        // Once edited, persist only the grouped format. The provider continues
+        // to read these legacy keys for existing YAML configurations.
+        delete newConfig.transportation.providerConfig.refreshButtonEntity;
+        delete newConfig.transportation.providerConfig.refreshButtonEntities;
+        delete newConfig.transportation.providerConfig.departureEntities;
+
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: {config: newConfig},
+        }));
+    }
+
+    private _addHaProfile(): void {
+        this._expandedHaProfileIndex = this._haProfiles.length;
+        this._haProfiles = [...this._haProfiles, {
+            name: '',
+            refreshButtonEntity: '',
+            departureEntities: [],
+            maxDepartures: 2,
+        }];
+        this._saveHaProfiles();
+    }
+
+    private _removeHaProfile(index: number): void {
+        this._haProfiles = this._haProfiles.filter((_, profileIndex) => profileIndex !== index);
+        if (this._haProfiles.length === 0) {
+            this._expandedHaProfileIndex = null;
+        } else if (this._expandedHaProfileIndex === index) {
+            this._expandedHaProfileIndex = Math.min(index, this._haProfiles.length - 1);
+        } else if (this._expandedHaProfileIndex !== null && this._expandedHaProfileIndex > index) {
+            this._expandedHaProfileIndex -= 1;
+        }
+        this._saveHaProfiles();
+    }
+
+    private _haProfileChanged(
+        index: number,
+        property: keyof HomeAssistantTransportationProfile,
+        value: unknown,
+    ): void {
+        this._haProfiles = this._haProfiles.map((profile, profileIndex) =>
+            profileIndex === index ? {...profile, [property]: value} : profile,
+        );
+        this._saveHaProfiles();
+    }
+
+    private _toggleHaProfile(index: number): void {
+        this._expandedHaProfileIndex = this._expandedHaProfileIndex === index ? null : index;
+    }
+
+    private _haProfileLabel(profile: HomeAssistantTransportationProfile, index: number): string {
+        const configuredName = profile.name?.trim();
+        if (configuredName) return configuredName;
+
+        const friendlyName = profile.refreshButtonEntity
+            ? this.hass?.states[profile.refreshButtonEntity]?.attributes.friendly_name
+            : undefined;
+        if (friendlyName) {
+            const stopName = String(friendlyName)
+                .replace(/\s+(Aktualizovat odjezdy|Refresh departures)$/iu, '')
+                .trim();
+            if (stopName) return stopName;
+        }
+
+        return this.t('editor.transportation.stop', 'Stop {number}', {number: index + 1});
     }
 
     private _loadStops(): void {
@@ -301,35 +432,81 @@ export class TransportationEditor extends BaseEditorSection {
                 ></ha-row-selector>
 
                 ${isHomeAssistant ? html`
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{entity: {domain: "button", multiple: true}}}
-                            .value=${this.config.transportation.providerConfig?.refreshButtonEntities
-                                || (this.config.transportation.providerConfig?.refreshButtonEntity
-                                    ? [this.config.transportation.providerConfig.refreshButtonEntity]
-                                    : [])}
-                            .label=${this.t('editor.transportation.refresh_buttons', 'Refresh button entities')}
-                            .helper=${this.t('editor.transportation.refresh_button_help', 'All selected profiles are activated when departures are opened')}
-                            propertyName="transportation.providerConfig.refreshButtonEntities"
-                            @value-changed=${this._handleFormValueChanged}
-                    ></ha-row-selector>
+                    <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{entity: {domain: "sensor", device_class: "duration", multiple: true}}}
-                            .value=${this.config.transportation.providerConfig?.departureEntities || []}
-                            .label=${this.t('editor.transportation.departure_entities', 'Departure sensor entities')}
-                            .helper=${this.t('editor.transportation.departure_entities_help', 'Select the sensors in display order')}
-                            propertyName="transportation.providerConfig.departureEntities"
-                            @value-changed=${this._handleFormValueChanged}
-                    ></ha-row-selector>
+                    ${this._haProfiles.map((profile, index) => {
+                        const expanded = this._expandedHaProfileIndex === index;
+                        return html`
+                        <div class="stop-card ${expanded ? '' : 'collapsed'}">
+                            <div class="stop-header">
+                                <button class="stop-toggle" type="button"
+                                        aria-expanded=${expanded}
+                                        @click=${() => this._toggleHaProfile(index)}>
+                                    <strong>${this._haProfileLabel(profile, index)}</strong>
+                                </button>
+                                <button class="stop-icon-button remove" type="button"
+                                        title=${this.t('editor.transportation.remove_stop', 'Remove stop')}
+                                        aria-label=${this.t('editor.transportation.remove_stop', 'Remove stop')}
+                                        @click=${() => this._removeHaProfile(index)}>
+                                    <ha-icon icon="mdi:delete-outline"></ha-icon>
+                                </button>
+                                <button class="stop-icon-button" type="button"
+                                        title=${expanded ? this.t('editor.transportation.collapse_stop', 'Collapse stop') : this.t('editor.transportation.expand_stop', 'Expand stop')}
+                                        aria-label=${expanded ? this.t('editor.transportation.collapse_stop', 'Collapse stop') : this.t('editor.transportation.expand_stop', 'Expand stop')}
+                                        @click=${() => this._toggleHaProfile(index)}>
+                                    <ha-icon icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                                </button>
+                            </div>
+                            ${expanded ? html`<div class="stop-body">
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{text: {}}}
+                                        .value=${profile.name || ''}
+                                        .label=${this.t('editor.transportation.stop_name', 'Stop name (optional)')}
+                                        @value-changed=${(ev: CustomEvent) =>
+                                            this._haProfileChanged(index, 'name', ev.detail.value || '')}>
+                                </ha-row-selector>
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{entity: {domain: "button"}}}
+                                        .value=${profile.refreshButtonEntity || ''}
+                                        .label=${this.t('editor.transportation.refresh_button', 'Refresh button entity')}
+                                        .helper=${this.t('editor.transportation.refresh_button_help', 'This profile is activated when departures are opened')}
+                                        @value-changed=${(ev: CustomEvent) =>
+                                            this._haProfileChanged(index, 'refreshButtonEntity', ev.detail.value || '')}>
+                                </ha-row-selector>
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{entity: {domain: "sensor", device_class: "duration", multiple: true}}}
+                                        .value=${profile.departureEntities || []}
+                                        .label=${this.t('editor.transportation.departure_entities', 'Departure sensor entities')}
+                                        .helper=${this.t('editor.transportation.departure_entities_help', 'Select the sensors in display order')}
+                                        @value-changed=${(ev: CustomEvent) =>
+                                            this._haProfileChanged(index, 'departureEntities', ev.detail.value || [])}>
+                                </ha-row-selector>
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{number: {min: 1, max: 5, step: 1, mode: "slider"}}}
+                                        .value=${profile.maxDepartures || 2}
+                                        .label=${this.t('editor.transportation.max_departures_for_stop', 'Maximum departures')}
+                                        .helper=${this.t('editor.transportation.departures', '{count} departures', {count: profile.maxDepartures || 2})}
+                                        @value-changed=${(ev: CustomEvent) =>
+                                            this._haProfileChanged(index, 'maxDepartures', Number(ev.detail.value) || 2)}>
+                                </ha-row-selector>
+                            </div>` : ''}
+                        </div>
+                    `;})}
+
+                    <mwc-button @click=${this._addHaProfile}>
+                        ${this.t('editor.transportation.add_stop', 'Add stop')}
+                    </mwc-button>
 
                     <div class="info-text">
                         ${this.t('editor.transportation.ha_provider_help', 'The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant.')}
                     </div>
                 ` : ''}
 
-                <ha-row-selector
+                ${!isHomeAssistant ? html`<ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
                             number: {
@@ -348,7 +525,7 @@ export class TransportationEditor extends BaseEditorSection {
                             // Reload stops after the config has been updated
                             this._loadStops();
                         }}
-                ></ha-row-selector>
+                ></ha-row-selector>` : ''}
 
                 <ha-row-selector
                         .hass=${this.hass}

@@ -60,32 +60,45 @@ polling interval.
 ```yaml
 - type: transportation
   provider: homeassistant
-  maxDepartures: 2
   autoHideTimeout: 5
   providerConfig:
-    refreshButtonEntities:
-      - button.schodova_mesto_refresh
-      - button.za_luzankami_vinohrady_refresh
-      - button.za_luzankami_mendlovo_namesti_refresh
-    departureEntities:
-      - sensor.schodova_mesto_departure_1
-      - sensor.schodova_mesto_departure_2
-      - sensor.za_luzankami_vinohrady_departure_1
-      - sensor.za_luzankami_vinohrady_departure_2
-      - sensor.za_luzankami_mendlovo_namesti_departure_1
-      - sensor.za_luzankami_mendlovo_namesti_departure_2
+    profiles:
+      - name: Schodová (město)
+        refreshButtonEntity: button.schodova_mesto_refresh
+        departureEntities:
+          - sensor.schodova_mesto_departure_1
+          - sensor.schodova_mesto_departure_2
+        maxDepartures: 2
+      - name: Za Lužánkami (Vinohrady)
+        refreshButtonEntity: button.za_luzankami_vinohrady_refresh
+        departureEntities:
+          - sensor.za_luzankami_vinohrady_departure_1
+          - sensor.za_luzankami_vinohrady_departure_2
+        maxDepartures: 2
+      - name: Za Lužánkami (Mendlovo náměstí)
+        refreshButtonEntity: button.za_luzankami_mendlovo_namesti_refresh
+        departureEntities:
+          - sensor.za_luzankami_mendlovo_namesti_departure_1
+          - sensor.za_luzankami_mendlovo_namesti_departure_2
+        maxDepartures: 2
   stops: []
 ```
 
-All entity IDs can be selected in the Designer. Exact IDs depend on the names
-assigned by Home Assistant when each integration profile is configured. The
-maximum departure setting applies separately to every stop/platform group.
+Each profile is one displayed stop column. Its refresh button, ordered departure
+sensors and departure limit are configured together in one expandable Designer
+section. Exact entity IDs depend on the names assigned by Home Assistant when
+each integration profile is configured.
 Pressing the same buttons from another dashboard also activates the sensors for
 a watch or automation.
 
+The previous flat `refreshButtonEntities` and `departureEntities` keys remain
+supported for existing YAML cards. The Designer writes the grouped `profiles`
+format when the configuration is edited.
+
 For the `idsjmk` provider, each stop requires `stopId` and `postId`; both may be
 numeric or text identifiers. `name` overrides the name returned by the provider.
-Both built-in providers apply the global `maxDepartures` value.
+The IDS JMK provider applies the global `maxDepartures` value. Home Assistant
+profiles each have their own `maxDepartures` value.
 
 ## On-demand and exclusive zones
 

@@ -77,7 +77,7 @@ describe('HomeAssistantTransportationProvider', () => {
         expect(result).toEqual({departures: [], loading: false});
     });
 
-    it('activates multiple profiles and applies the limit to each stop', async () => {
+    it('activates grouped profiles and applies each stop limit independently', async () => {
         const callService = jest.fn().mockResolvedValue(undefined);
         const hass: any = {
             callService,
@@ -101,16 +101,28 @@ describe('HomeAssistantTransportationProvider', () => {
         const provider = new HomeAssistantTransportationProvider();
         provider.setHass(hass);
         const config = {
-            refreshButtonEntities: ['button.schodova', 'button.za_luzankami'],
-            departureEntities: [
-                'sensor.schodova_1',
-                'sensor.schodova_2',
-                'sensor.schodova_3',
-                'sensor.za_luzankami_1',
-                'sensor.za_luzankami_2',
-                'sensor.za_luzankami_3',
+            profiles: [
+                {
+                    name: 'Schodová (město)',
+                    refreshButtonEntity: 'button.schodova',
+                    departureEntities: [
+                        'sensor.schodova_1',
+                        'sensor.schodova_2',
+                        'sensor.schodova_3',
+                    ],
+                    maxDepartures: 2,
+                },
+                {
+                    name: 'Za Lužánkami (Vinohrady)',
+                    refreshButtonEntity: 'button.za_luzankami',
+                    departureEntities: [
+                        'sensor.za_luzankami_1',
+                        'sensor.za_luzankami_2',
+                        'sensor.za_luzankami_3',
+                    ],
+                    maxDepartures: 1,
+                },
             ],
-            maxDepartures: 2,
         };
 
         await provider.activateAsync(config);
@@ -119,12 +131,16 @@ describe('HomeAssistantTransportationProvider', () => {
         expect(callService).toHaveBeenCalledWith('button', 'press', {
             entity_id: ['button.schodova', 'button.za_luzankami'],
         });
-        expect(result.departures).toHaveLength(4);
+        expect(result.departures).toHaveLength(3);
         expect(result.departures.map(item => item.stopName)).toEqual([
             'Schodová (město)',
             'Schodová (město)',
             'Za Lužánkami (Vinohrady)',
-            'Za Lužánkami (Vinohrady)',
+        ]);
+        expect(result.departures.map(item => item.groupId)).toEqual([
+            'homeassistant-profile-0',
+            'homeassistant-profile-0',
+            'homeassistant-profile-1',
         ]);
     });
 });

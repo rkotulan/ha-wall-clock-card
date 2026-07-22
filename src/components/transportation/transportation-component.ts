@@ -335,7 +335,7 @@ export class TransportationComponent extends BottomBarComponent {
         const departuresByStop: { [key: string]: TransportationDeparture[] } = {};
 
         for (const departure of transportationData.departures) {
-            const key = `${departure.stopName}-${departure.postId}`;
+            const key = String(departure.groupId ?? `${departure.stopName}-${departure.postId}`);
             if (!departuresByStop[key]) {
                 departuresByStop[key] = [];
             }
