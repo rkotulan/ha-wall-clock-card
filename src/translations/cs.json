@@ -128,7 +128,7 @@
   },
   "widgets": {
     "sensors": "Senzory", "weather": "Počasí", "calendar": "Kalendář", "transportation": "Doprava",
-    "clock": "Hodiny", "date": "Datum", "action_bar": "Panel akcí"
+    "clock": "Hodiny", "date": "Datum", "action_bar": "Panel akcí", "ha_card": "Karta Home Assistantu"
   },
   "editor": {
     "format": {
@@ -237,6 +237,19 @@
       "event_background_color": "Barva podkladu událostí", "event_background_opacity": "Průhlednost podkladu událostí",
       "all_day": "Celý den", "loading": "Načítám kalendář…", "no_events": "Žádné nadcházející události.", "when": "Termín",
       "calendar_name": "Kalendář", "location": "Místo", "description": "Popis", "event": "Událost kalendáře"
+    },
+    "ha_card": {
+      "description": "Vloží vestavěnou nebo nainstalovanou vlastní kartu dashboardu Home Assistantu.",
+      "card_type": "Typ karty", "card_type_help": "Vyberte kartu nebo zadejte její typ, například custom:mushroom-template-card.",
+      "choose_card": "Vybrat kartu", "change_card": "Vybrat jinou kartu",
+      "edit_card": "Upravit kartu v editoru Home Assistantu", "dialog_title": "Nastavení vložené karty",
+      "transparent": "Průhledné pozadí karty", "transparent_help": "Odstraní standardní podklad HA, pokud vložená karta podporuje proměnné motivu.",
+      "empty": "Vyberte kartu Home Assistantu v editoru widgetu.", "loading": "Načítám kartu Home Assistantu…",
+      "recursion_error": "Kartu wall-clock-card nelze vložit samu do sebe.",
+      "helpers_error": "Pomocné funkce karet Home Assistantu nejsou dostupné.",
+      "native_editor_unavailable": "Nativní editor karet Home Assistantu není v tomto zobrazení dostupný. Úplnou konfiguraci karty upravte níže.",
+      "json_config": "Konfigurace karty (JSON)", "json_error": "Konfigurace karty není platný JSON.",
+      "json_type_error": "Konfigurace karty musí obsahovat typ."
     }
   }
 }

@@ -184,7 +184,7 @@
   },
   "widgets": {
     "sensors": "Sensors", "weather": "Weather", "calendar": "Calendar", "transportation": "Transportation",
-    "clock": "Clock", "date": "Date", "action_bar": "Action bar"
+    "clock": "Clock", "date": "Date", "action_bar": "Action bar", "ha_card": "Home Assistant card"
   },
   "editor": {
     "format": {
@@ -293,6 +293,19 @@
       "no_events": "No upcoming events.",
       "when": "When", "calendar_name": "Calendar", "location": "Location", "description": "Description",
       "event": "Calendar event"
+    },
+    "ha_card": {
+      "description": "Embed a built-in or installed custom Home Assistant dashboard card.",
+      "card_type": "Card type", "card_type_help": "Choose a card or enter its type, for example custom:mushroom-template-card.",
+      "choose_card": "Choose card", "change_card": "Choose another card",
+      "edit_card": "Edit card in Home Assistant editor", "dialog_title": "Embedded card settings",
+      "transparent": "Transparent card background", "transparent_help": "Removes the standard HA card surface where the embedded card supports theme variables.",
+      "empty": "Choose a Home Assistant card in the widget editor.", "loading": "Loading Home Assistant card…",
+      "recursion_error": "wall-clock-card cannot be embedded inside itself.",
+      "helpers_error": "Home Assistant card helpers are unavailable.",
+      "native_editor_unavailable": "The native Home Assistant card editor is unavailable in this view. Edit the complete card configuration below.",
+      "json_config": "Card configuration (JSON)", "json_error": "The card configuration is not valid JSON.",
+      "json_type_error": "The card configuration must contain a type."
     }
   }
 }

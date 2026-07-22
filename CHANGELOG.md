@@ -1,5 +1,31 @@
 # Changelog
 
+## 3.1.0
+
+### Embedded Home Assistant cards
+
+- Added a generic widget for embedding built-in and installed custom Lovelace cards
+  in any wall-clock zone.
+- Added searchable card selection and a dedicated Home Assistant-style visual editor
+  dialog with explicit Cancel and Save actions.
+- Preserved transient custom-editor state during Home Assistant updates, added an
+  optional transparent surface and prevented recursive wall-clock embedding.
+
+### Transportation
+
+- Added a Home Assistant entity provider for on-demand departure sensors supplied by
+  integrations such as Odjezdy MHD.
+- Added multiple stop profiles with grouped refresh/departure entities and clearer
+  direction labels.
+- Improved searchable entity selection, add-stop controls and editor field width.
+
+### Designer and calendar
+
+- Added drag-and-drop ordering to transportation stops, sensors, calendars, actions
+  and background-image sources.
+- Kept newly added transit stops open for immediate editing.
+- Centered calendar detail icons with their accompanying text.
+
 ## 3.0.2
 
 ### Designer input and saving

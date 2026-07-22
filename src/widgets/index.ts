@@ -10,6 +10,8 @@ import './weather-widget';
 import './transportation-widget';
 import './action-bar-widget';
 import './calendar-widget';
+import './ha-card-widget';
+import '../components/ha-card';
 
 export * from './widget-registry';
 export * from './widget-element';
@@ -21,6 +23,7 @@ export {WeatherWidget, WeatherWidgetConfig} from './weather-widget';
 export {TransportationWidget, TransportationWidgetConfig} from './transportation-widget';
 export {ActionBarWidget, ActionBarWidgetConfig} from './action-bar-widget';
 export {CalendarWidget, CalendarWidgetConfig} from './calendar-widget';
+export {HaCardWidget, HaCardWidgetConfig} from './ha-card-widget';
 export * from './calendar/calendar-types';
 export * from './calendar/calendar-data';
 
@@ -102,6 +105,15 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
             eventBackgroundColor: '#202020',
             eventBackgroundOpacity: 0.76,
         }),
+    },
+    {
+        widgetId: 'ha-card',
+        name: 'Home Assistant card',
+        description: 'A built-in or installed custom Lovelace card',
+        icon: 'mdi:view-dashboard-outline',
+        elementTag: 'wcc-ha-card-widget',
+        editorTag: 'ha-card-widget-editor',
+        defaultConfig: () => ({type: 'ha-card'}),
     },
 ];
 
