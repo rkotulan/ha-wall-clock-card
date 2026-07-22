@@ -4415,7 +4415,7 @@
         .event-detail,
         .event-description {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 5px;
             min-width: 0;
             margin-top: 3px;
@@ -4429,7 +4429,6 @@
         .event-detail ha-icon {
             --mdc-icon-size: 15px;
             flex: 0 0 auto;
-            margin-top: 1px;
         }
 
         .event-detail-text {
