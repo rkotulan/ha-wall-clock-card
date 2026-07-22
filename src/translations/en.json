@@ -225,8 +225,7 @@
       "stop_name": "Stop name (optional)", "add_stop": "Add stop", "remove_stop": "Remove stop",
       "expand_stop": "Expand stop", "collapse_stop": "Collapse stop", "documentation": "Transportation configuration documentation",
       "refresh_buttons": "Refresh button entities", "refresh_button": "Refresh button entity", "refresh_button_help": "This stop is activated when departures are opened",
-      "departure_entities": "Departure sensor entities", "departure_entities_help": "Select the sensors in display order",
-      "ha_provider_help": "The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant."
+      "departure_entities": "Departure sensor entities", "departure_entities_help": "Select the sensors in display order"
     },
     "actions": {
       "enable": "Enable action bar", "description": "Configure action buttons displayed in this widget.",

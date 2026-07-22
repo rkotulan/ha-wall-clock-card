@@ -546,9 +546,6 @@ export class TransportationEditor extends BaseEditorSection {
                         ${this.t('editor.transportation.add_stop', 'Add stop')}
                     </button>
 
-                    <div class="info-text">
-                        ${this.t('editor.transportation.ha_provider_help', 'The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant.')}
-                    </div>
                 ` : ''}
 
                 ${!isHomeAssistant ? html`<ha-row-selector
