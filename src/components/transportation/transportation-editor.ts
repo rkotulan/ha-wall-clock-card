@@ -1,7 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import Sortable, {SortableEvent} from 'sortablejs';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
+import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import {
     getAllTransportationProviders,
     HomeAssistantTransportationProfile,
@@ -29,11 +29,17 @@ export class TransportationEditor extends BaseEditorSection {
     @state() private _expandedStopIndex: number | null = 0;
     @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
     @state() private _expandedHaProfileIndex: number | null = retainedExpandedHaProfileIndex;
-    private stopsSortable?: Sortable;
-    private sortableElement?: HTMLElement;
-    private sortableKind?: string;
-    private sortableSetupRevision = 0;
-    private dragOrigin?: {parent: Node; next: Node | null};
+    private readonly sortableList = new SortableListController(this, {
+        containerSelector: '.stop-list',
+        draggable: '.stop-card',
+        handle: '.stop-drag-handle',
+        ghostClass: 'stop-card-ghost',
+        onMove: (fromIndex, toIndex) => {
+            const kind = this.shadowRoot?.querySelector<HTMLElement>('.stop-list')?.dataset.kind;
+            if (kind === 'ha-profiles') this._moveHaProfile(fromIndex, toIndex);
+            else this._moveStop(fromIndex, toIndex);
+        },
+    });
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -43,12 +49,11 @@ export class TransportationEditor extends BaseEditorSection {
             this._loadStops();
             this._loadHaProfiles();
         }
-        this._scheduleSortableSetup();
+        this.sortableList.schedule();
     }
 
     disconnectedCallback(): void {
-        this.sortableSetupRevision += 1;
-        this._destroySortable();
+        this.sortableList.disconnect();
         super.disconnectedCallback();
     }
 
@@ -165,17 +170,13 @@ export class TransportationEditor extends BaseEditorSection {
     }
 
     private _moveHaProfile(fromIndex: number, toIndex: number): void {
-        const profiles = [...this._haProfiles];
-        const [profile] = profiles.splice(fromIndex, 1);
-        if (!profile) return;
-        profiles.splice(toIndex, 0, profile);
-        this._expandedHaProfileIndex = this._movedExpandedIndex(
+        this._expandedHaProfileIndex = movedListIndex(
             this._expandedHaProfileIndex,
             fromIndex,
             toIndex,
         );
         retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
-        this._haProfiles = profiles;
+        this._haProfiles = moveListItem(this._haProfiles, fromIndex, toIndex);
         this._saveHaProfiles();
     }
 
@@ -340,16 +341,12 @@ export class TransportationEditor extends BaseEditorSection {
     }
 
     private _moveStop(fromIndex: number, toIndex: number): void {
-        const stops = [...this._stops];
-        const [stop] = stops.splice(fromIndex, 1);
-        if (!stop) return;
-        stops.splice(toIndex, 0, stop);
-        this._expandedStopIndex = this._movedExpandedIndex(
+        this._expandedStopIndex = movedListIndex(
             this._expandedStopIndex,
             fromIndex,
             toIndex,
         );
-        this._stops = stops;
+        this._stops = moveListItem(this._stops, fromIndex, toIndex);
 
         if (!this.config?.transportation) return;
         const newConfig = JSON.parse(JSON.stringify(this.config));
@@ -357,74 +354,6 @@ export class TransportationEditor extends BaseEditorSection {
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: {config: newConfig},
         }));
-    }
-
-    private _movedExpandedIndex(
-        expandedIndex: number | null,
-        fromIndex: number,
-        toIndex: number,
-    ): number | null {
-        if (expandedIndex === null) return null;
-        if (expandedIndex === fromIndex) return toIndex;
-        if (fromIndex < expandedIndex && expandedIndex <= toIndex) return expandedIndex - 1;
-        if (toIndex <= expandedIndex && expandedIndex < fromIndex) return expandedIndex + 1;
-        return expandedIndex;
-    }
-
-    private _scheduleSortableSetup(): void {
-        const revision = ++this.sortableSetupRevision;
-        void this.updateComplete.then(() => {
-            requestAnimationFrame(() => {
-                if (revision !== this.sortableSetupRevision || !this.isConnected) return;
-                const element = this.shadowRoot?.querySelector<HTMLElement>('.stop-list');
-                const kind = element?.dataset.kind;
-                if (element === this.sortableElement && kind === this.sortableKind && this.stopsSortable) {
-                    return;
-                }
-                this._rebuildSortable(element ?? undefined);
-            });
-        });
-    }
-
-    private _destroySortable(): void {
-        this.stopsSortable?.destroy();
-        this.stopsSortable = undefined;
-        this.sortableElement = undefined;
-        this.sortableKind = undefined;
-        this.dragOrigin = undefined;
-    }
-
-    private _rebuildSortable(element?: HTMLElement): void {
-        this._destroySortable();
-        if (!element) return;
-
-        this.stopsSortable = new Sortable(element, {
-            animation: 150,
-            draggable: '.stop-card',
-            handle: '.stop-drag-handle',
-            ghostClass: 'stop-card-ghost',
-            onStart: event => {
-                this.dragOrigin = {parent: event.from, next: event.item.nextSibling};
-            },
-            onEnd: event => this._handleStopDragEnd(event),
-        });
-        this.sortableElement = element;
-        this.sortableKind = element.dataset.kind;
-    }
-
-    private _handleStopDragEnd(event: SortableEvent): void {
-        const origin = this.dragOrigin;
-        this.dragOrigin = undefined;
-        if (origin) origin.parent.insertBefore(event.item, origin.next);
-
-        if (event.oldIndex == null || event.newIndex == null || event.oldIndex === event.newIndex) {
-            return;
-        }
-        if ((event.from as HTMLElement).dataset.kind === 'ha-profiles') {
-            this._moveHaProfile(event.oldIndex, event.newIndex);
-        } else {
-            this._moveStop(event.oldIndex, event.newIndex);
-        }
     }
 
     /** Stop/platform IDs may be numeric or textual depending on the provider. */

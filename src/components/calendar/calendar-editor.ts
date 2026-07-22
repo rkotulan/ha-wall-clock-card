@@ -2,6 +2,7 @@ import {css, html, PropertyValues} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {fireEvent} from 'custom-card-helpers';
 import {BaseEditorSection} from '../../editors/editor-base/base-editor-section';
+import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import {LabelPosition} from '../ha-selector/types';
 import {CalendarSourceConfig, CalendarWidgetSettings} from '../../widgets/calendar/calendar-types';
 
@@ -15,6 +16,13 @@ export class CalendarEditor extends BaseEditorSection {
     @state() private sources: CalendarSourceConfig[] = [];
     @state() private addingAll = false;
     @state() private expandedSourceIndex: number | null = 0;
+    private readonly sortableList = new SortableListController(this, {
+        containerSelector: '.source-list',
+        draggable: '.source-card',
+        handle: '.source-drag-handle',
+        ghostClass: 'source-card-ghost',
+        onMove: (fromIndex, toIndex) => this.moveSource(fromIndex, toIndex),
+    });
 
     static styles = css`
         .content {
@@ -40,6 +48,12 @@ export class CalendarEditor extends BaseEditorSection {
             background: var(--secondary-background-color, rgba(255, 255, 255, 0.035));
         }
 
+        .source-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .source-header {
             display: flex;
             align-items: center;
@@ -47,6 +61,21 @@ export class CalendarEditor extends BaseEditorSection {
             min-height: 34px;
             margin-bottom: 4px;
         }
+
+        .source-drag-handle {
+            display: grid;
+            place-items: center;
+            flex: 0 0 30px;
+            width: 30px;
+            height: 32px;
+            color: var(--secondary-text-color, #aaa);
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .source-drag-handle:active { cursor: grabbing; }
+        .source-drag-handle ha-icon { --mdc-icon-size: 19px; }
+        .source-card-ghost { opacity: 0.35; }
 
         .source-card.collapsed .source-header {
             margin-bottom: 0;
@@ -203,6 +232,12 @@ export class CalendarEditor extends BaseEditorSection {
                 this.expandedSourceIndex = this.sources.length > 0 ? this.sources.length - 1 : null;
             }
         }
+        this.sortableList.schedule();
+    }
+
+    disconnectedCallback(): void {
+        this.sortableList.disconnect();
+        super.disconnectedCallback();
     }
 
     private emitSources(sources: CalendarSourceConfig[]): void {
@@ -228,6 +263,15 @@ export class CalendarEditor extends BaseEditorSection {
 
     private toggleSource(index: number): void {
         this.expandedSourceIndex = this.expandedSourceIndex === index ? null : index;
+    }
+
+    private moveSource(fromIndex: number, toIndex: number): void {
+        this.expandedSourceIndex = movedListIndex(
+            this.expandedSourceIndex,
+            fromIndex,
+            toIndex,
+        );
+        this.emitSources(moveListItem(this.sources, fromIndex, toIndex));
     }
 
     private updateSource(index: number, key: keyof CalendarSourceConfig, value: string): void {
@@ -278,11 +322,18 @@ export class CalendarEditor extends BaseEditorSection {
                 <div class="section-title">${this.t('editor.calendar.calendars', 'Calendars')}</div>
                 ${this.sources.length === 0
                     ? html`<div class="empty">${this.t('editor.calendar.empty', 'Add one or more Home Assistant calendar entities.')}</div>`
-                    : this.sources.map((source, index) => {
+                    : ''}
+                <div class="source-list">
+                    ${this.sources.map((source, index) => {
                         const expanded = this.expandedSourceIndex === index;
                         return html`
                         <div class="source-card ${expanded ? 'expanded' : 'collapsed'}">
                             <div class="source-header">
+                                <span class="source-drag-handle"
+                                      title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                      aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                    <ha-icon icon="mdi:drag"></ha-icon>
+                                </span>
                                 <button class="source-toggle"
                                         type="button"
                                         aria-expanded=${expanded ? 'true' : 'false'}
@@ -337,6 +388,7 @@ export class CalendarEditor extends BaseEditorSection {
                         </div>
                     `;
                     })}
+                </div>
 
                 <div class="button-row">
                     <button type="button" @click=${this.addSource}>

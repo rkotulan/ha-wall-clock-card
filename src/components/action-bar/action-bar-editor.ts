@@ -1,6 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
+import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import { ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-bar';
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';
@@ -12,6 +13,13 @@ import { LabelPosition } from '../ha-selector/types';
 export class ActionBarEditor extends BaseEditorSection {
     @property({ type: Array }) _actions: ModuleActionConfig[] = [];
     @state() private _expandedActionIndex: number | null = 0;
+    private readonly sortableList = new SortableListController(this, {
+        containerSelector: '.action-list',
+        draggable: '.action-item',
+        handle: '.action-drag-handle',
+        ghostClass: 'action-item-ghost',
+        onMove: (fromIndex, toIndex) => this._moveAction(fromIndex, toIndex),
+    });
     
     // Cache for editor components to prevent flickering
     private _editorComponentCache: Map<string, HTMLElement> = new Map();
@@ -23,6 +31,12 @@ export class ActionBarEditor extends BaseEditorSection {
         if (changedProps.has('config') && this.config) {
             this._loadActions();
         }
+        this.sortableList.schedule();
+    }
+
+    disconnectedCallback(): void {
+        this.sortableList.disconnect();
+        super.disconnectedCallback();
     }
 
     private _loadActions(): void {
@@ -358,6 +372,25 @@ export class ActionBarEditor extends BaseEditorSection {
         this._expandedActionIndex = this._expandedActionIndex === index ? null : index;
     }
 
+    private _moveAction(fromIndex: number, toIndex: number): void {
+        this._editorComponentCache.clear();
+        this._expandedActionIndex = movedListIndex(
+            this._expandedActionIndex,
+            fromIndex,
+            toIndex,
+        );
+        this._actions = moveListItem(this._actions, fromIndex, toIndex);
+        if (!this.config) return;
+        const newConfig = JSON.parse(JSON.stringify(this.config));
+        if (!newConfig.actionBar) {
+            newConfig.actionBar = {enabled: true, actions: [], backgroundOpacity: 0.3};
+        }
+        newConfig.actionBar.actions = [...this._actions];
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: {config: newConfig},
+        }));
+    }
+
     private _actionChanged(index: number, property: string, value: any): void {
         // If the action type (actionId) is changing, clear the cache entry for this action
         if (property === 'actionId') {
@@ -434,6 +467,21 @@ export class ActionBarEditor extends BaseEditorSection {
                 min-height: 36px;
                 margin-bottom: 4px;
             }
+
+            .action-drag-handle {
+                display: grid;
+                place-items: center;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 32px;
+                color: var(--secondary-text-color, #aaa);
+                cursor: grab;
+                touch-action: none;
+            }
+
+            .action-drag-handle:active { cursor: grabbing; }
+            .action-drag-handle ha-icon { --mdc-icon-size: 19px; }
+            .action-item-ghost { opacity: 0.35; }
 
             .action-toggle {
                 display: flex;
@@ -573,6 +621,7 @@ export class ActionBarEditor extends BaseEditorSection {
                     ${this._actions.length === 0 ? html`
                         <div class="empty-actions">${this.t('editor.actions.empty', 'No actions configured yet.')}</div>
                     ` : ''}
+                    <div class="action-list">
                     ${this._actions.map((action, index) => {
                         const expanded = this._expandedActionIndex === index;
                         const actionPlugin = PluginRegistry.getInstance().getPlugin(action.actionId);
@@ -583,6 +632,11 @@ export class ActionBarEditor extends BaseEditorSection {
                         return html`
                         <div class="action-item ${expanded ? '' : 'collapsed'}">
                         <div class="action-header">
+                            <span class="action-drag-handle"
+                                  title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                  aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                <ha-icon icon="mdi:drag"></ha-icon>
+                            </span>
                             <button class="action-toggle" type="button"
                                     aria-expanded=${expanded}
                                     @click=${() => this._toggleAction(index)}>
@@ -677,6 +731,7 @@ export class ActionBarEditor extends BaseEditorSection {
                         </div>` : ''}
                         </div>
                     `;})}
+                    </div>
 
                     <button class="add-action" type="button" @click=${this._addAction}>
                         <ha-icon icon="mdi:plus"></ha-icon>

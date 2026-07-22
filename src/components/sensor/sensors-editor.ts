@@ -1,6 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
+import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import { SensorConfig } from '../../core/types';
 import { LabelPosition } from '../ha-selector/types';
 
@@ -11,6 +12,13 @@ import { LabelPosition } from '../ha-selector/types';
 export class SensorsEditor extends BaseEditorSection {
     @property({ type: Array }) _sensors: SensorConfig[] = [];
     @state() private _expandedSensorIndex: number | null = 0;
+    private readonly sortableList = new SortableListController(this, {
+        containerSelector: '.sensor-list',
+        draggable: '.sensor-card',
+        handle: '.sensor-drag-handle',
+        ghostClass: 'sensor-card-ghost',
+        onMove: (fromIndex, toIndex) => this._moveSensor(fromIndex, toIndex),
+    });
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -19,6 +27,12 @@ export class SensorsEditor extends BaseEditorSection {
         if (changedProps.has('config') && this.config) {
             this._loadSensors();
         }
+        this.sortableList.schedule();
+    }
+
+    disconnectedCallback(): void {
+        this.sortableList.disconnect();
+        super.disconnectedCallback();
     }
 
     private _loadSensors(): void {
@@ -76,6 +90,21 @@ export class SensorsEditor extends BaseEditorSection {
         this._expandedSensorIndex = this._expandedSensorIndex === index ? null : index;
     }
 
+    private _moveSensor(fromIndex: number, toIndex: number): void {
+        this._expandedSensorIndex = movedListIndex(
+            this._expandedSensorIndex,
+            fromIndex,
+            toIndex,
+        );
+        this._sensors = moveListItem(this._sensors, fromIndex, toIndex);
+        if (!this.config) return;
+        const newConfig = JSON.parse(JSON.stringify(this.config));
+        newConfig.sensors = [...this._sensors];
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: {config: newConfig},
+        }));
+    }
+
     static get styles() {
         return css`
             .content {
@@ -100,6 +129,21 @@ export class SensorsEditor extends BaseEditorSection {
                 min-height: 34px;
                 margin-bottom: 4px;
             }
+
+            .sensor-drag-handle {
+                display: grid;
+                place-items: center;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 32px;
+                color: var(--secondary-text-color, #aaa);
+                cursor: grab;
+                touch-action: none;
+            }
+
+            .sensor-drag-handle:active { cursor: grabbing; }
+            .sensor-drag-handle ha-icon { --mdc-icon-size: 19px; }
+            .sensor-card-ghost { opacity: 0.35; }
 
             .sensor-toggle {
                 display: flex;
@@ -217,12 +261,18 @@ export class SensorsEditor extends BaseEditorSection {
                 ${this._sensors.length === 0 ? html`
                     <div class="empty-sensors">${this.t('editor.sensors.empty', 'No sensors configured.')}</div>
                 ` : ''}
+                <div class="sensor-list">
                 ${this._sensors.map((sensor, index) => {
                     const expanded = this._expandedSensorIndex === index;
                     const title = sensor.label || sensor.entity || this.t('editor.sensors.sensor', 'Sensor {number}', {number: index + 1});
                     return html`
                     <div class="sensor-card ${expanded ? '' : 'collapsed'}">
                         <div class="sensor-header">
+                            <span class="sensor-drag-handle"
+                                  title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                  aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                <ha-icon icon="mdi:drag"></ha-icon>
+                            </span>
                             <button class="sensor-toggle" type="button"
                                     aria-expanded=${expanded}
                                     @click=${() => this._toggleSensor(index)}>
@@ -274,6 +324,7 @@ export class SensorsEditor extends BaseEditorSection {
                         </div>` : ''}
                     </div>
                 `;})}
+                </div>
 
                 <button class="add-sensor" type="button" @click=${this._addSensor}>
                     <ha-icon icon="mdi:plus"></ha-icon>

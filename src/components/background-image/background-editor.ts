@@ -1,6 +1,7 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
+import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 
 /**
@@ -10,6 +11,13 @@ import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 export class BackgroundEditor extends BaseEditorSection {
     @property({ type: Array }) _backgroundImages: BackgroundImage[] = [];
     @state() private _expandedImageIndex: number | null = 0;
+    private readonly sortableList = new SortableListController(this, {
+        containerSelector: '.image-list',
+        draggable: '.image-card',
+        handle: '.image-drag-handle',
+        ghostClass: 'image-card-ghost',
+        onMove: (fromIndex, toIndex) => this._moveBackgroundImage(fromIndex, toIndex),
+    });
 
     // Image source options
     private _imageSourceOptions() {
@@ -39,6 +47,12 @@ export class BackgroundEditor extends BaseEditorSection {
         if (changedProps.has('config') && this.config) {
             this._loadBackgroundImages();
         }
+        this.sortableList.schedule();
+    }
+
+    disconnectedCallback(): void {
+        this.sortableList.disconnect();
+        super.disconnectedCallback();
     }
 
     private _loadBackgroundImages(): void {
@@ -83,6 +97,16 @@ export class BackgroundEditor extends BaseEditorSection {
 
     private _toggleImage(index: number): void {
         this._expandedImageIndex = this._expandedImageIndex === index ? null : index;
+    }
+
+    private _moveBackgroundImage(fromIndex: number, toIndex: number): void {
+        this._expandedImageIndex = movedListIndex(
+            this._expandedImageIndex,
+            fromIndex,
+            toIndex,
+        );
+        this._backgroundImages = moveListItem(this._backgroundImages, fromIndex, toIndex);
+        this._updateBackgroundImagesConfig();
     }
 
     private _updateBackgroundImagesConfig(): void {
@@ -133,6 +157,21 @@ export class BackgroundEditor extends BaseEditorSection {
                 min-height: 36px;
                 margin-bottom: 2px;
             }
+
+            .image-drag-handle {
+                display: grid;
+                place-items: center;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 32px;
+                color: var(--secondary-text-color, #aaa);
+                cursor: grab;
+                touch-action: none;
+            }
+
+            .image-drag-handle:active { cursor: grabbing; }
+            .image-drag-handle ha-icon { --mdc-icon-size: 19px; }
+            .image-card-ghost { opacity: 0.35; }
 
             .image-toggle {
                 display: flex;
@@ -279,12 +318,18 @@ export class BackgroundEditor extends BaseEditorSection {
 
             <div class="section-subheader">${this.t('editor.background.images', 'Background images')}</div>
 
+            <div class="image-list">
             ${this._backgroundImages.map((image, index) => {
                 const expanded = this._expandedImageIndex === index;
                 const title = image.url || this.t('editor.background.image', 'Background image {number}', {number: index + 1});
                 return html`
                 <div class="image-card ${expanded ? '' : 'collapsed'}">
                     <div class="image-header">
+                        <span class="image-drag-handle"
+                              title=${this.t('designer.drag_to_move', 'Drag to move')}
+                              aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                            <ha-icon icon="mdi:drag"></ha-icon>
+                        </span>
                         <button class="image-toggle" type="button"
                                 aria-expanded=${expanded}
                                 @click=${() => this._toggleImage(index)}>
@@ -349,6 +394,7 @@ export class BackgroundEditor extends BaseEditorSection {
                     </div>` : ''}
                 </div>
             `;})}
+            </div>
 
             <mwc-button @click=${this._addBackgroundImage}>${this.t('editor.background.add', 'Add background image')}</mwc-button>
         `;
