@@ -1659,6 +1659,33 @@
                 width: 100%;
                 padding: 3px 0;
             }
+
+            .add-stop {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                min-height: 42px;
+                margin-top: 10px;
+                border: 1px solid var(--primary-color, #03a9f4);
+                border-radius: 8px;
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, transparent);
+                color: var(--primary-color, #03a9f4);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .add-stop:hover,
+            .add-stop:focus-visible {
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 28%, transparent);
+                outline: none;
+            }
+
+            .add-stop ha-icon {
+                --mdc-icon-size: 19px;
+            }
         `}render(){var e,t,i,o,n;if(!this.hass||!this.config)return V``;if(!(null===(e=this.config.transportation)||void 0===e?void 0:e.enabled))return V``;const a="homeassistant"===this.config.transportation.provider;return V`
             <div class="content">
                 <ha-row-selector
@@ -1722,9 +1749,10 @@
                         </div>
                     `})}
 
-                    <mwc-button @click=${this._addHaProfile}>
+                    <button class="add-stop" type="button" @click=${this._addHaProfile}>
+                        <ha-icon icon="mdi:plus"></ha-icon>
                         ${this.t("editor.transportation.add_stop","Add stop")}
-                    </mwc-button>
+                    </button>
 
                     <div class="info-text">
                         ${this.t("editor.transportation.ha_provider_help","The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant.")}
@@ -1813,7 +1841,10 @@
                     </div>
                 `})}
 
-                <mwc-button @click=${this._addStop}>${this.t("editor.transportation.add_stop","Add stop")}</mwc-button>
+                <button class="add-stop" type="button" @click=${this._addStop}>
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    ${this.t("editor.transportation.add_stop","Add stop")}
+                </button>
                 `}
 
                 <div class="info-text">
