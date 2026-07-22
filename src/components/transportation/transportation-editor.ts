@@ -1,5 +1,6 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import Sortable, {SortableEvent} from 'sortablejs';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import {
     getAllTransportationProviders,
@@ -28,6 +29,11 @@ export class TransportationEditor extends BaseEditorSection {
     @state() private _expandedStopIndex: number | null = 0;
     @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
     @state() private _expandedHaProfileIndex: number | null = retainedExpandedHaProfileIndex;
+    private stopsSortable?: Sortable;
+    private sortableElement?: HTMLElement;
+    private sortableKind?: string;
+    private sortableSetupRevision = 0;
+    private dragOrigin?: {parent: Node; next: Node | null};
 
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -37,6 +43,13 @@ export class TransportationEditor extends BaseEditorSection {
             this._loadStops();
             this._loadHaProfiles();
         }
+        this._scheduleSortableSetup();
+    }
+
+    disconnectedCallback(): void {
+        this.sortableSetupRevision += 1;
+        this._destroySortable();
+        super.disconnectedCallback();
     }
 
     private _loadHaProfiles(): void {
@@ -149,6 +162,21 @@ export class TransportationEditor extends BaseEditorSection {
     private _toggleHaProfile(index: number): void {
         this._expandedHaProfileIndex = this._expandedHaProfileIndex === index ? null : index;
         retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+    }
+
+    private _moveHaProfile(fromIndex: number, toIndex: number): void {
+        const profiles = [...this._haProfiles];
+        const [profile] = profiles.splice(fromIndex, 1);
+        if (!profile) return;
+        profiles.splice(toIndex, 0, profile);
+        this._expandedHaProfileIndex = this._movedExpandedIndex(
+            this._expandedHaProfileIndex,
+            fromIndex,
+            toIndex,
+        );
+        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._haProfiles = profiles;
+        this._saveHaProfiles();
     }
 
     private _haProfileLabel(profile: HomeAssistantTransportationProfile, index: number): string {
@@ -311,6 +339,94 @@ export class TransportationEditor extends BaseEditorSection {
         this._expandedStopIndex = this._expandedStopIndex === index ? null : index;
     }
 
+    private _moveStop(fromIndex: number, toIndex: number): void {
+        const stops = [...this._stops];
+        const [stop] = stops.splice(fromIndex, 1);
+        if (!stop) return;
+        stops.splice(toIndex, 0, stop);
+        this._expandedStopIndex = this._movedExpandedIndex(
+            this._expandedStopIndex,
+            fromIndex,
+            toIndex,
+        );
+        this._stops = stops;
+
+        if (!this.config?.transportation) return;
+        const newConfig = JSON.parse(JSON.stringify(this.config));
+        newConfig.transportation.stops = [...this._stops];
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: {config: newConfig},
+        }));
+    }
+
+    private _movedExpandedIndex(
+        expandedIndex: number | null,
+        fromIndex: number,
+        toIndex: number,
+    ): number | null {
+        if (expandedIndex === null) return null;
+        if (expandedIndex === fromIndex) return toIndex;
+        if (fromIndex < expandedIndex && expandedIndex <= toIndex) return expandedIndex - 1;
+        if (toIndex <= expandedIndex && expandedIndex < fromIndex) return expandedIndex + 1;
+        return expandedIndex;
+    }
+
+    private _scheduleSortableSetup(): void {
+        const revision = ++this.sortableSetupRevision;
+        void this.updateComplete.then(() => {
+            requestAnimationFrame(() => {
+                if (revision !== this.sortableSetupRevision || !this.isConnected) return;
+                const element = this.shadowRoot?.querySelector<HTMLElement>('.stop-list');
+                const kind = element?.dataset.kind;
+                if (element === this.sortableElement && kind === this.sortableKind && this.stopsSortable) {
+                    return;
+                }
+                this._rebuildSortable(element ?? undefined);
+            });
+        });
+    }
+
+    private _destroySortable(): void {
+        this.stopsSortable?.destroy();
+        this.stopsSortable = undefined;
+        this.sortableElement = undefined;
+        this.sortableKind = undefined;
+        this.dragOrigin = undefined;
+    }
+
+    private _rebuildSortable(element?: HTMLElement): void {
+        this._destroySortable();
+        if (!element) return;
+
+        this.stopsSortable = new Sortable(element, {
+            animation: 150,
+            draggable: '.stop-card',
+            handle: '.stop-drag-handle',
+            ghostClass: 'stop-card-ghost',
+            onStart: event => {
+                this.dragOrigin = {parent: event.from, next: event.item.nextSibling};
+            },
+            onEnd: event => this._handleStopDragEnd(event),
+        });
+        this.sortableElement = element;
+        this.sortableKind = element.dataset.kind;
+    }
+
+    private _handleStopDragEnd(event: SortableEvent): void {
+        const origin = this.dragOrigin;
+        this.dragOrigin = undefined;
+        if (origin) origin.parent.insertBefore(event.item, origin.next);
+
+        if (event.oldIndex == null || event.newIndex == null || event.oldIndex === event.newIndex) {
+            return;
+        }
+        if ((event.from as HTMLElement).dataset.kind === 'ha-profiles') {
+            this._moveHaProfile(event.oldIndex, event.newIndex);
+        } else {
+            this._moveStop(event.oldIndex, event.newIndex);
+        }
+    }
+
     /** Stop/platform IDs may be numeric or textual depending on the provider. */
     private _normalizeStopId(value: unknown): number | string | undefined {
         const text = String(value ?? '').trim();
@@ -365,6 +481,21 @@ export class TransportationEditor extends BaseEditorSection {
                 min-height: 36px;
                 margin-bottom: 2px;
             }
+
+            .stop-drag-handle {
+                display: grid;
+                place-items: center;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 32px;
+                color: var(--secondary-text-color, #aaa);
+                cursor: grab;
+                touch-action: none;
+            }
+
+            .stop-drag-handle:active { cursor: grabbing; }
+            .stop-drag-handle ha-icon { --mdc-icon-size: 19px; }
+            .stop-card-ghost { opacity: 0.35; }
 
             .stop-toggle {
                 display: flex;
@@ -432,7 +563,7 @@ export class TransportationEditor extends BaseEditorSection {
                 gap: 8px;
                 width: 100%;
                 min-height: 42px;
-                margin-top: 10px;
+                margin: 10px 0 20px;
                 border: 1px solid var(--primary-color, #03a9f4);
                 border-radius: 8px;
                 background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, transparent);
@@ -485,11 +616,17 @@ export class TransportationEditor extends BaseEditorSection {
                 ${isHomeAssistant ? html`
                     <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
+                    <div class="stop-list" data-kind="ha-profiles">
                     ${this._haProfiles.map((profile, index) => {
                         const expanded = this._expandedHaProfileIndex === index;
                         return html`
                         <div class="stop-card ${expanded ? '' : 'collapsed'}">
                             <div class="stop-header">
+                                <span class="stop-drag-handle"
+                                      title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                      aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                    <ha-icon icon="mdi:drag"></ha-icon>
+                                </span>
                                 <button class="stop-toggle" type="button"
                                         aria-expanded=${expanded}
                                         @click=${() => this._toggleHaProfile(index)}>
@@ -540,6 +677,7 @@ export class TransportationEditor extends BaseEditorSection {
                             </div>` : ''}
                         </div>
                     `;})}
+                    </div>
 
                     <button class="add-stop" type="button" @click=${this._addHaProfile}>
                         <ha-icon icon="mdi:plus"></ha-icon>
@@ -615,11 +753,17 @@ export class TransportationEditor extends BaseEditorSection {
                 ${!isHomeAssistant ? html`
                 <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
+                <div class="stop-list" data-kind="direct-stops">
                 ${this._stops.map((stop, index) => {
                     const expanded = this._expandedStopIndex === index;
                     return html`
                     <div class="stop-card ${expanded ? '' : 'collapsed'}">
                         <div class="stop-header">
+                            <span class="stop-drag-handle"
+                                  title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                  aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                <ha-icon icon="mdi:drag"></ha-icon>
+                            </span>
                             <button class="stop-toggle" type="button"
                                     aria-expanded=${expanded}
                                     @click=${() => this._toggleStop(index)}>
@@ -666,6 +810,7 @@ export class TransportationEditor extends BaseEditorSection {
                         </div>` : ''}
                     </div>
                 `;})}
+                </div>
 
                 <button class="add-stop" type="button" @click=${this._addStop}>
                     <ha-icon icon="mdi:plus"></ha-icon>
