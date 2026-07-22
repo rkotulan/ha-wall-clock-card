@@ -135,9 +135,9 @@ export class HaRowSelector extends LitElement {
 
     /**
      * The position of the label relative to the input
-     * @default LabelPosition.Left
+     * @default LabelPosition.Top
      */
-    @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Left;
+    @property({attribute: false}) public labelPosition: LabelPosition = LabelPosition.Top;
 
 
     /**
@@ -354,7 +354,7 @@ export class HaRowSelector extends LitElement {
             align-items: center;
         }
 
-        /* Default style for left position */
+        /* Compact style for fields that explicitly request a left label. */
         .row.left {
             flex-direction: row;
         }

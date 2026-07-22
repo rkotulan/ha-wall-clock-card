@@ -12,7 +12,7 @@ import {
 // retains its selected settings tab.
 let retainedExpandedHaProfileIndex: number | null = 0;
 
-export function formatTransportationEntityLabel(entityId: string, friendlyName?: unknown): string {
+function formatTransportationEntityLabel(entityId: string, friendlyName?: unknown): string {
     const label = String(friendlyName || entityId).trim();
     return label
         .replace(/\s+(Aktualizovat odjezdy|Refresh departures)$/iu, ' — $1')
@@ -173,27 +173,6 @@ export class TransportationEditor extends BaseEditorSection {
             entityId,
             this.hass?.states[entityId]?.attributes.friendly_name,
         );
-    }
-
-    private _entityOptions(
-        domain: 'button' | 'sensor',
-        selected: string[],
-        deviceClass?: string,
-    ): {value: string; label: string}[] {
-        const options = Object.entries(this.hass?.states || {})
-            .filter(([entityId, state]) =>
-                entityId.startsWith(`${domain}.`)
-                && (!deviceClass || state.attributes.device_class === deviceClass),
-            )
-            .map(([entityId]) => ({value: entityId, label: this._entityLabel(entityId)}));
-
-        for (const entityId of selected.filter(Boolean)) {
-            if (!options.some(option => option.value === entityId)) {
-                options.push({value: entityId, label: this._entityLabel(entityId)});
-            }
-        }
-
-        return options.sort((left, right) => left.label.localeCompare(right.label));
     }
 
     private _loadStops(): void {
@@ -540,13 +519,7 @@ export class TransportationEditor extends BaseEditorSection {
                                 </ha-row-selector>
                                 <ha-row-selector
                                         .hass=${this.hass}
-                                        .selector=${{select: {
-                                            options: this._entityOptions(
-                                                'button',
-                                                profile.refreshButtonEntity ? [profile.refreshButtonEntity] : [],
-                                            ),
-                                            mode: "dropdown",
-                                        }}}
+                                        .selector=${{entity: {domain: "button"}}}
                                         .value=${profile.refreshButtonEntity || ''}
                                         .label=${this.t('editor.transportation.refresh_button', 'Refresh button entity')}
                                         .helper=${profile.refreshButtonEntity
@@ -557,16 +530,7 @@ export class TransportationEditor extends BaseEditorSection {
                                 </ha-row-selector>
                                 <ha-row-selector
                                         .hass=${this.hass}
-                                        .selector=${{select: {
-                                            options: this._entityOptions(
-                                                'sensor',
-                                                profile.departureEntities || [],
-                                                'duration',
-                                            ),
-                                            multiple: true,
-                                            mode: "dropdown",
-                                            reorder: true,
-                                        }}}
+                                        .selector=${{entity: {domain: "sensor", device_class: "duration", multiple: true}}}
                                         .value=${profile.departureEntities || []}
                                         .label=${this.t('editor.transportation.departure_entities', 'Departure sensor entities')}
                                         .helper=${this.t('editor.transportation.departure_entities_help', 'Select the sensors in display order')}
