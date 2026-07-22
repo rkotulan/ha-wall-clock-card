@@ -2,6 +2,8 @@
  * Types and interfaces for transportation providers
  */
 
+import type { HomeAssistant } from 'custom-card-helpers';
+
 /**
  * Interface for transportation provider plugins
  * All transportation provider plugins must implement this interface
@@ -89,4 +91,22 @@ export interface TransportationProvider {
    * @returns Default configuration
    */
   getDefaultConfig(): TransportationProviderConfig;
+
+  /** Set the Home Assistant instance for providers backed by HA entities. */
+  setHass?(hass: HomeAssistant): void;
+
+  /**
+   * Optional activation hook run before the first read. Providers can use it
+   * to press an on-demand refresh button or otherwise wake their data source.
+   */
+  activateAsync?(config: TransportationProviderConfig): Promise<void>;
+
+  /** True when Home Assistant state pushes replace the card polling interval. */
+  readonly usesHassStateUpdates?: boolean;
+
+  /**
+   * Return a stable key for the HA entities used by this provider. A changed
+   * key causes an active transportation view to re-read its local HA states.
+   */
+  getHassStateKey?(config: TransportationProviderConfig): string;
 }

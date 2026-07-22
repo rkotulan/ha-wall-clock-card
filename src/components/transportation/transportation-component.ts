@@ -8,6 +8,7 @@ import {
     TransportationDeparture
 } from '../../transportation-providers';
 import {BottomBarComponent} from '../bottom-bar';
+import {HomeAssistant} from 'custom-card-helpers';
 
 export interface TransportationComponentConfig {
     transportation?: TransportationConfig;
@@ -34,7 +35,7 @@ export class TransportationComponent extends BottomBarComponent {
     @property({type: Object}) transportation?: TransportationConfig;
     @property({type: String}) fontColor?: string;
     @property({type: String}) language?: string;
-    @property({type: Object}) hass?: any;
+    @property({type: Object}) hass?: HomeAssistant;
 
     private logger = createLogger('transportation-component');
     private transportationController: TransportationController;
@@ -270,6 +271,10 @@ export class TransportationComponent extends BottomBarComponent {
             this.transportationController.updateConfig({
                 transportation: this.transportation
             });
+        }
+
+        if (changedProperties.has('hass') && this.hass) {
+            this.transportationController.updateHass(this.hass);
         }
     }
 

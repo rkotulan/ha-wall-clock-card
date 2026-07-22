@@ -223,7 +223,10 @@
       "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)",
       "stops": "Stops", "stop": "Stop {number}", "stop_id": "Stop ID", "post_id": "Post ID",
       "stop_name": "Stop name (optional)", "add_stop": "Add stop", "remove_stop": "Remove stop",
-      "expand_stop": "Expand stop", "collapse_stop": "Collapse stop", "documentation": "Transportation configuration documentation"
+      "expand_stop": "Expand stop", "collapse_stop": "Collapse stop", "documentation": "Transportation configuration documentation",
+      "refresh_button": "Refresh button entity", "refresh_button_help": "Pressed when departures are opened",
+      "departure_entities": "Departure sensor entities", "departure_entities_help": "Select the sensors in display order",
+      "ha_provider_help": "The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant."
     },
     "actions": {
       "enable": "Enable action bar", "description": "Configure action buttons displayed in this widget.",

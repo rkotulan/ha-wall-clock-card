@@ -1,17 +1,20 @@
 import { TransportationProvider } from './transportation-provider';
 import { TransportationProviderRegistry } from './transportation-provider-registry';
 import { idsjmkProvider } from './idsjmk-provider';
+import { homeAssistantTransportationProvider } from './homeassistant-transportation-provider';
 
 // Get the registry instance
 const registry = TransportationProviderRegistry.getInstance();
 
 // Register the built-in transportation providers
 registry.register(idsjmkProvider);
+registry.register(homeAssistantTransportationProvider);
 
 // Export everything for external use
 export * from './transportation-provider';
 export * from './transportation-provider-registry';
 export * from './idsjmk-provider';
+export * from './homeassistant-transportation-provider';
 
 // Export a function to register custom transportation providers
 export function registerTransportationProvider(provider: TransportationProvider): void {

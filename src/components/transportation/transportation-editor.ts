@@ -282,6 +282,8 @@ export class TransportationEditor extends BaseEditorSection {
             return html``;
         }
 
+        const isHomeAssistant = this.config.transportation.provider === 'homeassistant';
+
         return html`
             <div class="content">
                 <ha-row-selector
@@ -297,6 +299,32 @@ export class TransportationEditor extends BaseEditorSection {
                         propertyName="transportation.provider"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
+
+                ${isHomeAssistant ? html`
+                    <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{entity: {domain: "button"}}}
+                            .value=${this.config.transportation.providerConfig?.refreshButtonEntity || ''}
+                            .label=${this.t('editor.transportation.refresh_button', 'Refresh button entity')}
+                            .helper=${this.t('editor.transportation.refresh_button_help', 'Pressed when departures are opened')}
+                            propertyName="transportation.providerConfig.refreshButtonEntity"
+                            @value-changed=${this._handleFormValueChanged}
+                    ></ha-row-selector>
+
+                    <ha-row-selector
+                            .hass=${this.hass}
+                            .selector=${{entity: {domain: "sensor", device_class: "duration", multiple: true}}}
+                            .value=${this.config.transportation.providerConfig?.departureEntities || []}
+                            .label=${this.t('editor.transportation.departure_entities', 'Departure sensor entities')}
+                            .helper=${this.t('editor.transportation.departure_entities_help', 'Select the sensors in display order')}
+                            propertyName="transportation.providerConfig.departureEntities"
+                            @value-changed=${this._handleFormValueChanged}
+                    ></ha-row-selector>
+
+                    <div class="info-text">
+                        ${this.t('editor.transportation.ha_provider_help', 'The refresh button activates server-side polling; sensor state updates are then pushed by Home Assistant.')}
+                    </div>
+                ` : ''}
 
                 <ha-row-selector
                         .hass=${this.hass}
@@ -340,7 +368,7 @@ export class TransportationEditor extends BaseEditorSection {
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 
-                <ha-row-selector
+                ${!isHomeAssistant ? html`<ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
                             number: {
@@ -360,8 +388,9 @@ export class TransportationEditor extends BaseEditorSection {
                             return intervalMinutes * 60;
                         }}
                         @value-changed=${this._handleFormValueChanged}
-                ></ha-row-selector>
+                ></ha-row-selector>` : ''}
 
+                ${!isHomeAssistant ? html`
                 <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
                 ${this._stops.map((stop, index) => {
@@ -417,10 +446,11 @@ export class TransportationEditor extends BaseEditorSection {
                 `;})}
 
                 <mwc-button @click=${this._addStop}>${this.t('editor.transportation.add_stop', 'Add stop')}</mwc-button>
+                ` : ''}
 
                 <div class="info-text">
                     <a
-                        href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/transportation.md"
+                        href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/docs/transportation.md"
                         target="_blank">${this.t('editor.transportation.documentation', 'Transportation configuration documentation')}</a>
                 </div>
             </div>

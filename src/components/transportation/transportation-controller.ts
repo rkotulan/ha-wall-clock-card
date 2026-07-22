@@ -1,4 +1,5 @@
 import { ReactiveControllerHost } from 'lit';
+import { HomeAssistant } from 'custom-card-helpers';
 import { BaseController } from '../../utils/controllers';
 import {
     TransportationConfig,
@@ -31,6 +32,8 @@ export class TransportationController extends BaseController {
     private _transportationDataLoaded: boolean = false;
     private _isActive: boolean = false; // Indicates if the transportation data is currently active
     private _lastTransportationUpdate?: Date;
+    private hass?: HomeAssistant;
+    private lastHassStateKey?: string;
 
     // Configuration
     private config: TransportationControllerConfig = {};
@@ -54,6 +57,7 @@ export class TransportationController extends BaseController {
         this.clearTimers();
 
         this._transportationDataLoaded = false;
+        this.lastHassStateKey = undefined;
 
         // Unsubscribe from transportation click messages
         Messenger.getInstance().unsubscribe(
@@ -77,9 +81,31 @@ export class TransportationController extends BaseController {
         // On-demand loading is always enabled, so we don't fetch data automatically
         // Reset data loaded flag as transportation is always set to on-demand
         this._transportationDataLoaded = false;
+        this.lastHassStateKey = undefined;
 
         // Request an update from the host
         this.host.requestUpdate();
+    }
+
+    /** Forward HA state to entity-backed providers without treating it as a config change. */
+    updateHass(hass: HomeAssistant): void {
+        this.hass = hass;
+
+        const transportation = this.config.transportation;
+        if (!transportation) return;
+        const provider = getTransportationProvider(transportation.provider || 'idsjmk');
+        if (!provider) return;
+
+        provider.setHass?.(hass);
+        if (!provider.usesHassStateUpdates || !provider.getHassStateKey) return;
+
+        const stateKey = provider.getHassStateKey(transportation.providerConfig || {});
+        const changed = this.lastHassStateKey !== undefined && stateKey !== this.lastHassStateKey;
+        this.lastHassStateKey = stateKey;
+
+        if (changed && this._isActive && this._transportationDataLoaded) {
+            void this.fetchTransportationDataAsync();
+        }
     }
 
     /**
@@ -87,6 +113,12 @@ export class TransportationController extends BaseController {
      */
     private setupUpdateInterval(): void {
         if (!this.config.transportation || this.config.transportation.enabled === false) return;
+
+        const provider = getTransportationProvider(this.config.transportation.provider || 'idsjmk');
+        if (provider?.usesHassStateUpdates) {
+            this.logger.debug(`Skipping card polling interval for ${provider.name}; HA state updates are used`);
+            return;
+        }
 
         // Get configured transportation update interval or default to 60 seconds
         let transportationInterval = this.config.transportation.updateInterval || 60;
@@ -163,21 +195,29 @@ export class TransportationController extends BaseController {
                 throw new Error(`Transportation provider '${transportationConfig.provider}' not found`);
             }
 
+            if (this.hass) {
+                provider.setHass?.(this.hass);
+            }
+
             // Convert stops to the format expected by the provider
-            const stops = transportationConfig.stops.map(stop => ({
+            const stops = (transportationConfig.stops || []).map(stop => ({
                 stopId: stop.stopId,
                 postId: stop.postId,
                 name: stop.name // Pass the custom name if provided
             }));
 
             // Fetch transportation data from the provider
-            const providerConfig = transportationConfig.providerConfig || {};
+            const providerConfig = {...(transportationConfig.providerConfig || {})};
             // Include maxDepartures in the provider config if it's defined in transportationConfig
             if (transportationConfig.maxDepartures !== undefined) {
                 providerConfig.maxDepartures = transportationConfig.maxDepartures;
             }
             
             this._transportationData = await provider.fetchTransportationAsync(providerConfig, stops);
+
+            if (provider.usesHassStateUpdates && provider.getHassStateKey) {
+                this.lastHassStateKey = provider.getHassStateKey(providerConfig);
+            }
 
             // Update the last update timestamp
             this._lastTransportationUpdate = new Date();
@@ -203,10 +243,32 @@ export class TransportationController extends BaseController {
     public async handleTransportationClick(): Promise<void> {
         this.logger.debug('Transportation button clicked, loading data on demand');
 
-        this.setActive()
+        this.setActive();
 
-        // Fetch transportation data
-        await this.fetchTransportationDataAsync();
+        try {
+            const transportation = this.config.transportation;
+            if (!transportation) {
+                throw new Error('Transportation is not configured');
+            }
+            const provider = getTransportationProvider(transportation.provider || 'idsjmk');
+            if (!provider) {
+                throw new Error(`Transportation provider '${transportation.provider}' not found`);
+            }
+            if (this.hass) {
+                provider.setHass?.(this.hass);
+            }
+            await provider.activateAsync?.(transportation.providerConfig || {});
+
+            // Fetch transportation data after the provider has been activated.
+            await this.fetchTransportationDataAsync();
+        } catch (error) {
+            this.logger.warn('Error activating transportation provider:', error);
+            this._transportationData = {
+                departures: [],
+                error: error instanceof Error ? error.message : String(error),
+                loading: false,
+            };
+        }
         
         // Mark as loaded so the button is replaced with the data
         this._transportationDataLoaded = true;
