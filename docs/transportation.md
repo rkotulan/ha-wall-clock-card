@@ -1,12 +1,14 @@
 # Transportation widget
 
 The `transportation` widget displays on-demand departures from public transport.
-Version 3.0 ships with the `idsjmk` provider (shown as **DPMB (Brno)** in the
-Designer), covering Brno and the South Moravian Region.
+The built-in `idsjmk` provider (shown as **DPMB (Brno)** in the Designer)
+accesses the Datario proxy directly from the browser and remains available as
+a frontend-only compatibility option for Brno and the South Moravian Region.
 
 It also supports the `homeassistant` provider for departure sensors exposed by
 the separate **Transit Departures** Home Assistant integration. This is the
-recommended mode for on-demand server-side queries and clients such as Garmin.
+recommended mode for on-demand server-side queries and clients such as Garmin;
+that integration uses official Golemio/PID as its default provider.
 
 Transportation is a singleton: one card can contain only one transportation widget.
 Place a `transportation` action in an action bar to open it.
