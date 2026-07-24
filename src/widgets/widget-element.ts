@@ -2,6 +2,7 @@ import {LitElement, PropertyValues} from 'lit';
 import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
+import {supportsWidgetMaxWidth} from './widget-layout';
 
 /**
  * Base class for zone layout widgets.
@@ -18,6 +19,7 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     /** Hosting zone context used by widgets with responsive internal layout. */
     @property({attribute: false}) zoneId?: ZoneId;
     @property({attribute: false}) zoneAlignment?: NonNullable<ZoneConfig['align']>;
+    @property({attribute: false}) zoneDirection?: NonNullable<ZoneConfig['direction']>;
 
     /** Priority inside an 'exclusive' zone; higher wins. */
     get priority(): number {
@@ -48,7 +50,8 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
             return;
         }
         if (changedProperties.has('config') || changedProperties.has('hass') || changedProperties.has('appearance')
-            || changedProperties.has('zoneId') || changedProperties.has('zoneAlignment')) {
+            || changedProperties.has('zoneId') || changedProperties.has('zoneAlignment')
+            || changedProperties.has('zoneDirection')) {
             this.applyWidgetState();
             this.applyStyleOverrides();
         }
@@ -57,7 +60,7 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     /** Applies the WidgetStyle escape hatches on the host element. */
     private applyStyleOverrides(): void {
         const style = this.config?.style;
-        const supportsBoundedWidth = !['sensors', 'weather', 'calendar'].includes(this.config?.type);
+        const supportsBoundedWidth = supportsWidgetMaxWidth(this.config?.type);
         const supportsBoundedHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(this.config?.type);
         this.style.margin = style?.margin ?? '';
         this.style.maxWidth = supportsBoundedWidth ? (style?.maxWidth ?? '') : '';

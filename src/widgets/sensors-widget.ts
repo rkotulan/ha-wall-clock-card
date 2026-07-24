@@ -13,6 +13,11 @@ export interface SensorsWidgetConfig extends WidgetConfig {
     labelSize?: string;
     valueSize?: string;
     itemGap?: string;
+    showIcons?: boolean;
+    iconSize?: string;
+    showSeparator?: boolean;
+    separatorColor?: string;
+    separatorOpacity?: number;
     orientation?: WidgetOrientation;
     alignment?: WidgetAlignment;
 }
@@ -37,6 +42,11 @@ export class SensorsWidget extends WidgetElement<SensorsWidgetConfig> {
         this.sensors.labelSize = this.config.labelSize;
         this.sensors.valueSize = this.config.valueSize;
         this.sensors.itemGap = this.config.itemGap;
+        this.sensors.showIcons = this.config.showIcons !== false;
+        this.sensors.iconSize = this.config.iconSize;
+        this.sensors.showSeparator = this.config.showSeparator !== false;
+        this.sensors.separatorColor = this.config.separatorColor;
+        this.sensors.separatorOpacity = this.config.separatorOpacity;
         this.sensors.orientation = resolveWidgetOrientation(this.config.orientation, this.zoneId);
         this.sensors.alignment = resolveWidgetAlignment(
             this.config.alignment,

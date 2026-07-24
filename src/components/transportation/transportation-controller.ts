@@ -301,15 +301,18 @@ export class TransportationController extends BaseController {
             // Set timer to hide departures and show bus button again after timeout
             this.autoHideTimerId = window.setTimeout(() => {
                 this.logger.info(`Auto-hiding transportation departures after ${autoHideTimeout} minutes`);
-                this.clearTimers(); // Clear all timers
-                this._transportationDataLoaded = false;
-
-                // Request an update from the host
-                this.host.requestUpdate();
+                this.dismissTransportation();
             }, autoHideTimeoutMs);
         }
 
         // Request an update to show the data
+        this.host.requestUpdate();
+    }
+
+    /** Close either transportation view and stop its active refresh window. */
+    public dismissTransportation(): void {
+        this.clearTimers();
+        this._transportationDataLoaded = false;
         this.host.requestUpdate();
     }
 

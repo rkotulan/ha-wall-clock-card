@@ -6,6 +6,7 @@ import {LayoutConfig, WidgetConfig, ZoneId, ZONE_IDS} from '../core/layout-types
 import {WidgetPlugin, WidgetRegistry} from '../widgets/widget-registry';
 import {addWidget, hasWidgetType, moveWidget, removeWidget, uniqueWidgetId} from './layout-editor-logic';
 import {localize} from '../utils/localize';
+import {resolveLayoutFormat, resolveLayoutVisualPreset} from '../core/layout-format';
 
 export const ZONE_LABELS: Record<ZoneId, string> = {
     'top-left': 'Top left', 'top-center': 'Top center', 'top-right': 'Top right',
@@ -86,6 +87,7 @@ export class WccZoneOverlay extends LitElement {
                 grid-column: 2;
                 grid-row: 1;
                 display: grid;
+                position: relative;
                 box-sizing: border-box;
                 grid-template-columns: repeat(3, minmax(0, 1fr));
                 grid-template-rows: repeat(3, minmax(0, 1fr));
@@ -96,8 +98,61 @@ export class WccZoneOverlay extends LitElement {
                 overflow: hidden;
             }
 
+            .zone-grid::before {
+                content: '';
+                position: absolute;
+                z-index: 0;
+                pointer-events: none;
+                background: rgba(79, 140, 255, 0.08);
+            }
+
+            .zone-grid.format-grid-3x3::before {
+                display: none;
+            }
+
+            .zone-grid.format-vertical-2-1::before,
+            .zone-grid.format-vertical-1-2::before {
+                top: 0;
+                bottom: 0;
+                width: 33.333333%;
+            }
+
+            .zone-grid.format-vertical-2-1::before {
+                right: 0;
+                border-left: 2px solid rgba(135, 181, 255, 0.46);
+            }
+
+            .zone-grid.format-vertical-1-2::before {
+                left: 0;
+                border-right: 2px solid rgba(135, 181, 255, 0.46);
+            }
+
+            .zone-grid.format-horizontal-2-1::before,
+            .zone-grid.format-horizontal-1-2::before {
+                left: 0;
+                right: 0;
+                height: 33.333333%;
+            }
+
+            .zone-grid.format-horizontal-2-1::before {
+                bottom: 0;
+                border-top: 2px solid rgba(135, 181, 255, 0.46);
+            }
+
+            .zone-grid.format-horizontal-1-2::before {
+                top: 0;
+                border-bottom: 2px solid rgba(135, 181, 255, 0.46);
+            }
+
+            .zone-grid.preset-glass::before {
+                background:
+                    linear-gradient(135deg, rgba(11, 15, 23, 0.56), rgba(57, 49, 53, 0.38));
+                box-shadow: 0 0 32px rgba(0, 0, 0, 0.22);
+            }
+
             .zone-cell {
                 position: relative;
+                z-index: 1;
                 display: flex;
                 flex-direction: column;
                 min-width: 0;
@@ -666,8 +721,10 @@ export class WccZoneOverlay extends LitElement {
     }
 
     render(): TemplateResult {
+        const format = resolveLayoutFormat(this.layout);
+        const preset = resolveLayoutVisualPreset(this.layout);
         return html`
-            <div class="zone-grid">
+            <div class="zone-grid format-${format} preset-${preset}">
                 ${ZONE_IDS.map(zone => this.renderZoneCell(zone))}
             </div>
             <div class="palette">

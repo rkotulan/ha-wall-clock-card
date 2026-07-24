@@ -46,11 +46,23 @@ Add the trigger to any action bar:
 | Key | Default | Description |
 |---|---:|---|
 | `provider` | `idsjmk` at runtime | Transportation provider ID |
+| `displayMode` | `inline` | `inline` renders in the configured zone; `modal` opens a dialog over the card |
 | `providerConfig` | `{}` | Provider-specific values |
 | `stops` | `[]` | Stop/platform entries |
 | `maxDepartures` | `2` | Departures per configured platform, limited to 1–5 |
 | `autoHideTimeout` | disabled when omitted | Minutes before departures close (1–10); the Designer starts at 5 |
 | `updateInterval` | `60` | Refresh interval in seconds, minimum 60 |
+
+## Display mode
+
+Choose **In card layout** to preserve the original behavior: the transportation
+widget replaces the lower-priority widget in an exclusive zone while departures
+are active.
+
+Choose **Modal dialog** to open departures over the complete dashboard. The
+dialog can be closed with its close button, by clicking the backdrop, or with
+Escape. The configured auto-hide timeout also closes it. Both modes use the
+same provider, profiles, departure order and on-demand refresh behavior.
 
 ## Home Assistant departure entities
 

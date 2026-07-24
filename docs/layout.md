@@ -1,6 +1,6 @@
 # Zone layout (3.0)
 
-Since 3.0.0 the card is composed of **widgets** placed into a **3×3 grid of zones**.
+Since 3.0.0 the card is composed of **widgets** placed into nine logical zones.
 Legacy (2.x) configurations keep working unchanged — they are migrated in memory to
 the equivalent zone layout. The first saved Designer change writes the normalized
 3.0 structure.
@@ -18,6 +18,28 @@ bottom-left  bottom-center  bottom-right
   empty (this is how the bottom bar behaves).
 - The side columns are always equal, so the `center` zone stays truly centered.
 
+## Layout formats and visual presets
+
+The original `3 × 3` canvas remains the default. A format changes only the geometry
+shared by the nine zones; it never changes widget configuration or entities:
+
+| Format | Geometry | Narrow panel |
+|---|---|---|
+| `grid-3x3` | Original 3 × 3 canvas | none |
+| `vertical-2-1` | Main area left, 2/3 + 1/3 | right |
+| `vertical-1-2` | 1/3 + 2/3, main area right | left |
+| `horizontal-2-1` | Main area above, 2/3 + 1/3 | bottom |
+| `horizontal-1-2` | 1/3 + 2/3, main area below | top |
+
+In split formats neighbouring anchors share the large region. For example,
+`vertical-2-1` places left and center anchors in the left 2/3 while right anchors
+use the right 1/3. Widgets still belong to their existing zones and remain freely
+movable in the Designer.
+
+`layout.preset: glass` adds a dark translucent, blurred surface to the narrow third.
+It is purely visual: actions, providers, entities, widget placement and ordering are
+not modified. Omitting `format` and `preset` preserves the original rendering.
+
 ## Configuration
 
 ```yaml
@@ -31,6 +53,8 @@ background:
   source: picsum
   opacity: 0.3
 layout:
+  format: vertical-2-1       # optional; default grid-3x3
+  preset: glass              # optional; none | glass
   spacing: normal            # compact | normal | spacious, or explicit values:
   # spacing: { padding: 16px, zoneGap: 16px, widgetGap: 8px }
   zones:

@@ -11,6 +11,7 @@ import './transportation-widget';
 import './action-bar-widget';
 import './calendar-widget';
 import './ha-card-widget';
+import './separator-widget';
 import '../components/ha-card';
 
 export * from './widget-registry';
@@ -24,6 +25,7 @@ export {TransportationWidget, TransportationWidgetConfig} from './transportation
 export {ActionBarWidget, ActionBarWidgetConfig} from './action-bar-widget';
 export {CalendarWidget, CalendarWidgetConfig} from './calendar-widget';
 export {HaCardWidget, HaCardWidgetConfig} from './ha-card-widget';
+export {SeparatorWidget, SeparatorWidgetConfig} from './separator-widget';
 export * from './calendar/calendar-types';
 export * from './calendar/calendar-data';
 
@@ -72,7 +74,12 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
         elementTag: 'wcc-transportation-widget',
         editorTag: 'transportation-editor',
         singleton: true,
-        defaultConfig: () => ({type: 'transportation', provider: '', stops: []}),
+        defaultConfig: () => ({
+            type: 'transportation',
+            provider: '',
+            displayMode: 'inline',
+            stops: [],
+        }),
     },
     {
         widgetId: 'action-bar',
@@ -114,6 +121,22 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
         elementTag: 'wcc-ha-card-widget',
         editorTag: 'ha-card-widget-editor',
         defaultConfig: () => ({type: 'ha-card'}),
+    },
+    {
+        widgetId: 'separator',
+        name: 'Separator',
+        description: 'A configurable line between widgets',
+        icon: 'mdi:minus',
+        elementTag: 'wcc-separator-widget',
+        editorTag: 'separator-editor',
+        defaultConfig: () => ({
+            type: 'separator',
+            orientation: 'auto',
+            color: '#ffffff',
+            opacity: 0.35,
+            thickness: '1px',
+            length: '100%',
+        }),
     },
 ];
 

@@ -15,6 +15,7 @@ export interface ActionBarWidgetConfig extends WidgetConfig {
     alignment?: ActionBarAlignment;
     orientation?: WidgetOrientation;
     backgroundOpacity?: number;
+    showButtonBackground?: boolean;
     buttonGap?: string;
     padding?: string;
     /** Per-widget icon size; overrides the card-wide size preset when present. */
@@ -64,6 +65,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
                 ) as ActionBarAlignment,
                 orientation: resolveWidgetOrientation(this.config.orientation, this.zoneId),
                 backgroundOpacity: this.config.backgroundOpacity,
+                showButtonBackground: this.config.showButtonBackground,
                 buttonGap: this.config.buttonGap,
                 padding: this.config.padding,
             };

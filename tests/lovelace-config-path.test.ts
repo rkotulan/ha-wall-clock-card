@@ -67,4 +67,18 @@ describe('Lovelace config path synchronization', () => {
         )).toBe(false);
         expect(config.views[0].cards[0].appearance).toEqual({fontColor: '#123456'});
     });
+
+    it('fails closed instead of throwing for Home Assistant read-only arrays', () => {
+        const config = dashboard();
+        const original = config.views[0].cards[0];
+        Object.freeze(config.views[0].cards);
+
+        expect(synchronizeLiveConfigAtPath(
+            config,
+            ['views', 0, 'cards', 0],
+            original,
+            {type: 'custom:wall-clock-card', layout: {format: 'vertical-2-1'}},
+        )).toBe(false);
+        expect(config.views[0].cards[0]).toBe(original);
+    });
 });

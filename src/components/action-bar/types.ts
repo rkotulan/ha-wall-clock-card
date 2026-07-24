@@ -115,6 +115,8 @@ export interface ActionBarConfig {
     alignment?: ActionBarAlignment;
     orientation?: WidgetOrientation;
     backgroundOpacity?: number; // Controls the opacity of the action bar background (0-1)
+    /** Whether each action button has the circular translucent background. */
+    showButtonBackground?: boolean;
     /** CSS gap between action buttons (for example, `12px` or `0.75rem`). */
     buttonGap?: string;
     /** CSS padding shorthand inside the action bar panel. */

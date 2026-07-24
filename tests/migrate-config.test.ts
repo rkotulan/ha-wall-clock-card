@@ -1,7 +1,13 @@
 // Golden tests for the v2 -> v3 zone layout migration.
 // Import directly from the source files (not barrels): the barrels pull in
 // LitElement components whose ESM Jest cannot load in the node environment.
-import {isValidSpacingValue, migrateToLayout, isV3Config, resolveSpacing} from '../src/core/migrate-config';
+import {
+    expandCssPadding,
+    isValidSpacingValue,
+    migrateToLayout,
+    isV3Config,
+    resolveSpacing,
+} from '../src/core/migrate-config';
 import {SPACING_PRESETS, WallClockConfigV3} from '../src/core/layout-types';
 import {Size} from '../src/core/types';
 
@@ -184,6 +190,21 @@ describe('migrateToLayout', () => {
 });
 
 describe('resolveSpacing', () => {
+    it('expands CSS padding shorthand into physical edges', () => {
+        expect(expandCssPadding('16px')).toEqual({
+            top: '16px', right: '16px', bottom: '16px', left: '16px',
+        });
+        expect(expandCssPadding('8px 24px')).toEqual({
+            top: '8px', right: '24px', bottom: '8px', left: '24px',
+        });
+        expect(expandCssPadding('8px 24px 12px')).toEqual({
+            top: '8px', right: '24px', bottom: '12px', left: '24px',
+        });
+        expect(expandCssPadding('8px 16px 24px 32px')).toEqual({
+            top: '8px', right: '16px', bottom: '24px', left: '32px',
+        });
+    });
+
     it('accepts a complete four-value card padding while rejecting partial invalid input', () => {
         expect(isValidSpacingValue('padding', '60px 60px 60px 16px')).toBe(true);
         expect(isValidSpacingValue('padding', '60p')).toBe(false);

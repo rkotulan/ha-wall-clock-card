@@ -8,6 +8,8 @@ import {
     hasWidgetType,
     moveWidget,
     removeWidget,
+    setLayoutFormat,
+    setLayoutVisualPreset,
     setSpacing,
     uniqueWidgetId,
     updateWidgetAt,
@@ -21,7 +23,11 @@ import {
 } from '../src/editors/widget-editor-adapters';
 import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3} from '../src/core/layout-types';
 import {TimeOfDay, Weather} from '../src/image-sources/types';
-import {resolveWidgetAlignment, resolveWidgetOrientation} from '../src/widgets/widget-layout';
+import {
+    resolveWidgetAlignment,
+    resolveWidgetOrientation,
+    supportsWidgetMaxWidth,
+} from '../src/widgets/widget-layout';
 
 const layout = (): LayoutConfig => ({
     zones: {
@@ -148,6 +154,22 @@ describe('layout editor logic', () => {
         expect(setSpacing(layout(), {padding: '24px'}).spacing).toEqual({padding: '24px'});
         expect(setSpacing(setSpacing(layout(), 'compact'), undefined).spacing).toBeUndefined();
     });
+
+    it('sets split formats and keeps the original grid implicit', () => {
+        const split = setLayoutFormat(layout(), 'vertical-2-1');
+        expect(split.format).toBe('vertical-2-1');
+        expect(split.zones).toEqual(layout().zones);
+
+        expect(setLayoutFormat(split, 'grid-3x3').format).toBeUndefined();
+    });
+
+    it('sets visual presets without changing widget placement', () => {
+        const glass = setLayoutVisualPreset(layout(), 'glass');
+        expect(glass.preset).toBe('glass');
+        expect(glass.zones).toEqual(layout().zones);
+
+        expect(setLayoutVisualPreset(glass, 'none').preset).toBeUndefined();
+    });
 });
 
 describe('widget internal layout', () => {
@@ -168,6 +190,13 @@ describe('widget internal layout', () => {
         expect(resolveWidgetAlignment(undefined, 'top-right')).toBe('right');
         expect(resolveWidgetAlignment('auto', 'top-left', 'end')).toBe('right');
         expect(resolveWidgetAlignment('center', 'top-right', 'end')).toBe('center');
+    });
+
+    it('allows weather width constraints while protecting fixed-layout widgets', () => {
+        expect(supportsWidgetMaxWidth('weather')).toBe(true);
+        expect(supportsWidgetMaxWidth('clock')).toBe(true);
+        expect(supportsWidgetMaxWidth('sensors')).toBe(false);
+        expect(supportsWidgetMaxWidth('calendar')).toBe(false);
     });
 });
 
@@ -211,6 +240,7 @@ describe('widget editor adapters', () => {
             displayMode: 'both',
             forecastDays: 5,
             labelSize: '1rem',
+            orientation: 'horizontal',
         };
 
         const editorConfig = toEditorConfig(widget);
@@ -236,6 +266,7 @@ describe('widget editor adapters', () => {
             forecastDays: 5,
             title: 'Počasí',
             labelSize: '1rem',
+            orientation: 'horizontal',
         });
     });
 
@@ -254,12 +285,17 @@ describe('widget editor adapters', () => {
     it('round-trips a transportation widget (flat widget keys <-> nested transportation)', () => {
         const widget = {
             type: 'transportation', id: 'transportation', priority: 10,
-            provider: 'idsjmk', stops: [{stopId: 1}],
+            provider: 'idsjmk', displayMode: 'modal', stops: [{stopId: 1}],
         };
 
         const editorConfig = toEditorConfig(widget);
         expect(editorConfig).toEqual({
-            transportation: {enabled: true, provider: 'idsjmk', stops: [{stopId: 1}]},
+            transportation: {
+                enabled: true,
+                provider: 'idsjmk',
+                displayMode: 'modal',
+                stops: [{stopId: 1}],
+            },
         });
 
         const roundTripped = fromEditorConfig(widget, {
@@ -303,35 +339,46 @@ describe('widget editor adapters', () => {
         const sensors = {
             type: 'sensors', id: 'sensors', sensors: [],
             orientation: 'horizontal', alignment: 'right', itemGap: '12px',
+            showIcons: false, iconSize: '32px', showSeparator: true,
+            separatorColor: '#ffffff', separatorOpacity: 0.4,
         };
         expect(toEditorConfig(sensors)).toEqual({
             sensors: [], orientation: 'horizontal', alignment: 'right', itemGap: '12px',
+            showIcons: false, iconSize: '32px', showSeparator: true,
+            separatorColor: '#ffffff', separatorOpacity: 0.4,
         });
         expect(fromEditorConfig(sensors, {
             sensors: [], orientation: 'vertical', alignment: 'center', itemGap: '20px',
+            showIcons: true, iconSize: '40px', showSeparator: false,
+            separatorColor: '#00ffff', separatorOpacity: 0.65,
         })).toEqual({
             type: 'sensors', id: 'sensors', sensors: [],
             orientation: 'vertical', alignment: 'center', itemGap: '20px',
+            showIcons: true, iconSize: '40px', showSeparator: false,
+            separatorColor: '#00ffff', separatorOpacity: 0.65,
         });
 
         const actions = {
             type: 'action-bar', id: 'actions', enabled: true, actions: [],
-            orientation: 'vertical', alignment: 'left', buttonGap: '12px', padding: '8px 16px',
+            orientation: 'vertical', alignment: 'left', showButtonBackground: false,
+            buttonGap: '12px', padding: '8px 16px',
         };
         expect(toEditorConfig(actions)).toEqual({
             actionBar: {
                 enabled: true, actions: [], orientation: 'vertical', alignment: 'left',
+                showButtonBackground: false,
                 buttonGap: '12px', padding: '8px 16px',
             },
         });
         expect(fromEditorConfig(actions, {
             actionBar: {
                 enabled: true, actions: [], orientation: 'horizontal', alignment: 'right',
-                buttonGap: '20px', padding: '4px',
+                showButtonBackground: true, buttonGap: '20px', padding: '4px',
             },
         })).toEqual({
             type: 'action-bar', id: 'actions', enabled: true, actions: [],
-            orientation: 'horizontal', alignment: 'right', buttonGap: '20px', padding: '4px',
+            orientation: 'horizontal', alignment: 'right', showButtonBackground: true,
+            buttonGap: '20px', padding: '4px',
         });
     });
 
@@ -340,6 +387,24 @@ describe('widget editor adapters', () => {
         expect(toEditorConfig(widget)).toEqual(widget);
         expect(fromEditorConfig(widget, {type: 'my-custom', foo: 'baz'})).toEqual({
             type: 'my-custom', id: 'my-custom', foo: 'baz',
+        });
+    });
+
+    it('round-trips separator appearance settings through its editor', () => {
+        const widget = {
+            type: 'separator', id: 'separator',
+            orientation: 'horizontal', color: '#7dd3fc',
+            opacity: 0.45, thickness: '2px', length: '85%',
+        };
+        expect(toEditorConfig(widget)).toEqual(widget);
+        expect(fromEditorConfig(widget, {
+            ...widget,
+            color: '#ffffff',
+            opacity: 0.25,
+        })).toEqual({
+            ...widget,
+            color: '#ffffff',
+            opacity: 0.25,
         });
     });
 

@@ -119,7 +119,8 @@
   },
   "runtime": {
     "loading_weather": "Loading weather data…", "loading_transportation": "Loading transportation data…",
-    "no_departures": "No departures available."
+    "no_departures": "No departures available.", "transportation_title": "Transit departures",
+    "wheelchair_accessible": "Wheelchair accessible"
   },
   "inspector": {
     "widget_settings": "Widget settings",
@@ -166,6 +167,19 @@
     "unsupported_height": "Maximum height (unsupported — clear this value)",
     "margin": "Margin (CSS shorthand)"
   },
+  "layout": {
+    "format": "Layout format",
+    "format_help": "Changes the canvas geometry; widgets keep their current zones and settings.",
+    "format_grid": "Grid 3 × 3",
+    "format_vertical_2_1": "Vertical 2/3 + 1/3",
+    "format_vertical_1_2": "Vertical 1/3 + 2/3",
+    "format_horizontal_2_1": "Horizontal 2/3 + 1/3",
+    "format_horizontal_1_2": "Horizontal 1/3 + 2/3",
+    "visual_preset": "Visual preset",
+    "preset_none": "No visual preset",
+    "preset_glass": "Glass information panel",
+    "preset_help": "Presets only style the layout and never change entities, actions, or widget placement."
+  },
   "spacing": {
     "preset": "Spacing preset",
     "compact": "Compact",
@@ -184,7 +198,8 @@
   },
   "widgets": {
     "sensors": "Sensors", "weather": "Weather", "calendar": "Calendar", "transportation": "Transportation",
-    "clock": "Clock", "date": "Date", "action_bar": "Action bar", "ha_card": "Home Assistant card"
+    "clock": "Clock", "date": "Date", "action_bar": "Action bar", "ha_card": "Home Assistant card",
+    "separator": "Separator"
   },
   "editor": {
     "format": {
@@ -208,17 +223,26 @@
       "metric": "Metric (°C, m/s)", "imperial": "Imperial (°F, mph)", "display_mode": "Display mode",
       "current": "Current weather only", "forecast": "Forecast only", "both": "Current and forecast",
       "icon_set": "Weather icon set", "forecast_days": "Forecast days", "days": "{count} days",
-      "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)"
+      "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)",
+      "orientation": "Forecast orientation", "orientation_help": "Auto uses a row in center zones and a column in side zones."
     },
     "sensors": {
       "empty": "No sensors configured.", "sensor": "Sensor {number}", "label": "Label", "entity": "Entity",
+      "icon": "Icon", "icon_help": "Leave empty to use the Home Assistant entity icon.",
       "add": "Add sensor", "remove": "Remove sensor", "expand": "Expand sensor", "collapse": "Collapse sensor",
       "orientation": "Item orientation", "orientation_help": "Auto uses a row in center zones and a column in side zones.",
       "alignment": "Item alignment", "alignment_help": "Use the zone alignment or override it for this widget.",
-      "item_gap": "Sensor item gap", "item_gap_help": "CSS length between sensors (default: 16px)"
+      "item_gap": "Sensor item gap", "item_gap_help": "CSS length between sensors (default: 16px)",
+      "show_icons": "Show sensor icons", "show_icons_help": "Show or hide the icon next to each sensor.",
+      "icon_size": "Sensor icon size", "icon_size_help": "CSS length (default is responsive, maximum 36px).",
+      "show_separator": "Show sensor separator", "show_separator_help": "Show or hide the line between sensors in horizontal mode.",
+      "separator_color": "Separator color", "separator_color_help": "Empty uses the widget text color.",
+      "separator_opacity": "Separator opacity", "separator_opacity_help": "Adjust the separator transparency."
     },
     "transportation": {
       "provider": "Transportation provider", "max_departures": "Maximum departures per stop", "departures": "{count} departures",
+      "display_mode": "Departure display", "display_inline": "In card layout", "display_modal": "Modal dialog",
+      "display_mode_help": "Choose where departures open after pressing the transportation action",
       "auto_hide": "Auto-hide timeout", "auto_hide_help": "Auto-hide timeout in minutes (1–10)",
       "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)",
       "stops": "Stops", "stop": "Stop {number}", "stop_id": "Stop ID", "post_id": "Post ID",
@@ -232,6 +256,7 @@
       "orientation": "Button orientation", "orientation_help": "Auto uses a row in center zones and a column in side zones.",
       "alignment": "Button alignment", "alignment_help": "Align buttons to the left, center, or right",
       "opacity": "Background opacity", "opacity_help": "Adjust the action bar background transparency",
+      "button_background": "Circular button background", "button_background_help": "Show or hide the translucent circle behind each action",
       "button_gap": "Button gap", "button_gap_help": "CSS length between buttons (default: 16px)",
       "panel_padding": "Panel padding", "panel_padding_help": "CSS padding inside the action bar (default: 16px)",
       "title": "Actions", "empty": "No actions configured yet.", "action": "Action {number}",
@@ -293,6 +318,12 @@
       "no_events": "No upcoming events.",
       "when": "When", "calendar_name": "Calendar", "location": "Location", "description": "Description",
       "event": "Calendar event"
+    },
+    "separator": {
+      "orientation": "Orientation", "orientation_help": "Auto follows the direction of the hosting zone.",
+      "color": "Separator color", "opacity": "Opacity", "thickness": "Thickness",
+      "thickness_help": "CSS length, for example 1px or 0.15rem.", "length": "Length",
+      "length_help": "CSS length or percentage, for example 100% or 240px."
     },
     "ha_card": {
       "description": "Embed a built-in or installed custom Home Assistant dashboard card.",

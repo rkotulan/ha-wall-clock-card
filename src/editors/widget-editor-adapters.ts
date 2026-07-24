@@ -34,6 +34,11 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                 orientation: widget.orientation,
                 alignment: widget.alignment,
                 itemGap: widget.itemGap,
+                showIcons: widget.showIcons,
+                iconSize: widget.iconSize,
+                showSeparator: widget.showSeparator,
+                separatorColor: widget.separatorColor,
+                separatorOpacity: widget.separatorOpacity,
             });
         case 'weather':
             return defined({
@@ -58,6 +63,7 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                     alignment: widget.alignment,
                     orientation: widget.orientation,
                     backgroundOpacity: widget.backgroundOpacity,
+                    showButtonBackground: widget.showButtonBackground,
                     buttonGap: widget.buttonGap,
                     padding: widget.padding,
                 }),
@@ -88,10 +94,15 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 ...preservedFields(widget),
                 labelSize: widget.labelSize,
                 valueSize: widget.valueSize,
+                iconSize: editorConfig.iconSize ?? widget.iconSize,
                 sensors: editorConfig.sensors ?? [],
                 orientation: editorConfig.orientation,
                 alignment: editorConfig.alignment,
                 itemGap: editorConfig.itemGap,
+                showIcons: editorConfig.showIcons ?? widget.showIcons,
+                showSeparator: editorConfig.showSeparator ?? widget.showSeparator,
+                separatorColor: editorConfig.separatorColor ?? widget.separatorColor,
+                separatorOpacity: editorConfig.separatorOpacity ?? widget.separatorOpacity,
             }) as WidgetConfig;
         case 'weather':
             return defined({
@@ -108,6 +119,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 title: editorConfig.weatherTitle,
                 updateInterval: editorConfig.weatherUpdateInterval,
                 iconSet: editorConfig.weatherIconSet,
+                orientation: widget.orientation,
             }) as WidgetConfig;
         case 'transportation': {
             if (!editorConfig.transportation) {
@@ -127,6 +139,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 alignment: actionBar.alignment,
                 orientation: actionBar.orientation,
                 backgroundOpacity: actionBar.backgroundOpacity,
+                showButtonBackground: actionBar.showButtonBackground ?? widget.showButtonBackground,
                 buttonGap: actionBar.buttonGap,
                 padding: actionBar.padding,
             }) as WidgetConfig;

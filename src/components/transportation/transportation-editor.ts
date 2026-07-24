@@ -10,8 +10,9 @@ import {
 
 // The HA editor may recreate the custom card after every staged config change.
 // Retain the open section across that recreation, just like the layout inspector
-// retains its selected settings tab.
-let retainedExpandedHaProfileIndex: number | null = 0;
+// retains its selected settings tab. Both values start collapsed.
+let retainedExpandedStopIndex: number | null = null;
+let retainedExpandedHaProfileIndex: number | null = null;
 
 function formatTransportationEntityLabel(entityId: string, friendlyName?: unknown): string {
     const label = String(friendlyName || entityId).trim();
@@ -26,7 +27,7 @@ function formatTransportationEntityLabel(entityId: string, friendlyName?: unknow
 @customElement('transportation-editor')
 export class TransportationEditor extends BaseEditorSection {
     @property({ type: Array }) _stops: TransportationStopConfig[] = [];
-    @state() private _expandedStopIndex: number | null = 0;
+    @state() private _expandedStopIndex: number | null = retainedExpandedStopIndex;
     @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
     @state() private _expandedHaProfileIndex: number | null = retainedExpandedHaProfileIndex;
     private readonly sortableList = new SortableListController(this, {
@@ -142,10 +143,8 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _removeHaProfile(index: number): void {
         this._haProfiles = this._haProfiles.filter((_, profileIndex) => profileIndex !== index);
-        if (this._haProfiles.length === 0) {
+        if (this._haProfiles.length === 0 || this._expandedHaProfileIndex === index) {
             this._expandedHaProfileIndex = null;
-        } else if (this._expandedHaProfileIndex === index) {
-            this._expandedHaProfileIndex = Math.min(index, this._haProfiles.length - 1);
         } else if (this._expandedHaProfileIndex !== null && this._expandedHaProfileIndex > index) {
             this._expandedHaProfileIndex -= 1;
         }
@@ -208,6 +207,7 @@ export class TransportationEditor extends BaseEditorSection {
         if (!this.config?.transportation) {
             this._stops = [];
             this._expandedStopIndex = null;
+            retainedExpandedStopIndex = null;
             return;
         }
 
@@ -223,10 +223,12 @@ export class TransportationEditor extends BaseEditorSection {
         } else if (this._expandedStopIndex !== null) {
             this._expandedStopIndex = Math.min(this._expandedStopIndex, this._stops.length - 1);
         }
+        retainedExpandedStopIndex = this._expandedStopIndex;
     }
 
     private _addStop(): void {
         this._expandedStopIndex = this._stops.length;
+        retainedExpandedStopIndex = this._expandedStopIndex;
         this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
         // Update the config with a deep copy
         if (this.config) {
@@ -259,13 +261,12 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _removeStop(index: number): void {
         this._stops = this._stops.filter((_, i) => i !== index);
-        if (this._stops.length === 0) {
+        if (this._stops.length === 0 || this._expandedStopIndex === index) {
             this._expandedStopIndex = null;
-        } else if (this._expandedStopIndex === index) {
-            this._expandedStopIndex = Math.min(index, this._stops.length - 1);
         } else if (this._expandedStopIndex !== null && this._expandedStopIndex > index) {
             this._expandedStopIndex -= 1;
         }
+        retainedExpandedStopIndex = this._expandedStopIndex;
         // Update the config with a deep copy
         if (this.config && this.config.transportation) {
             // Create a deep copy of the config
@@ -338,6 +339,7 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _toggleStop(index: number): void {
         this._expandedStopIndex = this._expandedStopIndex === index ? null : index;
+        retainedExpandedStopIndex = this._expandedStopIndex;
     }
 
     private _moveStop(fromIndex: number, toIndex: number): void {
@@ -346,6 +348,7 @@ export class TransportationEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        retainedExpandedStopIndex = this._expandedStopIndex;
         this._stops = moveListItem(this._stops, fromIndex, toIndex);
 
         if (!this.config?.transportation) return;
@@ -539,6 +542,42 @@ export class TransportationEditor extends BaseEditorSection {
                         .value=${this.config.transportation?.provider || 'idsjmk'}
                         .label=${this.t('editor.transportation.provider', 'Transportation provider')}
                         propertyName="transportation.provider"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
+                            select: {
+                                options: [
+                                    {
+                                        value: 'inline',
+                                        label: this.t(
+                                            'editor.transportation.display_inline',
+                                            'In card layout',
+                                        ),
+                                    },
+                                    {
+                                        value: 'modal',
+                                        label: this.t(
+                                            'editor.transportation.display_modal',
+                                            'Modal dialog',
+                                        ),
+                                    },
+                                ],
+                                mode: 'dropdown',
+                            },
+                        }}
+                        .value=${this.config.transportation.displayMode ?? 'inline'}
+                        .label=${this.t(
+                            'editor.transportation.display_mode',
+                            'Departure display',
+                        )}
+                        .helper=${this.t(
+                            'editor.transportation.display_mode_help',
+                            'Choose where departures open after pressing the transportation action',
+                        )}
+                        propertyName="transportation.displayMode"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 

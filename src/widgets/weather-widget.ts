@@ -6,8 +6,9 @@ import type {WeatherComponent} from '../components/weather';
 import {WeatherProviderConfig} from '../weather-providers/types';
 import {resolveLanguage} from '../utils/ha-locale';
 import {Size} from '../core/types';
-import {WidgetConfig} from '../core/layout-types';
+import {WidgetConfig, WidgetOrientation} from '../core/layout-types';
 import {WidgetElement} from './widget-element';
+import {resolveWidgetOrientation} from './widget-layout';
 
 export interface WeatherWidgetConfig extends WidgetConfig {
     enabled?: boolean;
@@ -21,6 +22,7 @@ export interface WeatherWidgetConfig extends WidgetConfig {
     iconSet?: string;
     labelSize?: string;
     valueSize?: string;
+    orientation?: WidgetOrientation;
 }
 
 @customElement('wcc-weather-widget')
@@ -31,10 +33,17 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         :host {
             display: block;
             max-height: 100%;
+            min-width: 0;
+        }
+
+        :host([data-orientation='horizontal']) {
+            width: 100%;
+            max-width: 100%;
         }
     `;
 
     protected applyWidgetState(): void {
+        const orientation = resolveWidgetOrientation(this.config.orientation, this.zoneId);
         const hasCustomSize = !!(this.config.labelSize || this.config.valueSize);
         // Presence enables the widget by default; keep the v2 Show Weather
         // switch meaningful when it is explicitly turned off in the inspector.
@@ -51,6 +60,8 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         this.weather.size = hasCustomSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
         this.weather.labelSize = this.config.labelSize;
         this.weather.valueSize = this.config.valueSize;
+        this.weather.orientation = orientation;
+        this.setAttribute('data-orientation', orientation);
         if (this.hass) {
             this.weather.hass = this.hass;
         }

@@ -209,6 +209,45 @@ describe('SensorController', () => {
         expect(controller.sensorValues[0].label).toBe('');
     });
 
+    it('uses the configured icon before the Home Assistant entity icon', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    entity_id: 'sensor.test',
+                    state: '21',
+                    attributes: {
+                        device_class: 'temperature',
+                        icon: 'mdi:home-thermometer',
+                    },
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{entity: 'sensor.test', icon: 'mdi:thermometer-lines'}],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].icon).toBe('mdi:thermometer-lines');
+    });
+
+    it('derives the icon from the Home Assistant device class', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    entity_id: 'sensor.test',
+                    state: '65',
+                    attributes: {device_class: 'humidity'},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({sensors: [{entity: 'sensor.test'}]});
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].icon).toBe('mdi:water-percent');
+    });
+
     it('should format value as a number if it is a numeric string', () => {
         const hass = {
             locale: {

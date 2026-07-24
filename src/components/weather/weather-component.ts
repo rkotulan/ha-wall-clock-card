@@ -5,6 +5,7 @@ import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
+import type {ResolvedWidgetOrientation} from '../../widgets/widget-layout';
 
 export interface WeatherComponentConfig {
     showWeather?: boolean;
@@ -20,6 +21,7 @@ export interface WeatherComponentConfig {
     size?: Size;
     labelSize?: string;
     valueSize?: string;
+    orientation?: ResolvedWidgetOrientation;
 }
 
 @customElement('ha-weather')
@@ -38,6 +40,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: String }) size?: Size;
     @property({ type: String }) labelSize?: string;
     @property({ type: String }) valueSize?: string;
+    @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
 
     private logger = createLogger('weather-component');
     private weatherController: WeatherController;
@@ -62,6 +65,12 @@ export class WeatherComponent extends LitElement {
     }
 
     static styles = css`
+        :host {
+            display: block;
+            max-width: 100%;
+            container-type: inline-size;
+        }
+
         .weather-container {
             display: flex;
             flex-direction: column;
@@ -107,6 +116,20 @@ export class WeatherComponent extends LitElement {
             font-size: 1.5rem; /* Medium size (default) */
             font-weight: 300;
             opacity: 0.8;
+        }
+
+        .weather-current-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            margin-left: 12px;
+        }
+
+        .weather-current-copy .weather-title,
+        .weather-current-copy .weather-condition {
+            line-height: 1.25;
+            white-space: nowrap;
         }
 
         .weather-icon {
@@ -160,6 +183,77 @@ export class WeatherComponent extends LitElement {
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
+        }
+
+        .weather-container.horizontal {
+            align-items: flex-start;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .weather-container.horizontal .weather-title {
+            text-align: left;
+        }
+
+        .weather-container.horizontal .weather-current {
+            flex: 0 0 auto;
+            align-items: flex-start;
+            margin-bottom: clamp(8px, 2cqw, 14px);
+        }
+
+        .weather-container.horizontal .weather-temp-container {
+            justify-content: flex-start;
+        }
+
+        .weather-container.horizontal .weather-icon {
+            width: clamp(40px, 12cqw, 60px);
+            height: clamp(40px, 12cqw, 60px);
+        }
+
+        .weather-container.horizontal .weather-forecast {
+            flex: 1 1 auto;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: clamp(3px, 1.2cqw, 18px);
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            padding-bottom: 4px;
+        }
+
+        .weather-container.horizontal .forecast-day {
+            flex: 1 1 0;
+            flex-direction: column;
+            justify-content: center;
+            width: 0;
+            min-width: 0;
+        }
+
+        .weather-container.horizontal .forecast-date {
+            width: auto;
+            margin-right: 0;
+            text-align: center;
+        }
+
+        .weather-container.horizontal .forecast-icon {
+            width: clamp(28px, 8cqw, 44px);
+            height: clamp(28px, 8cqw, 44px);
+            margin: 0;
+        }
+
+        .weather-container.horizontal .forecast-temp {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: auto !important;
+            text-align: center;
+            white-space: nowrap;
+            line-height: 1.25;
+        }
+
+        .weather-container.horizontal .forecast-separator {
+            display: none;
         }
 
         .weather-error {
@@ -320,6 +414,9 @@ export class WeatherComponent extends LitElement {
         const displayMode = this.weatherDisplayMode || 'both';
         const forecastDays = this.weatherForecastDays || 3;
         const weatherTitle = this.weatherTitle || localize('common.title', this.language, 'Weather');
+        const horizontal = this.orientation === 'horizontal';
+        const horizontalTitle = localize('forecast.title', this.language, 'Forecast');
+        const showsCurrent = displayMode === 'current' || displayMode === 'both';
 
         // Limit forecast days to available data (max 7 days)
         const limitedForecastDays = Math.min(forecastDays, weatherData.daily.length);
@@ -329,22 +426,43 @@ export class WeatherComponent extends LitElement {
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
-            <div class="weather-container ${weatherData.entityId ? 'clickable' : ''}" 
+            <div class="weather-container ${this.orientation} ${weatherData.entityId ? 'clickable' : ''}"
                  style="color: ${this.fontColor};"
                  @click="${() => this._handleWeatherClick(weatherData.entityId)}">
-                <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">${weatherTitle}</div>
+                ${(!horizontal || !showsCurrent) ? html`
+                    <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
+                        ${horizontal ? horizontalTitle : weatherTitle}
+                    </div>
+                ` : ''}
 
-                ${(displayMode === 'current' || displayMode === 'both') ?
+                ${showsCurrent ?
                     html`
                         <div class="weather-current">
                             <div class="weather-temp-container">
                                 <img class="weather-icon" src="${weatherData.current.icon}"
                                      alt="${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}">
-                                <div class="weather-temp" style="font-size: ${valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
+                                <div class="weather-temp"
+                                     style="font-size: ${horizontal
+                                         ? `min(${valueSize}, clamp(1.8rem, 10cqw, 3rem))`
+                                         : valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
+                                ${horizontal ? html`
+                                    <div class="weather-current-copy">
+                                        <div class="weather-title"
+                                             style="color: ${this.fontColor}; font-size: clamp(0.9rem, 3.5cqw, 1.15rem);">
+                                            ${horizontalTitle}
+                                        </div>
+                                        <div class="weather-condition"
+                                             style="font-size: clamp(0.75rem, 3cqw, 1rem);">
+                                            ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
-                            <div class="weather-condition" style="font-size: ${labelSize};">
-                                ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
-                            </div>
+                            ${!horizontal ? html`
+                                <div class="weather-condition" style="font-size: ${labelSize};">
+                                    ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
+                                </div>
+                            ` : ''}
                         </div>
                     ` :
                     ''
@@ -355,10 +473,18 @@ export class WeatherComponent extends LitElement {
                         <div class="weather-forecast">
                             ${weatherData.daily.slice(0, limitedForecastDays).map(day => html`
                                 <div class="forecast-day">
-                                    <div class="forecast-date" style="font-size: ${labelSize};">${this.formatForecastDate(day.date)}</div>
+                                    <div class="forecast-date"
+                                         style="font-size: ${horizontal
+                                             ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
+                                             : labelSize};">${this.formatForecastDate(day.date)}</div>
                                     <img class="forecast-icon" src="${day.icon}" alt="${this.conditionDisplayText(day.condition, day.conditionText)}">
-                                    <div class="forecast-temp" style="font-size: ${labelSize}; width: ${forecastTempWidth};">
-                                        ${Math.round(day.temperatureMin)}°<span class="forecast-separator"> - </span>${Math.round(day.temperatureMax)}°
+                                    <div class="forecast-temp"
+                                         style="font-size: ${horizontal
+                                             ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
+                                             : labelSize}; width: ${forecastTempWidth};">
+                                        <span>${Math.round(day.temperatureMin)}°</span>
+                                        <span class="forecast-separator"> - </span>
+                                        <span>${Math.round(day.temperatureMax)}°</span>
                                     </div>
                                 </div>
                             `)}

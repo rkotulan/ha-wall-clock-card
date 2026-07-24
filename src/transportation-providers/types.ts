@@ -28,6 +28,7 @@ export interface StopConfig {
  */
 export interface TransportationConfig {
   provider: string; // ID of the transportation provider
+  displayMode?: 'inline' | 'modal'; // Render in the configured zone or in a modal dialog
   providerConfig?: TransportationProviderConfig; // Configuration for the transportation provider
   stops: StopConfig[]; // Array of stop configurations
   maxDepartures?: number; // Global max departures setting (applies to all stops if not specified at stop level)

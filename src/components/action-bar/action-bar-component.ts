@@ -161,6 +161,14 @@ export class ActionBarComponent extends BottomBarComponent {
             transform: scale(1.05);
         }
 
+        .action-bar-container.flat-buttons .action-button {
+            background-color: transparent;
+        }
+
+        .action-bar-container.flat-buttons .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
         .action-button:focus-visible {
             outline: 2px solid currentColor;
             outline-offset: 2px;
@@ -250,12 +258,14 @@ export class ActionBarComponent extends BottomBarComponent {
         // Use the configured backgroundOpacity or default to 0.3
         const opacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.3;
         const buttonGap = this.config.buttonGap?.trim() || '16px';
-        const padding = this.config.padding?.trim() || '16px';
+        const buttonBackgroundClass = this.config.showButtonBackground === false ? 'flat-buttons' : '';
+        const padding = this.config.padding?.trim()
+            || (buttonBackgroundClass ? '16px 16px 4px' : '16px');
 
         this.logger.debug(`Rendering action bar - ButtonSize: ${buttonSize}`);
 
         return html`
-            <div class="action-bar-container ${orientation} align-${alignment}"
+            <div class="action-bar-container ${orientation} align-${alignment} ${buttonBackgroundClass}"
                 style="color: ${this.fontColor}; 
                        ${alignmentStyle}
                        background-color: rgba(0, 0, 0, ${opacity});

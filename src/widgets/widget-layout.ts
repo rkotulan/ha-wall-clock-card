@@ -9,6 +9,11 @@ import {
 export type ResolvedWidgetOrientation = Exclude<WidgetOrientation, 'auto'>;
 export type ResolvedWidgetAlignment = Exclude<WidgetAlignment, 'auto'>;
 
+/** Widgets whose host can be width-bounded without clipping their internal layout. */
+export function supportsWidgetMaxWidth(type?: string): boolean {
+    return !['sensors', 'calendar'].includes(type ?? '');
+}
+
 /** Center-column zones favor a row; side columns favor a compact vertical list. */
 export function resolveWidgetOrientation(
     orientation: WidgetOrientation | undefined,

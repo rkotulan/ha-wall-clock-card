@@ -321,6 +321,17 @@ export class SensorsEditor extends BaseEditorSection {
                                 propertyName="sensors.${index}.entity"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{icon: {}}}
+                                .value=${sensor.icon || ''}
+                                .label=${this.t('editor.sensors.icon', 'Icon')}
+                                .helper=${this.t('editor.sensors.icon_help', 'Empty uses the Home Assistant entity icon')}
+                                .labelPosition=${LabelPosition.Top}
+                                propertyName="sensors.${index}.icon"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
                         </div>` : ''}
                     </div>
                 `;})}

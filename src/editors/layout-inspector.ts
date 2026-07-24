@@ -4,6 +4,7 @@ import {HomeAssistant} from 'custom-card-helpers';
 import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3, WidgetConfig, WidgetStyle, ZoneId} from '../core/layout-types';
 import {Size} from '../core/types';
 import {WidgetRegistry} from '../widgets/widget-registry';
+import {supportsWidgetMaxWidth} from '../widgets/widget-layout';
 import {applyGeneralSetting, findWidgetById} from './layout-editor-logic';
 import {fromBackgroundEditorConfig, fromEditorConfig, toBackgroundEditorConfig, toEditorConfig} from './widget-editor-adapters';
 import {WidgetSelection, ZONE_LABELS} from './zone-overlay';
@@ -400,7 +401,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private supportedStyleKeys(widget: WidgetConfig): (keyof WidgetStyle)[] {
-        const supportsWidth = !['sensors', 'weather', 'calendar'].includes(widget.type);
+        const supportsWidth = supportsWidgetMaxWidth(widget.type);
         const supportsHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(widget.type);
         const keys: (keyof WidgetStyle)[] = [];
         if (supportsWidth || widget.style?.maxWidth !== undefined) {
@@ -473,9 +474,9 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private renderWidgetPresentationFields(widget: WidgetConfig): TemplateResult {
-        if (widget.type !== 'sensors' && widget.type !== 'action-bar') return html``;
-        const translationGroup = widget.type === 'sensors' ? 'sensors' : 'actions';
-        const itemName = widget.type === 'sensors' ? 'Item' : 'Button';
+        if (widget.type !== 'sensors' && widget.type !== 'weather' && widget.type !== 'action-bar') return html``;
+        const translationGroup = widget.type === 'action-bar' ? 'actions' : widget.type;
+        const itemName = widget.type === 'sensors' ? 'Item' : widget.type === 'weather' ? 'Forecast' : 'Button';
         return html`
             <ha-row-selector .hass=${this.hass}
                     .selector=${{select: {options: [
@@ -489,20 +490,66 @@ export class WccLayoutInspector extends LitElement {
                     @value-changed=${(ev: CustomEvent) =>
                         this.updateWidgetField('orientation', ev.detail.value === 'auto' ? undefined : ev.detail.value)}>
             </ha-row-selector>
-            <ha-row-selector .hass=${this.hass}
-                    .selector=${{select: {options: [
-                        {value: 'auto', label: this.t('ui.zone_default', 'Zone default')},
-                        {value: 'left', label: this.t('ui.left', 'Left')},
-                        {value: 'center', label: this.t('ui.center', 'Center')},
-                        {value: 'right', label: this.t('ui.right', 'Right')},
-                    ], mode: 'dropdown'}}}
-                    .value=${widget.alignment ?? 'auto'}
-                    .label=${this.t(`editor.${translationGroup}.alignment`, `${itemName} alignment`)}
-                    .helper=${this.t(`editor.${translationGroup}.alignment_help`, 'Use the zone alignment or override it for this widget.')}
-                    @value-changed=${(ev: CustomEvent) =>
-                        this.updateWidgetField('alignment', ev.detail.value === 'auto' ? undefined : ev.detail.value)}>
-            </ha-row-selector>
+            ${widget.type !== 'weather' ? html`
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: [
+                            {value: 'auto', label: this.t('ui.zone_default', 'Zone default')},
+                            {value: 'left', label: this.t('ui.left', 'Left')},
+                            {value: 'center', label: this.t('ui.center', 'Center')},
+                            {value: 'right', label: this.t('ui.right', 'Right')},
+                        ], mode: 'dropdown'}}}
+                        .value=${widget.alignment ?? 'auto'}
+                        .label=${this.t(`editor.${translationGroup}.alignment`, `${itemName} alignment`)}
+                        .helper=${this.t(`editor.${translationGroup}.alignment_help`, 'Use the zone alignment or override it for this widget.')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('alignment', ev.detail.value === 'auto' ? undefined : ev.detail.value)}>
+                </ha-row-selector>
+            ` : ''}
             ${widget.type === 'sensors' ? html`
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{boolean: {}}}
+                        .value=${widget.showIcons !== false}
+                        .label=${this.t('editor.sensors.show_icons', 'Show sensor icons')}
+                        .helper=${this.t('editor.sensors.show_icons_help', 'Show or hide the icon next to each sensor')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('showIcons', ev.detail.value === false ? false : undefined)}>
+                </ha-row-selector>
+                ${widget.showIcons !== false ? html`
+                    <ha-row-selector .hass=${this.hass}
+                            .selector=${{text: {}}}
+                            .value=${widget.iconSize ?? ''}
+                            .label=${this.t('editor.sensors.icon_size', 'Sensor icon size')}
+                            .helper=${this.t('editor.sensors.icon_size_help', 'CSS length (default: responsive, maximum 36px)')}
+                            @value-changed=${(ev: CustomEvent) =>
+                                this.updateWidgetField('iconSize', ev.detail.value?.trim() || undefined)}>
+                    </ha-row-selector>
+                ` : ''}
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{boolean: {}}}
+                        .value=${widget.showSeparator !== false}
+                        .label=${this.t('editor.sensors.show_separator', 'Show sensor separator')}
+                        .helper=${this.t('editor.sensors.show_separator_help', 'Show or hide the line between horizontal sensor items')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('showSeparator', ev.detail.value === false ? false : undefined)}>
+                </ha-row-selector>
+                ${widget.showSeparator !== false ? html`
+                    <ha-row-selector .hass=${this.hass}
+                            .selector=${{color_hex: ''}}
+                            .value=${widget.separatorColor ?? ''}
+                            .label=${this.t('editor.sensors.separator_color', 'Separator color')}
+                            .helper=${this.t('editor.sensors.separator_color_help', 'Empty uses the widget text color')}
+                            @value-changed=${(ev: CustomEvent) =>
+                                this.updateWidgetField('separatorColor', ev.detail.value?.trim() || undefined)}>
+                    </ha-row-selector>
+                    <ha-row-selector .hass=${this.hass}
+                            .selector=${{number: {min: 0, max: 1, step: 0.05, mode: 'slider'}}}
+                            .value=${widget.separatorOpacity ?? 0.28}
+                            .label=${this.t('editor.sensors.separator_opacity', 'Separator opacity')}
+                            .helper=${this.t('editor.sensors.separator_opacity_help', 'Adjust the separator transparency')}
+                            @value-changed=${(ev: CustomEvent) =>
+                                this.updateWidgetField('separatorOpacity', ev.detail.value === 0.28 ? undefined : ev.detail.value)}>
+                    </ha-row-selector>
+                ` : ''}
                 <ha-row-selector .hass=${this.hass}
                         .selector=${{text: {}}}
                         .value=${widget.itemGap ?? ''}
@@ -513,6 +560,14 @@ export class WccLayoutInspector extends LitElement {
                 </ha-row-selector>
             ` : ''}
             ${widget.type === 'action-bar' ? html`
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{boolean: {}}}
+                        .value=${widget.showButtonBackground !== false}
+                        .label=${this.t('editor.actions.button_background', 'Circular button background')}
+                        .helper=${this.t('editor.actions.button_background_help', 'Show or hide the translucent circle behind each action')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('showButtonBackground', ev.detail.value === false ? false : undefined)}>
+                </ha-row-selector>
                 <ha-row-selector .hass=${this.hass}
                         .selector=${{text: {}}}
                         .value=${widget.buttonGap ?? ''}
@@ -656,7 +711,7 @@ export class WccLayoutInspector extends LitElement {
 
     private styleLabel(key: keyof WidgetStyle, widget?: WidgetConfig): string {
         if (widget) {
-            if (key === 'maxWidth' && ['sensors', 'weather', 'calendar'].includes(widget.type)) {
+            if (key === 'maxWidth' && !supportsWidgetMaxWidth(widget.type)) {
                 return this.t('inspector.unsupported_width', 'Maximum width (unsupported — clear this value)');
             }
             if (key === 'maxHeight' && ['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(widget.type)) {

@@ -785,12 +785,13 @@ export class WallClockCard extends LitElement {
             }
             await lovelace.saveConfig(cloned);
 
-            // HA's global Done action saves the live edit model again. Keep that
-            // model aligned with the config just persisted, otherwise it can
-            // overwrite the autosave with the pre-edit card configuration.
+            // Older HA versions keep a mutable live edit model that the global
+            // Done action saves again. Keep it aligned where possible. Recent
+            // versions freeze this model and update it through saveConfig();
+            // failure of this legacy optimization must not turn a successful
+            // public API save into an error.
             if (!synchronizeLiveConfigAtPath(liveConfig, path, original, updated)) {
-                logger.warn('Refusing live config synchronization: the card changed during save');
-                return false;
+                logger.debug('Live config synchronization skipped (read-only or already replaced)');
             }
             this.layoutSavePath = path;
             return true;

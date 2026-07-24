@@ -402,9 +402,25 @@ export class HaRowSelector extends LitElement {
             align-items: flex-start;
         }
 
+        .row.top.boolean {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            column-gap: 12px;
+            row-gap: 4px;
+            align-items: center;
+            min-height: 48px;
+        }
+
         .row.top .label {
             margin-bottom: 8px;
             font-weight: 500;
+        }
+
+        .row.top.boolean .label {
+            grid-column: 1;
+            grid-row: 1;
+            min-width: 0;
+            margin-bottom: 0;
         }
 
         .row.top .value {
@@ -412,14 +428,27 @@ export class HaRowSelector extends LitElement {
         }
 
         .row.top.boolean .value {
+            grid-column: 2;
+            grid-row: 1;
             width: auto;
-            align-self: flex-end;
+            align-self: center;
             overflow: visible;
         }
 
         .row.top.boolean .value ha-selector {
             width: auto;
             overflow: visible;
+        }
+
+        .row.top.boolean .action-buttons {
+            grid-column: 3;
+            grid-row: 1;
+            margin-left: 0;
+        }
+
+        .row.top.boolean .boolean-helper {
+            grid-column: 1 / -1;
+            grid-row: 2;
         }
 
         .boolean-helper {

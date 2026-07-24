@@ -18,6 +18,30 @@ export const ZONE_IDS: ZoneId[] = [
     'bottom-left', 'bottom-center', 'bottom-right',
 ];
 
+/**
+ * Geometry of the layout canvas. The nine logical zones stay available in
+ * every format; split formats only change the space those anchors share.
+ */
+export type LayoutFormat =
+    | 'grid-3x3'
+    | 'vertical-2-1'
+    | 'vertical-1-2'
+    | 'horizontal-2-1'
+    | 'horizontal-1-2';
+
+export const LAYOUT_FORMATS: LayoutFormat[] = [
+    'grid-3x3',
+    'vertical-2-1',
+    'vertical-1-2',
+    'horizontal-2-1',
+    'horizontal-1-2',
+];
+
+/** Visual treatment applied on top of a format without moving widgets. */
+export type LayoutVisualPreset = 'none' | 'glass';
+
+export const LAYOUT_VISUAL_PRESETS: LayoutVisualPreset[] = ['none', 'glass'];
+
 /** Layout of repeated items inside widgets that support it. */
 export type WidgetOrientation = 'auto' | 'horizontal' | 'vertical';
 
@@ -104,6 +128,10 @@ export const SPACING_PRESETS: Record<SpacingPreset, Required<SpacingConfig>> = {
 export interface LayoutConfig {
     zones: Partial<Record<ZoneId, ZoneConfig>>;
     spacing?: SpacingPreset | SpacingConfig;
+    /** Defaults to the original 3x3 geometry for backwards compatibility. */
+    format?: LayoutFormat;
+    /** Optional visual treatment; it never changes entities or widget placement. */
+    preset?: LayoutVisualPreset;
 }
 
 /** Card-level background layer (not a widget). Groups the v2 image* keys. */

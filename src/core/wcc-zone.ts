@@ -36,6 +36,7 @@ export class WccZone extends LitElement {
             display: block;
             min-width: 0;
             min-height: 0;
+            pointer-events: none;
         }
 
         .stack {
@@ -44,6 +45,7 @@ export class WccZone extends LitElement {
             height: 100%;
             gap: var(--zone-gap, var(--wcc-widget-gap, 8px));
             transform: translateY(var(--zone-offset-y, 0));
+            pointer-events: auto;
         }
 
         .stack.column {
@@ -62,6 +64,7 @@ export class WccZone extends LitElement {
             display: grid;
             width: 100%;
             transform: translateY(var(--zone-offset-y, 0));
+            pointer-events: auto;
         }
 
         .exclusive > .item {

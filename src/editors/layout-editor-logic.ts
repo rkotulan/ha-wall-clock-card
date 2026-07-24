@@ -2,6 +2,8 @@
 // unit-testable in the node Jest environment.
 import {
     LayoutConfig,
+    LayoutFormat,
+    LayoutVisualPreset,
     SpacingConfig,
     SpacingPreset,
     WallClockConfigV3,
@@ -187,6 +189,28 @@ export function setSpacing(layout: LayoutConfig, spacing: SpacingPreset | Spacin
         delete result.spacing;
     } else {
         result.spacing = spacing;
+    }
+    return result;
+}
+
+/** Sets the canvas geometry; the original grid is represented by an omitted key. */
+export function setLayoutFormat(layout: LayoutConfig, format: LayoutFormat): LayoutConfig {
+    const result = clone(layout);
+    if (format === 'grid-3x3') {
+        delete result.format;
+    } else {
+        result.format = format;
+    }
+    return result;
+}
+
+/** Sets a visual preset without changing widget placement or functional config. */
+export function setLayoutVisualPreset(layout: LayoutConfig, preset: LayoutVisualPreset): LayoutConfig {
+    const result = clone(layout);
+    if (preset === 'none') {
+        delete result.preset;
+    } else {
+        result.preset = preset;
     }
     return result;
 }

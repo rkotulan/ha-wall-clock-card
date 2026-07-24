@@ -84,7 +84,8 @@
   },
   "runtime": {
     "loading_weather": "Načítám data počasí…", "loading_transportation": "Načítám data dopravy…",
-    "no_departures": "Nejsou dostupné žádné odjezdy."
+    "no_departures": "Nejsou dostupné žádné odjezdy.", "transportation_title": "Odjezdy MHD",
+    "wheelchair_accessible": "Bezbariérový spoj"
   },
   "inspector": {
     "widget_settings": "Nastavení widgetu", "appearance_layout": "Vzhled a rozložení",
@@ -116,6 +117,19 @@
     "unsupported_height": "Maximální výška není podporována — hodnotu odstraňte",
     "margin": "Okraj (CSS zkrácený zápis)"
   },
+  "layout": {
+    "format": "Formát rozložení",
+    "format_help": "Mění geometrii plochy; widgety si zachovají své zóny a nastavení.",
+    "format_grid": "Mřížka 3 × 3",
+    "format_vertical_2_1": "Svislé 2/3 + 1/3",
+    "format_vertical_1_2": "Svislé 1/3 + 2/3",
+    "format_horizontal_2_1": "Vodorovné 2/3 + 1/3",
+    "format_horizontal_1_2": "Vodorovné 1/3 + 2/3",
+    "visual_preset": "Vizuální preset",
+    "preset_none": "Bez vizuálního presetu",
+    "preset_glass": "Skleněný informační panel",
+    "preset_help": "Preset mění pouze vzhled rozložení, nikdy entity, akce ani umístění widgetů."
+  },
   "spacing": {
     "preset": "Předvolba rozestupů", "compact": "Kompaktní", "normal": "Normální",
     "spacious": "Prostorné", "custom": "Vlastní", "card_padding": "Odsazení karty",
@@ -128,7 +142,8 @@
   },
   "widgets": {
     "sensors": "Senzory", "weather": "Počasí", "calendar": "Kalendář", "transportation": "Doprava",
-    "clock": "Hodiny", "date": "Datum", "action_bar": "Panel akcí", "ha_card": "Karta Home Assistantu"
+    "clock": "Hodiny", "date": "Datum", "action_bar": "Panel akcí", "ha_card": "Karta Home Assistantu",
+    "separator": "Oddělovač"
   },
   "editor": {
     "format": {
@@ -153,17 +168,26 @@
       "display_mode": "Režim zobrazení", "current": "Pouze aktuální počasí", "forecast": "Pouze předpověď",
       "both": "Aktuální počasí a předpověď", "icon_set": "Sada ikon počasí",
       "forecast_days": "Počet dní předpovědi", "days": "Počet dní: {count}",
-      "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)"
+      "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)",
+      "orientation": "Orientace předpovědi", "orientation_help": "Automaticky použije řádek ve středních zónách a sloupec v bočních zónách."
     },
     "sensors": {
       "empty": "Nejsou nastaveny žádné senzory.", "sensor": "Senzor {number}", "label": "Popisek", "entity": "Entita",
+      "icon": "Ikona", "icon_help": "Prázdná hodnota použije ikonu entity z Home Assistantu.",
       "add": "Přidat senzor", "remove": "Odebrat senzor", "expand": "Rozbalit senzor", "collapse": "Sbalit senzor",
       "orientation": "Orientace položek", "orientation_help": "Automaticky použije řádek ve středních zónách a sloupec v bočních zónách.",
       "alignment": "Zarovnání položek", "alignment_help": "Použije zarovnání zóny, nebo jej nastavte jen pro tento widget.",
-      "item_gap": "Mezera mezi senzory", "item_gap_help": "CSS délka mezi senzory (výchozí: 16px)"
+      "item_gap": "Mezera mezi senzory", "item_gap_help": "CSS délka mezi senzory (výchozí: 16px)",
+      "show_icons": "Zobrazit ikony senzorů", "show_icons_help": "Zobrazí nebo skryje ikonu vedle každého senzoru.",
+      "icon_size": "Velikost ikony senzoru", "icon_size_help": "CSS délka (výchozí je responsivní velikost, maximálně 36px).",
+      "show_separator": "Zobrazit separátor senzorů", "show_separator_help": "Zobrazí nebo skryje čáru mezi senzory ve vodorovném režimu.",
+      "separator_color": "Barva separátoru", "separator_color_help": "Prázdná hodnota použije barvu textu widgetu.",
+      "separator_opacity": "Průhlednost separátoru", "separator_opacity_help": "Nastaví průhlednost separátoru."
     },
     "transportation": {
       "provider": "Poskytovatel dopravy", "max_departures": "Maximum odjezdů na zastávku", "departures": "Počet odjezdů: {count}",
+      "display_mode": "Zobrazení odjezdů", "display_inline": "V ploše karty", "display_modal": "V modálním okně",
+      "display_mode_help": "Určuje, kde se odjezdy otevřou po stisknutí akce Doprava",
       "auto_hide": "Automaticky skrýt po", "auto_hide_help": "Čas v minutách (1–10)",
       "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)",
       "stops": "Zastávky", "stop": "Zastávka {number}", "stop_id": "ID zastávky", "post_id": "ID stanoviště",
@@ -177,6 +201,7 @@
       "orientation": "Orientace tlačítek", "orientation_help": "Automaticky použije řádek ve středních zónách a sloupec v bočních zónách.",
       "alignment": "Zarovnání tlačítek", "alignment_help": "Zarovná tlačítka vlevo, na střed nebo vpravo",
       "opacity": "Průhlednost podkladu", "opacity_help": "Nastaví průhlednost podkladu panelu akcí",
+      "button_background": "Kruhové pozadí tlačítek", "button_background_help": "Zobrazí nebo skryje průhledný kruh za každou akcí",
       "button_gap": "Mezera mezi tlačítky", "button_gap_help": "CSS délka mezi tlačítky (výchozí: 16px)",
       "panel_padding": "Vnitřní odsazení panelu", "panel_padding_help": "CSS odsazení uvnitř panelu akcí (výchozí: 16px)",
       "title": "Akce", "empty": "Nejsou nastaveny žádné akce.", "action": "Akce {number}",
@@ -237,6 +262,12 @@
       "event_background_color": "Barva podkladu událostí", "event_background_opacity": "Průhlednost podkladu událostí",
       "all_day": "Celý den", "loading": "Načítám kalendář…", "no_events": "Žádné nadcházející události.", "when": "Termín",
       "calendar_name": "Kalendář", "location": "Místo", "description": "Popis", "event": "Událost kalendáře"
+    },
+    "separator": {
+      "orientation": "Orientace", "orientation_help": "Automaticky se řídí směrem hostitelské zóny.",
+      "color": "Barva oddělovače", "opacity": "Průhlednost", "thickness": "Tloušťka",
+      "thickness_help": "CSS délka, například 1px nebo 0.15rem.", "length": "Délka",
+      "length_help": "CSS délka nebo procenta, například 100% nebo 240px."
     },
     "ha_card": {
       "description": "Vloží vestavěnou nebo nainstalovanou vlastní kartu dashboardu Home Assistantu.",

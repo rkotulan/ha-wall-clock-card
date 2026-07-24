@@ -4,9 +4,17 @@ import {repeat} from 'lit/directives/repeat.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {createLogger} from '../utils/logger/logger';
 import {AppearanceConfig, defaultZoneAlignment, LayoutConfig, ZoneConfig, ZoneId, ZONE_IDS} from './layout-types';
-import {resolveSpacing} from './migrate-config';
+import {CssPaddingEdges, expandCssPadding, resolveSpacing} from './migrate-config';
 import {WidgetRegistry} from '../widgets/widget-registry';
 import {WidgetElement} from '../widgets/widget-element';
+import {
+    layoutGridDefinition,
+    layoutPanelEdge,
+    layoutZonePanelEdge,
+    layoutZonePlacement,
+    resolveLayoutFormat,
+    resolveLayoutVisualPreset,
+} from './layout-format';
 import './wcc-zone';
 
 interface ZoneEntry {
@@ -69,6 +77,56 @@ export class WccLayout extends LitElement {
             flex: 1 1 auto;
             min-height: 0;
             box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+        }
+
+        .format-surface {
+            position: absolute;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .format-surface.left,
+        .format-surface.right {
+            top: 0;
+            bottom: 0;
+            width: 33.333333%;
+        }
+
+        .format-surface.left {
+            left: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.right {
+            right: 0;
+            border-left: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.top,
+        .format-surface.bottom {
+            left: 0;
+            right: 0;
+            height: 33.333333%;
+        }
+
+        .format-surface.top {
+            top: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.bottom {
+            bottom: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.glass {
+            background:
+                linear-gradient(135deg, rgba(9, 13, 18, 0.72), rgba(20, 18, 19, 0.62));
+            box-shadow: 0 0 48px rgba(0, 0, 0, 0.18);
+            backdrop-filter: blur(24px) saturate(1.1);
+            -webkit-backdrop-filter: blur(24px) saturate(1.1);
         }
     `;
 
@@ -110,6 +168,7 @@ export class WccLayout extends LitElement {
                 }
                 element.zoneId = zoneId;
                 element.zoneAlignment = zoneConfig.align ?? defaultZoneAlignment(zoneId);
+                element.zoneDirection = zoneConfig.direction ?? 'column';
                 element.appearance = this.appearance;
                 if (this.hass) {
                     element.hass = this.hass;
@@ -145,6 +204,13 @@ export class WccLayout extends LitElement {
 
     /** Grid placement + self-alignment for a zone, including full-width spans. */
     private zonePlacement(zoneId: ZoneId): string {
+        const format = resolveLayoutFormat(this.layout);
+        if (format !== 'grid-3x3') {
+            const placement = layoutZonePlacement(format, zoneId);
+            return `grid-row: ${placement.row}; grid-column: ${placement.column}; ` +
+                `align-self: ${placement.alignSelf}; justify-self: stretch; z-index: 1;`;
+        }
+
         const [row] = zoneId === 'center' ? ['middle'] : zoneId.split('-');
         const alignSelf = row === 'top' ? 'start' : row === 'bottom' ? 'end' : 'center';
 
@@ -163,13 +229,49 @@ export class WccLayout extends LitElement {
         return `grid-area: ${zoneId}; align-self: ${alignSelf}; justify-self: stretch;`;
     }
 
+    /**
+     * The grid's outer padding sits outside the narrow one-third panel, while
+     * its inner edge coincides with a grid track boundary. Give separators the
+     * matching inset on that inner edge so their endpoints are symmetrical.
+     */
+    private separatorInsetStyle(
+        format: ReturnType<typeof resolveLayoutFormat>,
+        zoneId: ZoneId,
+        padding: CssPaddingEdges,
+    ): string {
+        switch (layoutZonePanelEdge(format, zoneId)) {
+            case 'left':
+                return `--wcc-separator-inline-end-inset: ${padding.left};`;
+            case 'right':
+                return `--wcc-separator-inline-start-inset: ${padding.right};`;
+            case 'top':
+                return `--wcc-separator-block-end-inset: ${padding.top};`;
+            case 'bottom':
+                return `--wcc-separator-block-start-inset: ${padding.bottom};`;
+            default:
+                return '';
+        }
+    }
+
     render(): TemplateResult {
         const spacing = resolveSpacing(this.layout);
+        const padding = expandCssPadding(spacing.padding);
+        const format = resolveLayoutFormat(this.layout);
+        const preset = resolveLayoutVisualPreset(this.layout);
+        const grid = layoutGridDefinition(format);
+        const panelEdge = preset === 'glass' ? layoutPanelEdge(format) : undefined;
         return html`
+            ${panelEdge ? html`<div class="format-surface glass ${panelEdge}"></div>` : ''}
             <div class="grid"
-                 style="--wcc-padding: ${spacing.padding}; --wcc-zone-gap: ${spacing.zoneGap}; --wcc-widget-gap: ${spacing.widgetGap};">
+                 data-format=${format}
+                 style="--wcc-padding: ${spacing.padding}; --wcc-zone-gap: ${spacing.zoneGap}; --wcc-widget-gap: ${spacing.widgetGap};
+                        grid-template-columns: ${grid.columns}; grid-template-rows: ${grid.rows};
+                        grid-template-areas: ${format === 'grid-3x3'
+                            ? `'top-left top-center top-right' 'middle-left center middle-right' 'bottom-left bottom-center bottom-right'`
+                            : 'none'};">
                 ${repeat(this.zoneEntries, entry => entry.zoneId, entry => html`
-                    <wcc-zone style="${this.zonePlacement(entry.zoneId)}"
+                    <wcc-zone style="${this.zonePlacement(entry.zoneId)}
+                                     ${this.separatorInsetStyle(format, entry.zoneId, padding)}"
                               .zoneId=${entry.zoneId}
                               .zoneConfig=${entry.config}
                               .widgets=${entry.widgets}></wcc-zone>
