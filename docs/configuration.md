@@ -26,6 +26,11 @@ model. Existing 2.x configuration is migrated automatically.
 The compact Home Assistant card editor deliberately contains only a link/instruction
 to use the Designer. It does not duplicate the full 3.0 settings UI.
 
+The Designer shows the real physical panels for the selected layout while keeping
+the ordered widgets directly editable:
+
+![Wall Clock Designer with a vertical 1/3 + 2/3 layout](../images/wall-panel-editor.png)
+
 ## Widget settings organization
 
 The widget inspector keeps the editable fields in their natural context:

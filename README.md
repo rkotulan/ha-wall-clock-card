@@ -5,7 +5,7 @@ wall panels. Its visual Designer lets you place clock, date, sensors, weather,
 calendars, public transport and action buttons in a classic 3×3 grid or responsive
 split-panel layouts.
 
-![Wall Clock Card](images/showcase-01.png)
+![Wall Clock Card in a horizontal split layout on a tablet](images/wall-panel-horizontal.png)
 
 ## Highlights
 
@@ -23,6 +23,13 @@ split-panel layouts.
 - Local, Picsum, Unsplash and Home Assistant sensor-backed backgrounds.
 - Automatic in-memory migration of existing 2.x configurations.
 - Czech and English Designer UI; weather-condition translations cover additional languages.
+
+## Tablet layout example
+
+The same widgets can be arranged in a narrow information panel beside the main
+clock area:
+
+![Wall Clock Card in a vertical split layout on a tablet](images/wall-panel-vertical.png)
 
 ## Installation
 
