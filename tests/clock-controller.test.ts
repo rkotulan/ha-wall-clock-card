@@ -500,12 +500,13 @@ describe('ClockController', () => {
           }
         });
 
-        // Call updateTime directly with custom time values (9:05:12)
-        const testDate = new Date(2023, 0, 1, 9, 5, 12); // Note: month is 0-indexed in JavaScript Date
-        controller['updateTime'](testDate, 'Europe/London');
+        // 14:05 UTC is 09:05 in New York in January. Use an explicit instant so
+        // the test does not depend on the machine running Jest.
+        const testDate = new Date('2023-01-01T14:05:12Z');
+        controller['updateTime'](testDate, 'America/New_York');
 
         // Check that the time components are formatted correctly
-        expect(controller.hours).toBe('08');
+        expect(controller.hours).toBe('09');
         expect(controller.minutes).toBe('05');
         expect(controller.seconds).toBe('12');
       });
@@ -520,12 +521,13 @@ describe('ClockController', () => {
           }
         });
 
-        // Call updateTime directly with custom time values (14:15:12)
-        const testDate = new Date(2023, 0, 1, 14, 15, 12); // Note: month is 0-indexed in JavaScript Date
+        // London uses UTC in January. Keep the instant explicit so CI and local
+        // machines exercise the same conversion.
+        const testDate = new Date('2023-01-01T14:15:12Z');
         controller['updateTime'](testDate, 'Europe/London');
 
         // Check that the time components are formatted correctly
-        expect(controller.hours).toBe('13');
+        expect(controller.hours).toBe('14');
         expect(controller.minutes).toBe('15');
         expect(controller.seconds).toBe('12');
       });
