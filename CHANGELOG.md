@@ -1,5 +1,74 @@
 # Changelog
 
+## 3.2.0
+
+### Layout formats and visual presets
+
+- Added `3x3`, vertical `2/3 + 1/3` / `1/3 + 2/3` and horizontal
+  `2/3 + 1/3` / `1/3 + 2/3` layout formats while preserving the nine logical
+  zones and their widget order.
+- Added the optional glass treatment for the narrow panel and aligned it with
+  the real grid tracks for custom padding and gap values.
+- Updated runtime and Designer split layouts to use two real panels while
+  retaining top/centre/bottom anchors, including bottom-pinned action widgets.
+  Legacy logical zones that share an anchor are shown as one ordered physical
+  area and consolidate safely on the first explicit edit.
+- Centred widget stacks vertically inside horizontal split panels instead of
+  shrink-wrapping them at the panel's top edge.
+- Added full-panel row zones with per-widget relative width shares for ordered
+  dashboard information strips.
+- Balanced horizontal information strips automatically so weather and calendar
+  receive more room than sensors and actions; explicit width shares still win.
+- Added per-widget row width behavior (`auto`, fill available space, or fit to
+  content); compact sensors, clocks and dates now remain content-sized by default.
+- Added configurable separator widgets with orientation, color, opacity,
+  thickness and length controls.
+
+### Weather, sensors and actions
+
+- Added horizontal weather presentation with current conditions followed by
+  forecast columns.
+- Prevented weather without an explicit row width ratio from collapsing to zero
+  width inside a horizontal information strip.
+- Added configurable sensor icons and horizontal separators.
+- Made horizontal sensor columns symmetric and responsive without clipping long
+  values, while preserving the configured item gap.
+- Added an option to remove the translucent circular background from action
+  buttons.
+- Added configurable action-grid columns, including the 2×2 arrangement used by
+  compact dashboard panels.
+- Made row-hosted action bars default to a responsive two-column grid whose
+  buttons shrink with narrow tablet panels instead of overflowing.
+
+### Transportation and editor stability
+
+- Added an optional modal departure dialog and grouped Home Assistant transport
+  profiles.
+- Reorganized every built-in widget editor around Content, Appearance and
+  Behavior. Weather, calendar, transportation, action-bar, separator and embedded
+  card controls now appear on the tab that matches their purpose.
+- Grouped card-wide appearance, language and diagnostics, layout and spacing, and
+  background source, appearance and rotation settings into clearer sections.
+- Prevented a transport request closed during loading from reviving the dialog
+  or leaving an orphaned refresh interval.
+- Kept the user-selected or newly added transport item expanded across autosave
+  recreation; expansion state is isolated to the current card edit session.
+- Kept a newly added sensor expanded across autosave recreation while leaving
+  all sensor sections collapsed when the editor is opened initially.
+- Standardized expandable editor lists: they start collapsed, only the item
+  selected by the user or just added opens, and that selection survives
+  Home Assistant autosave recreation for actions, calendars and backgrounds too.
+- Pre-filled an empty Home Assistant transport profile name with the same
+  friendly-name fallback shown in its group header and used that resolved name
+  in the departures view.
+- Started newly added cards with the native zone-layout configuration so the
+  obsolete 2.x form is no longer shown on a clean dashboard.
+- Aligned boolean controls in the visual editor.
+- Made overfilled areas in horizontal split layouts independently scrollable in
+  the Designer instead of clipping their widget list.
+- Updated `custom-card-helpers` to 2.0.0 and made the release workflow
+  reproducible with Node 24, `npm ci`, type checking and the full test suite.
+
 ## 3.1.0
 
 ### Embedded Home Assistant cards

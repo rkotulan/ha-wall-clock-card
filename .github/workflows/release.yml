@@ -12,21 +12,31 @@ jobs:
     name: Prepare release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # Build
-      - name: Build the file
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify
         run: |
-          cd /home/runner/work/ha-wall-clock-card/ha-wall-clock-card
-          yarn install
-          npm run build
+          npm run type-check
+          npm test -- --runInBand
+
+      - name: Build the file
+        run: npm run build
 
       # Upload build file to the release as an asset.
       - name: Upload asset to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /home/runner/work/ha-wall-clock-card/ha-wall-clock-card/dist/wall-clock-card.js
+          file: dist/wall-clock-card.js
           asset_name: wall-clock-card.js
-          tag: ${{ github.ref }}
+          tag: ${{ github.event.release.tag_name }}
           overwrite: true

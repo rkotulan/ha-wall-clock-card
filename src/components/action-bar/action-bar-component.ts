@@ -128,6 +128,29 @@ export class ActionBarComponent extends BottomBarComponent {
             border-radius: var(--ha-card-border-radius, 4px);
         }
 
+        .action-bar-container.grid {
+            display: grid;
+            grid-template-columns: repeat(var(--action-columns, 2), minmax(0, 1fr));
+            grid-auto-rows: auto;
+            place-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .action-bar-container.grid .action-button {
+            width: min(var(--action-button-size, 144px), 100%);
+            height: auto;
+            aspect-ratio: 1;
+            justify-self: center;
+            min-width: 0;
+        }
+
+        .action-bar-container.grid .action-button svg,
+        .action-bar-container.grid .action-button ha-icon {
+            max-width: 50%;
+            max-height: 50%;
+        }
+
         .action-bar-container.vertical.align-left {
             margin-left: 0;
             margin-right: auto;
@@ -161,6 +184,14 @@ export class ActionBarComponent extends BottomBarComponent {
             transform: scale(1.05);
         }
 
+        .action-bar-container.flat-buttons .action-button {
+            background-color: transparent;
+        }
+
+        .action-bar-container.flat-buttons .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
         .action-button:focus-visible {
             outline: 2px solid currentColor;
             outline-offset: 2px;
@@ -183,9 +214,13 @@ export class ActionBarComponent extends BottomBarComponent {
         }
 
         .action-title {
+            max-width: 100%;
+            overflow: hidden;
             font-size: 18px;
             font-weight: 400;
             text-align: center;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     `;
 
@@ -238,10 +273,16 @@ export class ActionBarComponent extends BottomBarComponent {
         }
 
         const orientation = this.config.orientation ?? 'horizontal';
+        const columns = Number.isFinite(Number(this.config.columns))
+            ? Math.max(1, Math.min(6, Math.round(Number(this.config.columns))))
+            : undefined;
         const flexAlignment = this.getFlexAlignment();
-        const alignmentStyle = orientation === 'vertical'
+        const alignmentStyle = columns
+            ? `justify-content: ${flexAlignment}; align-content: center;`
+            : orientation === 'vertical'
             ? 'justify-content: center; align-items: center;'
             : `justify-content: ${flexAlignment}; align-items: center;`;
+        const layoutClass = columns ? 'grid' : orientation;
         const alignment = !this.config.alignment || this.config.alignment === ActionBarAlignment.Auto
             ? ActionBarAlignment.Center
             : this.config.alignment;
@@ -250,17 +291,20 @@ export class ActionBarComponent extends BottomBarComponent {
         // Use the configured backgroundOpacity or default to 0.3
         const opacity = this.config.backgroundOpacity !== undefined ? this.config.backgroundOpacity : 0.3;
         const buttonGap = this.config.buttonGap?.trim() || '16px';
-        const padding = this.config.padding?.trim() || '16px';
+        const buttonBackgroundClass = this.config.showButtonBackground === false ? 'flat-buttons' : '';
+        const padding = this.config.padding?.trim()
+            || (buttonBackgroundClass ? '16px 16px 4px' : '16px');
 
         this.logger.debug(`Rendering action bar - ButtonSize: ${buttonSize}`);
 
         return html`
-            <div class="action-bar-container ${orientation} align-${alignment}"
+            <div class="action-bar-container ${layoutClass} align-${alignment} ${buttonBackgroundClass}"
                 style="color: ${this.fontColor}; 
                        ${alignmentStyle}
                        background-color: rgba(0, 0, 0, ${opacity});
                        --action-button-size: ${buttonSize};
                        --action-button-gap: ${buttonGap};
+                       --action-columns: ${columns ?? 1};
                        --action-bar-padding: ${padding};">
                 ${this.config.actions.map(action => this.renderActionButton(action))}
             </div>
@@ -307,16 +351,16 @@ export class ActionBarComponent extends BottomBarComponent {
                      hasDoubleClick: hasAction(action.double_tap_action),
                  })}
                  @action=${(ev: CustomEvent) => this._handleAction(action, ev.detail?.action || 'tap')}>
-                ${iconToUse && iconToUse.startsWith('mdi:') 
-                    ? html`<ha-icon icon="${iconToUse}" 
-                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''} 
-                                          width: ${this.getIconSize()}; 
-                                          height: ${this.getIconSize()}; 
+                ${iconToUse && iconToUse.startsWith('mdi:')
+                    ? html`<ha-icon icon="${iconToUse}"
+                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''}
+                                          width: ${this.getIconSize()};
+                                          height: ${this.getIconSize()};
                                           --mdc-icon-size: ${this.getIconSize()};">
-                           </ha-icon>` 
+                           </ha-icon>`
                     : html`<svg viewBox="0 0 24 24"
-                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''} 
-                                      width: ${this.getIconSize()}; 
+                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''}
+                                      width: ${this.getIconSize()};
                                       height: ${this.getIconSize()};">
                         <path d="${iconToUse}"></path>
                       </svg>`

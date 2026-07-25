@@ -31,6 +31,7 @@ import {
     LovelaceConfigPath,
     synchronizeLiveConfigAtPath,
 } from './lovelace-config-path';
+import {clearEditorSessionState} from '../editors/editor-session-state';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
 
@@ -307,20 +308,10 @@ export class WallClockCard extends LitElement {
     }
 
     static getStubConfig(): WallClockConfig {
-        return {
-            timeFormat: {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            },
-            dateFormat: {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }
-        };
+        // A newly added card must start in the native zone-layout shape.
+        // Returning the old time/date root keys made Home Assistant open the
+        // legacy 2.x editor before the card had ever been saved.
+        return migrateToLayout({}) as unknown as WallClockConfig;
     }
 
     setConfig(config: WallClockConfig): void {
@@ -746,7 +737,10 @@ export class WallClockCard extends LitElement {
 
     private clearRetainedDesignerContext(): void {
         const key = this.designerSessionKey;
-        if (key) retainedDesignerContexts.delete(key);
+        if (key) {
+            retainedDesignerContexts.delete(key);
+            clearEditorSessionState(key);
+        }
         this.designerSessionKey = undefined;
     }
 
@@ -785,12 +779,13 @@ export class WallClockCard extends LitElement {
             }
             await lovelace.saveConfig(cloned);
 
-            // HA's global Done action saves the live edit model again. Keep that
-            // model aligned with the config just persisted, otherwise it can
-            // overwrite the autosave with the pre-edit card configuration.
+            // Older HA versions keep a mutable live edit model that the global
+            // Done action saves again. Keep it aligned where possible. Recent
+            // versions freeze this model and update it through saveConfig();
+            // failure of this legacy optimization must not turn a successful
+            // public API save into an error.
             if (!synchronizeLiveConfigAtPath(liveConfig, path, original, updated)) {
-                logger.warn('Refusing live config synchronization: the card changed during save');
-                return false;
+                logger.debug('Live config synchronization skipped (read-only or already replaced)');
             }
             this.layoutSavePath = path;
             return true;
@@ -1301,6 +1296,7 @@ export class WallClockCard extends LitElement {
                                 .hass=${this.hass}
                                 .config=${this.configV3}
                                 .layout=${this.configV3.layout}
+                                .editorSessionKey=${this.designerSessionKey}
                                 .selectedWidget=${this.selectedWidget}
                                 .selectedZone=${this.selectedZone}
                                 @wcc-widget-config-changed=${this.onInplaceWidgetConfigChanged}

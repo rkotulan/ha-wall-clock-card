@@ -25,6 +25,24 @@ export interface HomeAssistantTransportationProfile {
   maxDepartures?: number;
 }
 
+export function resolveHomeAssistantTransportationProfileName(
+  profile: HomeAssistantTransportationProfile,
+  hass?: HomeAssistant,
+): string | undefined {
+  const configuredName = profile.name?.trim();
+  if (configuredName) return configuredName;
+
+  const friendlyName = profile.refreshButtonEntity
+    ? hass?.states[profile.refreshButtonEntity]?.attributes.friendly_name
+    : undefined;
+  if (!friendlyName) return undefined;
+
+  const stopName = String(friendlyName)
+    .replace(/\s+(Aktualizovat odjezdy|Refresh departures)$/iu, '')
+    .trim();
+  return stopName || undefined;
+}
+
 /** Reads on-demand departure sensors created by the Transit Departures integration. */
 export class HomeAssistantTransportationProvider implements TransportationProvider {
   readonly id = 'homeassistant';
@@ -70,6 +88,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
       const departures: TransportationDeparture[] = [];
 
       for (const [profileIndex, profile] of profiles.entries()) {
+        const profileName = resolveHomeAssistantTransportationProfileName(profile, hass);
         for (const entityId of this.getProfileEntityIds(profile)) {
           const state = hass.states[entityId];
           if (!state) {
@@ -87,7 +106,7 @@ export class HomeAssistantTransportationProvider implements TransportationProvid
           }
 
           const stopName = String(
-            profile.name?.trim()
+            profileName
               || attributes.stop_name
               || state.attributes.friendly_name
               || entityId,

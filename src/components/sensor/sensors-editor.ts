@@ -1,17 +1,25 @@
 import { html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
+import {getEditorSessionState, setEditorSessionState} from '../../editors/editor-session-state';
 import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import { SensorConfig } from '../../core/types';
 import { LabelPosition } from '../ha-selector/types';
+
+const EXPANSION_STATE_KEY = 'sensors.expansion';
+
+interface SensorsEditorExpansionState {
+    sensorIndex: number | null;
+}
 
 /**
  * Editor component for sensors settings
  */
 @customElement('sensors-editor')
 export class SensorsEditor extends BaseEditorSection {
+    @property({attribute: false}) editorSessionKey?: string;
     @property({ type: Array }) _sensors: SensorConfig[] = [];
-    @state() private _expandedSensorIndex: number | null = 0;
+    @state() private _expandedSensorIndex: number | null = null;
     private readonly sortableList = new SortableListController(this, {
         containerSelector: '.sensor-list',
         draggable: '.sensor-card',
@@ -23,6 +31,13 @@ export class SensorsEditor extends BaseEditorSection {
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 
+        if (changedProps.has('editorSessionKey')) {
+            const retained = getEditorSessionState<SensorsEditorExpansionState>(
+                this.editorSessionKey,
+                EXPANSION_STATE_KEY,
+            );
+            this._expandedSensorIndex = retained?.sensorIndex ?? null;
+        }
         // Load sensors from config when config changes
         if (changedProps.has('config') && this.config) {
             this._loadSensors();
@@ -33,6 +48,14 @@ export class SensorsEditor extends BaseEditorSection {
     disconnectedCallback(): void {
         this.sortableList.disconnect();
         super.disconnectedCallback();
+    }
+
+    private _retainExpansionState(): void {
+        setEditorSessionState(
+            this.editorSessionKey,
+            EXPANSION_STATE_KEY,
+            {sensorIndex: this._expandedSensorIndex} satisfies SensorsEditorExpansionState,
+        );
     }
 
     private _loadSensors(): void {
@@ -46,10 +69,12 @@ export class SensorsEditor extends BaseEditorSection {
         } else if (this._expandedSensorIndex !== null) {
             this._expandedSensorIndex = Math.min(this._expandedSensorIndex, this._sensors.length - 1);
         }
+        this._retainExpansionState();
     }
 
     private _addSensor(): void {
         this._expandedSensorIndex = this._sensors.length;
+        this._retainExpansionState();
         this._sensors = [...this._sensors, {entity: '', label: ''}];
         // Update the config with a deep copy
         if (this.config) {
@@ -69,10 +94,11 @@ export class SensorsEditor extends BaseEditorSection {
         if (this._sensors.length === 0) {
             this._expandedSensorIndex = null;
         } else if (this._expandedSensorIndex === index) {
-            this._expandedSensorIndex = Math.min(index, this._sensors.length - 1);
+            this._expandedSensorIndex = null;
         } else if (this._expandedSensorIndex !== null && this._expandedSensorIndex > index) {
             this._expandedSensorIndex -= 1;
         }
+        this._retainExpansionState();
         // Update the config with a deep copy
         if (this.config) {
             // Create a deep copy of the config
@@ -88,6 +114,7 @@ export class SensorsEditor extends BaseEditorSection {
 
     private _toggleSensor(index: number): void {
         this._expandedSensorIndex = this._expandedSensorIndex === index ? null : index;
+        this._retainExpansionState();
     }
 
     private _moveSensor(fromIndex: number, toIndex: number): void {
@@ -96,6 +123,7 @@ export class SensorsEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        this._retainExpansionState();
         this._sensors = moveListItem(this._sensors, fromIndex, toIndex);
         if (!this.config) return;
         const newConfig = JSON.parse(JSON.stringify(this.config));
@@ -319,6 +347,17 @@ export class SensorsEditor extends BaseEditorSection {
                                 .label=${this.t('editor.sensors.entity', 'Entity')}
                                 .labelPosition=${LabelPosition.Top}
                                 propertyName="sensors.${index}.entity"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{icon: {}}}
+                                .value=${sensor.icon || ''}
+                                .label=${this.t('editor.sensors.icon', 'Icon')}
+                                .helper=${this.t('editor.sensors.icon_help', 'Empty uses the Home Assistant entity icon')}
+                                .labelPosition=${LabelPosition.Top}
+                                propertyName="sensors.${index}.icon"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         </div>` : ''}

@@ -2,11 +2,19 @@ import {css, CSSResult, html, LitElement, TemplateResult} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {fireEvent, HomeAssistant} from 'custom-card-helpers';
 import {WallClockConfig} from '../core/types';
-import {LayoutConfig, SpacingConfig, SpacingPreset, WallClockConfigV3} from '../core/layout-types';
+import {
+    LayoutConfig,
+    LayoutFormat,
+    LayoutVisualPreset,
+    SpacingConfig,
+    SpacingPreset,
+    WallClockConfigV3,
+} from '../core/layout-types';
 import {isValidSpacingValue, migrateToLayout, resolveSpacing} from '../core/migrate-config';
-import {setSpacing} from './layout-editor-logic';
+import {setLayoutFormat, setLayoutVisualPreset, setSpacing} from './layout-editor-logic';
 import {localize} from '../utils/localize';
 import {LabelPosition} from '../components/ha-selector/types';
+import {resolveLayoutFormat} from '../core/layout-format';
 
 /**
  * Compact spacing editor used in Home Assistant's standard card dialog.
@@ -38,7 +46,24 @@ export class LayoutEditor extends LitElement {
     static get styles(): CSSResult {
         return css`
             .content {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
                 padding: 12px;
+            }
+
+            .section-title {
+                margin: 2px 0 -4px;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.73rem;
+                font-weight: 750;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+            .section-group {
+                padding-top: 6px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
             }
 
             .hint {
@@ -86,6 +111,58 @@ export class LayoutEditor extends LitElement {
         } else {
             this.emitLayout(setSpacing(this.layout, value as SpacingPreset));
         }
+    }
+
+    private handleFormatChanged(value: string): void {
+        const format = value as LayoutFormat;
+        let layout = setLayoutFormat(this.layout, format);
+        if (format === 'grid-3x3') {
+            layout = setLayoutVisualPreset(layout, 'none');
+        }
+        this.emitLayout(layout);
+    }
+
+    private handleVisualPresetChanged(value: string): void {
+        this.emitLayout(setLayoutVisualPreset(this.layout, value as LayoutVisualPreset));
+    }
+
+    private renderFormat(): TemplateResult {
+        const format = resolveLayoutFormat(this.layout);
+        return html`
+            <ha-row-selector
+                    .hass=${this.hass}
+                    .selector=${{select: {options: [
+                        {value: 'grid-3x3', label: this.t('layout.format_grid', 'Grid 3 × 3')},
+                        {value: 'vertical-2-1', label: this.t('layout.format_vertical_2_1', 'Vertical 2/3 + 1/3')},
+                        {value: 'vertical-1-2', label: this.t('layout.format_vertical_1_2', 'Vertical 1/3 + 2/3')},
+                        {value: 'horizontal-2-1', label: this.t('layout.format_horizontal_2_1', 'Horizontal 2/3 + 1/3')},
+                        {value: 'horizontal-1-2', label: this.t('layout.format_horizontal_1_2', 'Horizontal 1/3 + 2/3')},
+                    ], mode: 'dropdown'}}}
+                    .value=${format}
+                    .label=${this.t('layout.format', 'Layout format')}
+                    .labelPosition=${this.inspector ? LabelPosition.Top : LabelPosition.Left}
+                    @value-changed=${(ev: CustomEvent) => this.handleFormatChanged(ev.detail.value)}
+            ></ha-row-selector>
+            <div class="field-help">
+                ${this.t('layout.format_help', 'Changes the canvas geometry; widgets keep their current zones and settings.')}
+            </div>
+            ${format !== 'grid-3x3' ? html`
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{select: {options: [
+                            {value: 'none', label: this.t('layout.preset_none', 'No visual preset')},
+                            {value: 'glass', label: this.t('layout.preset_glass', 'Glass information panel')},
+                        ], mode: 'dropdown'}}}
+                        .value=${this.layout.preset ?? 'none'}
+                        .label=${this.t('layout.visual_preset', 'Visual preset')}
+                        .labelPosition=${this.inspector ? LabelPosition.Top : LabelPosition.Left}
+                        @value-changed=${(ev: CustomEvent) => this.handleVisualPresetChanged(ev.detail.value)}
+                ></ha-row-selector>
+                <div class="field-help">
+                    ${this.t('layout.preset_help', 'Presets only style the layout and never change entities, actions, or widget placement.')}
+                </div>
+            ` : ''}
+        `;
     }
 
     private handleSpacingDraftChanged(key: keyof SpacingConfig, value: string): void {
@@ -187,7 +264,10 @@ export class LayoutEditor extends LitElement {
                 ${!this.config.layout ? html`
                     <p class="hint">${this.t('spacing.legacy_hint', 'The first spacing change converts this legacy configuration to the zone format.')}</p>
                 ` : ''}
-                ${this.renderSpacing()}
+                <div class="section-title">${this.t('layout.structure', 'Layout structure')}</div>
+                <div class="section-group">${this.renderFormat()}</div>
+                <div class="section-title">${this.t('general.spacing', 'Spacing')}</div>
+                <div class="section-group">${this.renderSpacing()}</div>
             </div>
         `;
     }

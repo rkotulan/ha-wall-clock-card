@@ -1,12 +1,14 @@
 # Transportation widget
 
 The `transportation` widget displays on-demand departures from public transport.
-Version 3.0 ships with the `idsjmk` provider (shown as **DPMB (Brno)** in the
-Designer), covering Brno and the South Moravian Region.
+The built-in `idsjmk` provider (shown as **DPMB (Brno)** in the Designer)
+accesses the Datario proxy directly from the browser and remains available as
+a frontend-only compatibility option for Brno and the South Moravian Region.
 
 It also supports the `homeassistant` provider for departure sensors exposed by
 the separate **Transit Departures** Home Assistant integration. This is the
-recommended mode for on-demand server-side queries and clients such as Garmin.
+recommended mode for on-demand server-side queries and clients such as Garmin;
+that integration uses official Golemio/PID as its default provider.
 
 Transportation is a singleton: one card can contain only one transportation widget.
 Place a `transportation` action in an action bar to open it.
@@ -44,11 +46,25 @@ Add the trigger to any action bar:
 | Key | Default | Description |
 |---|---:|---|
 | `provider` | `idsjmk` at runtime | Transportation provider ID |
+| `displayMode` | `inline` | `inline` renders in the configured zone; `modal` opens a dialog over the card |
 | `providerConfig` | `{}` | Provider-specific values |
 | `stops` | `[]` | Stop/platform entries |
 | `maxDepartures` | `2` | Departures per configured platform, limited to 1–5 |
 | `autoHideTimeout` | disabled when omitted | Minutes before departures close (1–10); the Designer starts at 5 |
 | `updateInterval` | `60` | Refresh interval in seconds, minimum 60 |
+
+## Display mode
+
+Choose **In card layout** to preserve the original behavior: the transportation
+widget replaces the lower-priority widget in an exclusive zone while departures
+are active.
+
+Choose **Modal dialog** to open departures over the complete dashboard. The
+dialog can be closed with its close button, by clicking the backdrop, or with
+Escape. The configured auto-hide timeout also closes it. Both modes use the
+same provider, profiles, departure order and on-demand refresh behavior.
+Closing the dialog while data is still loading cancels that activation window:
+its eventual response cannot reopen the dialog or leave background polling active.
 
 ## Home Assistant departure entities
 
@@ -83,6 +99,10 @@ polling interval.
 
 Each profile is one displayed stop column. Its refresh button and ordered
 departure sensors are configured together in one expandable Designer section.
+When a profile name is empty, the Designer pre-fills the name field with the
+same friendly-name fallback shown in the profile header. A custom name always
+wins. The departures view uses the same resolution order: custom profile name,
+refresh-button friendly name, then the stop name reported by the sensor.
 Every selected sensor is displayed, so the number of selected entities determines
 the number of departure rows. Exact entity IDs depend on the names assigned by
 Home Assistant when each integration profile is configured.

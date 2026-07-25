@@ -70,6 +70,13 @@ export function synchronizeLiveConfigAtPath(
 
     const parent = configAtPath(root, path.slice(0, -1));
     if (!parent || typeof parent !== 'object') return false;
-    (parent as Record<string | number, unknown>)[path[path.length - 1]] = replacement;
-    return true;
+    try {
+        (parent as Record<string | number, unknown>)[path[path.length - 1]] = replacement;
+        return true;
+    } catch {
+        // Recent Home Assistant versions freeze the live dashboard edit model.
+        // Its public saveConfig() API remains authoritative, so callers can
+        // safely treat this legacy in-memory synchronization as best effort.
+        return false;
+    }
 }

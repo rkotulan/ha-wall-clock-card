@@ -13,6 +13,11 @@ export interface SensorComponentConfig {
     labelSize?: string;
     valueSize?: string;
     itemGap?: string;
+    showIcons?: boolean;
+    iconSize?: string;
+    showSeparator?: boolean;
+    separatorColor?: string;
+    separatorOpacity?: number;
     orientation?: ResolvedWidgetOrientation;
     alignment?: ResolvedWidgetAlignment;
 }
@@ -26,6 +31,11 @@ export class SensorComponent extends LitElement {
     @property({ type: String }) labelSize?: string;
     @property({ type: String }) valueSize?: string;
     @property({ type: String }) itemGap?: string;
+    @property({ type: Boolean }) showIcons = true;
+    @property({ type: String }) iconSize?: string;
+    @property({ type: Boolean }) showSeparator = true;
+    @property({ type: String }) separatorColor?: string;
+    @property({ type: Number }) separatorOpacity?: number;
     @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
     @property({ type: String }) alignment: ResolvedWidgetAlignment = 'left';
 
@@ -47,18 +57,20 @@ export class SensorComponent extends LitElement {
     static styles = css`
         :host {
             display: block;
-            width: 100%;
+            width: var(--sensor-component-width, 100%);
             max-height: 100%;
+            container-type: var(--sensor-container-type, inline-size);
         }
 
         /* Placement is provided by the hosting zone (wcc-zone); the component
            only lays out its own items. */
         .sensor-container {
             display: flex;
-            width: 100%;
+            width: var(--sensor-component-width, 100%);
             box-sizing: border-box;
             max-height: 100%;
             gap: var(--sensor-item-gap, 16px);
+            --sensor-icon-copy-gap: clamp(4px, 1cqw, 10px);
         }
 
         .sensor-item {
@@ -69,8 +81,13 @@ export class SensorComponent extends LitElement {
         }
 
         .sensor-container.horizontal {
-            flex-direction: row;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: repeat(
+                var(--sensor-count),
+                minmax(max-content, 1fr)
+            );
+            column-gap: var(--sensor-item-gap, 16px);
+            align-items: stretch;
             overflow-x: auto;
             overflow-y: hidden;
         }
@@ -81,9 +98,85 @@ export class SensorComponent extends LitElement {
             overflow-y: auto;
         }
 
-        .sensor-container.horizontal.align-left { justify-content: flex-start; }
-        .sensor-container.horizontal.align-center { justify-content: center; }
-        .sensor-container.horizontal.align-right { justify-content: flex-end; }
+        .sensor-container.horizontal .sensor-item,
+        .sensor-container.show-icons .sensor-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .sensor-container.horizontal .sensor-item {
+            position: relative;
+            min-width: max-content;
+            justify-content: center;
+        }
+
+        .sensor-content {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .sensor-container.show-icons .sensor-content {
+            display: flex;
+            align-items: center;
+            gap: var(--sensor-icon-copy-gap);
+        }
+
+        .sensor-container.horizontal .sensor-content {
+            display: grid;
+            grid-template-columns: max-content;
+            align-items: center;
+            width: max-content;
+            max-width: none;
+        }
+
+        .sensor-container.horizontal.show-icons .sensor-content {
+            grid-template-columns:
+                var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem))
+                max-content;
+        }
+
+        .sensor-container.horizontal.show-icons .sensor-copy {
+            grid-column: 2;
+        }
+
+        .sensor-copy {
+            min-width: 0;
+        }
+
+        .sensor-icon-slot {
+            display: grid;
+            place-items: center;
+            width: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
+            height: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
+        }
+
+        .sensor-icon {
+            --mdc-icon-size: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
+            opacity: 0.9;
+        }
+
+        .sensor-container.horizontal.show-separators .sensor-item:not(:first-child)::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: calc(0px - var(--sensor-item-gap, 16px));
+            width: var(--sensor-item-gap, 16px);
+            min-height: 3rem;
+            background: linear-gradient(
+                to right,
+                transparent calc(50% - 0.5px),
+                var(--sensor-separator-color, currentColor) calc(50% - 0.5px),
+                var(--sensor-separator-color, currentColor) calc(50% + 0.5px),
+                transparent calc(50% + 0.5px)
+            );
+            opacity: var(--sensor-separator-opacity, 0.28);
+            pointer-events: none;
+        }
+
+        .sensor-container.horizontal.align-left .sensor-item { justify-content: flex-start; }
+        .sensor-container.horizontal.align-center .sensor-item { justify-content: center; }
+        .sensor-container.horizontal.align-right .sensor-item { justify-content: flex-end; }
         .sensor-container.vertical.align-left { align-items: flex-start; }
         .sensor-container.vertical.align-center { align-items: center; }
         .sensor-container.vertical.align-right { align-items: flex-end; }
@@ -101,6 +194,8 @@ export class SensorComponent extends LitElement {
         .sensor-value {
             font-size: 1.5rem;
             font-weight: 400;
+            color: var(--sensor-value-color, #ffffff);
+            white-space: nowrap;
         }
 
         /* Responsive adjustments */
@@ -193,12 +288,22 @@ export class SensorComponent extends LitElement {
         const labelSize = this.getLabelSize();
         const valueSize = this.getValueSize();
         const itemGap = this.itemGap?.trim() || '16px';
+        const iconSize = this.iconSize?.trim() || 'clamp(1.8rem, 6cqw, 2.25rem)';
+        const separatorColor = this.separatorColor?.trim() || 'currentColor';
+        const separatorOpacity = Math.min(1, Math.max(0, this.separatorOpacity ?? 0.28));
 
         this.logger.debug(`Rendering sensors - LabelSize: ${labelSize}, ValueSize: ${valueSize}`);
 
         return html`
-            <div class="sensor-container ${this.orientation} align-${this.alignment}"
-                 style="color: ${this.fontColor}; --sensor-item-gap: ${itemGap};">
+            <div class="sensor-container ${this.orientation} align-${this.alignment}
+                        ${this.showIcons ? 'show-icons' : ''}
+                        ${this.orientation === 'horizontal' && this.showSeparator ? 'show-separators' : ''}"
+                 style="color: ${this.fontColor};
+                        --sensor-count: ${sensorValues.length};
+                        --sensor-item-gap: ${itemGap};
+                        --sensor-icon-size: ${iconSize};
+                        --sensor-separator-color: ${separatorColor};
+                        --sensor-separator-opacity: ${separatorOpacity};">
                 ${sensorValues.map(sensor => html`
                     <div class="sensor-item"
                          role="button"
@@ -210,15 +315,26 @@ export class SensorComponent extends LitElement {
                                  this._openMoreInfo(sensor.entity);
                              }
                          }}>
-                        ${sensor.label ?
-                            html`
-                                <div class="sensor-label" style="color: ${this.fontColor}; font-size: ${labelSize};">
-                                    ${sensor.label}
-                                </div>` :
-                            ''
-                        }
-                        <div class="sensor-value" style="color: ${this.fontColor}; font-size: ${valueSize};">
-                            ${sensor.value}
+                        <div class="sensor-content">
+                            ${this.showIcons ? html`
+                                <span class="sensor-icon-slot" aria-hidden="true">
+                                    ${sensor.icon
+                                        ? html`<ha-icon class="sensor-icon" .icon=${sensor.icon}></ha-icon>`
+                                        : ''}
+                                </span>
+                            ` : ''}
+                            <div class="sensor-copy">
+                                ${sensor.label ?
+                                    html`
+                                        <div class="sensor-label" style="color: ${this.fontColor}; font-size: ${labelSize};">
+                                            ${sensor.label}
+                                        </div>` :
+                                    ''
+                                }
+                                <div class="sensor-value" style="font-size: ${valueSize};">
+                                    ${sensor.value}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `)}

@@ -1,11 +1,13 @@
 import { ReactiveControllerHost } from 'lit';
-import { HomeAssistant, formatNumber } from 'custom-card-helpers';
+import { HomeAssistant, formatNumber, stateIcon } from 'custom-card-helpers';
 import { BaseController } from '../../utils/controllers';
 
 export interface SensorConfig {
     entity: string;
     /** Custom label; unset falls back to the entity's friendly_name, '' hides the label */
     label?: string;
+    /** Custom icon; unset follows Home Assistant's entity/device-class icon. */
+    icon?: string;
     /** Decimal places override; unset falls back to HA display precision */
     precision?: number;
 }
@@ -13,6 +15,7 @@ export interface SensorConfig {
 export interface SensorValue {
     entity: string;
     label?: string;
+    icon?: string;
     value: string;
 }
 
@@ -94,15 +97,21 @@ export class SensorController extends BaseController {
             return {
                 entity: entityId,
                 label: sensorConfig.label,
+                icon: sensorConfig.icon,
                 value: 'unavailable'
             };
         }
+
+        const iconState = entityState.entity_id
+            ? entityState
+            : {...entityState, entity_id: entityId};
 
         return {
             entity: entityId,
             // Explicit label wins; unset falls back to the entity's friendly
             // name; an empty string deliberately hides the label.
             label: sensorConfig.label ?? entityState.attributes?.friendly_name,
+            icon: sensorConfig.icon ?? stateIcon(iconState),
             value: this.formatState(sensorConfig, entityState)
         };
     }

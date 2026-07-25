@@ -1,5 +1,9 @@
 # Configuration
 
+New cards are created directly with the zone-layout configuration and are
+customized in Designer. The legacy form remains available only for existing
+2.x configurations until they are migrated.
+
 Version 3.0 stores the card as card-wide settings plus widgets in a 3×3 zone grid.
 The visual Designer is the recommended configuration method; YAML exposes the same
 model. Existing 2.x configuration is migrated automatically.
@@ -10,9 +14,10 @@ model. Existing 2.x configuration is migrated automatically.
 2. Select **Configure card** on a regular card. Panel/full-screen placements open the
    Designer directly.
 3. The Designer initially selects **Card settings**:
-   - **General** — font color, custom font, language, time zone, logging and size;
-   - **Spacing** — preset or explicit card padding, zone gap and widget gap;
-   - **Background** — image source, overlay, rotation and image fitting.
+   - **General** — card appearance followed by language and diagnostics;
+   - **Layout** — layout format and visual preset followed by card, zone and widget
+     spacing;
+   - **Background** — image source, image appearance and rotation.
 4. Drag a widget by its handle. Select a widget to edit its **Content**,
    **Appearance** and **Behavior** tabs. Select a zone label to edit the zone.
 5. The lower-left status shows **Saved** or **Unsaved changes**. Changes are written
@@ -20,6 +25,31 @@ model. Existing 2.x configuration is migrated automatically.
 
 The compact Home Assistant card editor deliberately contains only a link/instruction
 to use the Designer. It does not duplicate the full 3.0 settings UI.
+
+The Designer shows the real physical panels for the selected layout while keeping
+the ordered widgets directly editable:
+
+![Wall Clock Designer with a vertical 1/3 + 2/3 layout](../images/wall-panel-editor.png)
+
+## Widget settings organization
+
+The widget inspector keeps the editable fields in their natural context:
+
+| Widget | Content | Appearance | Behavior |
+| --- | --- | --- | --- |
+| Clock and date | Time or date format | Shared typography, size and placement | Zone priority |
+| Sensors | Ordered entities, labels and item icons | Orientation, separators, sizes and spacing | Zone priority |
+| Weather | Provider, location/entity and displayed forecast | Icon set, orientation and sizing | Availability and refresh |
+| Calendar | Sources, event range and event details | Event background, typography and layout | Filtering, empty visibility and refresh |
+| Transportation | Provider and stops/profiles | Inline/modal presentation and departure count | Auto-hide and refresh |
+| Action bar | Actions and their targets | Grid, button surface, spacing and icon size | Availability |
+| Home Assistant card | Embedded card configuration | Transparent surface and shared placement | Zone priority |
+| Separator | — | Orientation, color, opacity, thickness and length | — |
+
+Shared widget color, font, width and margins stay on **Appearance**. **Priority** is
+shown on **Behavior** only in exclusive zones where widgets compete for visibility.
+Per-action icons and colors remain with the action itself so each action can be
+configured as one unit.
 
 ## 3.0 YAML structure
 

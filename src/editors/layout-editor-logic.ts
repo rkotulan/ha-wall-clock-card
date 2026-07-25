@@ -2,6 +2,8 @@
 // unit-testable in the node Jest environment.
 import {
     LayoutConfig,
+    LayoutFormat,
+    LayoutVisualPreset,
     SpacingConfig,
     SpacingPreset,
     WallClockConfigV3,
@@ -107,6 +109,50 @@ export function addWidget(layout: LayoutConfig, zoneId: ZoneId, widget: WidgetCo
     return result;
 }
 
+function zoneSettings(zone?: ZoneConfig): Omit<ZoneConfig, 'widgets'> {
+    if (!zone) return {};
+    const {widgets: _widgets, ...settings} = zone;
+    return settings;
+}
+
+function clearGroupedZoneWidgets(result: LayoutConfig, zones: ZoneId[], canonical: ZoneId): void {
+    for (const zoneId of zones) {
+        if (zoneId === canonical) continue;
+        const zone = result.zones[zoneId];
+        if (!zone) continue;
+        const settings = zoneSettings(zone);
+        if (Object.keys(settings).length > 0) {
+            result.zones[zoneId] = {...settings, widgets: []};
+        } else {
+            delete result.zones[zoneId];
+        }
+    }
+}
+
+/**
+ * Adds a widget to one physical split area. Legacy logical zones are merged
+ * into their canonical zone only after this explicit editor action.
+ */
+export function addWidgetToZoneGroup(
+    layout: LayoutConfig,
+    zones: ZoneId[],
+    widget: WidgetConfig,
+    index?: number,
+): LayoutConfig {
+    const canonical = zones[0];
+    if (!canonical) return clone(layout);
+
+    const result = clone(layout);
+    const owner = layout.zones[canonical] ?? zones.map(zone => layout.zones[zone]).find(Boolean);
+    const widgets = zones.flatMap(zone => result.zones[zone]?.widgets ?? []);
+    const added: WidgetConfig = {...clone(widget), id: uniqueWidgetId(layout, widget.type)};
+    const at = index === undefined ? widgets.length : Math.max(0, Math.min(index, widgets.length));
+    widgets.splice(at, 0, added);
+    result.zones[canonical] = {...zoneSettings(owner), widgets};
+    clearGroupedZoneWidgets(result, zones, canonical);
+    return result;
+}
+
 /** Removes the widget at zone/index; empty zones are dropped from the config. */
 export function removeWidget(layout: LayoutConfig, zoneId: ZoneId, index: number): LayoutConfig {
     const result = clone(layout);
@@ -165,10 +211,7 @@ export function updateZoneSettings(
     settings: Partial<Omit<ZoneConfig, 'widgets'>>,
 ): LayoutConfig {
     const result = clone(layout);
-    const zone = result.zones[zoneId];
-    if (!zone) {
-        return result;
-    }
+    const zone = result.zones[zoneId] ?? {widgets: []};
     const zoneRecord = zone as unknown as Record<string, unknown>;
     for (const [key, value] of Object.entries(settings)) {
         if (value === undefined || value === '') {
@@ -176,6 +219,12 @@ export function updateZoneSettings(
         } else {
             zoneRecord[key] = value;
         }
+    }
+    const hasSettings = Object.keys(zoneRecord).some(key => key !== 'widgets');
+    if (zone.widgets.length > 0 || hasSettings) {
+        result.zones[zoneId] = zone;
+    } else {
+        delete result.zones[zoneId];
     }
     return result;
 }
@@ -187,6 +236,62 @@ export function setSpacing(layout: LayoutConfig, spacing: SpacingPreset | Spacin
         delete result.spacing;
     } else {
         result.spacing = spacing;
+    }
+    return result;
+}
+
+/** Sets the canvas geometry; the original grid is represented by an omitted key. */
+export function setLayoutFormat(layout: LayoutConfig, format: LayoutFormat): LayoutConfig {
+    const result = clone(layout);
+    if (format === 'grid-3x3') {
+        delete result.format;
+    } else {
+        result.format = format;
+    }
+    return result;
+}
+
+/**
+ * Moves a widget into a physical split area and consolidates that area's
+ * ordered widgets into its canonical zone.
+ */
+export function moveWidgetToZoneGroup(
+    layout: LayoutConfig,
+    fromZone: ZoneId,
+    fromIndex: number,
+    targetZones: ZoneId[],
+    toIndex: number,
+): LayoutConfig {
+    const canonical = targetZones[0];
+    const source = layout.zones[fromZone];
+    if (!canonical || !source || fromIndex < 0 || fromIndex >= source.widgets.length) {
+        return clone(layout);
+    }
+
+    const result = clone(layout);
+    const widget = result.zones[fromZone]!.widgets[fromIndex];
+    const owner = layout.zones[canonical] ?? targetZones.map(zone => layout.zones[zone]).find(Boolean);
+
+    result.zones[fromZone]!.widgets.splice(fromIndex, 1);
+    if (!targetZones.includes(fromZone) && result.zones[fromZone]!.widgets.length === 0) {
+        delete result.zones[fromZone];
+    }
+
+    const widgets = targetZones.flatMap(zone => result.zones[zone]?.widgets ?? []);
+    const at = Math.max(0, Math.min(toIndex, widgets.length));
+    widgets.splice(at, 0, widget);
+    result.zones[canonical] = {...zoneSettings(owner), widgets};
+    clearGroupedZoneWidgets(result, targetZones, canonical);
+    return result;
+}
+
+/** Sets a visual preset without changing widget placement or functional config. */
+export function setLayoutVisualPreset(layout: LayoutConfig, preset: LayoutVisualPreset): LayoutConfig {
+    const result = clone(layout);
+    if (preset === 'none') {
+        delete result.preset;
+    } else {
+        result.preset = preset;
     }
     return result;
 }

@@ -229,3 +229,24 @@ export function resolveSpacing(layout?: LayoutConfig): Required<SpacingConfig> {
     }
     return resolved;
 }
+
+export interface CssPaddingEdges {
+    top: string;
+    right: string;
+    bottom: string;
+    left: string;
+}
+
+/** Expands a validated CSS padding shorthand into its four physical edges. */
+export function expandCssPadding(value: string): CssPaddingEdges {
+    const parts = value.trim().split(/\s+/);
+    const [first, second = first, third = first, fourth = second] = parts;
+
+    if (parts.length === 2) {
+        return {top: first, right: second, bottom: first, left: second};
+    }
+    if (parts.length === 3) {
+        return {top: first, right: second, bottom: third, left: second};
+    }
+    return {top: first, right: second, bottom: third, left: fourth};
+}

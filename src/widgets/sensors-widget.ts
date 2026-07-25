@@ -13,6 +13,11 @@ export interface SensorsWidgetConfig extends WidgetConfig {
     labelSize?: string;
     valueSize?: string;
     itemGap?: string;
+    showIcons?: boolean;
+    iconSize?: string;
+    showSeparator?: boolean;
+    separatorColor?: string;
+    separatorOpacity?: number;
     orientation?: WidgetOrientation;
     alignment?: WidgetAlignment;
 }
@@ -27,6 +32,15 @@ export class SensorsWidget extends WidgetElement<SensorsWidgetConfig> {
             width: 100%;
             max-height: 100%;
         }
+
+        /* A percentage-sized child has no intrinsic flex width. Let the sensor
+           content establish it when the row widget uses compact sizing. */
+        :host([data-content-width]) ha-sensors {
+            --sensor-component-width: max-content;
+            --sensor-container-type: normal;
+            width: max-content;
+            max-width: 100%;
+        }
     `;
 
     protected applyWidgetState(): void {
@@ -37,6 +51,11 @@ export class SensorsWidget extends WidgetElement<SensorsWidgetConfig> {
         this.sensors.labelSize = this.config.labelSize;
         this.sensors.valueSize = this.config.valueSize;
         this.sensors.itemGap = this.config.itemGap;
+        this.sensors.showIcons = this.config.showIcons !== false;
+        this.sensors.iconSize = this.config.iconSize;
+        this.sensors.showSeparator = this.config.showSeparator !== false;
+        this.sensors.separatorColor = this.config.separatorColor;
+        this.sensors.separatorOpacity = this.config.separatorOpacity;
         this.sensors.orientation = resolveWidgetOrientation(this.config.orientation, this.zoneId);
         this.sensors.alignment = resolveWidgetAlignment(
             this.config.alignment,

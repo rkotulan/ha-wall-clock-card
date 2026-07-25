@@ -5,13 +5,17 @@ import {moveListItem, movedListIndex, SortableListController} from '../../editor
 import {
     getAllTransportationProviders,
     HomeAssistantTransportationProfile,
+    resolveHomeAssistantTransportationProfileName,
     StopConfig as TransportationStopConfig,
 } from '../../transportation-providers';
+import {getEditorSessionState, setEditorSessionState} from '../../editors/editor-session-state';
 
-// The HA editor may recreate the custom card after every staged config change.
-// Retain the open section across that recreation, just like the layout inspector
-// retains its selected settings tab.
-let retainedExpandedHaProfileIndex: number | null = 0;
+interface TransportationEditorExpansionState {
+    stopIndex: number | null;
+    haProfileIndex: number | null;
+}
+
+const EXPANSION_STATE_KEY = 'transportation-expansion';
 
 function formatTransportationEntityLabel(entityId: string, friendlyName?: unknown): string {
     const label = String(friendlyName || entityId).trim();
@@ -25,10 +29,11 @@ function formatTransportationEntityLabel(entityId: string, friendlyName?: unknow
  */
 @customElement('transportation-editor')
 export class TransportationEditor extends BaseEditorSection {
+    @property({attribute: false}) editorSessionKey?: string;
     @property({ type: Array }) _stops: TransportationStopConfig[] = [];
-    @state() private _expandedStopIndex: number | null = 0;
+    @state() private _expandedStopIndex: number | null = null;
     @state() private _haProfiles: HomeAssistantTransportationProfile[] = [];
-    @state() private _expandedHaProfileIndex: number | null = retainedExpandedHaProfileIndex;
+    @state() private _expandedHaProfileIndex: number | null = null;
     private readonly sortableList = new SortableListController(this, {
         containerSelector: '.stop-list',
         draggable: '.stop-card',
@@ -44,12 +49,32 @@ export class TransportationEditor extends BaseEditorSection {
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 
-        // Load stops from config when config changes
+        if (changedProps.has('editorSessionKey')) {
+            const retained = getEditorSessionState<TransportationEditorExpansionState>(
+                this.editorSessionKey,
+                EXPANSION_STATE_KEY,
+            );
+            this._expandedStopIndex = retained?.stopIndex ?? null;
+            this._expandedHaProfileIndex = retained?.haProfileIndex ?? null;
+        }
+        // Load stops after restoring transient expansion state. HA can recreate
+        // the complete card after autosave and set both properties together.
         if (changedProps.has('config') && this.config) {
             this._loadStops();
             this._loadHaProfiles();
         }
         this.sortableList.schedule();
+    }
+
+    private _retainExpansionState(): void {
+        setEditorSessionState(
+            this.editorSessionKey,
+            EXPANSION_STATE_KEY,
+            {
+                stopIndex: this._expandedStopIndex,
+                haProfileIndex: this._expandedHaProfileIndex,
+            } satisfies TransportationEditorExpansionState,
+        );
     }
 
     disconnectedCallback(): void {
@@ -101,7 +126,7 @@ export class TransportationEditor extends BaseEditorSection {
                 this._haProfiles.length - 1,
             );
         }
-        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._retainExpansionState();
     }
 
     private _saveHaProfiles(): void {
@@ -131,7 +156,7 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _addHaProfile(): void {
         this._expandedHaProfileIndex = this._haProfiles.length;
-        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._retainExpansionState();
         this._haProfiles = [...this._haProfiles, {
             name: '',
             refreshButtonEntity: '',
@@ -142,14 +167,12 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _removeHaProfile(index: number): void {
         this._haProfiles = this._haProfiles.filter((_, profileIndex) => profileIndex !== index);
-        if (this._haProfiles.length === 0) {
+        if (this._haProfiles.length === 0 || this._expandedHaProfileIndex === index) {
             this._expandedHaProfileIndex = null;
-        } else if (this._expandedHaProfileIndex === index) {
-            this._expandedHaProfileIndex = Math.min(index, this._haProfiles.length - 1);
         } else if (this._expandedHaProfileIndex !== null && this._expandedHaProfileIndex > index) {
             this._expandedHaProfileIndex -= 1;
         }
-        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._retainExpansionState();
         this._saveHaProfiles();
     }
 
@@ -166,7 +189,7 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _toggleHaProfile(index: number): void {
         this._expandedHaProfileIndex = this._expandedHaProfileIndex === index ? null : index;
-        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._retainExpansionState();
     }
 
     private _moveHaProfile(fromIndex: number, toIndex: number): void {
@@ -175,24 +198,14 @@ export class TransportationEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
-        retainedExpandedHaProfileIndex = this._expandedHaProfileIndex;
+        this._retainExpansionState();
         this._haProfiles = moveListItem(this._haProfiles, fromIndex, toIndex);
         this._saveHaProfiles();
     }
 
     private _haProfileLabel(profile: HomeAssistantTransportationProfile, index: number): string {
-        const configuredName = profile.name?.trim();
-        if (configuredName) return configuredName;
-
-        const friendlyName = profile.refreshButtonEntity
-            ? this.hass?.states[profile.refreshButtonEntity]?.attributes.friendly_name
-            : undefined;
-        if (friendlyName) {
-            const stopName = String(friendlyName)
-                .replace(/\s+(Aktualizovat odjezdy|Refresh departures)$/iu, '')
-                .trim();
-            if (stopName) return stopName;
-        }
+        const resolvedName = resolveHomeAssistantTransportationProfileName(profile, this.hass);
+        if (resolvedName) return resolvedName;
 
         return this.t('editor.transportation.stop', 'Stop {number}', {number: index + 1});
     }
@@ -208,6 +221,7 @@ export class TransportationEditor extends BaseEditorSection {
         if (!this.config?.transportation) {
             this._stops = [];
             this._expandedStopIndex = null;
+            this._retainExpansionState();
             return;
         }
 
@@ -223,10 +237,12 @@ export class TransportationEditor extends BaseEditorSection {
         } else if (this._expandedStopIndex !== null) {
             this._expandedStopIndex = Math.min(this._expandedStopIndex, this._stops.length - 1);
         }
+        this._retainExpansionState();
     }
 
     private _addStop(): void {
         this._expandedStopIndex = this._stops.length;
+        this._retainExpansionState();
         this._stops = [...this._stops, {stopId: 1793, postId: 3, name: ''}];
         // Update the config with a deep copy
         if (this.config) {
@@ -259,13 +275,12 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _removeStop(index: number): void {
         this._stops = this._stops.filter((_, i) => i !== index);
-        if (this._stops.length === 0) {
+        if (this._stops.length === 0 || this._expandedStopIndex === index) {
             this._expandedStopIndex = null;
-        } else if (this._expandedStopIndex === index) {
-            this._expandedStopIndex = Math.min(index, this._stops.length - 1);
         } else if (this._expandedStopIndex !== null && this._expandedStopIndex > index) {
             this._expandedStopIndex -= 1;
         }
+        this._retainExpansionState();
         // Update the config with a deep copy
         if (this.config && this.config.transportation) {
             // Create a deep copy of the config
@@ -338,6 +353,7 @@ export class TransportationEditor extends BaseEditorSection {
 
     private _toggleStop(index: number): void {
         this._expandedStopIndex = this._expandedStopIndex === index ? null : index;
+        this._retainExpansionState();
     }
 
     private _moveStop(fromIndex: number, toIndex: number): void {
@@ -346,6 +362,7 @@ export class TransportationEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        this._retainExpansionState();
         this._stops = moveListItem(this._stops, fromIndex, toIndex);
 
         if (!this.config?.transportation) return;
@@ -525,9 +542,14 @@ export class TransportationEditor extends BaseEditorSection {
         }
 
         const isHomeAssistant = this.config.transportation.provider === 'homeassistant';
+        const showContent = this.section === 'all' || this.section === 'content';
+        const showAppearance = this.section === 'all' || this.section === 'appearance';
+        const showBehavior = this.section === 'all' || this.section === 'behavior';
 
         return html`
             <div class="content">
+                ${showContent ? html`
+                <div class="section-subheader">${this.t('editor.transportation.source', 'Data source')}</div>
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
@@ -541,13 +563,54 @@ export class TransportationEditor extends BaseEditorSection {
                         propertyName="transportation.provider"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
+                ` : ''}
 
-                ${isHomeAssistant ? html`
+                ${showAppearance ? html`
+                <div class="section-subheader">${this.t('editor.transportation.appearance', 'Departure display')}</div>
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
+                            select: {
+                                options: [
+                                    {
+                                        value: 'inline',
+                                        label: this.t(
+                                            'editor.transportation.display_inline',
+                                            'In card layout',
+                                        ),
+                                    },
+                                    {
+                                        value: 'modal',
+                                        label: this.t(
+                                            'editor.transportation.display_modal',
+                                            'Modal dialog',
+                                        ),
+                                    },
+                                ],
+                                mode: 'dropdown',
+                            },
+                        }}
+                        .value=${this.config.transportation.displayMode ?? 'inline'}
+                        .label=${this.t(
+                            'editor.transportation.display_mode',
+                            'Departure display',
+                        )}
+                        .helper=${this.t(
+                            'editor.transportation.display_mode_help',
+                            'Choose where departures open after pressing the transportation action',
+                        )}
+                        propertyName="transportation.displayMode"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+                ` : ''}
+
+                ${showContent && isHomeAssistant ? html`
                     <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
                     <div class="stop-list" data-kind="ha-profiles">
                     ${this._haProfiles.map((profile, index) => {
                         const expanded = this._expandedHaProfileIndex === index;
+                        const profileLabel = this._haProfileLabel(profile, index);
                         return html`
                         <div class="stop-card ${expanded ? '' : 'collapsed'}">
                             <div class="stop-header">
@@ -559,7 +622,7 @@ export class TransportationEditor extends BaseEditorSection {
                                 <button class="stop-toggle" type="button"
                                         aria-expanded=${expanded}
                                         @click=${() => this._toggleHaProfile(index)}>
-                                    <strong>${this._haProfileLabel(profile, index)}</strong>
+                                    <strong>${profileLabel}</strong>
                                 </button>
                                 <button class="stop-icon-button remove" type="button"
                                         title=${this.t('editor.transportation.remove_stop', 'Remove stop')}
@@ -578,7 +641,7 @@ export class TransportationEditor extends BaseEditorSection {
                                 <ha-row-selector
                                         .hass=${this.hass}
                                         .selector=${{text: {}}}
-                                        .value=${profile.name || ''}
+                                        .value=${profile.name?.trim() ? profile.name : profileLabel}
                                         .label=${this.t('editor.transportation.stop_name', 'Stop name (optional)')}
                                         @value-changed=${(ev: CustomEvent) =>
                                             this._haProfileChanged(index, 'name', ev.detail.value || '')}>
@@ -615,7 +678,7 @@ export class TransportationEditor extends BaseEditorSection {
 
                 ` : ''}
 
-                ${!isHomeAssistant ? html`<ha-row-selector
+                ${showAppearance && !isHomeAssistant ? html`<ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
                             number: {
@@ -636,6 +699,8 @@ export class TransportationEditor extends BaseEditorSection {
                         }}
                 ></ha-row-selector>` : ''}
 
+                ${showBehavior ? html`
+                <div class="section-subheader">${this.t('editor.transportation.behavior', 'Refresh and auto-hide')}</div>
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
@@ -656,8 +721,9 @@ export class TransportationEditor extends BaseEditorSection {
                         }}
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
+                ` : ''}
 
-                ${!isHomeAssistant ? html`<ha-row-selector
+                ${showBehavior && !isHomeAssistant ? html`<ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
                             number: {
@@ -679,7 +745,7 @@ export class TransportationEditor extends BaseEditorSection {
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>` : ''}
 
-                ${!isHomeAssistant ? html`
+                ${showContent && !isHomeAssistant ? html`
                 <div class="section-subheader">${this.t('editor.transportation.stops', 'Stops')}</div>
 
                 <div class="stop-list" data-kind="direct-stops">
@@ -747,11 +813,11 @@ export class TransportationEditor extends BaseEditorSection {
                 </button>
                 ` : ''}
 
-                <div class="info-text">
+                ${showContent ? html`<div class="info-text">
                     <a
                         href="https://github.com/rkotulan/ha-wall-clock-card/blob/main/docs/transportation.md"
                         target="_blank">${this.t('editor.transportation.documentation', 'Transportation configuration documentation')}</a>
-                </div>
+                </div>` : ''}
             </div>
         `;
     }

@@ -4,11 +4,12 @@ import {createLogger, localize} from '../../utils';
 import {TransportationController} from './transportation-controller';
 import {
     TransportationConfig,
-    TransportationData,
-    TransportationDeparture
+    TransportationData
 } from '../../transportation-providers';
 import {BottomBarComponent} from '../bottom-bar';
 import {HomeAssistant} from 'custom-card-helpers';
+import {groupTransportationDepartures} from './transportation-groups';
+import './transportation-dialog';
 
 export interface TransportationComponentConfig {
     transportation?: TransportationConfig;
@@ -288,12 +289,30 @@ export class TransportationComponent extends BottomBarComponent {
 
         const transportationData = this.transportationController.transportationData;
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
+        const displayMode = this.transportation.displayMode ?? 'inline';
 
         // this.logger.debug(`Rendering transportation component isActive: ${this.controller.isActive} data: ${JSON.stringify(transportationData)} loaded: ${transportationDataLoaded}`);
 
+        if (!this.controller.isActive) {
+            return html``;
+        }
+
+        if (displayMode === 'modal') {
+            return html`
+                <wcc-transportation-dialog
+                        .open=${true}
+                        .data=${transportationDataLoaded
+                            ? transportationData
+                            : {...transportationData, loading: true}}
+                        .language=${this.language}
+                        .hass=${this.hass}
+                        @wcc-transportation-dialog-close=${this.closeTransportation}>
+                </wcc-transportation-dialog>
+            `;
+        }
+
         return html`
-            ${this.controller.isActive
-                    ? (transportationDataLoaded
+            ${transportationDataLoaded
                             ? html`
                                 <div
                                         class="transportation-container"
@@ -307,10 +326,13 @@ export class TransportationComponent extends BottomBarComponent {
                                         style="color: ${this.fontColor};"
                                 >
                                     <div class="transportation-loading">${localize('runtime.loading_transportation', this.language || this.hass, 'Loading transportation data…')}</div>
-                                </div>`)
-                    : html``}
+                                </div>`}
         `;
     }
+
+    private closeTransportation = (): void => {
+        this.transportationController.dismissTransportation();
+    };
 
     /**
      * Render transportation content
@@ -331,30 +353,15 @@ export class TransportationComponent extends BottomBarComponent {
                 <div class="transportation-loading">${localize('runtime.no_departures', this.language || this.hass, 'No departures available.')}</div>`;
         }
 
-        // Group departures by stop name and postId
-        const departuresByStop: { [key: string]: TransportationDeparture[] } = {};
-
-        for (const departure of transportationData.departures) {
-            const key = String(departure.groupId ?? `${departure.stopName}-${departure.postId}`);
-            if (!departuresByStop[key]) {
-                departuresByStop[key] = [];
-            }
-            departuresByStop[key].push(departure);
-        }
-
         return html`
             <div class="transportation-departures">
-                ${Object.entries(departuresByStop).map(([_key, departures]) => {
-                    // Get the stop name from the first departure
-                    const stopName = departures[0].stopName;
-
-                    return html`
+                ${groupTransportationDepartures(transportationData.departures).map(group => html`
                         <div class="stop-group">
                             <h3 class="stop-name" style="color: ${this.fontColor};">
-                                ${stopName}
+                                ${group.stopName}
                             </h3>
                             <div class="stop-departures">
-                                ${departures.map(departure => html`
+                                ${group.departures.map(departure => html`
                                     <div class="departure-item">
                                         <div class="departure-line" style="color: ${this.fontColor};">
                                             ${departure.lineName}
@@ -371,8 +378,7 @@ export class TransportationComponent extends BottomBarComponent {
                                 `)}
                             </div>
                         </div>
-                    `;
-                })}
+                    `)}
             </div>
         `;
     }

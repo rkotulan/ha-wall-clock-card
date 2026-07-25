@@ -76,5 +76,4 @@ Also test in Home Assistant at desktop and narrow widths:
 The Jest environment is Node-based, so DOM rendering remains a browser integration
 check. Keep pure migration, formatting and data transformations separately testable.
 
-Use the [3.0.0 release checklist](release-checklist.md) before tagging the final
-release.
+Use the [release checklist](release-checklist.md) before tagging the final release.

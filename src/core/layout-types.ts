@@ -18,6 +18,30 @@ export const ZONE_IDS: ZoneId[] = [
     'bottom-left', 'bottom-center', 'bottom-right',
 ];
 
+/**
+ * Geometry of the layout canvas. The nine logical zones stay available in
+ * every format; split formats group them into two physical panels.
+ */
+export type LayoutFormat =
+    | 'grid-3x3'
+    | 'vertical-2-1'
+    | 'vertical-1-2'
+    | 'horizontal-2-1'
+    | 'horizontal-1-2';
+
+export const LAYOUT_FORMATS: LayoutFormat[] = [
+    'grid-3x3',
+    'vertical-2-1',
+    'vertical-1-2',
+    'horizontal-2-1',
+    'horizontal-1-2',
+];
+
+/** Visual treatment applied on top of a format without moving widgets. */
+export type LayoutVisualPreset = 'none' | 'glass';
+
+export const LAYOUT_VISUAL_PRESETS: LayoutVisualPreset[] = ['none', 'glass'];
+
 /** Layout of repeated items inside widgets that support it. */
 export type WidgetOrientation = 'auto' | 'horizontal' | 'vertical';
 
@@ -33,12 +57,18 @@ export interface WidgetCondition {
     [key: string]: unknown;
 }
 
+export type WidgetWidthMode = 'auto' | 'fill' | 'content';
+
 /** Small set of safe per-widget style overrides. */
 export interface WidgetStyle {
     fontSize?: string;
     /** CSS font-family value; the font itself must be available in HA/browser. */
     fontFamily?: string;
     color?: string;
+    /** Width policy inside a row zone; auto selects a suitable policy by widget type. */
+    widthMode?: WidgetWidthMode;
+    /** Relative share of available width when the hosting zone uses row direction. */
+    grow?: number;
     maxWidth?: string;
     maxHeight?: string;
     /** Per-instance escape hatch (CSS margin shorthand). Widgets must not ship their own outer margins. */
@@ -74,6 +104,8 @@ export interface ZoneConfig {
     padding?: string;
     /** CSS length translating the complete zone vertically; negative moves it up. */
     offsetY?: string;
+    /** Let a sole physical area fill the cross-axis of its split panel. */
+    span?: 'panel';
 }
 
 /** Horizontal default follows the grid column unless the zone overrides it. */
@@ -104,6 +136,10 @@ export const SPACING_PRESETS: Record<SpacingPreset, Required<SpacingConfig>> = {
 export interface LayoutConfig {
     zones: Partial<Record<ZoneId, ZoneConfig>>;
     spacing?: SpacingPreset | SpacingConfig;
+    /** Defaults to the original 3x3 geometry for backwards compatibility. */
+    format?: LayoutFormat;
+    /** Optional visual treatment; it never changes entities or widget placement. */
+    preset?: LayoutVisualPreset;
 }
 
 /** Card-level background layer (not a widget). Groups the v2 image* keys. */

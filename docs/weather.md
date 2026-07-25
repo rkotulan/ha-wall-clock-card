@@ -14,6 +14,7 @@ layout:
           providerConfig:
             entityId: weather.home
           displayMode: both
+          orientation: horizontal
           forecastDays: 5
           title: Weather forecast
           updateInterval: 1800
@@ -28,6 +29,7 @@ layout:
 | `provider` | `homeassistant` | `homeassistant` or `openweathermap` |
 | `providerConfig` | — | Provider-specific settings |
 | `displayMode` | `current` for a newly added widget | `current`, `forecast` or `both` |
+| `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
 | `title` | localized “Weather” | Section title |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
@@ -37,6 +39,11 @@ layout:
 
 Clicking Home Assistant-backed current weather opens that entity's native more-info
 dialog.
+
+Horizontal orientation places the current icon, temperature and condition first,
+followed by compact forecast columns. Vertical orientation preserves the traditional
+stacked presentation. With `auto`, center-column zones use the horizontal layout and
+side zones use the vertical layout.
 
 ## Home Assistant provider
 

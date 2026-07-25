@@ -9,8 +9,9 @@ A Home Assistant Lovelace custom card (`wall-clock-card`) written in TypeScript 
 ## Commands
 
 ```bash
-npm run build       # webpack production build -> dist/wall-clock-card.js
-npm run watch       # rebuild on change (development mode); copy dist output into HA www/ to test
+npm run build       # production bundle -> dist/wall-clock-card.js; auto-deploys when configured
+npm run watch       # rebuild on change; also auto-deploys when configured
+npm run deploy      # copy the existing bundle into the configured HA www directory
 npm run type-check  # tsc --noEmit, no build artifacts
 npm test            # jest (all *.test.ts under tests/)
 npm run analyze     # webpack --analyze, opens the bundle analyzer
@@ -22,9 +23,13 @@ Note: `npm run build` runs webpack in `mode: 'production'` regardless of flags (
 
 ## Architecture
 
-### Card composition (imperative, not templated)
+### Card shell, layout and zones
 
-`WallClockCard` (`src/core/wall-clock-card.ts`) is the single registered custom element (`@customElement('wall-clock-card')`). It does **not** compose its children in a Lit template — it creates them imperatively with `document.createElement('ha-clock')` etc. in its constructor and pushes config/`hass` onto them as properties. The child elements are: `ha-clock`, `ha-sensors`, `ha-weather`, `ha-background-image`, `ha-transportation`, `ha-action-bar`, plus a `BottomBarManager` that decides which "bottom" component (weather vs transportation) is shown. When adding a new top-level feature, follow this pattern: create the element, forward `config`/`hass`/`fontColor`/`size` in the constructor and in `updated()`.
+`WallClockCard` (`src/core/wall-clock-card.ts`) is the registered Lovelace custom element (`@customElement('wall-clock-card')`). It normalizes both legacy 2.x and current 3.x configuration through `migrateToLayout`, owns the background element and a single `wcc-layout`, and coordinates the inline Designer/autosave lifecycle.
+
+`WccLayout` (`src/core/wcc-layout.ts`) is the runtime composition root. It resolves the selected layout format (`3x3`, vertical `2/3 + 1/3` / `1/3 + 2/3`, or horizontal equivalents), creates widget elements through `WidgetRegistry`, caches them by stable widget id and forwards `hass`, appearance and zone context. `WccZone` (`src/core/wcc-zone.ts`) renders each ordered widget stack and implements normal `stack` or priority-based `exclusive` behavior.
+
+Layout/config types and defaults live in `src/core/layout-types.ts`; physical split-panel mapping lives in `src/core/layout-format.ts`; migration and spacing resolution live in `src/core/migrate-config.ts`.
 
 ### Feature = component + controller + editor
 
@@ -33,10 +38,17 @@ Each feature under `src/components/<feature>/` is a trio:
 - `*-controller.ts` — a Lit `ReactiveController` extending `BaseController` (`src/utils/controllers/base-controller.ts`). `BaseController` provides a `ready` Promise (resolved on `hostConnected`, reset on `hostDisconnected`) and namespaced logger; subclasses implement `onHostConnected`/`onHostDisconnected`. Data fetching, polling intervals, and HA API calls live here, not in the component.
 - `*-editor.ts` — the visual config editor section shown in the HA card editor.
 
+The runtime adapters in `src/widgets/` extend `WidgetElement` and wrap these feature components. Built-ins register eagerly in `src/widgets/index.ts`; add a new top-level widget by defining its widget element/config, registering a `WidgetPlugin`, and providing an editor adapter when the feature editor still consumes the legacy root config shape.
+
+### Designer
+
+The full-screen/in-place Designer lives under `src/editors/`. `zone-overlay.ts` renders the physical layout editing surface and drag/drop lists. `layout-inspector.ts` hosts card, zone and widget settings; widget editors contribute to the `content`, `appearance` and `behavior` tabs declared in `widget-settings-sections.ts`. `layout-editor-logic.ts` contains immutable add/move/update/format operations and should stay covered by Node tests. Transient expansion/selection state that must survive Home Assistant element recreation belongs in `editor-session-state.ts`, not persisted config.
+
 ### Extensibility: singleton registries + self-registration
 
-Four independent plugin systems, all singletons registered eagerly in their directory's `index.ts` (import side effects do the registration):
+Five independent plugin systems, all singletons registered eagerly in their directory's `index.ts` (import side effects do the registration):
 
+- **Widgets** — `src/widgets/`. `WidgetRegistry` creates runtime widget elements and exposes palette metadata/default configuration.
 - **Image sources** — `src/image-sources/`. `ImageSourceRegistry` + `image-source-factory`; built-ins (picsum, local, unsplash, sensor) registered via `registry.registerAll([...])` in `index.ts`. `BackgroundImageManager` picks images by weather + time-of-day.
 - **Weather providers** — `src/weather-providers/`. `WeatherProviderRegistry`; built-ins `openWeatherMapProvider`, `homeAssistantWeatherProvider`.
 - **Transportation providers** — `src/transportation-providers/`. Same pattern.
@@ -54,7 +66,7 @@ To register a custom provider/source at runtime, call the exported helpers (`reg
 
 - **Logging** — `createLogger(name)` / global `logger` (`src/utils/logger/`). Levels configured from card config via `configureLogger` / `getLogLevelFromString`.
 - **Localization** — `src/utils/localize/`. `loadTranslationsAsync` loads translations; weather conditions are localized across many languages. Translation JSON lives outside `src` (see `docs/`/existing translation files) — add condition strings for every supported language when introducing a new weather condition.
-- **Config & types** — legacy/shared types live in `src/core/types.ts`; the normalized 3.0 shape and defaults live in `src/core/layout-types.ts`, with migration/resolution in `src/core/migrate-config.ts`.
+- **Config & types** — legacy/shared types live in `src/core/types.ts`; the normalized 3.x shape and defaults live in `src/core/layout-types.ts`, with migration/resolution in `src/core/migrate-config.ts`.
 
 ## Testing
 
