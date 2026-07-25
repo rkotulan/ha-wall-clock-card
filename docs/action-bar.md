@@ -11,8 +11,10 @@ layout:
         - type: action-bar
           enabled: true
           orientation: auto
+          columns: 2
           alignment: auto
           backgroundOpacity: 0.3
+          showButtonBackground: false
           buttonGap: 12px
           padding: 12px 16px
           iconSize: 64px
@@ -32,8 +34,10 @@ layout:
 | `enabled` | `true` | Enable this action bar |
 | `actions` | `[]` | Ordered action buttons |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
+| `columns` | 2 in row zones | Fixed grid column count; when set, overrides orientation |
 | `alignment` | `auto` | `auto`, `left`, `center` or `right` |
 | `backgroundOpacity` | `0.3` | Black panel opacity from 0 to 1 |
+| `showButtonBackground` | `true` | Show the translucent circular surface behind each action |
 | `buttonGap` | `16px` | CSS length between buttons |
 | `padding` | `16px` | CSS padding shorthand inside the panel |
 | `iconSize` | size preset | CSS icon size, for example `72px` |
@@ -41,6 +45,10 @@ layout:
 Auto orientation uses a horizontal row in center-column zones and a vertical stack
 in side zones. Auto alignment follows the zone. For a vertical action bar the dark
 panel shrink-wraps the buttons instead of filling the complete zone width.
+Set `showButtonBackground: false` for flat icon-and-label actions without the
+individual circular surfaces. Set `columns: 2` to render four actions as a 2×2
+grid. Grid cells and buttons shrink responsively when the action-bar widget is
+narrow, so a two-column grid does not overflow a compact tablet panel.
 
 Each action requires `actionId`, `title` and `icon`. `icon` accepts an `mdi:` name or
 raw SVG path data. Buttons are keyboard accessible and support tap, hold and

@@ -10,12 +10,18 @@ import {fromBackgroundEditorConfig, fromEditorConfig, toBackgroundEditorConfig, 
 import {WidgetSelection, ZONE_LABELS} from './zone-overlay';
 import {getLanguageOptions, localize, normalizeLanguage} from '../utils';
 import {LabelPosition} from '../components/ha-selector/types';
+import {resolveLayoutFormat} from '../core/layout-format';
+import {widgetHasEditorSection, WidgetSettingsTab} from './widget-settings-sections';
 import './layout-editor';
 import '../components/background-image/background-editor';
 
-type EditorElement = HTMLElement & {hass?: HomeAssistant; config?: unknown};
+type EditorElement = HTMLElement & {
+    hass?: HomeAssistant;
+    config?: unknown;
+    editorSessionKey?: string;
+    section?: WidgetSettingsTab | 'all';
+};
 type CardSettingsTab = 'general' | 'spacing' | 'background';
-type WidgetSettingsTab = 'content' | 'appearance' | 'behavior';
 
 // Lovelace rebuilds the card after an autosave. Keep this transient UI state
 // outside the element so the newly-created inspector returns to the same tab.
@@ -30,6 +36,7 @@ export class WccLayoutInspector extends LitElement {
     @property({attribute: false}) layout: LayoutConfig = {zones: {}};
     @property({attribute: false}) selectedWidget: WidgetSelection | null = null;
     @property({attribute: false}) selectedZone: ZoneId | null = null;
+    @property({attribute: false}) editorSessionKey?: string;
     @state() private activeTab: WidgetSettingsTab = 'content';
     @state() private activeCardTab: CardSettingsTab = retainedCardSettingsTab;
 
@@ -370,12 +377,15 @@ export class WccLayoutInspector extends LitElement {
         this.emitWidget(located.zone, located.index, widget);
     }
 
-    private updateStyle(key: keyof WidgetStyle, value: string): void {
+    private updateStyle(key: keyof WidgetStyle, value: string | number | undefined): void {
         const located = this.resolveWidget();
         if (!located) return;
         const style: WidgetStyle = {...(located.widget.style ?? {})};
-        if (value === '') delete style[key];
-        else style[key] = value;
+        if (value === undefined || value === '') {
+            delete style[key];
+        } else {
+            (style as Record<string, string | number>)[key] = value;
+        }
         const widget = {...located.widget};
         if (Object.keys(style).length === 0) delete widget.style;
         else widget.style = style;
@@ -561,6 +571,14 @@ export class WccLayoutInspector extends LitElement {
             ` : ''}
             ${widget.type === 'action-bar' ? html`
                 <ha-row-selector .hass=${this.hass}
+                        .selector=${{number: {min: 0, max: 6, step: 1, mode: 'box'}}}
+                        .value=${widget.columns ?? 0}
+                        .label=${this.t('editor.actions.columns', 'Grid columns')}
+                        .helper=${this.t('editor.actions.columns_help', '0 automatically uses 2 columns in a horizontal zone; another value fixes the column count.')}
+                        @value-changed=${(ev: CustomEvent) =>
+                            this.updateWidgetField('columns', Number(ev.detail.value) > 0 ? Number(ev.detail.value) : undefined)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
                         .selector=${{boolean: {}}}
                         .value=${widget.showButtonBackground !== false}
                         .label=${this.t('editor.actions.button_background', 'Circular button background')}
@@ -608,26 +626,54 @@ export class WccLayoutInspector extends LitElement {
         if (plugin?.editorTag) {
             const editor = this.getEditor(plugin.editorTag);
             editor.hass = this.hass;
+            editor.editorSessionKey = this.editorSessionKey;
             editor.config = toEditorConfig(widget);
+            editor.section = this.activeTab;
             featureEditor = editor;
         }
         const style = widget.style ?? {};
         const exclusive = this.layout.zones[zone]?.mode === 'exclusive';
+        const hasFeatureSection = !!plugin?.editorTag && widgetHasEditorSection(widget.type, this.activeTab);
         return html`
             ${this.renderHeader(plugin?.icon ?? 'mdi:puzzle', widgetName, this.zoneLabel(zone))}
             ${this.renderTabs()}
             <div class="body">
                 ${this.activeTab === 'content' ? html`
                     <section class="section-card">
-                        <div class="section-title">${this.t('inspector.widget_settings', 'Widget settings')}</div>
-                        <div class="feature-editor">${featureEditor}</div>
+                        ${hasFeatureSection && widget.type !== 'calendar' ? html`
+                            <div class="section-title">${this.t('inspector.widget_settings', 'Widget settings')}</div>
+                        ` : ''}
+                        ${hasFeatureSection
+                            ? html`<div class="feature-editor">${featureEditor}</div>`
+                            : html`<p class="hint">${this.t('inspector.no_content', 'This widget has no content settings.')}</p>`}
                     </section>
                 ` : ''}
                 ${this.activeTab === 'appearance' ? html`
+                    ${hasFeatureSection ? html`
+                        <section class="section-card">
+                            <div class="feature-editor">${featureEditor}</div>
+                        </section>
+                    ` : ''}
                     <section class="section-card">
                     <div class="section-title">${this.t('inspector.appearance_layout', 'Appearance and layout')}</div>
                     <div class="settings-list">
                         ${this.renderWidgetPresentationFields(widget)}
+                        ${this.layout.zones[zone]?.direction === 'row' || style.widthMode !== undefined ? html`
+                            <ha-row-selector .hass=${this.hass}
+                                    .selector=${{select: {options: [
+                                        {value: 'auto', label: this.t('ui.auto', 'Automatic')},
+                                        {value: 'fill', label: this.t('inspector.width_mode_fill', 'Fill available space')},
+                                        {value: 'content', label: this.t('inspector.width_mode_content', 'Fit to content')},
+                                    ], mode: 'dropdown'}}}
+                                    .value=${style.widthMode ?? 'auto'}
+                                    .label=${this.t('inspector.width_mode', 'Row width behavior')}
+                                    .helper=${this.t('inspector.width_mode_help', 'Automatic chooses a suitable behavior for the widget type.')}
+                                    @value-changed=${(ev: CustomEvent) => this.updateStyle(
+                                        'widthMode',
+                                        ev.detail.value === 'auto' ? undefined : ev.detail.value,
+                                    )}>
+                            </ha-row-selector>
+                        ` : ''}
                         <ha-row-selector .hass=${this.hass} .selector=${{color_hex: ''}}
                                 .value=${style.color ?? ''} .label=${this.t('inspector.color', 'Color override')}
                                 @value-changed=${(ev: CustomEvent) => this.updateStyle('color', ev.detail.value)}>
@@ -639,6 +685,19 @@ export class WccLayoutInspector extends LitElement {
                                 @value-changed=${(ev: CustomEvent) => this.updateStyle('fontFamily', ev.detail.value)}>
                         </ha-row-selector>
                         ${this.renderWidgetSizeFields(widget, style)}
+                        ${(this.layout.zones[zone]?.direction === 'row' && style.widthMode !== 'content')
+                                || style.grow !== undefined ? html`
+                            <ha-row-selector .hass=${this.hass}
+                                    .selector=${{number: {min: 0, max: 10, step: 0.25, mode: 'box'}}}
+                                    .value=${style.grow ?? 0}
+                                    .label=${this.t('inspector.row_width_ratio', 'Row width ratio')}
+                                    .helper=${this.t('inspector.row_width_ratio_help', 'Relative share of available row width; 0 uses the widget content width.')}
+                                    @value-changed=${(ev: CustomEvent) => this.updateStyle(
+                                        'grow',
+                                        Number(ev.detail.value) > 0 ? Number(ev.detail.value) : undefined,
+                                    )}>
+                            </ha-row-selector>
+                        ` : ''}
                         ${widget.type === 'clock' || widget.type === 'date'
                             ? this.renderZoneAlignment(zone)
                             : ''}
@@ -652,7 +711,12 @@ export class WccLayoutInspector extends LitElement {
                     </section>
                 ` : ''}
                 ${this.activeTab === 'behavior' ? html`
-                    <section class="section-card">
+                    ${hasFeatureSection ? html`
+                        <section class="section-card">
+                            <div class="feature-editor">${featureEditor}</div>
+                        </section>
+                    ` : ''}
+                    ${exclusive || !hasFeatureSection ? html`<section class="section-card">
                         <div class="section-title">${this.t('ui.behavior', 'Behavior')}</div>
                         <div class="settings-list">
                         ${exclusive ? html`
@@ -664,7 +728,7 @@ export class WccLayoutInspector extends LitElement {
                             </ha-row-selector>
                         ` : html`<p class="hint">${this.t('inspector.no_behavior', 'This widget has no additional behavior settings.')}</p>`}
                         </div>
-                    </section>
+                    </section>` : ''}
                 ` : ''}
             </div>
         `;
@@ -722,6 +786,8 @@ export class WccLayoutInspector extends LitElement {
             color: this.t('inspector.color', 'Color override'),
             fontSize: this.t('inspector.font_size', 'Font size (e.g., 2rem)'),
             fontFamily: this.t('inspector.font_family', 'Font family override'),
+            widthMode: this.t('inspector.width_mode', 'Row width behavior'),
+            grow: this.t('inspector.row_width_ratio', 'Row width ratio'),
             maxWidth: this.t('inspector.max_width', 'Maximum width (e.g., 420px)'),
             maxHeight: this.t('inspector.max_height', 'Maximum height (e.g., 50vh)'),
             margin: this.t('inspector.margin', 'Margin (CSS shorthand)'),
@@ -755,6 +821,16 @@ export class WccLayoutInspector extends LitElement {
                             @value-changed=${(ev: CustomEvent) =>
                                 this.updateZone({direction: ev.detail.value === 'column' ? undefined : ev.detail.value})}>
                     </ha-row-selector>
+                    ${resolveLayoutFormat(this.layout) !== 'grid-3x3' ? html`
+                        <ha-row-selector .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${config.span === 'panel'}
+                                .label=${this.t('inspector.span_panel', 'Fill the complete split panel')}
+                                .helper=${this.t('inspector.span_panel_help', 'Available when this is the only occupied area in its panel.')}
+                                @value-changed=${(ev: CustomEvent) =>
+                                    this.updateZone({span: ev.detail.value === true ? 'panel' : undefined})}>
+                        </ha-row-selector>
+                    ` : ''}
                     <ha-row-selector .hass=${this.hass}
                             .selector=${{select: {options: [
                                 {value: 'auto', label: this.t('inspector.zone_default', 'Zone default ({alignment})', {alignment: ({
@@ -790,7 +866,7 @@ export class WccLayoutInspector extends LitElement {
     private renderCardTabs(): TemplateResult {
         const tabs: {id: CardSettingsTab; label: string}[] = [
             {id: 'general', label: this.t('general.title', 'General')},
-            {id: 'spacing', label: this.t('general.spacing', 'Spacing')},
+            {id: 'spacing', label: this.t('general.layout', 'Layout')},
             {id: 'background', label: this.t('general.background', 'Background')},
         ];
         return html`
@@ -850,47 +926,53 @@ export class WccLayoutInspector extends LitElement {
             appearance.language || this.hass?.locale?.language || this.hass?.language || 'en',
         ));
         return html`
-            ${this.renderFontColor()}
-            <ha-row-selector .hass=${this.hass}
-                    .selector=${{select: {options: this.languageOptions, mode: 'dropdown'}}}
-                    .value=${language}
-                    .label=${this.t('general.language', 'Language')}
-                    .labelPosition=${LabelPosition.Top}
-                    @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('language', ev.detail.value)}>
-            </ha-row-selector>
-            <ha-row-selector .hass=${this.hass}
-                    .selector=${{select: {options: [
-                        {value: 'debug', label: 'Debug'},
-                        {value: 'info', label: 'Info'},
-                        {value: 'warn', label: 'Warning'},
-                        {value: 'error', label: 'Error'},
-                        {value: 'none', label: this.t('ui.none', 'None')},
-                    ], mode: 'dropdown'}}}
-                    .value=${this.config?.logLevel ?? 'info'}
-                    .label=${this.t('general.log_level', 'Log level')}
-                    .labelPosition=${LabelPosition.Top}
-                    @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('logLevel', ev.detail.value)}>
-            </ha-row-selector>
-            <ha-row-selector .hass=${this.hass}
-                    .selector=${{select: {options: [
-                        {value: Size.Large, label: this.t('general.large', 'Large')},
-                        {value: Size.Medium, label: this.t('general.medium', 'Medium')},
-                        {value: Size.Small, label: this.t('general.small', 'Small')},
-                        {value: Size.Custom, label: this.t('spacing.custom', 'Custom')},
-                    ], mode: 'dropdown'}}}
-                    .value=${appearance.size ?? Size.Medium}
-                    .label=${this.t('general.size', 'Size')}
-                    .labelPosition=${LabelPosition.Top}
-                    @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('size', ev.detail.value)}>
-            </ha-row-selector>
-            <ha-row-selector .hass=${this.hass}
-                    .selector=${{text: {}}}
-                    .value=${appearance.fontFamily ?? ''}
-                    .label=${this.t('general.font_family', 'Font family')}
-                    .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
-                    .labelPosition=${LabelPosition.Top}
-                    @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontFamily', ev.detail.value)}>
-            </ha-row-selector>
+            <section class="section-card">
+                <div class="section-title">${this.t('general.appearance', 'Card appearance')}</div>
+                ${this.renderFontColor()}
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: [
+                            {value: Size.Large, label: this.t('general.large', 'Large')},
+                            {value: Size.Medium, label: this.t('general.medium', 'Medium')},
+                            {value: Size.Small, label: this.t('general.small', 'Small')},
+                            {value: Size.Custom, label: this.t('spacing.custom', 'Custom')},
+                        ], mode: 'dropdown'}}}
+                        .value=${appearance.size ?? Size.Medium}
+                        .label=${this.t('general.size', 'Size')}
+                        .labelPosition=${LabelPosition.Top}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('size', ev.detail.value)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{text: {}}}
+                        .value=${appearance.fontFamily ?? ''}
+                        .label=${this.t('general.font_family', 'Font family')}
+                        .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
+                        .labelPosition=${LabelPosition.Top}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontFamily', ev.detail.value)}>
+                </ha-row-selector>
+            </section>
+            <section class="section-card">
+                <div class="section-title">${this.t('general.language_diagnostics', 'Language and diagnostics')}</div>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: this.languageOptions, mode: 'dropdown'}}}
+                        .value=${language}
+                        .label=${this.t('general.language', 'Language')}
+                        .labelPosition=${LabelPosition.Top}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('language', ev.detail.value)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: [
+                            {value: 'debug', label: 'Debug'},
+                            {value: 'info', label: 'Info'},
+                            {value: 'warn', label: 'Warning'},
+                            {value: 'error', label: 'Error'},
+                            {value: 'none', label: this.t('ui.none', 'None')},
+                        ], mode: 'dropdown'}}}
+                        .value=${this.config?.logLevel ?? 'info'}
+                        .label=${this.t('general.log_level', 'Log level')}
+                        .labelPosition=${LabelPosition.Top}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('logLevel', ev.detail.value)}>
+                </ha-row-selector>
+            </section>
         `;
     }
 
@@ -920,6 +1002,7 @@ export class WccLayoutInspector extends LitElement {
                 ${this.activeCardTab === 'background' ? html`
                     <background-editor
                             .hass=${this.hass}
+                            .editorSessionKey=${this.editorSessionKey}
                             .config=${toBackgroundEditorConfig(this.config)}
                             @config-changed=${(ev: CustomEvent) => {
                                 ev.stopPropagation();

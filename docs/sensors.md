@@ -12,14 +12,21 @@ layout:
           orientation: auto
           alignment: auto
           itemGap: 16px
+          showIcons: true
+          iconSize: 2.25rem
+          showSeparator: true
+          separatorColor: '#ead0a4'
+          separatorOpacity: 0.35
           labelSize: 1.1rem
           valueSize: 2rem
           sensors:
             - entity: sensor.living_room_temperature
               label: Temperature
+              icon: mdi:thermometer
               precision: 1
             - entity: sensor.living_room_humidity
               label: Humidity
+              icon: mdi:water-percent
 ```
 
 ## Options
@@ -30,18 +37,28 @@ layout:
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `alignment` | `auto` | `auto`, `left`, `center` or `right` |
 | `itemGap` | `16px` | CSS length between sensor items in either orientation |
+| `showIcons` | `true` | Show an icon next to every sensor |
+| `iconSize` | responsive, up to `2.25rem` | CSS size of sensor icons |
+| `showSeparator` | `true` | Show separators between horizontal sensor items |
+| `separatorColor` | widget text color | CSS color of horizontal separators |
+| `separatorOpacity` | `0.28` | Separator opacity from 0 to 1 |
 | `labelSize` | size preset | CSS size of labels |
 | `valueSize` | size preset | CSS size of values |
 
 Each sensor entry requires `entity`. `label` is optional: when omitted, the entity's
 friendly name is used; an empty string hides the label. `precision` overrides Home
 Assistant's display precision for that entry. Without it, the card respects Home
-Assistant's formatted state/display precision.
+Assistant's formatted state/display precision. `icon` optionally overrides the
+entity icon; an empty value uses Home Assistant's icon.
 
 With `orientation: auto`, center-column zones (`top-center`, `center`,
 `bottom-center`) use a horizontal row and side columns use a vertical list.
 `alignment: auto` follows the hosting zone: left zones align left, center zones center
 and right zones right.
+
+Horizontal mode creates one flexible column per sensor. Columns remain equal while
+their contents fit; unusually long states or large custom value sizes expand the
+scrollable row instead of painting over a separator or neighbouring sensor.
 
 Legacy root-level `sensors` configuration remains supported through 2.x migration;
 new YAML should use the widget form above. The older single-value `sensorEntity` /

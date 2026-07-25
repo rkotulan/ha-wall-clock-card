@@ -31,6 +31,7 @@ import {
     LovelaceConfigPath,
     synchronizeLiveConfigAtPath,
 } from './lovelace-config-path';
+import {clearEditorSessionState} from '../editors/editor-session-state';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
 
@@ -307,20 +308,10 @@ export class WallClockCard extends LitElement {
     }
 
     static getStubConfig(): WallClockConfig {
-        return {
-            timeFormat: {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            },
-            dateFormat: {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }
-        };
+        // A newly added card must start in the native zone-layout shape.
+        // Returning the old time/date root keys made Home Assistant open the
+        // legacy 2.x editor before the card had ever been saved.
+        return migrateToLayout({}) as unknown as WallClockConfig;
     }
 
     setConfig(config: WallClockConfig): void {
@@ -746,7 +737,10 @@ export class WallClockCard extends LitElement {
 
     private clearRetainedDesignerContext(): void {
         const key = this.designerSessionKey;
-        if (key) retainedDesignerContexts.delete(key);
+        if (key) {
+            retainedDesignerContexts.delete(key);
+            clearEditorSessionState(key);
+        }
         this.designerSessionKey = undefined;
     }
 
@@ -1302,6 +1296,7 @@ export class WallClockCard extends LitElement {
                                 .hass=${this.hass}
                                 .config=${this.configV3}
                                 .layout=${this.configV3.layout}
+                                .editorSessionKey=${this.designerSessionKey}
                                 .selectedWidget=${this.selectedWidget}
                                 .selectedZone=${this.selectedZone}
                                 @wcc-widget-config-changed=${this.onInplaceWidgetConfigChanged}

@@ -46,7 +46,24 @@ export class LayoutEditor extends LitElement {
     static get styles(): CSSResult {
         return css`
             .content {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
                 padding: 12px;
+            }
+
+            .section-title {
+                margin: 2px 0 -4px;
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.73rem;
+                font-weight: 750;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+            .section-group {
+                padding-top: 6px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
             }
 
             .hint {
@@ -247,8 +264,10 @@ export class LayoutEditor extends LitElement {
                 ${!this.config.layout ? html`
                     <p class="hint">${this.t('spacing.legacy_hint', 'The first spacing change converts this legacy configuration to the zone format.')}</p>
                 ` : ''}
-                ${this.renderFormat()}
-                ${this.renderSpacing()}
+                <div class="section-title">${this.t('layout.structure', 'Layout structure')}</div>
+                <div class="section-group">${this.renderFormat()}</div>
+                <div class="section-title">${this.t('general.spacing', 'Spacing')}</div>
+                <div class="section-group">${this.renderSpacing()}</div>
             </div>
         `;
     }

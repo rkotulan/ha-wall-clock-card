@@ -201,8 +201,25 @@ export class WeatherComponent extends LitElement {
             margin-bottom: clamp(8px, 2cqw, 14px);
         }
 
+        .weather-container.horizontal .weather-current.with-forecast {
+            width: 100%;
+        }
+
+        .weather-container.horizontal .weather-current.with-forecast .weather-temp-container {
+            margin-left: calc(
+                var(--first-forecast-column-center, 16.667%)
+                - clamp(20px, 6cqw, 30px)
+            );
+            max-width: calc(
+                100%
+                - var(--first-forecast-column-center, 16.667%)
+                + clamp(20px, 6cqw, 30px)
+            );
+        }
+
         .weather-container.horizontal .weather-temp-container {
             justify-content: flex-start;
+            min-width: 0;
         }
 
         .weather-container.horizontal .weather-icon {
@@ -427,7 +444,7 @@ export class WeatherComponent extends LitElement {
 
         return html`
             <div class="weather-container ${this.orientation} ${weatherData.entityId ? 'clickable' : ''}"
-                 style="color: ${this.fontColor};"
+                 style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%;"
                  @click="${() => this._handleWeatherClick(weatherData.entityId)}">
                 ${(!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
@@ -437,7 +454,7 @@ export class WeatherComponent extends LitElement {
 
                 ${showsCurrent ?
                     html`
-                        <div class="weather-current">
+                        <div class="weather-current ${horizontal && displayMode === 'both' ? 'with-forecast' : ''}">
                             <div class="weather-temp-container">
                                 <img class="weather-icon" src="${weatherData.current.icon}"
                                      alt="${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}">
@@ -448,11 +465,11 @@ export class WeatherComponent extends LitElement {
                                 ${horizontal ? html`
                                     <div class="weather-current-copy">
                                         <div class="weather-title"
-                                             style="color: ${this.fontColor}; font-size: clamp(0.9rem, 3.5cqw, 1.15rem);">
+                                             style="color: ${this.fontColor}; font-size: clamp(0.75rem, 3cqw, 1rem);">
                                             ${horizontalTitle}
                                         </div>
                                         <div class="weather-condition"
-                                             style="font-size: clamp(0.75rem, 3cqw, 1rem);">
+                                             style="font-size: clamp(0.9rem, 3.5cqw, 1.15rem);">
                                             ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
                                         </div>
                                     </div>

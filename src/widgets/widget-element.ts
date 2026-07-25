@@ -2,7 +2,7 @@ import {LitElement, PropertyValues} from 'lit';
 import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
-import {supportsWidgetMaxWidth} from './widget-layout';
+import {resolveWidgetRowGrow, resolveWidgetWidthMode, supportsWidgetMaxWidth} from './widget-layout';
 
 /**
  * Base class for zone layout widgets.
@@ -62,13 +62,21 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         const style = this.config?.style;
         const supportsBoundedWidth = supportsWidgetMaxWidth(this.config?.type);
         const supportsBoundedHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(this.config?.type);
+        const widthMode = resolveWidgetWidthMode(this.config?.type, style?.widthMode);
+        const grow = resolveWidgetRowGrow(this.config?.type, style?.grow, style?.widthMode);
+        const useRowGrow = this.zoneDirection === 'row' && grow !== undefined;
+        const useContentWidth = this.zoneDirection === 'row' && widthMode === 'content' && !useRowGrow;
+        this.toggleAttribute('data-content-width', useContentWidth);
         this.style.margin = style?.margin ?? '';
-        this.style.maxWidth = supportsBoundedWidth ? (style?.maxWidth ?? '') : '';
+        this.style.maxWidth = useContentWidth ? '100%' : supportsBoundedWidth ? (style?.maxWidth ?? '') : '';
         this.style.maxHeight = supportsBoundedHeight ? (style?.maxHeight ?? '') : '';
         this.style.overflow = supportsBoundedHeight && style?.maxHeight ? 'auto' : '';
         this.style.fontSize = style?.fontSize ?? '';
         this.style.fontFamily = style?.fontFamily ?? this.appearance?.fontFamily ?? '';
         this.style.color = style?.color ?? '';
+        this.style.flex = useRowGrow ? `${grow} 1 0%` : useContentWidth ? '0 1 auto' : '';
+        this.style.width = useRowGrow ? '0px' : useContentWidth ? 'auto' : '';
+        this.style.minWidth = useRowGrow || useContentWidth ? '0px' : '';
     }
 
     /** Forwards config/hass/appearance to the underlying feature component. */

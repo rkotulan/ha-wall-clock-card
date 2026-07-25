@@ -100,6 +100,9 @@
     "autosave_hint_local": "Changes are prepared continuously · save and close this editor with Done"
   },
   "zones": {
+    "split_top": "Top",
+    "split_center": "Center",
+    "split_bottom": "Bottom",
     "top_left": "Top left",
     "top_center": "Top center",
     "top_right": "Top right",
@@ -111,7 +114,9 @@
     "bottom_right": "Bottom right"
   },
   "general": {
-    "title": "General", "font_color": "Font color", "custom_color": "Custom color", "font_family": "Font family",
+    "title": "General", "layout": "Layout", "appearance": "Card appearance",
+    "language_diagnostics": "Language and diagnostics",
+    "font_color": "Font color", "custom_color": "Custom color", "font_family": "Font family",
     "font_family_help": "CSS font family or stack; the font must already be loaded", "language": "Language", "log_level": "Log level",
     "size": "Size", "large": "Large", "medium": "Medium", "small": "Small", "custom_sizes": "Custom sizes",
     "clock_top_margin": "Clock top margin (e.g., 0rem)", "spacing": "Spacing", "background": "Background",
@@ -146,6 +151,14 @@
     "column": "Column",
     "row": "Row",
     "horizontal_alignment": "Horizontal alignment",
+    "span_panel": "Fill the complete split panel",
+    "span_panel_help": "Available when this is the only occupied area in its panel.",
+    "row_width_ratio": "Row width ratio",
+    "row_width_ratio_help": "Relative share of available row width; 0 uses the recommended automatic ratio.",
+    "width_mode": "Row width behavior",
+    "width_mode_help": "Automatic chooses a suitable behavior for the widget type.",
+    "width_mode_fill": "Fill available space",
+    "width_mode_content": "Fit to content",
     "widget_gap": "Widget gap override (e.g., 4px)",
     "zone_padding": "Zone padding (e.g., 0 16px)",
     "vertical_offset": "Vertical offset (e.g., -8vh)",
@@ -168,7 +181,7 @@
     "margin": "Margin (CSS shorthand)"
   },
   "layout": {
-    "format": "Layout format",
+    "structure": "Layout structure", "format": "Layout format",
     "format_help": "Changes the canvas geometry; widgets keep their current zones and settings.",
     "format_grid": "Grid 3 × 3",
     "format_vertical_2_1": "Vertical 2/3 + 1/3",
@@ -216,6 +229,8 @@
       "numeric_2025": "Numeric (2025)", "two_digit_25": "2-digit (25)"
     },
     "weather": {
+      "source": "Weather source", "visible_content": "Displayed information",
+      "icons": "Weather icons", "availability": "Availability", "refresh": "Data refresh",
       "show": "Show weather", "show_help": "Display current weather and forecast", "title": "Weather title",
       "provider": "Weather provider", "provider_none": "None (disable weather)",
       "provider_ha": "Home Assistant entity", "entity": "Weather entity", "api_key": "API key",
@@ -240,6 +255,7 @@
       "separator_opacity": "Separator opacity", "separator_opacity_help": "Adjust the separator transparency."
     },
     "transportation": {
+      "source": "Data source", "appearance": "Departure display", "behavior": "Refresh and auto-hide",
       "provider": "Transportation provider", "max_departures": "Maximum departures per stop", "departures": "{count} departures",
       "display_mode": "Departure display", "display_inline": "In card layout", "display_modal": "Modal dialog",
       "display_mode_help": "Choose where departures open after pressing the transportation action",
@@ -257,6 +273,7 @@
       "alignment": "Button alignment", "alignment_help": "Align buttons to the left, center, or right",
       "opacity": "Background opacity", "opacity_help": "Adjust the action bar background transparency",
       "button_background": "Circular button background", "button_background_help": "Show or hide the translucent circle behind each action",
+      "columns": "Grid columns", "columns_help": "0 automatically uses 2 columns in a horizontal zone; another value fixes the column count.",
       "button_gap": "Button gap", "button_gap_help": "CSS length between buttons (default: 16px)",
       "panel_padding": "Panel padding", "panel_padding_help": "CSS padding inside the action bar (default: 16px)",
       "title": "Actions", "empty": "No actions configured yet.", "action": "Action {number}",
@@ -289,6 +306,7 @@
       "weather_update_help": "This action triggers an immediate weather update. No additional configuration is needed."
     },
     "background": {
+      "source_group": "Image source", "appearance": "Image appearance", "rotation_group": "Image rotation",
       "source": "Image source", "opacity": "Background opacity", "rotation": "Rotation interval (seconds)",
       "fit": "Background image fit", "images": "Background images", "image": "Background image {number}",
       "url": "Image URL", "weather": "Weather condition", "time": "Time of day",
@@ -308,12 +326,15 @@
       "empty": "Add one or more Home Assistant calendar entities.",
       "label": "Label (optional)", "event_color": "Event color", "add": "Add calendar", "add_all": "Add all",
       "remove": "Remove calendar", "expand": "Expand calendar", "collapse": "Collapse calendar",
-      "display": "Display", "display_mode": "Display mode", "agenda": "Agenda", "today_only": "Today only",
+      "display": "Display", "range": "Event range", "details": "Event details",
+      "display_mode": "Display mode", "agenda": "Agenda", "today_only": "Today only",
       "days_ahead": "Days ahead", "maximum_events": "Maximum events", "show_all_day": "Show all-day events",
       "show_location": "Show location", "show_description": "Show description",
       "hide_past": "Hide past events today", "hide_empty": "Hide when empty",
       "update_interval": "Update interval", "update_help": "Minutes (minimum 1)",
-      "event_background": "Event background", "event_background_color": "Event background color",
+      "filtering": "Filtering and visibility", "refresh": "Data refresh",
+      "event_background": "Event background", "event_appearance": "Event appearance",
+      "event_background_color": "Event background color",
       "event_background_opacity": "Event background opacity", "all_day": "All day", "loading": "Loading calendar…",
       "no_events": "No upcoming events.",
       "when": "When", "calendar_name": "Calendar", "location": "Location", "description": "Description",

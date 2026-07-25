@@ -11,11 +11,13 @@ interface CalendarListEntry {
     name?: string;
 }
 
+const EXPANSION_STATE_KEY = 'calendar-sources.expansion';
+
 @customElement('calendar-editor')
 export class CalendarEditor extends BaseEditorSection {
     @state() private sources: CalendarSourceConfig[] = [];
     @state() private addingAll = false;
-    @state() private expandedSourceIndex: number | null = 0;
+    @state() private expandedSourceIndex: number | null = null;
     private readonly sortableList = new SortableListController(this, {
         containerSelector: '.source-list',
         draggable: '.source-card',
@@ -225,12 +227,16 @@ export class CalendarEditor extends BaseEditorSection {
 
     updated(changed: PropertyValues): void {
         super.updated(changed);
+        if (changed.has('editorSessionKey')) {
+            this.expandedSourceIndex = this.restoreExpandedIndex(EXPANSION_STATE_KEY);
+        }
         if (changed.has('config')) {
             const settings = this.config as unknown as CalendarWidgetSettings;
             this.sources = (settings.entities ?? []).map(source => ({...source}));
             if (this.expandedSourceIndex !== null && this.expandedSourceIndex >= this.sources.length) {
-                this.expandedSourceIndex = this.sources.length > 0 ? this.sources.length - 1 : null;
+                this.expandedSourceIndex = null;
             }
+            this.retainExpansionState();
         }
         this.sortableList.schedule();
     }
@@ -247,8 +253,13 @@ export class CalendarEditor extends BaseEditorSection {
         });
     }
 
+    private retainExpansionState(): void {
+        this.retainExpandedIndex(EXPANSION_STATE_KEY, this.expandedSourceIndex);
+    }
+
     private addSource(): void {
         this.expandedSourceIndex = this.sources.length;
+        this.retainExpansionState();
         this.emitSources([...this.sources, {entity: '', color: '#4fc3f7'}]);
     }
 
@@ -258,11 +269,13 @@ export class CalendarEditor extends BaseEditorSection {
         } else if (this.expandedSourceIndex !== null && this.expandedSourceIndex > index) {
             this.expandedSourceIndex--;
         }
+        this.retainExpansionState();
         this.emitSources(this.sources.filter((_, sourceIndex) => sourceIndex !== index));
     }
 
     private toggleSource(index: number): void {
         this.expandedSourceIndex = this.expandedSourceIndex === index ? null : index;
+        this.retainExpansionState();
     }
 
     private moveSource(fromIndex: number, toIndex: number): void {
@@ -271,6 +284,7 @@ export class CalendarEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        this.retainExpansionState();
         this.emitSources(moveListItem(this.sources, fromIndex, toIndex));
     }
 
@@ -303,9 +317,10 @@ export class CalendarEditor extends BaseEditorSection {
                     entity: calendar.entity_id,
                     label: calendar.name || undefined,
                     color: palette[(this.sources.length + index) % palette.length],
-                }));
+            }));
             if (additions.length > 0) {
-                if (this.sources.length === 0) this.expandedSourceIndex = 0;
+                this.expandedSourceIndex = this.sources.length;
+                this.retainExpansionState();
                 this.emitSources([...this.sources, ...additions]);
             }
         } finally {
@@ -316,192 +331,213 @@ export class CalendarEditor extends BaseEditorSection {
     render() {
         if (!this.hass || !this.config) return html``;
         const settings = this.config as unknown as CalendarWidgetSettings;
+        const showContent = this.section === 'all' || this.section === 'content';
+        const showAppearance = this.section === 'all' || this.section === 'appearance';
+        const showBehavior = this.section === 'all' || this.section === 'behavior';
 
         return html`
             <div class="content">
-                <div class="section-title">${this.t('editor.calendar.calendars', 'Calendars')}</div>
-                ${this.sources.length === 0
-                    ? html`<div class="empty">${this.t('editor.calendar.empty', 'Add one or more Home Assistant calendar entities.')}</div>`
-                    : ''}
-                <div class="source-list">
-                    ${this.sources.map((source, index) => {
-                        const expanded = this.expandedSourceIndex === index;
-                        return html`
-                        <div class="source-card ${expanded ? 'expanded' : 'collapsed'}">
-                            <div class="source-header">
-                                <span class="source-drag-handle"
-                                      title=${this.t('designer.drag_to_move', 'Drag to move')}
-                                      aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
-                                    <ha-icon icon="mdi:drag"></ha-icon>
-                                </span>
-                                <button class="source-toggle"
-                                        type="button"
-                                        aria-expanded=${expanded ? 'true' : 'false'}
-                                        @click=${() => this.toggleSource(index)}>
-                                    <span class="source-title">
-                                        <span class="source-color" style=${`--source-color:${source.color || '#4fc3f7'}`}></span>
-                                        ${source.label || source.entity || this.t('editor.calendar.calendar', 'Calendar {number}', {number: index + 1})}
+                ${showContent ? html`
+                    <div class="section-title">${this.t('editor.calendar.calendars', 'Calendars')}</div>
+                    ${this.sources.length === 0
+                        ? html`<div class="empty">${this.t('editor.calendar.empty', 'Add one or more Home Assistant calendar entities.')}</div>`
+                        : ''}
+                    <div class="source-list">
+                        ${this.sources.map((source, index) => {
+                            const expanded = this.expandedSourceIndex === index;
+                            return html`
+                            <div class="source-card ${expanded ? 'expanded' : 'collapsed'}">
+                                <div class="source-header">
+                                    <span class="source-drag-handle"
+                                          title=${this.t('designer.drag_to_move', 'Drag to move')}
+                                          aria-label=${this.t('designer.drag_to_move', 'Drag to move')}>
+                                        <ha-icon icon="mdi:drag"></ha-icon>
                                     </span>
-                                </button>
-                                <button class="source-icon-button remove"
-                                        type="button"
-                                        title=${this.t('editor.calendar.remove', 'Remove calendar')}
-                                        aria-label=${this.t('editor.calendar.remove', 'Remove calendar')}
-                                        @click=${() => this.removeSource(index)}>
-                                    <ha-icon icon="mdi:delete-outline"></ha-icon>
-                                </button>
-                                <button class="source-icon-button"
-                                        type="button"
-                                        title=${expanded ? this.t('editor.calendar.collapse', 'Collapse calendar') : this.t('editor.calendar.expand', 'Expand calendar')}
-                                        aria-label=${expanded ? this.t('editor.calendar.collapse', 'Collapse calendar') : this.t('editor.calendar.expand', 'Expand calendar')}
-                                        aria-expanded=${expanded ? 'true' : 'false'}
-                                        @click=${() => this.toggleSource(index)}>
-                                    <ha-icon .icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
-                                </button>
+                                    <button class="source-toggle"
+                                            type="button"
+                                            aria-expanded=${expanded ? 'true' : 'false'}
+                                            @click=${() => this.toggleSource(index)}>
+                                        <span class="source-title">
+                                            <span class="source-color" style=${`--source-color:${source.color || '#4fc3f7'}`}></span>
+                                            ${source.label || source.entity || this.t('editor.calendar.calendar', 'Calendar {number}', {number: index + 1})}
+                                        </span>
+                                    </button>
+                                    <button class="source-icon-button remove"
+                                            type="button"
+                                            title=${this.t('editor.calendar.remove', 'Remove calendar')}
+                                            aria-label=${this.t('editor.calendar.remove', 'Remove calendar')}
+                                            @click=${() => this.removeSource(index)}>
+                                        <ha-icon icon="mdi:delete-outline"></ha-icon>
+                                    </button>
+                                    <button class="source-icon-button"
+                                            type="button"
+                                            title=${expanded ? this.t('editor.calendar.collapse', 'Collapse calendar') : this.t('editor.calendar.expand', 'Expand calendar')}
+                                            aria-label=${expanded ? this.t('editor.calendar.collapse', 'Collapse calendar') : this.t('editor.calendar.expand', 'Expand calendar')}
+                                            aria-expanded=${expanded ? 'true' : 'false'}
+                                            @click=${() => this.toggleSource(index)}>
+                                        <ha-icon .icon=${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                                    </button>
+                                </div>
+                                ${expanded ? html`<div class="source-body">
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{entity: {filter: {domain: 'calendar'}}}}
+                                        .value=${source.entity}
+                                        .label=${this.t('editor.calendar.entity', 'Calendar entity')}
+                                        .labelPosition=${LabelPosition.Top}
+                                        @value-changed=${(event: CustomEvent) => this.updateSource(index, 'entity', event.detail.value)}>
+                                </ha-row-selector>
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{text: {type: 'text'}}}
+                                        .value=${source.label ?? ''}
+                                        .label=${this.t('editor.calendar.label', 'Label (optional)')}
+                                        .labelPosition=${LabelPosition.Top}
+                                        @value-changed=${(event: CustomEvent) => this.updateSource(index, 'label', event.detail.value)}>
+                                </ha-row-selector>
+                                <ha-row-selector
+                                        .hass=${this.hass}
+                                        .selector=${{color_hex: ''}}
+                                        .value=${source.color ?? '#4fc3f7'}
+                                        .label=${this.t('editor.calendar.event_color', 'Event color')}
+                                        .labelPosition=${LabelPosition.Top}
+                                        @value-changed=${(event: CustomEvent) => this.updateSource(index, 'color', event.detail.value)}>
+                                </ha-row-selector>
+                                </div>` : ''}
                             </div>
-                            ${expanded ? html`<div class="source-body">
-                            <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{entity: {filter: {domain: 'calendar'}}}}
-                                    .value=${source.entity}
-                                    .label=${this.t('editor.calendar.entity', 'Calendar entity')}
-                                    .labelPosition=${LabelPosition.Top}
-                                    @value-changed=${(event: CustomEvent) => this.updateSource(index, 'entity', event.detail.value)}>
-                            </ha-row-selector>
-                            <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{text: {type: 'text'}}}
-                                    .value=${source.label ?? ''}
-                                    .label=${this.t('editor.calendar.label', 'Label (optional)')}
-                                    .labelPosition=${LabelPosition.Top}
-                                    @value-changed=${(event: CustomEvent) => this.updateSource(index, 'label', event.detail.value)}>
-                            </ha-row-selector>
-                            <ha-row-selector
-                                    .hass=${this.hass}
-                                    .selector=${{color_hex: ''}}
-                                    .value=${source.color ?? '#4fc3f7'}
-                                    .label=${this.t('editor.calendar.event_color', 'Event color')}
-                                    .labelPosition=${LabelPosition.Top}
-                                    @value-changed=${(event: CustomEvent) => this.updateSource(index, 'color', event.detail.value)}>
-                            </ha-row-selector>
-                            </div>` : ''}
-                        </div>
-                    `;
-                    })}
-                </div>
+                        `;
+                        })}
+                    </div>
 
-                <div class="button-row">
-                    <button type="button" @click=${this.addSource}>
-                        <ha-icon icon="mdi:plus"></ha-icon> ${this.t('editor.calendar.add', 'Add calendar')}
-                    </button>
-                    <button type="button" ?disabled=${this.addingAll} @click=${this.addAllCalendars}>
-                        <ha-icon icon="mdi:calendar-multiple"></ha-icon> ${this.t('editor.calendar.add_all', 'Add all')}
-                    </button>
-                </div>
+                    <div class="button-row">
+                        <button type="button" @click=${this.addSource}>
+                            <ha-icon icon="mdi:plus"></ha-icon> ${this.t('editor.calendar.add', 'Add calendar')}
+                        </button>
+                        <button type="button" ?disabled=${this.addingAll} @click=${this.addAllCalendars}>
+                            <ha-icon icon="mdi:calendar-multiple"></ha-icon> ${this.t('editor.calendar.add_all', 'Add all')}
+                        </button>
+                    </div>
 
-                <div class="section-title">${this.t('editor.calendar.display', 'Display')}</div>
-                <div class="options">
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{select: {options: [
-                                {value: 'agenda', label: this.t('editor.calendar.agenda', 'Agenda')},
-                                {value: 'today', label: this.t('editor.calendar.today_only', 'Today only')},
-                            ], mode: 'dropdown'}}}
-                            .value=${settings.displayMode ?? 'agenda'}
-                            .label=${this.t('editor.calendar.display_mode', 'Display mode')}
-                            propertyName="displayMode"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    ${settings.displayMode !== 'today' ? html`
+                    <div class="section-title">${this.t('editor.calendar.range', 'Event range')}</div>
+                    <div class="options">
                         <ha-row-selector
                                 .hass=${this.hass}
-                                .selector=${{number: {min: 1, max: 31, step: 1, mode: 'box'}}}
-                                .value=${settings.daysAhead ?? 7}
-                                .label=${this.t('editor.calendar.days_ahead', 'Days ahead')}
-                                propertyName="daysAhead"
+                                .selector=${{select: {options: [
+                                    {value: 'agenda', label: this.t('editor.calendar.agenda', 'Agenda')},
+                                    {value: 'today', label: this.t('editor.calendar.today_only', 'Today only')},
+                                ], mode: 'dropdown'}}}
+                                .value=${settings.displayMode ?? 'agenda'}
+                                .label=${this.t('editor.calendar.display_mode', 'Display mode')}
+                                propertyName="displayMode"
                                 @value-changed=${this._handleFormValueChanged}>
                         </ha-row-selector>
-                    ` : ''}
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{number: {min: 1, max: 100, step: 1, mode: 'box'}}}
-                            .value=${settings.maxEvents ?? 8}
-                            .label=${this.t('editor.calendar.maximum_events', 'Maximum events')}
-                            propertyName="maxEvents"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${settings.showAllDay !== false}
-                            .label=${this.t('editor.calendar.show_all_day', 'Show all-day events')}
-                            propertyName="showAllDay"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${settings.showLocation !== false}
-                            .label=${this.t('editor.calendar.show_location', 'Show location')}
-                            propertyName="showLocation"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${settings.showDescription === true}
-                            .label=${this.t('editor.calendar.show_description', 'Show description')}
-                            propertyName="showDescription"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${settings.hidePastTodayEvents !== false}
-                            .label=${this.t('editor.calendar.hide_past', 'Hide past events today')}
-                            propertyName="hidePastTodayEvents"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${settings.hideWhenEmpty === true}
-                            .label=${this.t('editor.calendar.hide_empty', 'Hide when empty')}
-                            propertyName="hideWhenEmpty"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{number: {min: 1, max: 1440, step: 1, mode: 'box'}}}
-                            .value=${Math.max(1, Math.round((settings.updateInterval ?? 300) / 60))}
-                            .label=${this.t('editor.calendar.update_interval', 'Update interval')}
-                            .helper=${this.t('editor.calendar.update_help', 'Minutes (minimum 1)')}
-                            .transformData=${(value: number) => value * 60}
-                            propertyName="updateInterval"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                </div>
+                        ${settings.displayMode !== 'today' ? html`
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{number: {min: 1, max: 31, step: 1, mode: 'box'}}}
+                                    .value=${settings.daysAhead ?? 7}
+                                    .label=${this.t('editor.calendar.days_ahead', 'Days ahead')}
+                                    propertyName="daysAhead"
+                                    @value-changed=${this._handleFormValueChanged}>
+                            </ha-row-selector>
+                        ` : ''}
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{number: {min: 1, max: 100, step: 1, mode: 'box'}}}
+                                .value=${settings.maxEvents ?? 8}
+                                .label=${this.t('editor.calendar.maximum_events', 'Maximum events')}
+                                propertyName="maxEvents"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                    </div>
 
-                <div class="section-title">${this.t('editor.calendar.event_background', 'Event appearance')}</div>
-                <div class="options">
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{color_hex: ''}}
-                            .value=${settings.eventBackgroundColor ?? '#202020'}
-                            .label=${this.t('editor.calendar.event_background_color', 'Background color')}
-                            propertyName="eventBackgroundColor"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                    <ha-row-selector
-                            .hass=${this.hass}
-                            .selector=${{number: {min: 0, max: 1, step: 0.05, mode: 'slider'}}}
-                            .value=${settings.eventBackgroundOpacity ?? 0.76}
-                            .label=${this.t('editor.calendar.event_background_opacity', 'Background opacity')}
-                            .helper=${`${Math.round((settings.eventBackgroundOpacity ?? 0.76) * 100)}%`}
-                            propertyName="eventBackgroundOpacity"
-                            @value-changed=${this._handleFormValueChanged}>
-                    </ha-row-selector>
-                </div>
+                    <div class="section-title">${this.t('editor.calendar.details', 'Event details')}</div>
+                    <div class="options">
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${settings.showAllDay !== false}
+                                .label=${this.t('editor.calendar.show_all_day', 'Show all-day events')}
+                                propertyName="showAllDay"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${settings.showLocation !== false}
+                                .label=${this.t('editor.calendar.show_location', 'Show location')}
+                                propertyName="showLocation"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${settings.showDescription === true}
+                                .label=${this.t('editor.calendar.show_description', 'Show description')}
+                                propertyName="showDescription"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                    </div>
+                ` : ''}
+
+                ${showAppearance ? html`
+                    <div class="section-title">${this.t('editor.calendar.event_appearance', 'Event appearance')}</div>
+                    <div class="options">
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{color_hex: ''}}
+                                .value=${settings.eventBackgroundColor ?? '#202020'}
+                                .label=${this.t('editor.calendar.event_background_color', 'Background color')}
+                                propertyName="eventBackgroundColor"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{number: {min: 0, max: 1, step: 0.05, mode: 'slider'}}}
+                                .value=${settings.eventBackgroundOpacity ?? 0.76}
+                                .label=${this.t('editor.calendar.event_background_opacity', 'Background opacity')}
+                                .helper=${`${Math.round((settings.eventBackgroundOpacity ?? 0.76) * 100)}%`}
+                                propertyName="eventBackgroundOpacity"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                    </div>
+                ` : ''}
+
+                ${showBehavior ? html`
+                    <div class="section-title">${this.t('editor.calendar.filtering', 'Filtering and visibility')}</div>
+                    <div class="options">
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${settings.hidePastTodayEvents !== false}
+                                .label=${this.t('editor.calendar.hide_past', 'Hide past events today')}
+                                propertyName="hidePastTodayEvents"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${settings.hideWhenEmpty === true}
+                                .label=${this.t('editor.calendar.hide_empty', 'Hide when empty')}
+                                propertyName="hideWhenEmpty"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                    </div>
+
+                    <div class="section-title">${this.t('editor.calendar.refresh', 'Data refresh')}</div>
+                    <div class="options">
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{number: {min: 1, max: 1440, step: 1, mode: 'box'}}}
+                                .value=${Math.max(1, Math.round((settings.updateInterval ?? 300) / 60))}
+                                .label=${this.t('editor.calendar.update_interval', 'Update interval')}
+                                .helper=${this.t('editor.calendar.update_help', 'Minutes (minimum 1)')}
+                                .transformData=${(value: number) => value * 60}
+                                propertyName="updateInterval"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                    </div>
+                ` : ''}
             </div>
         `;
     }

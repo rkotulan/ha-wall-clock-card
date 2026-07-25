@@ -57,21 +57,20 @@ export class SensorComponent extends LitElement {
     static styles = css`
         :host {
             display: block;
-            width: 100%;
+            width: var(--sensor-component-width, 100%);
             max-height: 100%;
-            container-type: inline-size;
+            container-type: var(--sensor-container-type, inline-size);
         }
 
         /* Placement is provided by the hosting zone (wcc-zone); the component
            only lays out its own items. */
         .sensor-container {
             display: flex;
-            width: 100%;
+            width: var(--sensor-component-width, 100%);
             box-sizing: border-box;
             max-height: 100%;
             gap: var(--sensor-item-gap, 16px);
             --sensor-icon-copy-gap: clamp(4px, 1cqw, 10px);
-            --sensor-text-column-width: 7.5rem;
         }
 
         .sensor-item {
@@ -82,9 +81,13 @@ export class SensorComponent extends LitElement {
         }
 
         .sensor-container.horizontal {
-            flex-direction: row;
+            display: grid;
+            grid-template-columns: repeat(
+                var(--sensor-count),
+                minmax(max-content, 1fr)
+            );
+            column-gap: var(--sensor-item-gap, 16px);
             align-items: stretch;
-            gap: 0;
             overflow-x: auto;
             overflow-y: hidden;
         }
@@ -102,25 +105,9 @@ export class SensorComponent extends LitElement {
         }
 
         .sensor-container.horizontal .sensor-item {
-            flex: 1 1 0;
+            position: relative;
+            min-width: max-content;
             justify-content: center;
-        }
-
-        .sensor-container.horizontal.show-icons .sensor-item {
-            flex-basis: min(
-                100%,
-                calc(
-                    var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem))
-                    + var(--sensor-text-column-width)
-                    + var(--sensor-icon-copy-gap)
-                )
-            );
-            flex-shrink: 0;
-        }
-
-        .sensor-container.horizontal:not(.show-icons) .sensor-item {
-            flex-basis: min(100%, var(--sensor-text-column-width));
-            flex-shrink: 0;
         }
 
         .sensor-content {
@@ -136,23 +123,16 @@ export class SensorComponent extends LitElement {
 
         .sensor-container.horizontal .sensor-content {
             display: grid;
-            grid-template-columns: minmax(0, 1fr);
+            grid-template-columns: max-content;
             align-items: center;
-            width: min(100%, var(--sensor-text-column-width));
+            width: max-content;
+            max-width: none;
         }
 
         .sensor-container.horizontal.show-icons .sensor-content {
             grid-template-columns:
                 var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem))
-                var(--sensor-text-column-width);
-            width: min(
-                100%,
-                calc(
-                    var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem))
-                    + var(--sensor-text-column-width)
-                    + var(--sensor-icon-copy-gap)
-                )
-            );
+                max-content;
         }
 
         .sensor-container.horizontal.show-icons .sensor-copy {
@@ -163,27 +143,40 @@ export class SensorComponent extends LitElement {
             min-width: 0;
         }
 
+        .sensor-icon-slot {
+            display: grid;
+            place-items: center;
+            width: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
+            height: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
+        }
+
         .sensor-icon {
-            flex: 0 0 auto;
             --mdc-icon-size: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
             opacity: 0.9;
         }
 
-        .sensor-divider {
-            align-self: stretch;
-            flex: 0 0 1px;
-            width: 1px;
+        .sensor-container.horizontal.show-separators .sensor-item:not(:first-child)::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: calc(0px - var(--sensor-item-gap, 16px));
+            width: var(--sensor-item-gap, 16px);
             min-height: 3rem;
-            margin: 4px 0;
-            background: var(--sensor-separator-color, currentColor);
-            border-radius: 999px;
+            background: linear-gradient(
+                to right,
+                transparent calc(50% - 0.5px),
+                var(--sensor-separator-color, currentColor) calc(50% - 0.5px),
+                var(--sensor-separator-color, currentColor) calc(50% + 0.5px),
+                transparent calc(50% + 0.5px)
+            );
             opacity: var(--sensor-separator-opacity, 0.28);
             pointer-events: none;
         }
 
-        .sensor-container.horizontal.align-left { justify-content: flex-start; }
-        .sensor-container.horizontal.align-center { justify-content: center; }
-        .sensor-container.horizontal.align-right { justify-content: flex-end; }
+        .sensor-container.horizontal.align-left .sensor-item { justify-content: flex-start; }
+        .sensor-container.horizontal.align-center .sensor-item { justify-content: center; }
+        .sensor-container.horizontal.align-right .sensor-item { justify-content: flex-end; }
         .sensor-container.vertical.align-left { align-items: flex-start; }
         .sensor-container.vertical.align-center { align-items: center; }
         .sensor-container.vertical.align-right { align-items: flex-end; }
@@ -302,16 +295,16 @@ export class SensorComponent extends LitElement {
         this.logger.debug(`Rendering sensors - LabelSize: ${labelSize}, ValueSize: ${valueSize}`);
 
         return html`
-            <div class="sensor-container ${this.orientation} align-${this.alignment} ${this.showIcons ? 'show-icons' : ''}"
+            <div class="sensor-container ${this.orientation} align-${this.alignment}
+                        ${this.showIcons ? 'show-icons' : ''}
+                        ${this.orientation === 'horizontal' && this.showSeparator ? 'show-separators' : ''}"
                  style="color: ${this.fontColor};
+                        --sensor-count: ${sensorValues.length};
                         --sensor-item-gap: ${itemGap};
                         --sensor-icon-size: ${iconSize};
                         --sensor-separator-color: ${separatorColor};
                         --sensor-separator-opacity: ${separatorOpacity};">
-                ${sensorValues.map((sensor, index) => html`
-                    ${this.orientation === 'horizontal' && this.showSeparator && index > 0
-                        ? html`<span class="sensor-divider" aria-hidden="true"></span>`
-                        : ''}
+                ${sensorValues.map(sensor => html`
                     <div class="sensor-item"
                          role="button"
                          tabindex="0"
@@ -323,9 +316,13 @@ export class SensorComponent extends LitElement {
                              }
                          }}>
                         <div class="sensor-content">
-                            ${this.showIcons && sensor.icon
-                                ? html`<ha-icon class="sensor-icon" .icon=${sensor.icon}></ha-icon>`
-                                : ''}
+                            ${this.showIcons ? html`
+                                <span class="sensor-icon-slot" aria-hidden="true">
+                                    ${sensor.icon
+                                        ? html`<ha-icon class="sensor-icon" .icon=${sensor.icon}></ha-icon>`
+                                        : ''}
+                                </span>
+                            ` : ''}
                             <div class="sensor-copy">
                                 ${sensor.label ?
                                     html`

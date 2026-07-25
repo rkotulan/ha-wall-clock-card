@@ -1,9 +1,9 @@
-# 3.0.0 release checklist
+# Release checklist
 
 ## Metadata and documentation
 
-- Set the same final version in `package.json` and `package-lock.json` (for example,
-  `npm version 3.0.0 --no-git-tag-version`).
+- Set the same final version in `package.json` and `package-lock.json` with
+  `npm version <version> --no-git-tag-version`.
 - Confirm the browser console banner reports the final version after rebuilding.
 - Review the top `CHANGELOG.md` entry and remove prerelease wording from release
   notes/assets.
@@ -27,8 +27,12 @@ successful build automatically.
 - Regular card: **Configure card** opens the Designer and its own **Done** returns to
   dashboard editing.
 - Panel view: Designer opens inline during dashboard edit mode.
-- Card settings: general, spacing and every background source.
+- Card settings: general, layout/spacing and every background source.
+- Switch between the 3×3 layout and every vertical/horizontal split format; verify
+  both panel orders, visual presets and narrow-panel glass.
 - Add, edit, collapse, reorder, move and remove every built-in widget.
+- Verify row strips, widget width behavior, bottom-pinned widgets and independently
+  scrolling overfilled Designer areas.
 - Mouse and touch drag/drop; narrow and desktop layouts.
 - Reload persistence after continuous saves.
 - Weather, calendar and transportation success/empty/error states.
@@ -41,7 +45,7 @@ successful build automatically.
   included.
 - Commit the final bundle and documentation according to the repository's release
   policy.
-- Create the `3.0.0` tag/release and attach or expose the expected
+- Create the `v<version>` tag/release and attach or expose the expected
   `wall-clock-card.js` asset for HACS.
 - Install the published release once through HACS, not only from the development
   share.

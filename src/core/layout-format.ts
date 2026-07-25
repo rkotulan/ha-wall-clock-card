@@ -5,6 +5,7 @@ import {
     LayoutFormat,
     LayoutVisualPreset,
     ZoneId,
+    ZONE_IDS,
 } from './layout-types';
 
 export interface LayoutGridDefinition {
@@ -19,6 +20,9 @@ export interface LayoutZonePlacement {
 }
 
 export type LayoutPanelEdge = 'left' | 'right' | 'top' | 'bottom';
+export type LayoutSplitAxis = 'vertical' | 'horizontal';
+export type LayoutSplitAnchor = 'start' | 'center' | 'end';
+export type LayoutSplitPanel = 1 | 2;
 
 export function resolveLayoutFormat(layout?: LayoutConfig): LayoutFormat {
     const format = layout?.format;
@@ -75,10 +79,72 @@ function zoneCoordinates(zoneId: ZoneId): {
     return {row, column};
 }
 
+export function layoutSplitAxis(format: LayoutFormat): LayoutSplitAxis | undefined {
+    if (format.startsWith('vertical-')) return 'vertical';
+    if (format.startsWith('horizontal-')) return 'horizontal';
+    return undefined;
+}
+
+/**
+ * Physical half of a split layout. Logical zones remain intact, but every
+ * widget is rendered inside one of two real panels instead of overlapping
+ * another zone that maps to the same grid cell.
+ */
+export function layoutSplitPanel(format: LayoutFormat, zoneId: ZoneId): LayoutSplitPanel | undefined {
+    const axis = layoutSplitAxis(format);
+    if (!axis) return undefined;
+    const {row, column} = zoneCoordinates(zoneId);
+
+    if (format === 'vertical-2-1') return column === 'right' ? 2 : 1;
+    if (format === 'vertical-1-2') return column === 'left' ? 1 : 2;
+    if (format === 'horizontal-2-1') return row === 'bottom' ? 2 : 1;
+    return row === 'top' ? 1 : 2;
+}
+
+/**
+ * Anchor on the axis that is not collapsed by the split. Vertical layouts
+ * retain top/center/bottom; horizontal layouts retain left/center/right.
+ */
+export function layoutSplitAnchor(format: LayoutFormat, zoneId: ZoneId): LayoutSplitAnchor | undefined {
+    const axis = layoutSplitAxis(format);
+    if (!axis) return undefined;
+    const {row, column} = zoneCoordinates(zoneId);
+
+    if (axis === 'vertical') {
+        return row === 'top' ? 'start' : row === 'bottom' ? 'end' : 'center';
+    }
+    return column === 'left' ? 'start' : column === 'right' ? 'end' : 'center';
+}
+
+/** Logical zones represented by one visible drop area in a split layout. */
+export function layoutSplitGroupZones(
+    format: LayoutFormat,
+    panel: LayoutSplitPanel,
+    anchor: LayoutSplitAnchor,
+): ZoneId[] {
+    if (!layoutSplitAxis(format)) return [];
+    return ZONE_IDS.filter(zone =>
+        layoutSplitPanel(format, zone) === panel &&
+        layoutSplitAnchor(format, zone) === anchor
+    );
+}
+
+/**
+ * Stable config owner for a physical split area. Existing widgets from the
+ * other legacy zone remain readable and are merged at render time.
+ */
+export function layoutSplitCanonicalZone(
+    format: LayoutFormat,
+    panel: LayoutSplitPanel,
+    anchor: LayoutSplitAnchor,
+): ZoneId | undefined {
+    return layoutSplitGroupZones(format, panel, anchor)[0];
+}
+
 /**
  * Maps the original nine anchors into the selected geometry. Split formats
- * deliberately let neighbouring anchors share a large region: the zone still
- * controls its own alignment and widgets remain independently configurable.
+ * retain this legacy coordinate mapping for edge-sensitive styling; rendering
+ * groups zones into physical panels so zones sharing a coordinate do not overlap.
  */
 export function layoutZonePlacement(format: LayoutFormat, zoneId: ZoneId): LayoutZonePlacement {
     const {row, column} = zoneCoordinates(zoneId);

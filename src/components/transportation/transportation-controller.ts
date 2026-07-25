@@ -34,6 +34,8 @@ export class TransportationController extends BaseController {
     private _lastTransportationUpdate?: Date;
     private hass?: HomeAssistant;
     private lastHassStateKey?: string;
+    /** Invalidates an in-flight activation when the view is closed or reconfigured. */
+    private activationRevision = 0;
 
     // Configuration
     private config: TransportationControllerConfig = {};
@@ -53,6 +55,7 @@ export class TransportationController extends BaseController {
     }
 
     protected onHostDisconnected(): void {
+        this.activationRevision++;
         // Clear intervals when disconnected
         this.clearTimers();
 
@@ -72,6 +75,7 @@ export class TransportationController extends BaseController {
     updateConfig(config: TransportationControllerConfig): void {
         this.logger.debug('Updating TransportationController config:', config);
 
+        this.activationRevision++;
         // Update config
         this.config = { ...this.config, ...config };
 
@@ -243,6 +247,7 @@ export class TransportationController extends BaseController {
     public async handleTransportationClick(): Promise<void> {
         this.logger.debug('Transportation button clicked, loading data on demand');
 
+        const activationRevision = ++this.activationRevision;
         this.setActive();
 
         try {
@@ -268,6 +273,12 @@ export class TransportationController extends BaseController {
                 error: error instanceof Error ? error.message : String(error),
                 loading: false,
             };
+        }
+
+        // The modal can be closed while activation/fetching is still pending.
+        // Never revive a dismissed view or start an orphaned polling interval.
+        if (activationRevision !== this.activationRevision || !this._isActive) {
+            return;
         }
         
         // Mark as loaded so the button is replaced with the data
@@ -311,6 +322,7 @@ export class TransportationController extends BaseController {
 
     /** Close either transportation view and stop its active refresh window. */
     public dismissTransportation(): void {
+        this.activationRevision++;
         this.clearTimers();
         this._transportationDataLoaded = false;
         this.host.requestUpdate();

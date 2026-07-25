@@ -77,6 +77,34 @@ describe('HomeAssistantTransportationProvider', () => {
         expect(result).toEqual({departures: [], loading: false});
     });
 
+    it('uses the refresh button friendly name when the configured profile name is empty', async () => {
+        const provider = new HomeAssistantTransportationProvider();
+        provider.setHass({
+            states: {
+                'button.schodova_refresh': {
+                    state: 'unknown',
+                    attributes: {friendly_name: 'Schodova (city) Refresh departures'},
+                },
+                'sensor.schodova_departure_1': departureState(
+                    '4',
+                    '67',
+                    'Avion Shopping Park',
+                    'city',
+                ),
+            },
+        } as any);
+
+        const result = await provider.fetchTransportationAsync({
+            profiles: [{
+                name: ' ',
+                refreshButtonEntity: 'button.schodova_refresh',
+                departureEntities: ['sensor.schodova_departure_1'],
+            }],
+        }, []);
+
+        expect(result.departures[0].stopName).toBe('Schodova (city)');
+    });
+
     it('activates grouped profiles and displays every selected departure entity', async () => {
         const callService = jest.fn().mockResolvedValue(undefined);
         const hass: any = {

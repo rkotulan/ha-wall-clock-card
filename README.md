@@ -1,21 +1,25 @@
 # Wall Clock Card for Home Assistant
 
 Wall Clock Card is a full-screen-friendly Lovelace card for clocks, dashboards and
-wall panels. Version 3.0 introduces a visual Designer with a 3×3 zone grid: place
-clock, date, sensors, weather, calendars, public transport and action buttons where
-they make sense for your screen.
+wall panels. Its visual Designer lets you place clock, date, sensors, weather,
+calendars, public transport and action buttons in a classic 3×3 grid or responsive
+split-panel layouts.
 
 ![Wall Clock Card](images/showcase-01.png)
 
-## Highlights in 3.0
+## Highlights
 
-- Nine responsive zones with touch-capable drag and drop.
+- A 3×3 grid plus vertical and horizontal `2/3 + 1/3` / `1/3 + 2/3` layouts.
+- Visual presets, an optional glass panel and touch-capable drag and drop.
+- Ordered row strips with automatic or explicit widget width behavior.
 - Multiple instances of most widgets; transportation remains a singleton.
-- Card, zone and per-widget inspectors with continuous saving in dashboard edit mode.
-- Clock and date formatting, sensor orientation/alignment and configurable action bars.
+- Card, zone and per-widget inspectors organized into Content, Appearance and Behavior.
+- Clock/date formatting, responsive sensors, configurable separators and action grids.
 - Home Assistant and OpenWeatherMap weather providers.
-- Calendar agenda with multiple calendars and an event-detail dialog.
-- On-demand IDS JMK/DPMB departures.
+- Horizontal or vertical current weather and forecast presentation.
+- Calendar agenda with multiple calendars, event styling and an event-detail dialog.
+- Inline or modal public-transport departures with multiple stop profiles.
+- Built-in and installed Home Assistant cards as dashboard widgets.
 - Local, Picsum, Unsplash and Home Assistant sensor-backed backgrounds.
 - Automatic in-memory migration of existing 2.x configurations.
 - Czech and English Designer UI; weather-condition translations cover additional languages.
@@ -45,14 +49,14 @@ restart is not normally required.
 
    Select **JavaScript module** as the resource type.
 3. Reload the dashboard. If an older bundle remains cached, append or increment a
-   query parameter such as `?v=3.0.1` and perform a hard refresh.
+   query parameter such as `?v=3.2.0` and perform a hard refresh.
 
 For YAML-managed resources:
 
 ```yaml
 lovelace:
   resources:
-    - url: /local/wall-clock-card/wall-clock-card.js?v=3.0.1
+    - url: /local/wall-clock-card/wall-clock-card.js?v=3.2.0
       type: module
 ```
 
@@ -69,7 +73,7 @@ The empty/default card contains clock and date widgets. To configure it:
 1. Put the dashboard in edit mode.
 2. On a regular dashboard card, select **Configure card**. Panel/full-screen cards open
    the Designer directly.
-3. Use **Card settings** for general appearance, spacing and the background.
+3. Use **Card settings** for general appearance, layout/spacing and the background.
 4. Drag widgets from the palette into zones. Select a widget or zone to edit it.
 5. Changes are saved continuously. **Done** closes the card Designer; Home
    Assistant's dashboard **Done** completes dashboard editing.
@@ -139,7 +143,7 @@ layout:
 - [Image sources](docs/image-sources.md)
 - [Background behavior](docs/background-handling.md)
 - [Development](docs/developer/development.md)
-- [3.0.0 release checklist](docs/developer/release-checklist.md)
+- [Release checklist](docs/developer/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 
 ## Architecture at a glance

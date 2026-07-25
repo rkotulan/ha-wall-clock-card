@@ -12,6 +12,7 @@ export class SeparatorEditor extends BaseEditorSection {
 
     render() {
         if (!this.hass || !this.config) return html``;
+        if (this.section !== 'all' && this.section !== 'appearance') return html``;
 
         return html`
             <div class="content">

@@ -20,7 +20,7 @@ export const ZONE_IDS: ZoneId[] = [
 
 /**
  * Geometry of the layout canvas. The nine logical zones stay available in
- * every format; split formats only change the space those anchors share.
+ * every format; split formats group them into two physical panels.
  */
 export type LayoutFormat =
     | 'grid-3x3'
@@ -57,12 +57,18 @@ export interface WidgetCondition {
     [key: string]: unknown;
 }
 
+export type WidgetWidthMode = 'auto' | 'fill' | 'content';
+
 /** Small set of safe per-widget style overrides. */
 export interface WidgetStyle {
     fontSize?: string;
     /** CSS font-family value; the font itself must be available in HA/browser. */
     fontFamily?: string;
     color?: string;
+    /** Width policy inside a row zone; auto selects a suitable policy by widget type. */
+    widthMode?: WidgetWidthMode;
+    /** Relative share of available width when the hosting zone uses row direction. */
+    grow?: number;
     maxWidth?: string;
     maxHeight?: string;
     /** Per-instance escape hatch (CSS margin shorthand). Widgets must not ship their own outer margins. */
@@ -98,6 +104,8 @@ export interface ZoneConfig {
     padding?: string;
     /** CSS length translating the complete zone vertically; negative moves it up. */
     offsetY?: string;
+    /** Let a sole physical area fill the cross-axis of its split panel. */
+    span?: 'panel';
 }
 
 /** Horizontal default follows the grid column unless the zone overrides it. */

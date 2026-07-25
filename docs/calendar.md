@@ -54,6 +54,13 @@ The editor can add an individual `calendar.*` entity or all calendars exposed by
 Home Assistant. Clicking an event opens a card-owned detail dialog with the full
 date/time, source calendar, location and description.
 
+Calendar settings are grouped by intent in the visual editor:
+
+- **Content** — calendar sources, event range and visible event details.
+- **Appearance** — event-row background color and opacity together with the
+  shared calendar typography and layout controls.
+- **Behavior** — past/empty filtering and the data refresh interval.
+
 The widget deliberately uses `maxEvents` instead of generic `maxWidth` and
 `maxHeight` constraints. Its zone supplies the width and the event limit keeps the
 agenda bounded without nested scrollbars or clipped cards.

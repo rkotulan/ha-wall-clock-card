@@ -4,9 +4,27 @@ import {HomeAssistant} from 'custom-card-helpers';
 import Sortable, {SortableEvent} from 'sortablejs';
 import {LayoutConfig, WidgetConfig, ZoneId, ZONE_IDS} from '../core/layout-types';
 import {WidgetPlugin, WidgetRegistry} from '../widgets/widget-registry';
-import {addWidget, hasWidgetType, moveWidget, removeWidget, uniqueWidgetId} from './layout-editor-logic';
+import {
+    addWidget,
+    addWidgetToZoneGroup,
+    hasWidgetType,
+    moveWidgetToZoneGroup,
+    removeWidget,
+    uniqueWidgetId,
+} from './layout-editor-logic';
 import {localize} from '../utils/localize';
-import {resolveLayoutFormat, resolveLayoutVisualPreset} from '../core/layout-format';
+import {
+    layoutGridDefinition,
+    layoutPanelEdge,
+    layoutSplitAnchor,
+    layoutSplitAxis,
+    layoutSplitCanonicalZone,
+    layoutSplitGroupZones,
+    layoutSplitPanel,
+    resolveLayoutFormat,
+    resolveLayoutVisualPreset,
+} from '../core/layout-format';
+import {expandCssPadding, resolveSpacing} from '../core/migrate-config';
 
 export const ZONE_LABELS: Record<ZoneId, string> = {
     'top-left': 'Top left', 'top-center': 'Top center', 'top-right': 'Top right',
@@ -98,56 +116,187 @@ export class WccZoneOverlay extends LitElement {
                 overflow: hidden;
             }
 
-            .zone-grid::before {
-                content: '';
-                position: absolute;
+            .format-preview-surface {
+                position: relative;
                 z-index: 0;
                 pointer-events: none;
+                min-width: 0;
+                min-height: 0;
+            }
+
+            .format-preview-surface::before {
+                content: '';
+                position: absolute;
                 background: rgba(79, 140, 255, 0.08);
             }
 
-            .zone-grid.format-grid-3x3::before {
-                display: none;
+            .format-preview-surface.left {
+                grid-column: 1;
+                grid-row: 1 / -1;
             }
 
-            .zone-grid.format-vertical-2-1::before,
-            .zone-grid.format-vertical-1-2::before {
-                top: 0;
-                bottom: 0;
-                width: 33.333333%;
-            }
-
-            .zone-grid.format-vertical-2-1::before {
-                right: 0;
-                border-left: 2px solid rgba(135, 181, 255, 0.46);
-            }
-
-            .zone-grid.format-vertical-1-2::before {
-                left: 0;
+            .format-preview-surface.left::before {
+                inset:
+                    calc(-1 * var(--preview-padding-top))
+                    calc(-1 * var(--preview-zone-gap))
+                    calc(-1 * var(--preview-padding-bottom))
+                    calc(-1 * var(--preview-padding-left));
                 border-right: 2px solid rgba(135, 181, 255, 0.46);
             }
 
-            .zone-grid.format-horizontal-2-1::before,
-            .zone-grid.format-horizontal-1-2::before {
-                left: 0;
-                right: 0;
-                height: 33.333333%;
+            .format-preview-surface.right {
+                grid-column: 2;
+                grid-row: 1 / -1;
             }
 
-            .zone-grid.format-horizontal-2-1::before {
-                bottom: 0;
-                border-top: 2px solid rgba(135, 181, 255, 0.46);
+            .format-preview-surface.right::before {
+                inset:
+                    calc(-1 * var(--preview-padding-top))
+                    calc(-1 * var(--preview-padding-right))
+                    calc(-1 * var(--preview-padding-bottom))
+                    calc(-1 * var(--preview-zone-gap));
+                border-left: 2px solid rgba(135, 181, 255, 0.46);
             }
 
-            .zone-grid.format-horizontal-1-2::before {
-                top: 0;
+            .format-preview-surface.top {
+                grid-column: 1 / -1;
+                grid-row: 1;
+            }
+
+            .format-preview-surface.top::before {
+                inset:
+                    calc(-1 * var(--preview-padding-top))
+                    calc(-1 * var(--preview-padding-right))
+                    calc(-1 * var(--preview-zone-gap))
+                    calc(-1 * var(--preview-padding-left));
                 border-bottom: 2px solid rgba(135, 181, 255, 0.46);
             }
 
-            .zone-grid.preset-glass::before {
+            .format-preview-surface.bottom {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+
+            .format-preview-surface.bottom::before {
+                inset:
+                    calc(-1 * var(--preview-zone-gap))
+                    calc(-1 * var(--preview-padding-right))
+                    calc(-1 * var(--preview-padding-bottom))
+                    calc(-1 * var(--preview-padding-left));
+                border-top: 2px solid rgba(135, 181, 255, 0.46);
+            }
+
+            .format-preview-surface.glass::before {
                 background:
                     linear-gradient(135deg, rgba(11, 15, 23, 0.56), rgba(57, 49, 53, 0.38));
                 box-shadow: 0 0 32px rgba(0, 0, 0, 0.22);
+            }
+
+            .split-panel {
+                position: relative;
+                z-index: 1;
+                display: grid;
+                min-width: 0;
+                min-height: 0;
+                padding: 22px 9px 9px;
+                box-sizing: border-box;
+                border: 1px dashed rgba(190, 194, 220, 0.32);
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.012);
+            }
+
+            .split-panel.vertical {
+                grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+            }
+
+            .split-panel.horizontal {
+                grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            }
+
+            .split-panel-label {
+                position: absolute;
+                top: 0;
+                left: 12px;
+                z-index: 2;
+                padding: 1px 7px 2px;
+                border-radius: 3px;
+                background: #111116;
+                color: #d7d9e2;
+                font-size: 0.64rem;
+                font-weight: 800;
+                letter-spacing: 0.08em;
+                line-height: 1.25;
+                transform: translateY(-50%);
+            }
+
+            .split-anchor {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 0;
+                min-height: 0;
+            }
+
+            .split-panel.vertical > .split-anchor.start {
+                grid-row: 1;
+                align-self: start;
+            }
+
+            .split-panel.vertical > .split-anchor.center {
+                grid-row: 2;
+                align-self: center;
+            }
+
+            .split-panel.vertical > .split-anchor.end {
+                grid-row: 3;
+                align-self: end;
+            }
+
+            .split-panel.horizontal > .split-anchor.start {
+                grid-column: 1;
+            }
+
+            .split-panel.horizontal > .split-anchor.center {
+                grid-column: 2;
+            }
+
+            .split-panel.horizontal > .split-anchor.end {
+                grid-column: 3;
+            }
+
+            /*
+             * Horizontal split rows have a fixed share of the Designer height.
+             * Keep that geometry stable and scroll an overfilled physical area
+             * locally instead of clipping its widget chips at the panel edge.
+             */
+            .split-panel.horizontal > .split-anchor {
+                grid-row: 1;
+                align-self: stretch;
+                overflow-x: hidden;
+                overflow-y: auto;
+                overscroll-behavior: contain;
+                scrollbar-gutter: stable;
+            }
+
+            .split-panel.horizontal > .split-anchor.panel-span {
+                grid-column: 1 / -1;
+            }
+
+            .split-panel .zone-cell {
+                flex: 0 0 auto;
+                min-height: 42px;
+                padding: 17px 7px 6px;
+                border-radius: 8px;
+                background: rgba(4, 5, 9, 0.46);
+            }
+
+            .split-panel .zone-list {
+                flex: 0 0 auto;
+                min-height: 30px;
+            }
+
+            .split-panel .empty-zone {
+                min-height: 30px;
             }
 
             .zone-cell {
@@ -600,21 +749,29 @@ export class WccZoneOverlay extends LitElement {
         }
     }
 
+    private targetZones(element: HTMLElement): ZoneId[] {
+        const requested = (element.dataset.zones ?? element.dataset.zone ?? '')
+            .split(',')
+            .filter((zone): zone is ZoneId => ZONE_IDS.includes(zone as ZoneId));
+        return requested;
+    }
+
     private handleDragEnd(evt: SortableEvent): void {
-        const fromZone = (evt.from as HTMLElement).dataset.zone as ZoneId | undefined;
-        const toZone = (evt.to as HTMLElement).dataset.zone as ZoneId | undefined;
+        const fromZone = evt.item.dataset.zone as ZoneId | undefined;
+        const fromIndex = Number(evt.item.dataset.index);
+        const targetZones = this.targetZones(evt.to as HTMLElement);
         this.revertDragDom(evt);
-        if (!fromZone || !toZone || evt.oldIndex == null || evt.newIndex == null) {
+        if (!fromZone || !Number.isInteger(fromIndex) || targetZones.length === 0 || evt.newIndex == null) {
             return;
         }
-        if (fromZone === toZone && evt.oldIndex === evt.newIndex) {
+        if (evt.from === evt.to && evt.oldIndex === evt.newIndex) {
             return;
         }
-        this.emitLayout(moveWidget(this.layout, fromZone, evt.oldIndex, toZone, evt.newIndex));
+        this.emitLayout(moveWidgetToZoneGroup(this.layout, fromZone, fromIndex, targetZones, evt.newIndex));
     }
 
     private handlePaletteDrop(evt: SortableEvent): void {
-        const toZone = (evt.to as HTMLElement).dataset.zone as ZoneId | undefined;
+        const targetZones = this.targetZones(evt.to as HTMLElement);
         const widgetType = evt.item.dataset.widgetType;
         // Sortable leaves a clone (without Lit's event listeners) in the palette
         // and drops the original into the target list as alien DOM. Discard the
@@ -622,7 +779,7 @@ export class WccZoneOverlay extends LitElement {
         // rendered by Lit after the state update.
         evt.clone?.remove();
         this.revertDragDom(evt);
-        if (!toZone || !widgetType) {
+        if (targetZones.length === 0 || !widgetType) {
             return;
         }
         const plugin = WidgetRegistry.getInstance().getWidget(widgetType);
@@ -630,7 +787,17 @@ export class WccZoneOverlay extends LitElement {
             return;
         }
         const widgetId = uniqueWidgetId(this.layout, widgetType);
-        this.emitLayout(addWidget(this.layout, toZone, plugin.defaultConfig(), evt.newIndex ?? undefined), widgetId);
+        this.emitLayout(
+            addWidgetToZoneGroup(this.layout, targetZones, plugin.defaultConfig(), evt.newIndex ?? undefined),
+            widgetId,
+        );
+    }
+
+    private zonesForSelection(zone: ZoneId): ZoneId[] {
+        const format = resolveLayoutFormat(this.layout);
+        const panel = layoutSplitPanel(format, zone);
+        const anchor = layoutSplitAnchor(format, zone);
+        return panel && anchor ? layoutSplitGroupZones(format, panel, anchor) : [zone];
     }
 
     private addFromPaletteClick(widgetType: string): void {
@@ -638,9 +805,16 @@ export class WccZoneOverlay extends LitElement {
         if (!plugin || (plugin.singleton && hasWidgetType(this.layout, widgetType))) {
             return;
         }
-        const zone = this.selectedZone ?? 'center';
+        // Adding a widget focuses it and intentionally clears selectedZone in
+        // the parent editor. Keep subsequent palette additions in the same
+        // zone by falling back to the focused widget's location.
+        const zone = this.selectedZone ?? this.selectedWidget?.zone ?? 'center';
         const widgetId = uniqueWidgetId(this.layout, widgetType);
-        this.emitLayout(addWidget(this.layout, zone, plugin.defaultConfig()), widgetId);
+        const targetZones = this.zonesForSelection(zone);
+        const layout = targetZones.length > 1
+            ? addWidgetToZoneGroup(this.layout, targetZones, plugin.defaultConfig())
+            : addWidget(this.layout, zone, plugin.defaultConfig());
+        this.emitLayout(layout, widgetId);
     }
 
     private paletteGroups(): {label: string; plugins: WidgetPlugin[]}[] {
@@ -697,21 +871,29 @@ export class WccZoneOverlay extends LitElement {
         `;
     }
 
-    private renderZoneCell(zone: ZoneId): TemplateResult {
-        const zoneConfig = this.layout.zones[zone];
-        const widgets = zoneConfig?.widgets ?? [];
+    private renderZoneCell(zone: ZoneId, groupedZones: ZoneId[] = [zone], label = this.zoneLabel(zone)): TemplateResult {
+        const zoneConfig = this.layout.zones[zone]
+            ?? groupedZones.map(groupedZone => this.layout.zones[groupedZone]).find(Boolean);
+        const widgets = groupedZones.flatMap(sourceZone =>
+            (this.layout.zones[sourceZone]?.widgets ?? []).map((widget, index) => ({
+                sourceZone,
+                widget,
+                index,
+            }))
+        );
+        const selected = this.selectedZone !== null && groupedZones.includes(this.selectedZone);
         return html`
-            <div class="zone-cell ${this.selectedZone === zone ? 'selected' : ''}"
+            <div class="zone-cell ${selected ? 'selected' : ''}"
                     role="button"
                     tabindex="0"
-                    aria-label=${this.t('inspector.edit_zone', 'Edit zone {name}', {name: this.zoneLabel(zone)})}
+                    aria-label=${this.t('inspector.edit_zone', 'Edit zone {name}', {name: label})}
                     @click=${(event: MouseEvent) => this.selectZoneFromCell(event, zone)}
                     @keydown=${(event: KeyboardEvent) => this.selectZoneFromCell(event, zone)}>
                 <span class="zone-label">
-                    ${this.zoneLabel(zone)}${zoneConfig?.mode === 'exclusive' ? ' ↔' : ''}
+                    ${label}${zoneConfig?.mode === 'exclusive' ? ' ↔' : ''}
                 </span>
-                <div class="zone-list" data-zone=${zone}>
-                    ${widgets.map((widget, index) => this.renderChip(zone, widget, index))}
+                <div class="zone-list" data-zone=${zone} data-zones=${groupedZones.join(',')}>
+                    ${widgets.map(item => this.renderChip(item.sourceZone, item.widget, item.index))}
                     ${widgets.length === 0
                         ? html`<span class="empty-zone">${this.t('designer.drag_here', '+ Drag a widget here')}</span>`
                         : ''}
@@ -720,12 +902,95 @@ export class WccZoneOverlay extends LitElement {
         `;
     }
 
+    private splitAnchorLabel(
+        axis: NonNullable<ReturnType<typeof layoutSplitAxis>>,
+        anchor: 'start' | 'center' | 'end',
+    ): string {
+        if (axis === 'vertical') {
+            if (anchor === 'start') return this.t('zones.split_top', 'Top');
+            if (anchor === 'end') return this.t('zones.split_bottom', 'Bottom');
+            return this.t('zones.split_center', 'Center');
+        }
+        if (anchor === 'start') return this.t('ui.left', 'Left');
+        if (anchor === 'end') return this.t('ui.right', 'Right');
+        return this.t('ui.center', 'Center');
+    }
+
+    private splitPanelStyle(
+        axis: NonNullable<ReturnType<typeof layoutSplitAxis>>,
+        panel: 1 | 2,
+    ): string {
+        return axis === 'vertical'
+            ? `grid-column: ${panel}; grid-row: 1 / -1;`
+            : `grid-column: 1 / -1; grid-row: ${panel};`;
+    }
+
+    private renderSplitPanel(
+        format: ReturnType<typeof resolveLayoutFormat>,
+        axis: NonNullable<ReturnType<typeof layoutSplitAxis>>,
+        panel: 1 | 2,
+    ): TemplateResult {
+        const anchors = (['start', 'center', 'end'] as const).map(anchor => ({
+            anchor,
+            zones: layoutSplitGroupZones(format, panel, anchor),
+            canonical: layoutSplitCanonicalZone(format, panel, anchor),
+        }));
+        const populated = anchors.filter(group => group.zones.some(
+            zone => (this.layout.zones[zone]?.widgets.length ?? 0) > 0,
+        ));
+        const spanningAnchor = axis === 'horizontal'
+            && populated.length === 1
+            && populated[0].canonical
+            && this.layout.zones[populated[0].canonical]?.span === 'panel'
+            ? populated[0].anchor
+            : undefined;
+        const visibleAnchors = spanningAnchor ? populated : anchors;
+        const firstIsLarge = format.endsWith('2-1');
+        const ratio = (panel === 1) === firstIsLarge ? '2/3' : '1/3';
+
+        return html`
+            <div class="split-panel ${axis}" style=${this.splitPanelStyle(axis, panel)}>
+                <span class="split-panel-label">${ratio}</span>
+                ${visibleAnchors.map(group => html`
+                    <div class="split-anchor ${group.anchor} ${group.anchor === spanningAnchor ? 'panel-span' : ''}">
+                        ${group.canonical
+                            ? this.renderZoneCell(
+                                group.canonical,
+                                group.zones,
+                                this.splitAnchorLabel(axis, group.anchor),
+                            )
+                            : ''}
+                    </div>
+                `)}
+            </div>
+        `;
+    }
+
     render(): TemplateResult {
         const format = resolveLayoutFormat(this.layout);
         const preset = resolveLayoutVisualPreset(this.layout);
+        const spacing = resolveSpacing(this.layout);
+        const padding = expandCssPadding(spacing.padding);
+        const grid = layoutGridDefinition(format);
+        const panelEdge = layoutPanelEdge(format);
+        const splitAxis = layoutSplitAxis(format);
         return html`
-            <div class="zone-grid format-${format} preset-${preset}">
-                ${ZONE_IDS.map(zone => this.renderZoneCell(zone))}
+            <div class="zone-grid format-${format} preset-${preset}"
+                 style="grid-template-columns: ${grid.columns}; grid-template-rows: ${grid.rows};
+                        gap: ${spacing.zoneGap}; padding: ${spacing.padding};
+                        --preview-zone-gap: ${spacing.zoneGap};
+                        --preview-padding-top: ${padding.top}; --preview-padding-right: ${padding.right};
+                        --preview-padding-bottom: ${padding.bottom}; --preview-padding-left: ${padding.left};">
+                ${panelEdge ? html`
+                    <div class="format-preview-surface ${preset === 'glass' ? 'glass' : ''} ${panelEdge}"></div>
+                ` : ''}
+                ${splitAxis
+                    ? ([1, 2] as const).map(panel => this.renderSplitPanel(
+                        format,
+                        splitAxis,
+                        panel,
+                    ))
+                    : ZONE_IDS.map(zone => this.renderZoneCell(zone))}
             </div>
             <div class="palette">
                 <div class="palette-title">${this.t('designer.widgets', 'Widgets')}</div>

@@ -2,12 +2,52 @@ import {
     defaultZoneAlignment,
     WidgetAlignment,
     WidgetOrientation,
+    WidgetWidthMode,
     ZoneConfig,
     ZoneId,
 } from '../core/layout-types';
 
 export type ResolvedWidgetOrientation = Exclude<WidgetOrientation, 'auto'>;
 export type ResolvedWidgetAlignment = Exclude<WidgetAlignment, 'auto'>;
+export type ResolvedWidgetWidthMode = Exclude<WidgetWidthMode, 'auto'>;
+
+const DEFAULT_ROW_GROW: Record<string, number> = {
+    weather: 3,
+    calendar: 3,
+    transportation: 3,
+    'action-bar': 2,
+};
+
+/** Auto keeps compact widgets intrinsic and lets information panels share the remainder. */
+export function resolveWidgetWidthMode(
+    type?: string,
+    widthMode: WidgetWidthMode = 'auto',
+): ResolvedWidgetWidthMode {
+    if (widthMode !== 'auto') return widthMode;
+    return type && DEFAULT_ROW_GROW[type] ? 'fill' : 'content';
+}
+
+/**
+ * Recommended proportions for the common horizontal information strip.
+ * An explicit positive value always wins; widgets outside the strip keep
+ * their intrinsic width unless the user assigns a ratio.
+ */
+export function resolveWidgetRowGrow(
+    type?: string,
+    grow?: number,
+    widthMode: WidgetWidthMode = 'auto',
+): number | undefined {
+    if (widthMode === 'content') return undefined;
+    const explicit = Number(grow);
+    if (Number.isFinite(explicit) && explicit > 0) return explicit;
+    if (widthMode === 'fill') return type ? DEFAULT_ROW_GROW[type] ?? 1 : 1;
+    return type ? DEFAULT_ROW_GROW[type] : undefined;
+}
+
+/** A row-hosted action bar defaults to a compact two-column grid. */
+export function resolveActionBarColumns(columns?: number, zoneDirection?: ZoneConfig['direction']): number | undefined {
+    return columns ?? (zoneDirection === 'row' ? 2 : undefined);
+}
 
 /** Widgets whose host can be width-bounded without clipping their internal layout. */
 export function supportsWidgetMaxWidth(type?: string): boolean {

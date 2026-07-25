@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WallClockConfig } from '../../core/types';
 import { localize } from '../../utils/localize';
+import {getEditorExpandedIndex, setEditorExpandedIndex} from '../editor-session-state';
 
 /**
  * Interface for editor section components
@@ -25,6 +26,8 @@ export interface EditorSectionInterface {
     render(): unknown;
 }
 
+export type EditorSection = 'all' | 'content' | 'appearance' | 'behavior';
+
 /**
  * Base class for editor section components
  * All editor sections should extend this class
@@ -32,6 +35,18 @@ export interface EditorSectionInterface {
 export abstract class BaseEditorSection extends LitElement implements EditorSectionInterface {
     @property({ type: Object }) hass!: HomeAssistant;
     @property({ type: Object }) config!: WallClockConfig;
+    @property({attribute: false}) editorSessionKey?: string;
+    /** Logical inspector tab rendered by section-aware widget editors. */
+    @property({type: String}) section: EditorSection = 'all';
+
+    /** Shared accordion state: editors start collapsed and survive HA autosave recreation. */
+    protected restoreExpandedIndex(stateKey: string): number | null {
+        return getEditorExpandedIndex(this.editorSessionKey, stateKey);
+    }
+
+    protected retainExpandedIndex(stateKey: string, expandedIndex: number | null): void {
+        setEditorExpandedIndex(this.editorSessionKey, stateKey, expandedIndex);
+    }
 
     /** Translate editor text using the active Home Assistant profile language. */
     protected t(key: string, fallback?: string, replacements: Record<string, string | number> = {}): string {

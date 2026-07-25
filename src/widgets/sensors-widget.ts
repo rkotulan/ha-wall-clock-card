@@ -32,6 +32,15 @@ export class SensorsWidget extends WidgetElement<SensorsWidgetConfig> {
             width: 100%;
             max-height: 100%;
         }
+
+        /* A percentage-sized child has no intrinsic flex width. Let the sensor
+           content establish it when the row widget uses compact sizing. */
+        :host([data-content-width]) ha-sensors {
+            --sensor-component-width: max-content;
+            --sensor-container-type: normal;
+            width: max-content;
+            max-width: 100%;
+        }
     `;
 
     protected applyWidgetState(): void {

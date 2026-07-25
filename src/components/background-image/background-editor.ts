@@ -4,13 +4,15 @@ import { BaseEditorSection } from '../../editors/editor-base/base-editor-section
 import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
 import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 
+const EXPANSION_STATE_KEY = 'background-images.expansion';
+
 /**
  * Editor component for background settings
  */
 @customElement('background-editor')
 export class BackgroundEditor extends BaseEditorSection {
     @property({ type: Array }) _backgroundImages: BackgroundImage[] = [];
-    @state() private _expandedImageIndex: number | null = 0;
+    @state() private _expandedImageIndex: number | null = null;
     private readonly sortableList = new SortableListController(this, {
         containerSelector: '.image-list',
         draggable: '.image-card',
@@ -43,6 +45,9 @@ export class BackgroundEditor extends BaseEditorSection {
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 
+        if (changedProps.has('editorSessionKey')) {
+            this._expandedImageIndex = this.restoreExpandedIndex(EXPANSION_STATE_KEY);
+        }
         // Load background images from config when config changes
         if (changedProps.has('config') && this.config) {
             this._loadBackgroundImages();
@@ -65,13 +70,20 @@ export class BackgroundEditor extends BaseEditorSection {
         }
         if (this._backgroundImages.length === 0) {
             this._expandedImageIndex = null;
-        } else if (this._expandedImageIndex !== null) {
-            this._expandedImageIndex = Math.min(this._expandedImageIndex, this._backgroundImages.length - 1);
+        } else if (this._expandedImageIndex !== null &&
+            this._expandedImageIndex >= this._backgroundImages.length) {
+            this._expandedImageIndex = null;
         }
+        this._retainExpansionState();
+    }
+
+    private _retainExpansionState(): void {
+        this.retainExpandedIndex(EXPANSION_STATE_KEY, this._expandedImageIndex);
     }
 
     private _addBackgroundImage(): void {
         this._expandedImageIndex = this._backgroundImages.length;
+        this._retainExpansionState();
         this._backgroundImages = [
             ...this._backgroundImages,
             {
@@ -88,15 +100,17 @@ export class BackgroundEditor extends BaseEditorSection {
         if (this._backgroundImages.length === 0) {
             this._expandedImageIndex = null;
         } else if (this._expandedImageIndex === index) {
-            this._expandedImageIndex = Math.min(index, this._backgroundImages.length - 1);
+            this._expandedImageIndex = null;
         } else if (this._expandedImageIndex !== null && this._expandedImageIndex > index) {
             this._expandedImageIndex -= 1;
         }
+        this._retainExpansionState();
         this._updateBackgroundImagesConfig();
     }
 
     private _toggleImage(index: number): void {
         this._expandedImageIndex = this._expandedImageIndex === index ? null : index;
+        this._retainExpansionState();
     }
 
     private _moveBackgroundImage(fromIndex: number, toIndex: number): void {
@@ -105,6 +119,7 @@ export class BackgroundEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        this._retainExpansionState();
         this._backgroundImages = moveListItem(this._backgroundImages, fromIndex, toIndex);
         this._updateBackgroundImagesConfig();
     }
@@ -242,6 +257,7 @@ export class BackgroundEditor extends BaseEditorSection {
 
         return html`
             <div class="content">
+                <div class="section-subheader">${this.t('editor.background.source_group', 'Image source')}</div>
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
@@ -255,6 +271,12 @@ export class BackgroundEditor extends BaseEditorSection {
                         propertyName="imageSource"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
+
+                ${this.config.imageSource === 'local' ? this._renderLocalImagesSection() : ''}
+                ${this.config.imageSource === 'unsplash' ? this._renderUnsplashSection() : ''}
+                ${this.config.imageSource === 'sensor' ? this._renderSensorImagesSection() : ''}
+
+                <div class="section-subheader">${this.t('editor.background.appearance', 'Image appearance')}</div>
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
@@ -275,6 +297,21 @@ export class BackgroundEditor extends BaseEditorSection {
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
+                            select: {
+                                options: this._objectFitOptions(),
+                                mode: 'dropdown'
+                            }
+                        }}
+                        .value=${this.config.objectFit || 'cover'}
+                        .label=${this.t('editor.background.fit', 'Background image fit')}
+                        propertyName="objectFit"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <div class="section-subheader">${this.t('editor.background.rotation_group', 'Image rotation')}</div>
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
                             number: {
                                 min: 30,
                                 max: 300,
@@ -288,24 +325,6 @@ export class BackgroundEditor extends BaseEditorSection {
                         propertyName="backgroundRotationInterval"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
-
-                <ha-row-selector
-                        .hass=${this.hass}
-                        .selector=${{
-                            select: {
-                                options: this._objectFitOptions(),
-                                mode: 'dropdown'
-                            }
-                        }}
-                        .value=${this.config.objectFit || 'cover'}
-                        .label=${this.t('editor.background.fit', 'Background image fit')}
-                        propertyName="objectFit"
-                        @value-changed=${this._handleFormValueChanged}
-                ></ha-row-selector>
-                
-                ${this.config.imageSource === 'local' ? this._renderLocalImagesSection() : ''}
-                ${this.config.imageSource === 'unsplash' ? this._renderUnsplashSection() : ''}
-                ${this.config.imageSource === 'sensor' ? this._renderSensorImagesSection() : ''}
             </div>
         `;
     }

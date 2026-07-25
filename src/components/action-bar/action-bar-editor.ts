@@ -6,13 +6,15 @@ import { ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-b
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';
 
+const EXPANSION_STATE_KEY = 'actions.expansion';
+
 /**
  * Editor component for action bar settings
  */
 @customElement('action-bar-editor')
 export class ActionBarEditor extends BaseEditorSection {
     @property({ type: Array }) _actions: ModuleActionConfig[] = [];
-    @state() private _expandedActionIndex: number | null = 0;
+    @state() private _expandedActionIndex: number | null = null;
     private readonly sortableList = new SortableListController(this, {
         containerSelector: '.action-list',
         draggable: '.action-item',
@@ -27,6 +29,9 @@ export class ActionBarEditor extends BaseEditorSection {
     updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 
+        if (changedProps.has('editorSessionKey')) {
+            this._expandedActionIndex = this.restoreExpandedIndex(EXPANSION_STATE_KEY);
+        }
         // Load actions from config when config changes
         if (changedProps.has('config') && this.config) {
             this._loadActions();
@@ -55,9 +60,15 @@ export class ActionBarEditor extends BaseEditorSection {
         }
         if (this._actions.length === 0) {
             this._expandedActionIndex = null;
-        } else if (this._expandedActionIndex !== null) {
-            this._expandedActionIndex = Math.min(this._expandedActionIndex, this._actions.length - 1);
+        } else if (this._expandedActionIndex !== null &&
+            this._expandedActionIndex >= this._actions.length) {
+            this._expandedActionIndex = null;
         }
+        this._retainExpansionState();
+    }
+
+    private _retainExpansionState(): void {
+        this.retainExpandedIndex(EXPANSION_STATE_KEY, this._expandedActionIndex);
     }
 
     /**
@@ -177,6 +188,7 @@ export class ActionBarEditor extends BaseEditorSection {
         this._editorComponentCache.clear();
 
         this._expandedActionIndex = this._actions.length;
+        this._retainExpansionState();
         this._actions = [...this._actions, newAction];
 
         // Update the config with a deep copy
@@ -235,6 +247,7 @@ export class ActionBarEditor extends BaseEditorSection {
         } else if (this._expandedActionIndex === index - 1) {
             this._expandedActionIndex = index;
         }
+        this._retainExpansionState();
 
         // Update the config with a deep copy
         if (this.config) {
@@ -289,6 +302,7 @@ export class ActionBarEditor extends BaseEditorSection {
         } else if (this._expandedActionIndex === index + 1) {
             this._expandedActionIndex = index;
         }
+        this._retainExpansionState();
 
         // Update the config with a deep copy
         if (this.config) {
@@ -327,10 +341,11 @@ export class ActionBarEditor extends BaseEditorSection {
         if (this._actions.length === 0) {
             this._expandedActionIndex = null;
         } else if (this._expandedActionIndex === index) {
-            this._expandedActionIndex = Math.min(index, this._actions.length - 1);
+            this._expandedActionIndex = null;
         } else if (this._expandedActionIndex !== null && this._expandedActionIndex > index) {
             this._expandedActionIndex -= 1;
         }
+        this._retainExpansionState();
         // Update the config with a deep copy
         if (this.config) {
             // Create a deep copy of the config
@@ -370,6 +385,7 @@ export class ActionBarEditor extends BaseEditorSection {
 
     private _toggleAction(index: number): void {
         this._expandedActionIndex = this._expandedActionIndex === index ? null : index;
+        this._retainExpansionState();
     }
 
     private _moveAction(fromIndex: number, toIndex: number): void {
@@ -379,6 +395,7 @@ export class ActionBarEditor extends BaseEditorSection {
             fromIndex,
             toIndex,
         );
+        this._retainExpansionState();
         this._actions = moveListItem(this._actions, fromIndex, toIndex);
         if (!this.config) return;
         const newConfig = JSON.parse(JSON.stringify(this.config));
@@ -599,19 +616,21 @@ export class ActionBarEditor extends BaseEditorSection {
         if (!this.hass || !this.config) {
             return html``;
         }
+        const showContent = this.section === 'all' || this.section === 'content';
+        const showBehavior = this.section === 'all' || this.section === 'behavior';
 
         return html`
             <div class="content">
-                <ha-row-selector
+                ${showBehavior ? html`<ha-row-selector
                         .hass=${this.hass}
                         .selector=${{boolean: {}}}
                         .value=${this.config.actionBar?.enabled === true}
                         .label=${this.t('editor.actions.enable', 'Enable action bar')}
                         propertyName="actionBar.enabled"
                         @value-changed=${this._handleFormValueChanged}
-                ></ha-row-selector>
+                ></ha-row-selector>` : ''}
 
-                ${this.config.actionBar?.enabled === true ? html`
+                ${showContent ? html`
                     <div class="info-text">
                         ${this.t('editor.actions.description', 'Configure action buttons displayed in this widget.')}
                     </div>

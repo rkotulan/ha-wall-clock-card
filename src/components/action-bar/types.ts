@@ -114,6 +114,8 @@ export interface ActionBarConfig {
     actions: ModuleActionConfig[];
     alignment?: ActionBarAlignment;
     orientation?: WidgetOrientation;
+    /** Optional fixed column count; when set, actions render as a grid. */
+    columns?: number;
     backgroundOpacity?: number; // Controls the opacity of the action bar background (0-1)
     /** Whether each action button has the circular translucent background. */
     showButtonBackground?: boolean;

@@ -63,6 +63,8 @@ Choose **Modal dialog** to open departures over the complete dashboard. The
 dialog can be closed with its close button, by clicking the backdrop, or with
 Escape. The configured auto-hide timeout also closes it. Both modes use the
 same provider, profiles, departure order and on-demand refresh behavior.
+Closing the dialog while data is still loading cancels that activation window:
+its eventual response cannot reopen the dialog or leave background polling active.
 
 ## Home Assistant departure entities
 
@@ -97,6 +99,10 @@ polling interval.
 
 Each profile is one displayed stop column. Its refresh button and ordered
 departure sensors are configured together in one expandable Designer section.
+When a profile name is empty, the Designer pre-fills the name field with the
+same friendly-name fallback shown in the profile header. A custom name always
+wins. The departures view uses the same resolution order: custom profile name,
+refresh-button friendly name, then the stop name reported by the sensor.
 Every selected sensor is displayed, so the number of selected entities determines
 the number of departure rows. Exact entity IDs depend on the names assigned by
 Home Assistant when each integration profile is configured.

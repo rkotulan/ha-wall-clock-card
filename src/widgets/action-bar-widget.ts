@@ -7,13 +7,14 @@ import {ActionBarAlignment, ModuleActionConfig} from '../components/action-bar/t
 import {Size} from '../core/types';
 import {WidgetConfig, WidgetOrientation} from '../core/layout-types';
 import {WidgetElement} from './widget-element';
-import {resolveWidgetAlignment, resolveWidgetOrientation} from './widget-layout';
+import {resolveActionBarColumns, resolveWidgetAlignment, resolveWidgetOrientation} from './widget-layout';
 
 export interface ActionBarWidgetConfig extends WidgetConfig {
     enabled?: boolean;
     actions?: ModuleActionConfig[];
     alignment?: ActionBarAlignment;
     orientation?: WidgetOrientation;
+    columns?: number;
     backgroundOpacity?: number;
     showButtonBackground?: boolean;
     buttonGap?: string;
@@ -28,6 +29,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
     private appliedConfig?: ActionBarWidgetConfig;
     private appliedZoneId?: string;
     private appliedZoneAlignment?: string;
+    private appliedZoneDirection?: string;
 
     static styles = css`
         :host {
@@ -54,7 +56,8 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
         // renders it caused a BottomBarRequestUpdateMessage on every HA tick.
         if (this.appliedConfig !== this.config
             || this.appliedZoneId !== this.zoneId
-            || this.appliedZoneAlignment !== this.zoneAlignment) {
+            || this.appliedZoneAlignment !== this.zoneAlignment
+            || this.appliedZoneDirection !== this.zoneDirection) {
             this.actionBar.config = {
                 enabled: this.config.enabled ?? true,
                 actions: this.config.actions ?? [],
@@ -64,6 +67,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
                     this.zoneAlignment,
                 ) as ActionBarAlignment,
                 orientation: resolveWidgetOrientation(this.config.orientation, this.zoneId),
+                columns: resolveActionBarColumns(this.config.columns, this.zoneDirection),
                 backgroundOpacity: this.config.backgroundOpacity,
                 showButtonBackground: this.config.showButtonBackground,
                 buttonGap: this.config.buttonGap,
@@ -73,6 +77,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
             this.appliedConfig = this.config;
             this.appliedZoneId = this.zoneId;
             this.appliedZoneAlignment = this.zoneAlignment;
+            this.appliedZoneDirection = this.zoneDirection;
         }
         if (this.actionBar.fontColor !== this.fontColor) {
             this.actionBar.fontColor = this.fontColor;

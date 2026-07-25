@@ -485,9 +485,12 @@ export class HaCardEditor extends BaseEditorSection {
         const card = this.widgetConfig.card;
         const pickerAvailable = !!customElements.get('hui-card-picker');
         const editorAvailable = !!customElements.get('hui-card-element-editor');
+        const showContent = this.section === 'all' || this.section === 'content';
+        const showAppearance = this.section === 'all' || this.section === 'appearance';
 
         return html`
             <div class="content">
+                ${showContent ? html`
                 <p class="hint">${this.t(
                     'editor.ha_card.description',
                     'Embed a built-in or installed custom Home Assistant dashboard card.',
@@ -531,7 +534,9 @@ export class HaCardEditor extends BaseEditorSection {
                         ${this.t('editor.ha_card.edit_card', 'Edit card in Home Assistant editor')}
                     </button>
                 ` : nothing}
+                ` : nothing}
 
+                ${showAppearance ? html`
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{boolean: {}}}
@@ -541,9 +546,10 @@ export class HaCardEditor extends BaseEditorSection {
                         .labelPosition=${LabelPosition.Top}
                         @value-changed=${(event: CustomEvent) => this.updateTransparent(event.detail.value)}>
                 </ha-row-selector>
+                ` : nothing}
             </div>
 
-            ${this.renderEditorDialog(editorAvailable)}
+            ${showContent ? this.renderEditorDialog(editorAvailable) : nothing}
         `;
     }
 }

@@ -10,6 +10,9 @@ import {WidgetElement} from '../widgets/widget-element';
 import {
     layoutGridDefinition,
     layoutPanelEdge,
+    layoutSplitAxis,
+    layoutSplitCanonicalZone,
+    layoutSplitGroupZones,
     layoutZonePanelEdge,
     layoutZonePlacement,
     resolveLayoutFormat,
@@ -82,51 +85,149 @@ export class WccLayout extends LitElement {
         }
 
         .format-surface {
-            position: absolute;
+            position: relative;
             z-index: 0;
             pointer-events: none;
+            min-width: 0;
+            min-height: 0;
         }
 
-        .format-surface.left,
-        .format-surface.right {
-            top: 0;
-            bottom: 0;
-            width: 33.333333%;
-        }
-
-        .format-surface.left {
-            left: 0;
-            border-right: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .format-surface.right {
-            right: 0;
-            border-left: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .format-surface.top,
-        .format-surface.bottom {
-            left: 0;
-            right: 0;
-            height: 33.333333%;
-        }
-
-        .format-surface.top {
-            top: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .format-surface.bottom {
-            bottom: 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .format-surface.glass {
+        .format-surface::before {
+            content: '';
+            position: absolute;
             background:
                 linear-gradient(135deg, rgba(9, 13, 18, 0.72), rgba(20, 18, 19, 0.62));
             box-shadow: 0 0 48px rgba(0, 0, 0, 0.18);
             backdrop-filter: blur(24px) saturate(1.1);
             -webkit-backdrop-filter: blur(24px) saturate(1.1);
+        }
+
+        .format-surface.left {
+            grid-column: 1;
+            grid-row: 1 / -1;
+        }
+
+        .format-surface.left::before {
+            inset:
+                calc(-1 * var(--wcc-padding-top))
+                calc(-1 * var(--wcc-zone-gap))
+                calc(-1 * var(--wcc-padding-bottom))
+                calc(-1 * var(--wcc-padding-left));
+            border-right: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.right {
+            grid-column: 2;
+            grid-row: 1 / -1;
+        }
+
+        .format-surface.right::before {
+            inset:
+                calc(-1 * var(--wcc-padding-top))
+                calc(-1 * var(--wcc-padding-right))
+                calc(-1 * var(--wcc-padding-bottom))
+                calc(-1 * var(--wcc-zone-gap));
+            border-left: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.top {
+            grid-column: 1 / -1;
+            grid-row: 1;
+        }
+
+        .format-surface.top::before {
+            inset:
+                calc(-1 * var(--wcc-padding-top))
+                calc(-1 * var(--wcc-padding-right))
+                calc(-1 * var(--wcc-zone-gap))
+                calc(-1 * var(--wcc-padding-left));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .format-surface.bottom {
+            grid-column: 1 / -1;
+            grid-row: 2;
+        }
+
+        .format-surface.bottom::before {
+            inset:
+                calc(-1 * var(--wcc-zone-gap))
+                calc(-1 * var(--wcc-padding-right))
+                calc(-1 * var(--wcc-padding-bottom))
+                calc(-1 * var(--wcc-padding-left));
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        /*
+         * Split formats have two real panels. Their logical zones are grouped
+         * by the remaining axis, so neighbouring legacy anchors never overlap.
+         */
+        .split-panel {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .split-panel.vertical {
+            grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+        }
+
+        .split-panel.horizontal {
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        }
+
+        .split-anchor {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            gap: var(--wcc-zone-gap);
+        }
+
+        .split-panel.vertical > .split-anchor.start {
+            grid-row: 1;
+            align-self: start;
+        }
+
+        .split-panel.vertical > .split-anchor.center {
+            grid-row: 2;
+            align-self: center;
+        }
+
+        .split-panel.vertical > .split-anchor.end {
+            grid-row: 3;
+            align-self: end;
+        }
+
+        .split-panel.horizontal > .split-anchor.start {
+            grid-column: 1;
+            justify-self: stretch;
+        }
+
+        .split-panel.horizontal > .split-anchor.center {
+            grid-column: 2;
+            justify-self: center;
+        }
+
+        .split-panel.horizontal > .split-anchor.end {
+            grid-column: 3;
+            justify-self: stretch;
+        }
+
+        .split-panel.horizontal > .split-anchor.panel-span {
+            grid-column: 1 / -1;
+            justify-self: stretch;
+        }
+
+        /*
+         * A horizontal split keeps left/centre/right anchors. Each anchor must
+         * fill the panel vertically as well, otherwise WccZone shrink-wraps its
+         * widgets and its internal vertical centring has no free space to use.
+         */
+        .split-panel.horizontal > .split-anchor > wcc-zone {
+            flex: 1 1 auto;
         }
     `;
 
@@ -253,6 +354,85 @@ export class WccLayout extends LitElement {
         }
     }
 
+    private renderZone(
+        entry: ZoneEntry,
+        format: ReturnType<typeof resolveLayoutFormat>,
+        padding: CssPaddingEdges,
+        placement = '',
+    ): TemplateResult {
+        return html`
+            <wcc-zone style="${placement}
+                             ${this.separatorInsetStyle(format, entry.zoneId, padding)}"
+                      .zoneId=${entry.zoneId}
+                      .zoneConfig=${entry.config}
+                      .widgets=${entry.widgets}></wcc-zone>
+        `;
+    }
+
+    private splitPanelStyle(
+        axis: NonNullable<ReturnType<typeof layoutSplitAxis>>,
+        panel: 1 | 2,
+    ): string {
+        return axis === 'vertical'
+            ? `grid-column: ${panel}; grid-row: 1 / -1;`
+            : `grid-column: 1 / -1; grid-row: ${panel};`;
+    }
+
+    private renderSplitPanel(
+        format: ReturnType<typeof resolveLayoutFormat>,
+        axis: NonNullable<ReturnType<typeof layoutSplitAxis>>,
+        panel: 1 | 2,
+        padding: CssPaddingEdges,
+    ): TemplateResult {
+        const anchors = (['start', 'center', 'end'] as const)
+            .map(anchor => ({
+                anchor,
+                entry: this.splitGroupEntry(format, panel, anchor),
+            }));
+        const populated = anchors.filter(group => group.entry);
+        const spanningAnchor = axis === 'horizontal'
+            && populated.length === 1
+            && populated[0].entry?.config.span === 'panel'
+            ? populated[0].anchor
+            : undefined;
+
+        return html`
+            <div class="split-panel ${axis}" style=${this.splitPanelStyle(axis, panel)}>
+                ${anchors.map(group => group.entry ? html`
+                    <div class="split-anchor ${group.anchor} ${group.anchor === spanningAnchor ? 'panel-span' : ''}">
+                        ${this.renderZone(group.entry, format, padding)}
+                    </div>
+                ` : '')}
+            </div>
+        `;
+    }
+
+    private splitGroupEntry(
+        format: ReturnType<typeof resolveLayoutFormat>,
+        panel: 1 | 2,
+        anchor: 'start' | 'center' | 'end',
+    ): ZoneEntry | undefined {
+        const zones = layoutSplitGroupZones(format, panel, anchor);
+        const canonical = layoutSplitCanonicalZone(format, panel, anchor);
+        if (!canonical) return undefined;
+
+        const entries = zones
+            .map(zone => this.zoneEntries.find(entry => entry.zoneId === zone))
+            .filter((entry): entry is ZoneEntry => entry !== undefined);
+        const widgets = entries.flatMap(entry => entry.widgets);
+        if (widgets.length === 0) return undefined;
+
+        const config = this.layout?.zones?.[canonical] ?? entries[0].config;
+        const alignment = config.align ?? defaultZoneAlignment(canonical);
+        const direction = config.direction ?? 'column';
+        widgets.forEach(widget => {
+            widget.zoneId = canonical;
+            widget.zoneAlignment = alignment;
+            widget.zoneDirection = direction;
+        });
+        return {zoneId: canonical, config, widgets};
+    }
+
     render(): TemplateResult {
         const spacing = resolveSpacing(this.layout);
         const padding = expandCssPadding(spacing.padding);
@@ -260,22 +440,30 @@ export class WccLayout extends LitElement {
         const preset = resolveLayoutVisualPreset(this.layout);
         const grid = layoutGridDefinition(format);
         const panelEdge = preset === 'glass' ? layoutPanelEdge(format) : undefined;
+        const splitAxis = layoutSplitAxis(format);
         return html`
-            ${panelEdge ? html`<div class="format-surface glass ${panelEdge}"></div>` : ''}
             <div class="grid"
                  data-format=${format}
                  style="--wcc-padding: ${spacing.padding}; --wcc-zone-gap: ${spacing.zoneGap}; --wcc-widget-gap: ${spacing.widgetGap};
+                        --wcc-padding-top: ${padding.top}; --wcc-padding-right: ${padding.right};
+                        --wcc-padding-bottom: ${padding.bottom}; --wcc-padding-left: ${padding.left};
                         grid-template-columns: ${grid.columns}; grid-template-rows: ${grid.rows};
                         grid-template-areas: ${format === 'grid-3x3'
-                            ? `'top-left top-center top-right' 'middle-left center middle-right' 'bottom-left bottom-center bottom-right'`
-                            : 'none'};">
-                ${repeat(this.zoneEntries, entry => entry.zoneId, entry => html`
-                    <wcc-zone style="${this.zonePlacement(entry.zoneId)}
-                                     ${this.separatorInsetStyle(format, entry.zoneId, padding)}"
-                              .zoneId=${entry.zoneId}
-                              .zoneConfig=${entry.config}
-                              .widgets=${entry.widgets}></wcc-zone>
-                `)}
+                             ? `'top-left top-center top-right' 'middle-left center middle-right' 'bottom-left bottom-center bottom-right'`
+                             : 'none'};">
+                ${panelEdge ? html`<div class="format-surface ${panelEdge}"></div>` : ''}
+                ${splitAxis
+                    ? ([1, 2] as const).map(panel => this.renderSplitPanel(
+                        format,
+                        splitAxis,
+                        panel,
+                        padding,
+                    ))
+                    : repeat(
+                        this.zoneEntries,
+                        entry => entry.zoneId,
+                        entry => this.renderZone(entry, format, padding, this.zonePlacement(entry.zoneId)),
+                    )}
             </div>
         `;
     }

@@ -32,12 +32,12 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
     static styles = css`
         :host {
             display: block;
+            width: 100%;
+            max-width: 100%;
             max-height: 100%;
-            min-width: 0;
         }
 
         :host([data-orientation='horizontal']) {
-            width: 100%;
             max-width: 100%;
         }
     `;

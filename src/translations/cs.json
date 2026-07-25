@@ -71,12 +71,15 @@
     "autosave_hint_local": "Změny se připravují průběžně · uložíte je a editor zavřete tlačítkem Hotovo"
   },
   "zones": {
+    "split_top": "Nahoře", "split_center": "Uprostřed", "split_bottom": "Dole",
     "top_left": "Vlevo nahoře", "top_center": "Uprostřed nahoře", "top_right": "Vpravo nahoře",
     "middle_left": "Vlevo", "center": "Uprostřed", "middle_right": "Vpravo",
     "bottom_left": "Vlevo dole", "bottom_center": "Uprostřed dole", "bottom_right": "Vpravo dole"
   },
   "general": {
-    "title": "Obecné", "font_color": "Barva písma", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
+    "title": "Obecné", "layout": "Rozložení", "appearance": "Vzhled karty",
+    "language_diagnostics": "Jazyk a diagnostika",
+    "font_color": "Barva písma", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
     "font_family_help": "CSS rodina nebo seznam písem; font musí být již načtený", "language": "Jazyk", "log_level": "Úroveň logování",
     "size": "Velikost", "large": "Velká", "medium": "Střední", "small": "Malá", "custom_sizes": "Vlastní velikosti",
     "clock_top_margin": "Horní okraj hodin (např. 0rem)", "spacing": "Rozestupy", "background": "Pozadí",
@@ -101,6 +104,14 @@
     "mode": "Režim", "stack": "Skládat (zobrazit všechny widgety)",
     "exclusive": "Exkluzivní (aktivní widget s nejvyšší prioritou)", "direction": "Směr",
     "column": "Sloupec", "row": "Řádek", "horizontal_alignment": "Vodorovné zarovnání",
+    "span_panel": "Roztáhnout přes celý dělený panel",
+    "span_panel_help": "Použije se, pokud je toto jediná obsazená oblast v panelu.",
+    "row_width_ratio": "Poměr šířky v řádku",
+    "row_width_ratio_help": "Relativní podíl dostupné šířky řádku; 0 použije doporučený automatický poměr.",
+    "width_mode": "Chování šířky v řádku",
+    "width_mode_help": "Automatika zvolí vhodné chování podle typu widgetu.",
+    "width_mode_fill": "Roztáhnout",
+    "width_mode_content": "Podle obsahu",
     "widget_gap": "Vlastní mezera mezi widgety (např. 4px)", "zone_padding": "Odsazení zóny (např. 0 16px)",
     "vertical_offset": "Svislý posun zóny (např. -8vh)", "vertical_offset_help": "Záporná hodnota posune celou zónu nahoru, kladná dolů.",
     "clock_size": "Velikost hodin (např. 16rem)", "date_size": "Velikost data (např. 6rem)",
@@ -118,7 +129,7 @@
     "margin": "Okraj (CSS zkrácený zápis)"
   },
   "layout": {
-    "format": "Formát rozložení",
+    "structure": "Struktura rozložení", "format": "Formát rozložení",
     "format_help": "Mění geometrii plochy; widgety si zachovají své zóny a nastavení.",
     "format_grid": "Mřížka 3 × 3",
     "format_vertical_2_1": "Svislé 2/3 + 1/3",
@@ -160,6 +171,8 @@
       "two_digit_01": "Dvě číslice (01)", "numeric_2025": "Číslo (2025)", "two_digit_25": "Dvě číslice (25)"
     },
     "weather": {
+      "source": "Zdroj počasí", "visible_content": "Zobrazované informace",
+      "icons": "Ikony počasí", "availability": "Dostupnost", "refresh": "Aktualizace dat",
       "show": "Zobrazit počasí", "show_help": "Zobrazí aktuální počasí a předpověď", "title": "Název počasí",
       "provider": "Poskytovatel počasí", "provider_none": "Žádný (vypnout počasí)",
       "provider_ha": "Entita Home Assistantu", "entity": "Entita počasí", "api_key": "API klíč",
@@ -185,6 +198,7 @@
       "separator_opacity": "Průhlednost separátoru", "separator_opacity_help": "Nastaví průhlednost separátoru."
     },
     "transportation": {
+      "source": "Zdroj dat", "appearance": "Zobrazení odjezdů", "behavior": "Aktualizace a automatické skrytí",
       "provider": "Poskytovatel dopravy", "max_departures": "Maximum odjezdů na zastávku", "departures": "Počet odjezdů: {count}",
       "display_mode": "Zobrazení odjezdů", "display_inline": "V ploše karty", "display_modal": "V modálním okně",
       "display_mode_help": "Určuje, kde se odjezdy otevřou po stisknutí akce Doprava",
@@ -202,6 +216,7 @@
       "alignment": "Zarovnání tlačítek", "alignment_help": "Zarovná tlačítka vlevo, na střed nebo vpravo",
       "opacity": "Průhlednost podkladu", "opacity_help": "Nastaví průhlednost podkladu panelu akcí",
       "button_background": "Kruhové pozadí tlačítek", "button_background_help": "Zobrazí nebo skryje průhledný kruh za každou akcí",
+      "columns": "Počet sloupců mřížky", "columns_help": "0 automaticky použije 2 sloupce ve vodorovné zóně; jiná hodnota nastaví počet sloupců napevno.",
       "button_gap": "Mezera mezi tlačítky", "button_gap_help": "CSS délka mezi tlačítky (výchozí: 16px)",
       "panel_padding": "Vnitřní odsazení panelu", "panel_padding_help": "CSS odsazení uvnitř panelu akcí (výchozí: 16px)",
       "title": "Akce", "empty": "Nejsou nastaveny žádné akce.", "action": "Akce {number}",
@@ -234,6 +249,7 @@
       "weather_update_help": "Tato akce okamžitě aktualizuje počasí. Není potřeba žádné další nastavení."
     },
     "background": {
+      "source_group": "Zdroj obrázků", "appearance": "Vzhled obrázku", "rotation_group": "Střídání obrázků",
       "source": "Zdroj obrázků", "opacity": "Průhlednost pozadí", "rotation": "Interval změny (sekundy)",
       "fit": "Přizpůsobení obrázku pozadí", "images": "Obrázky pozadí", "image": "Obrázek pozadí {number}",
       "url": "URL obrázku", "weather": "Podmínka počasí", "time": "Část dne",
@@ -253,12 +269,14 @@
       "empty": "Přidejte jednu nebo více entit kalendáře Home Assistantu.",
       "label": "Popisek (volitelné)", "event_color": "Barva událostí", "add": "Přidat kalendář", "add_all": "Přidat vše",
       "remove": "Odebrat kalendář", "expand": "Rozbalit kalendář", "collapse": "Sbalit kalendář",
-      "display": "Zobrazení", "display_mode": "Režim zobrazení", "agenda": "Agenda", "today_only": "Pouze dnes",
+      "display": "Zobrazení", "range": "Rozsah událostí", "details": "Obsah událostí",
+      "display_mode": "Režim zobrazení", "agenda": "Agenda", "today_only": "Pouze dnes",
       "days_ahead": "Počet dní dopředu", "maximum_events": "Maximální počet událostí",
       "show_all_day": "Zobrazit celodenní události", "show_location": "Zobrazit místo",
       "show_description": "Zobrazit popis", "hide_past": "Skrýt dnešní uplynulé události",
       "hide_empty": "Skrýt bez událostí", "update_interval": "Interval aktualizace",
-      "update_help": "Minuty (minimum 1)", "event_background": "Podklad událostí",
+      "update_help": "Minuty (minimum 1)", "filtering": "Filtrování a viditelnost", "refresh": "Aktualizace dat",
+      "event_background": "Podklad událostí", "event_appearance": "Vzhled událostí",
       "event_background_color": "Barva podkladu událostí", "event_background_opacity": "Průhlednost podkladu událostí",
       "all_day": "Celý den", "loading": "Načítám kalendář…", "no_events": "Žádné nadcházející události.", "when": "Termín",
       "calendar_name": "Kalendář", "location": "Místo", "description": "Popis", "event": "Událost kalendáře"
