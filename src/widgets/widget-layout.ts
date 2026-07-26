@@ -44,6 +44,24 @@ export function resolveWidgetRowGrow(
     return type ? DEFAULT_ROW_GROW[type] : undefined;
 }
 
+/**
+ * Content-sized widgets need an intrinsic width in row zones. Sensors need the
+ * same treatment in center-column zones, whose grid track is content-sized:
+ * their percentage-width wrapper otherwise contributes zero intrinsic width
+ * and collapses the complete zone.
+ */
+export function requiresWidgetIntrinsicWidth(
+    type: string | undefined,
+    widthMode: WidgetWidthMode = 'auto',
+    zoneDirection?: ZoneConfig['direction'],
+    zoneId?: ZoneId,
+): boolean {
+    if (zoneDirection === 'row') {
+        return resolveWidgetWidthMode(type, widthMode) === 'content';
+    }
+    return type === 'sensors' && (zoneId === 'center' || zoneId?.endsWith('-center') === true);
+}
+
 /** A row-hosted action bar defaults to a compact two-column grid. */
 export function resolveActionBarColumns(columns?: number, zoneDirection?: ZoneConfig['direction']): number | undefined {
     return columns ?? (zoneDirection === 'row' ? 2 : undefined);

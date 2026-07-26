@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.3
+
+### Sensor layout fix
+
+- Kept sensor widgets visible in center-column zones using column direction,
+  including the bottom-center zone in both the 3×3 and horizontal split
+  layouts.
+
 ## 3.3.2
 
 ### Home Assistant weather forecasts

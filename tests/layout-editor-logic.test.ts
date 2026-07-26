@@ -26,6 +26,7 @@ import {
 import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3} from '../src/core/layout-types';
 import {TimeOfDay, Weather} from '../src/image-sources/types';
 import {
+    requiresWidgetIntrinsicWidth,
     resolveActionBarColumns,
     resolveWidgetAlignment,
     resolveWidgetOrientation,
@@ -66,6 +67,15 @@ describe('layout editor logic', () => {
         expect(resolveActionBarColumns(undefined, 'row')).toBe(2);
         expect(resolveActionBarColumns(undefined, 'column')).toBeUndefined();
         expect(resolveActionBarColumns(3, 'row')).toBe(3);
+    });
+
+    it('keeps sensors intrinsically sized in content-width center tracks', () => {
+        expect(requiresWidgetIntrinsicWidth('sensors', 'auto', 'column', 'bottom-center')).toBe(true);
+        expect(requiresWidgetIntrinsicWidth('sensors', 'auto', 'column', 'top-left')).toBe(false);
+        expect(requiresWidgetIntrinsicWidth('sensors', 'fill', 'column', 'bottom-center')).toBe(true);
+        expect(requiresWidgetIntrinsicWidth('clock', 'auto', 'column', 'center')).toBe(false);
+        expect(requiresWidgetIntrinsicWidth('sensors', 'auto', 'row', 'top-left')).toBe(true);
+        expect(requiresWidgetIntrinsicWidth('sensors', 'fill', 'row', 'top-left')).toBe(false);
     });
 
     it('moves a widget between zones and drops the emptied source zone', () => {

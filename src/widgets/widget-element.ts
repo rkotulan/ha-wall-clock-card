@@ -2,7 +2,11 @@ import {LitElement, PropertyValues} from 'lit';
 import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
-import {resolveWidgetRowGrow, resolveWidgetWidthMode, supportsWidgetMaxWidth} from './widget-layout';
+import {
+    resolveWidgetRowGrow,
+    requiresWidgetIntrinsicWidth,
+    supportsWidgetMaxWidth,
+} from './widget-layout';
 
 /**
  * Base class for zone layout widgets.
@@ -62,10 +66,14 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         const style = this.config?.style;
         const supportsBoundedWidth = supportsWidgetMaxWidth(this.config?.type);
         const supportsBoundedHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(this.config?.type);
-        const widthMode = resolveWidgetWidthMode(this.config?.type, style?.widthMode);
         const grow = resolveWidgetRowGrow(this.config?.type, style?.grow, style?.widthMode);
         const useRowGrow = this.zoneDirection === 'row' && grow !== undefined;
-        const useContentWidth = this.zoneDirection === 'row' && widthMode === 'content' && !useRowGrow;
+        const useContentWidth = !useRowGrow && requiresWidgetIntrinsicWidth(
+            this.config?.type,
+            style?.widthMode,
+            this.zoneDirection,
+            this.zoneId,
+        );
         this.toggleAttribute('data-content-width', useContentWidth);
         this.style.margin = style?.margin ?? '';
         this.style.maxWidth = useContentWidth ? '100%' : supportsBoundedWidth ? (style?.maxWidth ?? '') : '';
