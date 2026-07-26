@@ -38,7 +38,7 @@ function definedProps<T extends object>(source: T): Partial<T> {
 const CONSUMED_V2_KEYS = [
     'timeFormat', 'dateFormat', 'sensors', 'showWeather', 'weatherProvider', 'weatherConfig',
     'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherUpdateInterval',
-    'weatherIconSet', 'transportation', 'actionBar', 'enableActionBar',
+    'weatherIconSet', 'weatherIconAnimation', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
     'backgroundRotationInterval', 'objectFit',
     'fontColor', 'fontFamily', 'language', 'timeZone', 'size', 'customSizes',
@@ -110,6 +110,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
             title: config.weatherTitle,
             updateInterval: config.weatherUpdateInterval,
             iconSet: config.weatherIconSet ?? config.weatherConfig?.iconSet,
+            animateIcons: config.weatherIconAnimation,
             labelSize: config.customSizes?.labelSize,
             valueSize: config.customSizes?.valueSize,
         }));

@@ -29,6 +29,7 @@ export class WeatherEditor extends BaseEditorSection {
 
     // Weather icon set options
     private _weatherIconSetOptions = [
+        {value: 'wall-clock', label: 'Wall Clock (Animated SVG)'},
         {value: 'metno', label: 'Met.no (SVG)'},
         {value: 'openweathermap', label: 'OpenWeatherMap (PNG)'},
         {value: 'basmilius', label: 'Bas Milius (Animated)'},
@@ -176,6 +177,17 @@ export class WeatherEditor extends BaseEditorSection {
                                 propertyName="weatherIconSet"
                                 @value-changed=${this._handleFormValueChanged}>
                         </ha-row-selector>
+                        ${this.config.weatherIconSet === 'wall-clock' ? html`
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{boolean: {}}}
+                                    .value=${this.config.weatherIconAnimation !== false}
+                                    .label=${this.t('editor.weather.animate_icons', 'Animate icons')}
+                                    .helper=${this.t('editor.weather.animate_icons_help', 'Uses subtle motion and respects the system reduced-motion preference.')}
+                                    propertyName="weatherIconAnimation"
+                                    @value-changed=${this._handleFormValueChanged}>
+                            </ha-row-selector>
+                        ` : ''}
                     </div>
                 ` : ''}
 

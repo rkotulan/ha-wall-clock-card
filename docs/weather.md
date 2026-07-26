@@ -18,7 +18,8 @@ layout:
           forecastDays: 5
           title: Weather forecast
           updateInterval: 1800
-          iconSet: basmilius
+          iconSet: wall-clock
+          animateIcons: true
 ```
 
 ## Options
@@ -33,7 +34,8 @@ layout:
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
 | `title` | localized “Weather” | Section title |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
-| `iconSet` | provider default | `basmilius`, `openweathermap` or `metno` |
+| `iconSet` | provider default | `wall-clock`, `basmilius`, `openweathermap` or `metno` |
+| `animateIcons` | `true` | Animate the built-in `wall-clock` icon set |
 | `labelSize` | size preset | CSS size for labels/title |
 | `valueSize` | size preset | CSS size for values |
 
@@ -44,6 +46,14 @@ Horizontal orientation places the current icon, temperature and condition first,
 followed by compact forecast columns. Vertical orientation preserves the traditional
 stacked presentation. With `auto`, center-column zones use the horizontal layout and
 side zones use the vertical layout.
+
+## Wall Clock icon set
+
+`iconSet: wall-clock` uses the card's local SVG artwork instead of loading icon
+images from a third-party server. The set covers day and night variants, clouds,
+rain, heavy rain, thunderstorms, snow, sleet, fog, hail, wind and exceptional
+weather. Its subtle animations can be disabled with `animateIcons: false` and
+automatically stop when the device requests reduced motion.
 
 ## Home Assistant provider
 
@@ -79,4 +89,5 @@ OpenWeatherMap and can change independently of this card.
 
 Legacy 2.x `showWeather`, `weatherProvider`, `weatherConfig`,
 `weatherDisplayMode`, `weatherForecastDays`, `weatherTitle`,
-`weatherUpdateInterval` and `weatherIconSet` keys are migrated automatically.
+`weatherUpdateInterval`, `weatherIconSet` and `weatherIconAnimation` keys are
+migrated automatically.

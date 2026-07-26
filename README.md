@@ -56,14 +56,14 @@ restart is not normally required.
 
    Select **JavaScript module** as the resource type.
 3. Reload the dashboard. If an older bundle remains cached, append or increment a
-   query parameter such as `?v=3.2.0` and perform a hard refresh.
+   query parameter such as `?v=3.3.0` and perform a hard refresh.
 
 For YAML-managed resources:
 
 ```yaml
 lovelace:
   resources:
-    - url: /local/wall-clock-card/wall-clock-card.js?v=3.2.0
+    - url: /local/wall-clock-card/wall-clock-card.js?v=3.3.0
       type: module
 ```
 
