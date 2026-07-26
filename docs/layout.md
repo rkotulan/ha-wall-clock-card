@@ -131,7 +131,7 @@ Explicit values win over the preset. Invalid CSS lengths are ignored with a warn
 | `clock` | `timeFormat` (`hour12`, `showAmPm`, ...), `clockSize` (see [clock-date.md](clock-date.md)) |
 | `date` | `dateFormat`, `dateSize` (see [clock-date.md](clock-date.md)) |
 | `sensors` | `sensors`, `orientation`, `alignment`, `itemGap`, icon/separator controls, `labelSize`, `valueSize` (see [sensors.md](sensors.md)) |
-| `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `orientation`, `forecastDays`, `title`, `updateInterval`, `iconSet`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
+| `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `orientation`, `forecastDays`, `title`, `updateInterval`, `iconSet`, `animateIcons`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
 | `transportation` | the [transportation config](transportation.md) keys, flattened |
 | `action-bar` | `enabled`, `actions`, `alignment`, `orientation`, `columns`, `backgroundOpacity`, `showButtonBackground`, `buttonGap`, `padding`, `iconSize` (see [action-bar.md](action-bar.md)) |
 | `calendar` | `entities`, `displayMode`, `daysAhead`, `maxEvents`, event detail/background/font options and `updateInterval` (see [calendar.md](calendar.md)) |

@@ -360,6 +360,8 @@ describe('widget editor adapters', () => {
             providerConfig: {apiKey: 'abc'},
             displayMode: 'both',
             forecastDays: 5,
+            iconSet: 'wall-clock',
+            animateIcons: false,
             labelSize: '1rem',
             orientation: 'horizontal',
         };
@@ -371,6 +373,8 @@ describe('widget editor adapters', () => {
             weatherConfig: {apiKey: 'abc'},
             weatherDisplayMode: 'both',
             weatherForecastDays: 5,
+            weatherIconSet: 'wall-clock',
+            weatherIconAnimation: false,
         });
 
         // Editor changes the provider and adds a title
@@ -385,6 +389,8 @@ describe('widget editor adapters', () => {
             providerConfig: {apiKey: 'abc'},
             displayMode: 'both',
             forecastDays: 5,
+            iconSet: 'wall-clock',
+            animateIcons: false,
             title: 'Počasí',
             labelSize: '1rem',
             orientation: 'horizontal',

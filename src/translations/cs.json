@@ -180,6 +180,8 @@
       "units": "Jednotky", "metric": "Metrické (°C, m/s)", "imperial": "Imperiální (°F, mph)",
       "display_mode": "Režim zobrazení", "current": "Pouze aktuální počasí", "forecast": "Pouze předpověď",
       "both": "Aktuální počasí a předpověď", "icon_set": "Sada ikon počasí",
+      "animate_icons": "Animovat ikony",
+      "animate_icons_help": "Používá jemný pohyb a respektuje systémové omezení animací.",
       "forecast_days": "Počet dní předpovědi", "days": "Počet dní: {count}",
       "update_interval": "Interval aktualizace", "update_help": "Interval v minutách (minimum 1)",
       "orientation": "Orientace předpovědi", "orientation_help": "Automaticky použije řádek ve středních zónách a sloupec v bočních zónách."

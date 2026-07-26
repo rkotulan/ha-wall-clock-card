@@ -237,7 +237,9 @@
       "api_key_help": "OpenWeatherMap API key", "latitude": "Latitude", "longitude": "Longitude", "units": "Units",
       "metric": "Metric (°C, m/s)", "imperial": "Imperial (°F, mph)", "display_mode": "Display mode",
       "current": "Current weather only", "forecast": "Forecast only", "both": "Current and forecast",
-      "icon_set": "Weather icon set", "forecast_days": "Forecast days", "days": "{count} days",
+      "icon_set": "Weather icon set", "animate_icons": "Animate icons",
+      "animate_icons_help": "Uses subtle motion and respects the system reduced-motion preference.",
+      "forecast_days": "Forecast days", "days": "{count} days",
       "update_interval": "Update interval", "update_help": "Update interval in minutes (minimum 1)",
       "orientation": "Forecast orientation", "orientation_help": "Auto uses a row in center zones and a column in side zones."
     },

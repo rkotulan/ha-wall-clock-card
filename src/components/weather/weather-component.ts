@@ -6,6 +6,7 @@ import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
 import type {ResolvedWidgetOrientation} from '../../widgets/widget-layout';
+import './weather-icon';
 
 export interface WeatherComponentConfig {
     showWeather?: boolean;
@@ -16,6 +17,7 @@ export interface WeatherComponentConfig {
     weatherTitle?: string;
     weatherUpdateInterval?: number;
     weatherIconSet?: string;
+    weatherIconAnimation?: boolean;
     fontColor?: string;
     language?: string;
     size?: Size;
@@ -35,6 +37,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: String }) weatherTitle?: string;
     @property({ type: Number }) weatherUpdateInterval?: number;
     @property({ type: String }) weatherIconSet?: string;
+    @property({ type: Boolean }) weatherIconAnimation?: boolean;
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
     @property({ type: String }) size?: Size;
@@ -411,6 +414,27 @@ export class WeatherComponent extends LitElement {
         }
     }
 
+    private renderWeatherIcon(
+        className: 'weather-icon' | 'forecast-icon',
+        condition: string,
+        icon: string,
+        label: string
+    ) {
+        if (this.weatherIconSet === 'wall-clock') {
+            return html`
+                <wall-clock-weather-icon
+                    class="${className}"
+                    .condition=${condition}
+                    .source=${icon}
+                    .label=${label}
+                    .animated=${this.weatherIconAnimation !== false}
+                ></wall-clock-weather-icon>
+            `;
+        }
+
+        return html`<img class="${className}" src="${icon}" alt="${label}">`;
+    }
+
     render() {
         const weatherData: WeatherData | undefined = this.weatherController.weatherData;
 
@@ -456,8 +480,12 @@ export class WeatherComponent extends LitElement {
                     html`
                         <div class="weather-current ${horizontal && displayMode === 'both' ? 'with-forecast' : ''}">
                             <div class="weather-temp-container">
-                                <img class="weather-icon" src="${weatherData.current.icon}"
-                                     alt="${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}">
+                                ${this.renderWeatherIcon(
+                                    'weather-icon',
+                                    weatherData.current.condition,
+                                    weatherData.current.icon,
+                                    this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)
+                                )}
                                 <div class="weather-temp"
                                      style="font-size: ${horizontal
                                          ? `min(${valueSize}, clamp(1.8rem, 10cqw, 3rem))`
@@ -494,7 +522,12 @@ export class WeatherComponent extends LitElement {
                                          style="font-size: ${horizontal
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
                                              : labelSize};">${this.formatForecastDate(day.date)}</div>
-                                    <img class="forecast-icon" src="${day.icon}" alt="${this.conditionDisplayText(day.condition, day.conditionText)}">
+                                    ${this.renderWeatherIcon(
+                                        'forecast-icon',
+                                        day.condition,
+                                        day.icon,
+                                        this.conditionDisplayText(day.condition, day.conditionText)
+                                    )}
                                     <div class="forecast-temp"
                                          style="font-size: ${horizontal
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`

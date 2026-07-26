@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.3.0
+
+### Animated Wall Clock weather icons
+
+- Added a built-in `wall-clock` SVG weather icon set with day and night
+  variants for clear, partly cloudy, cloudy, rain, heavy rain, thunderstorm,
+  snow, sleet, fog, hail, wind and exceptional conditions.
+- Added subtle local animations for sunlight, clouds, precipitation, fog, wind
+  and alerts without loading artwork from a third-party server.
+- Added an editor switch and the `animateIcons` option for disabling motion;
+  the icons also honor the device's reduced-motion preference automatically.
+- Added provider-independent condition mapping, including stable
+  OpenWeatherMap icon-code fallbacks for localized condition names.
+- Preserved the animation setting when editing layout widgets and when
+  migrating legacy card configuration.
+- Documented the new icon set and covered its condition resolver, editor
+  adapters and configuration migration with automated tests.
+
 ## 3.2.0
 
 ### Layout formats and visual presets
