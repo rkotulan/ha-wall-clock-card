@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.3.1
+
+### Designer stability in dashboard edit mode
+
+- Kept the promoted Designer open while editing cards in Sections, Masonry,
+  Sidebar and other non-panel views by deferring persistence until its
+  **Done** action.
+- Made the card's own **Configure card** control interactive with current Home
+  Assistant versions, whose card edit wrapper marks slotted card content as
+  `inert`.
+- Positioned the fullscreen Designer below the complete Home Assistant header,
+  including the view tab bar, so its toolbar remains clickable.
+- Isolated the fullscreen Designer above neighboring sections and card controls
+  and restored every temporary Home Assistant wrapper style after closing it.
+
 ## 3.3.0
 
 ### Animated Wall Clock weather icons

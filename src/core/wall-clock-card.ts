@@ -31,6 +31,10 @@ import {
     LovelaceConfigPath,
     synchronizeLiveConfigAtPath,
 } from './lovelace-config-path';
+import {
+    LayoutAutosaveTrigger,
+    shouldDeferLayoutAutosave,
+} from './layout-autosave-policy';
 import {clearEditorSessionState} from '../editors/editor-session-state';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
@@ -46,6 +50,13 @@ const LAYOUT_AUTOSAVE_DELAY_MS = 700;
 interface RetainedDesignerContext {
     selectedWidget: WidgetSelection | null;
     selectedZone: ZoneId | null;
+}
+
+interface InlineStyleSnapshot {
+    element: HTMLElement;
+    property: string;
+    value: string;
+    priority: string;
 }
 
 // HA replaces card elements after saveConfig(). Preserve only transient editor
@@ -82,6 +93,9 @@ export class WallClockCard extends LitElement {
     private inlineEditSessionActive = false;
     private layoutTextEditPending = false;
     private designerSessionKey?: string;
+    private haEditOverlayStyleSnapshots: InlineStyleSnapshot[] = [];
+    private haEditWrapperInertSnapshot?: {element: HTMLElement; inert: boolean};
+    private designerStackStyleSnapshots: InlineStyleSnapshot[] = [];
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -123,20 +137,23 @@ export class WallClockCard extends LitElement {
     private readonly onCardFocusOut = (): void => {
         // HA recreates the card after saveConfig(). Persisting is therefore safe
         // only once focus has left the entire card, not merely one nested field.
+        // The promoted designer is the exception: HA selectors can render their
+        // dropdown outside this shadow tree, and saving here would close the
+        // designer while the user is still working.
         setTimeout(() => {
             if (!this.isActiveElementInsideThisCard() &&
                 this.layoutSaveRevision > this.layoutSavedRevision) {
-                void this.flushLayoutAutosave(true);
+                void this.flushLayoutAutosave('focusout');
             }
         }, 0);
     };
-
     connectedCallback(): void {
         super.connectedCallback();
         // Fullscreen is a transient editor state, never persisted across HA's
         // detach/reattach cycles or into normal dashboard rendering.
         if (!this.preview) {
             this.removeAttribute('designer-fullscreen');
+            this.style.removeProperty('--wcc-designer-top');
         }
         if (this.isInEditPreview()) {
             this.setAttribute('dialog-preview', '');
@@ -164,10 +181,12 @@ export class WallClockCard extends LitElement {
     disconnectedCallback(): void {
         this.clearLayoutAutosaveTimer();
         this.removeAttribute('designer-fullscreen');
+        this.style.removeProperty('--wcc-designer-top');
+        this.restoreDesignerStack();
         this.designerOpen = false;
         if (this.inlineEditSessionActive) {
             this.inlineEditSessionActive = false;
-            void this.flushLayoutAutosave(true);
+            void this.flushLayoutAutosave('commit');
         }
         super.disconnectedCallback();
         this.previewObserver?.disconnect();
@@ -178,6 +197,7 @@ export class WallClockCard extends LitElement {
         this.renderRoot.removeEventListener('focusin', this.onDesignerFocusIn, {capture: true});
         this.renderRoot.removeEventListener('pointerdown', this.onDesignerPointerDown, {capture: true});
         this.removeEventListener('focusout', this.onCardFocusOut);
+        this.restoreHaEditOverlay();
     }
 
     /**
@@ -453,6 +473,7 @@ export class WallClockCard extends LitElement {
         // Panel cards keep the permanent in-place designer. A regular
         // card stays unobtrusive until its own Configure button is pressed.
         this.removeAttribute('designer-fullscreen');
+        this.style.removeProperty('--wcc-designer-top');
         this.designerRequiresExplicitOpen = useExplicitEntry;
         this.designerOpen = !useExplicitEntry;
         this.selectedWidget = null;
@@ -460,6 +481,22 @@ export class WallClockCard extends LitElement {
         this.designerPreview = false;
         this.inlineEditSessionActive = true;
         this.restoreDesignerContext();
+        if (useExplicitEntry) {
+            // HA places an edit control over the entire card. Disable that
+            // control for this custom card so its own Configure button and
+            // fullscreen designer receive pointer input. The overflow menu is
+            // explicitly kept interactive by suppressHaEditOverlay().
+            this.suppressHaEditOverlay();
+            void this.updateComplete.then(() => {
+                requestAnimationFrame(() => {
+                    if (this.inlineEditSessionActive && this.designerRequiresExplicitOpen) {
+                        this.suppressHaEditOverlay();
+                    }
+                });
+            });
+        } else {
+            this.restoreHaEditOverlay();
+        }
         // Re-entering edit mode while the previous "Done" save is still running
         // must keep that queue/baseline intact so a later retry can still match.
         if (this.layoutSavePromise ||
@@ -479,14 +516,17 @@ export class WallClockCard extends LitElement {
 
     private finishInlineEditing(): void {
         this.clearLayoutAutosaveTimer();
+        this.restoreHaEditOverlay();
         this.removeAttribute('designer-fullscreen');
+        this.style.removeProperty('--wcc-designer-top');
+        this.restoreDesignerStack();
         this.closeInplaceInspector();
         this.designerPreview = false;
         this.designerOpen = false;
         this.designerRequiresExplicitOpen = false;
         this.inlineEditSessionActive = false;
         this.clearRetainedDesignerContext();
-        void this.flushLayoutAutosave(true).then(saved => {
+        void this.flushLayoutAutosave('commit').then(saved => {
             if (saved && !this.inlineEditSessionActive) {
                 this.layoutSaveBaseline = undefined;
                 this.layoutSavePath = undefined;
@@ -502,8 +542,137 @@ export class WallClockCard extends LitElement {
         });
     }
 
-    private openFullscreenDesigner(): void {
+    private findHaCardEditMode(): HTMLElement | undefined {
+        let element: Element | null = this;
+        while (element) {
+            if (element.localName === 'hui-card-edit-mode') {
+                return element as HTMLElement;
+            }
+            if (element.parentElement) {
+                element = element.parentElement;
+                continue;
+            }
+            const root = element.getRootNode();
+            element = root instanceof ShadowRoot ? root.host : null;
+        }
+        return undefined;
+    }
+
+    private suppressHaEditOverlay(): void {
+        if (this.haEditOverlayStyleSnapshots.length || this.haEditWrapperInertSnapshot) return;
+        const root = this.findHaCardEditMode()?.shadowRoot;
+        if (!root) return;
+
+        const cardWrapper = root.querySelector<HTMLElement>('.card-wrapper');
+        if (cardWrapper) {
+            this.haEditWrapperInertSnapshot = {
+                element: cardWrapper,
+                inert: cardWrapper.inert,
+            };
+            cardWrapper.inert = false;
+        }
+
+        const overrides: Array<[HTMLElement | null, string, string]> = [
+            [root.querySelector<HTMLElement>('.card-overlay'), 'pointer-events', 'none'],
+            [root.querySelector<HTMLElement>('.card-overlay'), 'opacity', '1'],
+            [root.querySelector<HTMLElement>('.control'), 'display', 'none'],
+            [root.querySelector<HTMLElement>('.more'), 'pointer-events', 'auto'],
+        ];
+        for (const [element, property, value] of overrides) {
+            if (!element) continue;
+            this.haEditOverlayStyleSnapshots.push({
+                element,
+                property,
+                value: element.style.getPropertyValue(property),
+                priority: element.style.getPropertyPriority(property),
+            });
+            element.style.setProperty(property, value, 'important');
+        }
+    }
+
+    private restoreHaEditOverlay(): void {
+        if (this.haEditWrapperInertSnapshot) {
+            this.haEditWrapperInertSnapshot.element.inert =
+                this.haEditWrapperInertSnapshot.inert;
+            this.haEditWrapperInertSnapshot = undefined;
+        }
+        for (const snapshot of this.haEditOverlayStyleSnapshots) {
+            if (snapshot.value) {
+                snapshot.element.style.setProperty(
+                    snapshot.property,
+                    snapshot.value,
+                    snapshot.priority,
+                );
+            } else {
+                snapshot.element.style.removeProperty(snapshot.property);
+            }
+        }
+        this.haEditOverlayStyleSnapshots = [];
+    }
+
+    private promoteDesignerStack(): void {
+        if (this.designerStackStyleSnapshots.length) return;
+
+        let element: Element | null = this;
+        while (element) {
+            const htmlElement = element instanceof HTMLElement ? element : undefined;
+            const shouldPromote = htmlElement && (
+                htmlElement.localName === 'hui-card-edit-mode' ||
+                htmlElement.localName === 'hui-section-edit-mode' ||
+                htmlElement.classList.contains('card') ||
+                htmlElement.classList.contains('section')
+            );
+            if (shouldPromote) {
+                for (const [property, value] of [
+                    ['position', 'relative'],
+                    ['z-index', '2147483000'],
+                ] as const) {
+                    this.designerStackStyleSnapshots.push({
+                        element: htmlElement,
+                        property,
+                        value: htmlElement.style.getPropertyValue(property),
+                        priority: htmlElement.style.getPropertyPriority(property),
+                    });
+                    htmlElement.style.setProperty(property, value, 'important');
+                }
+            }
+
+            if (element.parentElement) {
+                element = element.parentElement;
+                continue;
+            }
+            const root = element.getRootNode();
+            element = root instanceof ShadowRoot ? root.host : null;
+        }
+    }
+
+    private restoreDesignerStack(): void {
+        for (const snapshot of this.designerStackStyleSnapshots) {
+            if (snapshot.value) {
+                snapshot.element.style.setProperty(
+                    snapshot.property,
+                    snapshot.value,
+                    snapshot.priority,
+                );
+            } else {
+                snapshot.element.style.removeProperty(snapshot.property);
+            }
+        }
+        this.designerStackStyleSnapshots = [];
+    }
+
+    private openFullscreenDesigner(ev?: Event): void {
+        ev?.stopPropagation();
         if (!this.designerRequiresExplicitOpen) return;
+        const huiRoot = this.findHuiRoot();
+        const header = huiRoot?.shadowRoot?.querySelector<HTMLElement>('.header');
+        const headerBottom = header?.getBoundingClientRect().bottom;
+        if (headerBottom && Number.isFinite(headerBottom)) {
+            this.style.setProperty('--wcc-designer-top', `${Math.ceil(headerBottom)}px`);
+        } else {
+            this.style.removeProperty('--wcc-designer-top');
+        }
+        this.promoteDesignerStack();
         this.style.maxHeight = '';
         this.setAttribute('designer-fullscreen', '');
         this.designerOpen = true;
@@ -511,14 +680,17 @@ export class WallClockCard extends LitElement {
 
     /** Closes only this card's promoted designer. HA remains in dashboard edit
      * mode so the user can configure another card before using the global Done. */
-    private closeFullscreenDesigner(): void {
+    private closeFullscreenDesigner(ev?: Event): void {
+        ev?.stopPropagation();
         this.clearLayoutAutosaveTimer();
         this.closeInplaceInspector();
         this.designerPreview = false;
         this.removeAttribute('designer-fullscreen');
+        this.style.removeProperty('--wcc-designer-top');
+        this.restoreDesignerStack();
         this.designerOpen = false;
         this.clearRetainedDesignerContext();
-        void this.flushLayoutAutosave(true);
+        void this.flushLayoutAutosave('commit');
         void this.updateComplete.then(() => this.updateFitHeight());
     }
 
@@ -551,19 +723,22 @@ export class WallClockCard extends LitElement {
     }
 
     /** Serializes saves so rapid editor changes cannot overwrite a newer config. */
-    private async flushLayoutAutosave(force = false): Promise<boolean> {
+    private async flushLayoutAutosave(trigger: LayoutAutosaveTrigger = 'timer'): Promise<boolean> {
         this.clearLayoutAutosaveTimer();
         if (!this.layoutSaveBaseline || this.layoutSaveRevision <= this.layoutSavedRevision) {
             return true;
         }
-        if (!force && this.layoutTextEditPending) {
+        if (shouldDeferLayoutAutosave(trigger, {
+            textEditPending: this.layoutTextEditPending,
+            explicitDesignerOpen: this.designerRequiresExplicitOpen && this.designerOpen,
+        })) {
             this.layoutSaveStatus = 'pending';
             return true;
         }
         if (this.layoutSavePromise) {
             const activeSaved = await this.layoutSavePromise;
             if (!activeSaved) return false;
-            return this.flushLayoutAutosave(force);
+            return this.flushLayoutAutosave(trigger);
         }
 
         const baseline = this.layoutSaveBaseline;
@@ -590,7 +765,7 @@ export class WallClockCard extends LitElement {
         this.layoutSavedRevision = revision;
         if (this.layoutSaveRevision > revision) {
             this.layoutSaveStatus = 'pending';
-            return this.flushLayoutAutosave(force);
+            return this.flushLayoutAutosave(trigger);
         }
         this.layoutSaveStatus = 'saved';
         this.layoutTextEditPending = false;
@@ -835,6 +1010,7 @@ export class WallClockCard extends LitElement {
                 // Defensive cleanup even when HA changed lifecycle ordering and
                 // no active edit session was observed by this element.
                 this.removeAttribute('designer-fullscreen');
+                this.style.removeProperty('--wcc-designer-top');
                 this.designerOpen = false;
             }
         }
@@ -885,7 +1061,7 @@ export class WallClockCard extends LitElement {
                editing starts, preventing layout flicker. */
             :host([designer-fullscreen]) {
                 position: fixed;
-                top: var(--header-height, 56px);
+                top: var(--wcc-designer-top, var(--header-height, 56px));
                 left: 0;
                 right: 0;
                 bottom: 0;
@@ -894,6 +1070,11 @@ export class WallClockCard extends LitElement {
                 height: auto;
                 max-height: none;
                 border-radius: 0;
+                isolation: isolate;
+                background: var(
+                    --ha-card-background,
+                    var(--card-background-color, #1c1c1c)
+                );
                 box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
             }
 
@@ -1081,7 +1262,8 @@ export class WallClockCard extends LitElement {
             .designer-launch {
                 position: absolute;
                 top: 10px;
-                right: 10px;
+                /* Leave room for HA's edit-mode overflow control. */
+                right: 44px;
                 z-index: 7;
                 min-height: 36px;
                 padding: 0 14px;
@@ -1240,7 +1422,9 @@ export class WallClockCard extends LitElement {
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
                 ${inlineEditing && this.designerRequiresExplicitOpen && !this.designerOpen ? html`
-                    <button class="designer-launch" type="button" @click=${this.openFullscreenDesigner}>
+                    <button class="designer-launch"
+                            type="button"
+                            @click=${(ev: Event) => this.openFullscreenDesigner(ev)}>
                         <ha-icon icon="mdi:tune-variant"></ha-icon>
                         ${this.t('designer.configure_card', 'Configure card')}
                     </button>
@@ -1275,7 +1459,9 @@ export class WallClockCard extends LitElement {
                                 </button>
                             </div>
                             ${this.hasAttribute('designer-fullscreen') ? html`
-                                <button class="designer-done" type="button" @click=${this.closeFullscreenDesigner}>
+                                <button class="designer-done"
+                                        type="button"
+                                        @click=${(ev: Event) => this.closeFullscreenDesigner(ev)}>
                                     ${this.t('ui.done', 'Done')}
                                 </button>
                             ` : ''}
@@ -1308,7 +1494,7 @@ export class WallClockCard extends LitElement {
                         <button class="layout-save-status ${this.layoutSaveStatus}"
                                 ?disabled=${this.layoutSaveStatus !== 'error'}
                                 title=${this.layoutSaveStatus === 'error' ? this.t('designer.retry_save', 'Retry save') : savePresentation.label}
-                                @click=${() => void this.flushLayoutAutosave(true)}>
+                                @click=${() => void this.flushLayoutAutosave('commit')}>
                             <ha-icon .icon=${savePresentation.icon}></ha-icon>
                             ${savePresentation.label}
                         </button>
