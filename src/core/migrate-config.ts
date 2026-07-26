@@ -37,7 +37,7 @@ function definedProps<T extends object>(source: T): Partial<T> {
 // into the v3 passthrough (the rest — e.g. `type`, `grid_options` — is preserved).
 const CONSUMED_V2_KEYS = [
     'timeFormat', 'dateFormat', 'sensors', 'showWeather', 'weatherProvider', 'weatherConfig',
-    'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherUpdateInterval',
+    'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherShowTitle', 'weatherUpdateInterval',
     'weatherIconSet', 'weatherIconAnimation', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
     'backgroundRotationInterval', 'objectFit',
@@ -108,6 +108,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
             displayMode: config.weatherDisplayMode,
             forecastDays: config.weatherForecastDays,
             title: config.weatherTitle,
+            showTitle: config.weatherShowTitle,
             updateInterval: config.weatherUpdateInterval,
             iconSet: config.weatherIconSet ?? config.weatherConfig?.iconSet,
             animateIcons: config.weatherIconAnimation,

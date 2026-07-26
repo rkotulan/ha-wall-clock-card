@@ -1,4 +1,9 @@
-import { WeatherProvider, WeatherProviderConfig, WeatherData } from './weather-provider';
+import {
+  WeatherProvider,
+  WeatherProviderConfig,
+  WeatherData,
+  WeatherForecastType
+} from './weather-provider';
 import { Weather } from '../image-sources/types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { logger } from '../utils';
@@ -8,7 +13,14 @@ import { logger } from '../utils';
  */
 export interface HomeAssistantWeatherConfig extends WeatherProviderConfig {
   entityId?: string;
+  /** Auto selects a forecast supported by the entity. */
+  forecastType?: 'auto' | WeatherForecastType;
 }
+
+// Home Assistant WeatherEntityFeature bit flags.
+const FORECAST_DAILY = 1;
+const FORECAST_HOURLY = 2;
+const FORECAST_TWICE_DAILY = 4;
 
 /**
  * Home Assistant weather provider plugin
@@ -53,38 +65,20 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
 
     const current = this.buildCurrent(state, config);
 
-    // Process forecast data
-    let daily: any[] = [];
-
-    try {
-      // Call the weather.get_forecasts service (Home Assistant 2023.12+)
-      // This is the modern way to get forecasts
-      const forecastResponse = await this.hass.callWS<any>({
-        type: 'call_service',
-        domain: 'weather',
-        service: 'get_forecasts',
-        service_data: {
-          type: 'daily',
-        },
-        target: {
-          entity_id: entityId,
-        },
-        return_response: true,
-      });
-
-      const forecastData = forecastResponse.response[entityId]?.forecast;
-
-      if (forecastData && Array.isArray(forecastData)) {
-        daily = this.mapForecastItems(forecastData, config, state);
-      }
-    } catch (error: any) {
-      logger.error(`[HA Weather] Error fetching forecast for ${entityId}:`, error);
-    }
+    const forecastTypes = this.resolveForecastTypes(config, state);
+    const forecastResult = await this.fetchForecastAsync(entityId, forecastTypes);
+    const daily = this.mapForecastItems(forecastResult.forecast, config, state);
 
     const temperatureUnit = attributes.temperature_unit
       || (this.hass.config as any)?.unit_system?.temperature;
 
-    return { current, daily, entityId, temperatureUnit };
+    return {
+      current,
+      daily,
+      entityId,
+      temperatureUnit,
+      forecastType: forecastResult.forecastType
+    };
   }
 
   /**
@@ -100,14 +94,14 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   }
 
   /**
-   * Subscribe to pushed daily forecast updates via HA's
+   * Subscribe to pushed forecast updates via HA's
    * weather/subscribe_forecast WebSocket API (the same mechanism the
    * built-in weather card uses). Resolves to an unsubscribe function, or
    * null when hass/entity/connection is unavailable (older HA versions).
    */
   async subscribeForecastAsync(
     config: HomeAssistantWeatherConfig,
-    onDaily: (daily: WeatherData['daily']) => void
+    onForecast: (forecast: WeatherData['daily'], forecastType?: WeatherForecastType) => void
   ): Promise<(() => void) | null> {
     const entityId = config.entityId;
     const connection = (this.hass as any)?.connection;
@@ -115,26 +109,99 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       return null;
     }
 
-    try {
-      const unsubscribe = await connection.subscribeMessage(
-        (event: any) => {
-          if (event?.forecast && Array.isArray(event.forecast)) {
-            const state = this.hass?.states[entityId];
-            onDaily(this.mapForecastItems(event.forecast, config, state));
+    const state = this.hass?.states[entityId];
+    const forecastTypes = this.resolveForecastTypes(config, state);
+
+    for (const forecastType of forecastTypes) {
+      try {
+        const unsubscribe = await connection.subscribeMessage(
+          (event: any) => {
+            if (event?.forecast && Array.isArray(event.forecast)) {
+              const currentState = this.hass?.states[entityId];
+              onForecast(
+                this.mapForecastItems(event.forecast, config, currentState),
+                forecastType
+              );
+            }
+          },
+          {
+            type: 'weather/subscribe_forecast',
+            entity_id: entityId,
+            forecast_type: forecastType,
           }
-        },
-        {
-          type: 'weather/subscribe_forecast',
-          entity_id: entityId,
-          forecast_type: 'daily',
-        }
-      );
-      logger.debug(`[HA Weather] Subscribed to forecast updates for ${entityId}`);
-      return unsubscribe;
-    } catch (error) {
-      logger.warn(`[HA Weather] weather/subscribe_forecast unavailable for ${entityId}:`, error);
-      return null;
+        );
+        logger.debug(`[HA Weather] Subscribed to ${forecastType} forecast updates for ${entityId}`);
+        return unsubscribe;
+      } catch (error) {
+        logger.debug(`[HA Weather] ${forecastType} forecast subscription failed for ${entityId}:`, error);
+      }
     }
+
+    logger.warn(`[HA Weather] weather/subscribe_forecast unavailable for ${entityId}`);
+    return null;
+  }
+
+  /**
+   * Choose the configured forecast type, or detect it from the entity's
+   * supported_features flags. Daily remains the preferred legacy default
+   * when an entity exposes more than one forecast type.
+   */
+  private resolveForecastTypes(
+    config: HomeAssistantWeatherConfig,
+    state: any
+  ): WeatherForecastType[] {
+    if (config.forecastType && config.forecastType !== 'auto') {
+      return [config.forecastType];
+    }
+
+    const supportedFeatures = Number(state?.attributes?.supported_features ?? 0);
+    const supported: WeatherForecastType[] = [];
+    if (supportedFeatures & FORECAST_DAILY) supported.push('daily');
+    if (supportedFeatures & FORECAST_HOURLY) supported.push('hourly');
+    if (supportedFeatures & FORECAST_TWICE_DAILY) supported.push('twice_daily');
+
+    // Older/custom entities may omit supported_features. Try each API type
+    // in backwards-compatible order until one succeeds.
+    return supported.length > 0
+      ? supported
+      : ['daily', 'hourly', 'twice_daily'];
+  }
+
+  private async fetchForecastAsync(
+    entityId: string,
+    forecastTypes: WeatherForecastType[]
+  ): Promise<{forecast: any[]; forecastType: WeatherForecastType}> {
+    let lastError: unknown;
+
+    for (const forecastType of forecastTypes) {
+      try {
+        const forecastResponse = await this.hass!.callWS<any>({
+          type: 'call_service',
+          domain: 'weather',
+          service: 'get_forecasts',
+          service_data: {
+            type: forecastType,
+          },
+          target: {
+            entity_id: entityId,
+          },
+          return_response: true,
+        });
+
+        const forecast = forecastResponse?.response?.[entityId]?.forecast;
+        if (Array.isArray(forecast)) {
+          return {forecast, forecastType};
+        }
+      } catch (error) {
+        lastError = error;
+        logger.debug(`[HA Weather] ${forecastType} forecast fetch failed for ${entityId}:`, error);
+      }
+    }
+
+    if (lastError) {
+      logger.error(`[HA Weather] Error fetching forecast for ${entityId}:`, lastError);
+    }
+    return {forecast: [], forecastType: forecastTypes[0] ?? 'daily'};
   }
 
   /**
@@ -207,7 +274,8 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
    */
   getDefaultConfig(): HomeAssistantWeatherConfig {
     return {
-      entityId: ''
+      entityId: '',
+      forecastType: 'auto'
     };
   }
 

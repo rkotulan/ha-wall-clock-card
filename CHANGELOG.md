@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.3.2
+
+### Home Assistant weather forecasts
+
+- Detected daily, hourly and twice-daily forecast support from Home Assistant
+  weather entities instead of always requesting a daily forecast.
+- Added automatic and explicit forecast-type selection, hourly time labels,
+  single-temperature hourly entries and a configurable forecast limit of up to
+  24 hours.
+- Reloaded weather data immediately when the provider entity or forecast
+  options change and preserved a refresh requested during an active fetch.
+- Added a switch for hiding the Weather/Forecast heading in every weather
+  presentation.
+
+### Layout and Designer fixes
+
+- Collapsed empty runtime grid rows so populated zones no longer remain
+  separated by unused vertical space; the Designer still exposes all nine
+  placement zones.
+- Kept Home Assistant's overlapping card controls outside the fullscreen
+  Designer while preserving the normal card menu after leaving it.
+- Prevented underlying dashboard cards and drag handlers from intercepting
+  pointer and drag events inside the fullscreen Designer.
+
 ## 3.3.1
 
 ### Designer stability in dashboard edit mode

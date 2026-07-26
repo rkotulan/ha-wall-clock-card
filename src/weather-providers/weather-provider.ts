@@ -2,5 +2,6 @@
 export {
   WeatherProviderConfig,
   WeatherData,
-  WeatherProvider
+  WeatherProvider,
+  WeatherForecastType
 } from './types';

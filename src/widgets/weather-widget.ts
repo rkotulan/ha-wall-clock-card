@@ -18,6 +18,7 @@ export interface WeatherWidgetConfig extends WidgetConfig {
     displayMode?: 'current' | 'forecast' | 'both';
     forecastDays?: number;
     title?: string;
+    showTitle?: boolean;
     updateInterval?: number;
     iconSet?: string;
     animateIcons?: boolean;
@@ -54,6 +55,7 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         this.weather.weatherDisplayMode = this.config.displayMode;
         this.weather.weatherForecastDays = this.config.forecastDays;
         this.weather.weatherTitle = this.config.title;
+        this.weather.weatherShowTitle = this.config.showTitle;
         this.weather.weatherUpdateInterval = this.config.updateInterval;
         this.weather.weatherIconSet = this.config.iconSet ?? this.config.providerConfig?.iconSet;
         this.weather.weatherIconAnimation = this.config.animateIcons !== false;

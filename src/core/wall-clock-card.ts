@@ -59,6 +59,15 @@ interface InlineStyleSnapshot {
     priority: string;
 }
 
+interface HaSortableElement extends HTMLElement {
+    disabled: boolean;
+}
+
+interface HaSortableSnapshot {
+    element: HaSortableElement;
+    disabled: boolean;
+}
+
 // HA replaces card elements after saveConfig(). Preserve only transient editor
 // selection, keyed by dashboard route + exact Lovelace card path.
 const retainedDesignerContexts = new Map<string, RetainedDesignerContext>();
@@ -95,7 +104,9 @@ export class WallClockCard extends LitElement {
     private designerSessionKey?: string;
     private haEditOverlayStyleSnapshots: InlineStyleSnapshot[] = [];
     private haEditWrapperInertSnapshot?: {element: HTMLElement; inert: boolean};
+    private haEditMenuDisplaySnapshot?: InlineStyleSnapshot;
     private designerStackStyleSnapshots: InlineStyleSnapshot[] = [];
+    private parentSortableSnapshots: HaSortableSnapshot[] = [];
 
     /** The normalized v3 shape all rendering consumes (see migrateToLayout). */
     private configV3: WallClockConfigV3 = {layout: {zones: {}}};
@@ -134,6 +145,14 @@ export class WallClockCard extends LitElement {
             this.layoutTextEditPending = true;
         }
     };
+    private readonly stopFullscreenInteractionAtCard = (ev: Event): void => {
+        if (this.hasAttribute('designer-fullscreen')) {
+            // Internal widget sorters have already received the event by the
+            // time it bubbles to the host. Do not let HA's card/section sorters
+            // see the same gesture and start dragging the dashboard beneath us.
+            ev.stopPropagation();
+        }
+    };
     private readonly onCardFocusOut = (): void => {
         // HA recreates the card after saveConfig(). Persisting is therefore safe
         // only once focus has left the entire card, not merely one nested field.
@@ -169,6 +188,9 @@ export class WallClockCard extends LitElement {
         this.renderRoot.addEventListener('focusin', this.onDesignerFocusIn, {capture: true});
         this.renderRoot.addEventListener('pointerdown', this.onDesignerPointerDown, {capture: true});
         this.addEventListener('focusout', this.onCardFocusOut);
+        this.addEventListener('pointerdown', this.stopFullscreenInteractionAtCard);
+        this.addEventListener('mousedown', this.stopFullscreenInteractionAtCard);
+        this.addEventListener('touchstart', this.stopFullscreenInteractionAtCard);
         // A ResizeObserver (not rAF, which is throttled in background tabs)
         // fires once the card is laid out and on every later resize.
         this.fitObserver = new ResizeObserver(() => this.updateFitHeight());
@@ -182,6 +204,8 @@ export class WallClockCard extends LitElement {
         this.clearLayoutAutosaveTimer();
         this.removeAttribute('designer-fullscreen');
         this.style.removeProperty('--wcc-designer-top');
+        this.restoreHaEditMenu();
+        this.restoreParentSortables();
         this.restoreDesignerStack();
         this.designerOpen = false;
         if (this.inlineEditSessionActive) {
@@ -197,6 +221,9 @@ export class WallClockCard extends LitElement {
         this.renderRoot.removeEventListener('focusin', this.onDesignerFocusIn, {capture: true});
         this.renderRoot.removeEventListener('pointerdown', this.onDesignerPointerDown, {capture: true});
         this.removeEventListener('focusout', this.onCardFocusOut);
+        this.removeEventListener('pointerdown', this.stopFullscreenInteractionAtCard);
+        this.removeEventListener('mousedown', this.stopFullscreenInteractionAtCard);
+        this.removeEventListener('touchstart', this.stopFullscreenInteractionAtCard);
         this.restoreHaEditOverlay();
     }
 
@@ -484,8 +511,7 @@ export class WallClockCard extends LitElement {
         if (useExplicitEntry) {
             // HA places an edit control over the entire card. Disable that
             // control for this custom card so its own Configure button and
-            // fullscreen designer receive pointer input. The overflow menu is
-            // explicitly kept interactive by suppressHaEditOverlay().
+            // fullscreen designer receive pointer input.
             this.suppressHaEditOverlay();
             void this.updateComplete.then(() => {
                 requestAnimationFrame(() => {
@@ -516,9 +542,11 @@ export class WallClockCard extends LitElement {
 
     private finishInlineEditing(): void {
         this.clearLayoutAutosaveTimer();
+        this.restoreHaEditMenu();
         this.restoreHaEditOverlay();
         this.removeAttribute('designer-fullscreen');
         this.style.removeProperty('--wcc-designer-top');
+        this.restoreParentSortables();
         this.restoreDesignerStack();
         this.closeInplaceInspector();
         this.designerPreview = false;
@@ -591,6 +619,7 @@ export class WallClockCard extends LitElement {
     }
 
     private restoreHaEditOverlay(): void {
+        this.restoreHaEditMenu();
         if (this.haEditWrapperInertSnapshot) {
             this.haEditWrapperInertSnapshot.element.inert =
                 this.haEditWrapperInertSnapshot.inert;
@@ -608,6 +637,35 @@ export class WallClockCard extends LitElement {
             }
         }
         this.haEditOverlayStyleSnapshots = [];
+    }
+
+    private hideHaEditMenu(): void {
+        if (this.haEditMenuDisplaySnapshot) return;
+        const menu = this.findHaCardEditMode()?.shadowRoot?.querySelector<HTMLElement>('.more');
+        if (!menu) return;
+
+        this.haEditMenuDisplaySnapshot = {
+            element: menu,
+            property: 'display',
+            value: menu.style.getPropertyValue('display'),
+            priority: menu.style.getPropertyPriority('display'),
+        };
+        menu.style.setProperty('display', 'none', 'important');
+    }
+
+    private restoreHaEditMenu(): void {
+        const snapshot = this.haEditMenuDisplaySnapshot;
+        if (!snapshot) return;
+        if (snapshot.value) {
+            snapshot.element.style.setProperty(
+                snapshot.property,
+                snapshot.value,
+                snapshot.priority,
+            );
+        } else {
+            snapshot.element.style.removeProperty(snapshot.property);
+        }
+        this.haEditMenuDisplaySnapshot = undefined;
     }
 
     private promoteDesignerStack(): void {
@@ -661,6 +719,43 @@ export class WallClockCard extends LitElement {
         this.designerStackStyleSnapshots = [];
     }
 
+    /**
+     * HA wraps both cards and sections in its own SortableJS instances while a
+     * dashboard is being edited. Those ancestor instances see pointer gestures
+     * from our nested widget sorter first and start moving the card underneath
+     * the fullscreen designer. Temporarily disabling only the composed-tree
+     * ancestors leaves the designer's own sortables untouched.
+     */
+    private disableParentSortables(): void {
+        if (this.parentSortableSnapshots.length) return;
+
+        let element: Element | null = this;
+        while (element) {
+            if (element.localName === 'ha-sortable') {
+                const sortable = element as HaSortableElement;
+                this.parentSortableSnapshots.push({
+                    element: sortable,
+                    disabled: sortable.disabled,
+                });
+                sortable.disabled = true;
+            }
+
+            if (element.parentElement) {
+                element = element.parentElement;
+                continue;
+            }
+            const root = element.getRootNode();
+            element = root instanceof ShadowRoot ? root.host : null;
+        }
+    }
+
+    private restoreParentSortables(): void {
+        for (const snapshot of this.parentSortableSnapshots) {
+            snapshot.element.disabled = snapshot.disabled;
+        }
+        this.parentSortableSnapshots = [];
+    }
+
     private openFullscreenDesigner(ev?: Event): void {
         ev?.stopPropagation();
         if (!this.designerRequiresExplicitOpen) return;
@@ -673,6 +768,8 @@ export class WallClockCard extends LitElement {
             this.style.removeProperty('--wcc-designer-top');
         }
         this.promoteDesignerStack();
+        this.disableParentSortables();
+        this.hideHaEditMenu();
         this.style.maxHeight = '';
         this.setAttribute('designer-fullscreen', '');
         this.designerOpen = true;
@@ -687,6 +784,8 @@ export class WallClockCard extends LitElement {
         this.designerPreview = false;
         this.removeAttribute('designer-fullscreen');
         this.style.removeProperty('--wcc-designer-top');
+        this.restoreHaEditMenu();
+        this.restoreParentSortables();
         this.restoreDesignerStack();
         this.designerOpen = false;
         this.clearRetainedDesignerContext();

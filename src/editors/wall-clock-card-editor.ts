@@ -117,6 +117,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
             weatherConfig: wallClockConfig.weatherConfig || {},
             weatherDisplayMode: wallClockConfig.weatherDisplayMode || 'both',
             weatherForecastDays: wallClockConfig.weatherForecastDays || 3,
+            weatherShowTitle: wallClockConfig.weatherShowTitle !== false,
             // Transportation settings
             transportation: wallClockConfig.transportation || undefined
         };

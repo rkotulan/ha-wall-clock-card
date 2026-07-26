@@ -1,4 +1,5 @@
 import {
+    compactGridRowDefinition,
     layoutGridDefinition,
     layoutPanelEdge,
     layoutSplitAnchor,
@@ -13,6 +14,29 @@ import {
 } from '../src/core/layout-format';
 
 describe('layout formats', () => {
+    describe('compactGridRowDefinition', () => {
+        it('skips an empty middle row between top and bottom widgets', () => {
+            expect(compactGridRowDefinition(['top-center', 'bottom-center'])).toEqual({
+                areas: `'top-left top-center top-right' 'bottom-left bottom-center bottom-right'`,
+                rows: 'auto auto',
+                alignContent: 'center',
+            });
+        });
+
+        it('keeps a single logical row anchored to its original edge', () => {
+            expect(compactGridRowDefinition(['top-left']).alignContent).toBe('start');
+            expect(compactGridRowDefinition(['center']).alignContent).toBe('center');
+            expect(compactGridRowDefinition(['bottom-right']).alignContent).toBe('end');
+        });
+
+        it('preserves the original tracks when all rows are occupied', () => {
+            expect(compactGridRowDefinition(['top-left', 'center', 'bottom-right'])).toMatchObject({
+                rows: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                alignContent: 'stretch',
+            });
+        });
+    });
+
     it('keeps the original grid as the backwards-compatible default', () => {
         expect(resolveLayoutFormat({zones: {}})).toBe('grid-3x3');
         expect(resolveLayoutVisualPreset({zones: {}})).toBe('none');

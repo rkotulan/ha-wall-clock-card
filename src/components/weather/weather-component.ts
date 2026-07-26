@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
-import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
+import { WeatherData, WeatherForecastType, WeatherProviderConfig } from '../../weather-providers';
 import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
@@ -15,6 +15,7 @@ export interface WeatherComponentConfig {
     weatherDisplayMode?: 'current' | 'forecast' | 'both';
     weatherForecastDays?: number;
     weatherTitle?: string;
+    weatherShowTitle?: boolean;
     weatherUpdateInterval?: number;
     weatherIconSet?: string;
     weatherIconAnimation?: boolean;
@@ -35,6 +36,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: String }) weatherDisplayMode?: 'current' | 'forecast' | 'both';
     @property({ type: Number }) weatherForecastDays?: number;
     @property({ type: String }) weatherTitle?: string;
+    @property({ type: Boolean }) weatherShowTitle?: boolean;
     @property({ type: Number }) weatherUpdateInterval?: number;
     @property({ type: String }) weatherIconSet?: string;
     @property({ type: Boolean }) weatherIconAnimation?: boolean;
@@ -276,6 +278,11 @@ export class WeatherComponent extends LitElement {
             display: none;
         }
 
+        .weather-container.hourly .forecast-temp span:first-child,
+        .weather-container.hourly .forecast-separator {
+            display: none;
+        }
+
         .weather-error {
             color: #f44336;
             font-size: 1rem;
@@ -292,6 +299,7 @@ export class WeatherComponent extends LitElement {
             changedProperties.has('weatherDisplayMode') || 
             changedProperties.has('weatherForecastDays') || 
             changedProperties.has('weatherTitle') || 
+            changedProperties.has('weatherShowTitle') ||
             changedProperties.has('weatherUpdateInterval') ||
             changedProperties.has('weatherIconSet')) {
 
@@ -376,9 +384,23 @@ export class WeatherComponent extends LitElement {
     /**
      * Format a date for display in the forecast
      */
-    private formatForecastDate(date: Date): string {
+    private formatForecastDate(date: Date, forecastType?: WeatherForecastType): string {
         // Get language from config or default to English
         const language = this.language || 'en';
+
+        if (forecastType === 'hourly') {
+            return new Intl.DateTimeFormat(language, {
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        if (forecastType === 'twice_daily') {
+            return new Intl.DateTimeFormat(language, {
+                weekday: 'short',
+                hour: '2-digit'
+            }).format(date);
+        }
 
         // Format: "Mon", "Tue", etc.
         return formatDate(date, language, {weekday: 'short'});
@@ -459,7 +481,7 @@ export class WeatherComponent extends LitElement {
         const horizontalTitle = localize('forecast.title', this.language, 'Forecast');
         const showsCurrent = displayMode === 'current' || displayMode === 'both';
 
-        // Limit forecast days to available data (max 7 days)
+        // Limit forecast periods to available data.
         const limitedForecastDays = Math.min(forecastDays, weatherData.daily.length);
 
         const labelSize = this.getLabelSize();
@@ -467,10 +489,10 @@ export class WeatherComponent extends LitElement {
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
-            <div class="weather-container ${this.orientation} ${weatherData.entityId ? 'clickable' : ''}"
+            <div class="weather-container ${this.orientation} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
                  style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%;"
                  @click="${() => this._handleWeatherClick(weatherData.entityId)}">
-                ${(!horizontal || !showsCurrent) ? html`
+                ${this.weatherShowTitle !== false && (!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
                         ${horizontal ? horizontalTitle : weatherTitle}
                     </div>
@@ -492,10 +514,12 @@ export class WeatherComponent extends LitElement {
                                          : valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
                                 ${horizontal ? html`
                                     <div class="weather-current-copy">
-                                        <div class="weather-title"
-                                             style="color: ${this.fontColor}; font-size: clamp(0.75rem, 3cqw, 1rem);">
-                                            ${horizontalTitle}
-                                        </div>
+                                        ${this.weatherShowTitle !== false ? html`
+                                            <div class="weather-title"
+                                                 style="color: ${this.fontColor}; font-size: clamp(0.75rem, 3cqw, 1rem);">
+                                                ${horizontalTitle}
+                                            </div>
+                                        ` : ''}
                                         <div class="weather-condition"
                                              style="font-size: clamp(0.9rem, 3.5cqw, 1.15rem);">
                                             ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
@@ -521,7 +545,7 @@ export class WeatherComponent extends LitElement {
                                     <div class="forecast-date"
                                          style="font-size: ${horizontal
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
-                                             : labelSize};">${this.formatForecastDate(day.date)}</div>
+                                             : labelSize};">${this.formatForecastDate(day.date, weatherData.forecastType)}</div>
                                     ${this.renderWeatherIcon(
                                         'forecast-icon',
                                         day.condition,

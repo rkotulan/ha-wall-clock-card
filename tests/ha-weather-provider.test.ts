@@ -16,6 +16,7 @@ describe('HomeAssistantWeatherProvider', () => {
             humidity: 40,
             wind_speed: 10,
             pressure: 1015,
+            supported_features: 1,
             forecast: [
               {
                 datetime: '2023-01-01T12:00:00Z',
@@ -67,10 +68,44 @@ describe('HomeAssistantWeatherProvider', () => {
     expect(result.current.condition).toBe('clear_sky');
     expect(result.current.conditionUnified).toBe(Weather.ClearSky);
     expect(result.entityId).toBe('weather.test');
+    expect(result.forecastType).toBe('daily');
     expect(result.daily.length).toBe(2);
     expect(result.daily[0].temperatureMax).toBe(28);
     expect(result.daily[0].temperatureMin).toBe(20);
     expect(result.daily[1].condition).toBe('overcast_clouds');
+    expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
+      service_data: {type: 'daily'},
+    }));
+  });
+
+  it('automatically fetches an hourly forecast from an hourly-only entity', async () => {
+    mockHass.states['weather.test'].attributes.supported_features = 2;
+    mockHass.callWS.mockResolvedValue({
+      response: {
+        'weather.test': {
+          forecast: [
+            {
+              datetime: '2023-01-01T13:00:00Z',
+              temperature: 26,
+              condition: 'partlycloudy',
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await provider.fetchWeatherAsync({entityId: 'weather.test'});
+
+    expect(result.forecastType).toBe('hourly');
+    expect(result.daily).toHaveLength(1);
+    expect(result.daily[0]).toMatchObject({
+      temperatureMin: 26,
+      temperatureMax: 26,
+      condition: 'scattered_clouds',
+    });
+    expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
+      service_data: {type: 'hourly'},
+    }));
   });
 
   it('should throw error if hass is not set', async () => {
@@ -181,6 +216,21 @@ describe('HomeAssistantWeatherProvider', () => {
     it('resolves to null when the connection is unavailable', async () => {
       const result = await provider.subscribeForecastAsync({ entityId: 'weather.test' }, jest.fn());
       expect(result).toBeNull();
+    });
+
+    it('subscribes to hourly updates for an hourly-only entity', async () => {
+      mockHass.states['weather.test'].attributes.supported_features = 2;
+      mockHass.connection = {
+        subscribeMessage: jest.fn().mockResolvedValue(jest.fn()),
+      };
+
+      await provider.subscribeForecastAsync({entityId: 'weather.test'}, jest.fn());
+
+      expect(mockHass.connection.subscribeMessage).toHaveBeenCalledWith(expect.any(Function), {
+        type: 'weather/subscribe_forecast',
+        entity_id: 'weather.test',
+        forecast_type: 'hourly',
+      });
     });
   });
 });

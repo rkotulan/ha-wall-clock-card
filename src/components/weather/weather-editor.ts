@@ -27,6 +27,29 @@ export class WeatherEditor extends BaseEditorSection {
         {value: 'both', label: this.t('editor.weather.both', 'Current and forecast')},
     ]; }
 
+    private _forecastTypeOptions() { return [
+        {value: 'auto', label: this.t('editor.weather.forecast_type_auto', 'Automatic')},
+        {value: 'daily', label: this.t('editor.weather.forecast_type_daily', 'Daily')},
+        {value: 'hourly', label: this.t('editor.weather.forecast_type_hourly', 'Hourly')},
+        {value: 'twice_daily', label: this.t('editor.weather.forecast_type_twice_daily', 'Twice daily')},
+    ]; }
+
+    private _resolvedForecastType(): 'daily' | 'hourly' | 'twice_daily' {
+        const configured = this.config.weatherConfig?.forecastType;
+        if (configured && configured !== 'auto') {
+            return configured;
+        }
+
+        const entityId = this.config.weatherConfig?.entityId;
+        const supportedFeatures = Number(
+            entityId ? this.hass.states[entityId]?.attributes?.supported_features ?? 0 : 0
+        );
+        if (supportedFeatures & 1) return 'daily';
+        if (supportedFeatures & 2) return 'hourly';
+        if (supportedFeatures & 4) return 'twice_daily';
+        return 'daily';
+    }
+
     // Weather icon set options
     private _weatherIconSetOptions = [
         {value: 'wall-clock', label: 'Wall Clock (Animated SVG)'},
@@ -67,6 +90,8 @@ export class WeatherEditor extends BaseEditorSection {
         const showContent = this.section === 'all' || this.section === 'content';
         const showAppearance = this.section === 'all' || this.section === 'appearance';
         const showBehavior = this.section === 'all' || this.section === 'behavior';
+        const forecastType = this._resolvedForecastType();
+        const forecastCount = this.config.weatherForecastDays || 3;
 
         return html`
             <div class="content">
@@ -94,6 +119,15 @@ export class WeatherEditor extends BaseEditorSection {
                                     .value=${this.config.weatherConfig?.entityId || ''}
                                     .label=${this.t('editor.weather.entity', 'Weather entity')}
                                     propertyName="weatherConfig.entityId"
+                                    @value-changed=${this._handleFormValueChanged}>
+                            </ha-row-selector>
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{select: {options: this._forecastTypeOptions(), mode: 'dropdown'}}}
+                                    .value=${this.config.weatherConfig?.forecastType || 'auto'}
+                                    .label=${this.t('editor.weather.forecast_type', 'Forecast type')}
+                                    .helper=${this.t('editor.weather.forecast_type_help', 'Automatic uses a forecast supported by the selected entity')}
+                                    propertyName="weatherConfig.forecastType"
                                     @value-changed=${this._handleFormValueChanged}>
                             </ha-row-selector>
                         ` : ''}
@@ -146,6 +180,15 @@ export class WeatherEditor extends BaseEditorSection {
                         </ha-row-selector>
                         <ha-row-selector
                             .hass=${this.hass}
+                            .selector=${{boolean: {}}}
+                            .value=${this.config.weatherShowTitle !== false}
+                            .label=${this.t('editor.weather.show_title', 'Show forecast heading')}
+                            .helper=${this.t('editor.weather.show_title_help', 'Show the Weather or Forecast heading above the widget')}
+                            propertyName="weatherShowTitle"
+                            @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                            .hass=${this.hass}
                             .selector=${{select: {options: this._weatherDisplayModeOptions(), mode: 'dropdown'}}}
                             .value=${this.config.weatherDisplayMode || 'both'}
                             .label=${this.t('editor.weather.display_mode', 'Display mode')}
@@ -155,10 +198,14 @@ export class WeatherEditor extends BaseEditorSection {
                         ${(this.config.weatherDisplayMode === 'forecast' || this.config.weatherDisplayMode === 'both') ? html`
                             <ha-row-selector
                                 .hass=${this.hass}
-                                .selector=${{number: {min: 1, max: 7, step: 1, mode: "slider"}}}
-                                .value=${this.config.weatherForecastDays || 3}
-                                .label=${this.t('editor.weather.forecast_days', 'Forecast days')}
-                                .helper=${this.t('editor.weather.days', '{count} days', {count: this.config.weatherForecastDays || 3})}
+                                .selector=${{number: {min: 1, max: forecastType === 'hourly' ? 24 : 7, step: 1, mode: "slider"}}}
+                                .value=${forecastCount}
+                                .label=${forecastType === 'hourly'
+                                    ? this.t('editor.weather.forecast_hours', 'Forecast hours')
+                                    : this.t('editor.weather.forecast_days', 'Forecast days')}
+                                .helper=${forecastType === 'hourly'
+                                    ? this.t('editor.weather.hours', '{count} hours', {count: forecastCount})
+                                    : this.t('editor.weather.days', '{count} days', {count: forecastCount})}
                                 propertyName="weatherForecastDays"
                                 @value-changed=${this._handleFormValueChanged}>
                             </ha-row-selector>

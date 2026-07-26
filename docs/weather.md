@@ -84,10 +84,11 @@ OpenWeatherMap and can change independently of this card.
     units: metric          # metric or imperial
     language: cs
   displayMode: both
+  showTitle: false         # hide the Weather / Forecast heading
   updateInterval: 1800
 ```
 
 Legacy 2.x `showWeather`, `weatherProvider`, `weatherConfig`,
-`weatherDisplayMode`, `weatherForecastDays`, `weatherTitle`,
+`weatherDisplayMode`, `weatherForecastDays`, `weatherTitle`, `weatherShowTitle`,
 `weatherUpdateInterval`, `weatherIconSet` and `weatherIconAnimation` keys are
 migrated automatically.

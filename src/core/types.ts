@@ -46,6 +46,7 @@ export interface WallClockConfig {
     weatherDisplayMode?: 'current' | 'forecast' | 'both'; // What weather data to display
     weatherForecastDays?: number; // Number of days to show in forecast (1-7)
     weatherTitle?: string; // Custom title for the weather section (default: "Weather")
+    weatherShowTitle?: boolean; // Whether to show the weather/forecast heading
     weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
     weatherIconSet?: string; // Icon set to use for weather
     weatherIconAnimation?: boolean; // Animate the built-in Wall Clock icon set
@@ -109,6 +110,7 @@ export interface WeatherConfig {
     displayMode?: string;
     forecastDays?: number;
     title?: string;
+    showTitle?: boolean;
     updateInterval?: number;
     iconSet?: string;
     animateIcons?: boolean;

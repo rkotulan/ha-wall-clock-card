@@ -1,5 +1,11 @@
 import {ReactiveControllerHost} from 'lit';
-import {getWeatherProvider, WeatherData, WeatherProvider, WeatherProviderConfig} from '../../weather-providers';
+import {
+    getWeatherProvider,
+    WeatherData,
+    WeatherForecastType,
+    WeatherProvider,
+    WeatherProviderConfig
+} from '../../weather-providers';
 import {BaseController, ForceUpdateWeatherMessage, Messenger, WeatherMessage} from '../../utils';
 import {Weather} from "../../image-sources";
 import {HomeAssistant} from 'custom-card-helpers';
@@ -24,6 +30,7 @@ export class WeatherController extends BaseController {
     // Reactive properties for weather data
     private _weatherData?: WeatherData;
     private _weatherLoading = false;
+    private _weatherRefreshPending = false;
     private _weatherError = false;
     private _weatherErrorMessage = '';
     private _messenger = Messenger.getInstance();
@@ -34,7 +41,7 @@ export class WeatherController extends BaseController {
     // and the active weather/subscribe_forecast subscription.
     private _lastEntityState?: unknown;
     private _forecastUnsubscribe?: () => void;
-    private _subscribedEntityId?: string;
+    private _subscribedForecastKey?: string;
 
     // Configuration
     private config: WeatherControllerConfig = {};
@@ -80,8 +87,8 @@ export class WeatherController extends BaseController {
                 this.logger.debug('Error unsubscribing from forecast updates:', e);
             }
             this._forecastUnsubscribe = undefined;
-            this._subscribedEntityId = undefined;
         }
+        this._subscribedForecastKey = undefined;
     }
 
     /**
@@ -95,8 +102,10 @@ export class WeatherController extends BaseController {
         const previousShowWeather = this.config.showWeather;
         const previousProvider = this.config.weatherProvider;
         const previousUpdateInterval = this.config.weatherUpdateInterval;
+        const previousDataSource = this.dataSourceSignature(this.config);
 
         this.config = { ...this.config, ...config };
+        const dataSourceChanged = previousDataSource !== this.dataSourceSignature(this.config);
 
         // If update interval changed, reset the interval
         if (previousUpdateInterval !== this.config.weatherUpdateInterval) {
@@ -106,11 +115,12 @@ export class WeatherController extends BaseController {
         // Fetch data if:
         // 1. Weather was just enabled
         // 2. Hass just became available and we have no data yet
-        // 3. Provider changed
+        // 3. Provider, entity, forecast type, or provider options changed
         const shouldFetch = (this.config.showWeather && (
             (!previousShowWeather && this.config.showWeather) ||
             (!previousHass && this._hass && !this._weatherData) ||
-            (previousProvider !== this.config.weatherProvider)
+            (previousProvider !== this.config.weatherProvider) ||
+            dataSourceChanged
         ));
 
         if (shouldFetch) {
@@ -127,6 +137,14 @@ export class WeatherController extends BaseController {
 
         // Request an update from the host
         this.host.requestUpdate();
+    }
+
+    private dataSourceSignature(config: WeatherControllerConfig): string {
+        return JSON.stringify({
+            provider: config.weatherProvider,
+            weatherConfig: config.weatherConfig,
+            iconSet: config.weatherIconSet,
+        });
     }
 
     /**
@@ -179,23 +197,33 @@ export class WeatherController extends BaseController {
         }
 
         const entityId = weatherConfig.entityId as string | undefined;
-        if (!entityId || entityId === this._subscribedEntityId) {
+        const subscriptionKey = entityId
+            ? `${entityId}:${String(weatherConfig.forecastType ?? 'auto')}`
+            : undefined;
+        if (!entityId || subscriptionKey === this._subscribedForecastKey) {
             return;
         }
 
         this.teardownForecastSubscription();
 
-        const unsubscribe = await provider.subscribeForecastAsync(weatherConfig, (daily) => {
-            if (this._weatherData) {
-                this.logger.debug(`Received pushed forecast update (${daily.length} days)`);
-                this._weatherData = { ...this._weatherData, daily };
-                this.host.requestUpdate();
+        const unsubscribe = await provider.subscribeForecastAsync(
+            weatherConfig,
+            (forecast, forecastType?: WeatherForecastType) => {
+                if (this._weatherData) {
+                    this.logger.debug(`Received pushed forecast update (${forecast.length} periods)`);
+                    this._weatherData = {
+                        ...this._weatherData,
+                        daily: forecast,
+                        forecastType: forecastType ?? this._weatherData.forecastType
+                    };
+                    this.host.requestUpdate();
+                }
             }
-        });
+        );
 
         if (unsubscribe) {
             this._forecastUnsubscribe = unsubscribe;
-            this._subscribedEntityId = entityId;
+            this._subscribedForecastKey = subscriptionKey;
         }
     }
 
@@ -268,7 +296,11 @@ export class WeatherController extends BaseController {
      * Fetch weather data from the configured provider
      */
     async fetchWeatherDataAsync(): Promise<void> {
-        if (this._weatherLoading || !this.config.showWeather)  {
+        if (!this.config.showWeather) {
+            return;
+        }
+        if (this._weatherLoading) {
+            this._weatherRefreshPending = true;
             return;
         }
 
@@ -323,6 +355,10 @@ export class WeatherController extends BaseController {
             this._weatherLoading = false;
             // Request an update from the host
             this.host.requestUpdate();
+            if (this._weatherRefreshPending) {
+                this._weatherRefreshPending = false;
+                void this.fetchWeatherDataAsync();
+            }
         }
     }
 

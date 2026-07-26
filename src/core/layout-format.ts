@@ -13,6 +13,12 @@ export interface LayoutGridDefinition {
     rows: string;
 }
 
+export interface CompactGridRowDefinition {
+    areas: string;
+    rows: string;
+    alignContent: 'start' | 'center' | 'end' | 'stretch';
+}
+
 export interface LayoutZonePlacement {
     row: number;
     column: number;
@@ -77,6 +83,46 @@ function zoneCoordinates(zoneId: ZoneId): {
         'left' | 'center' | 'right',
     ];
     return {row, column};
+}
+
+/**
+ * Removes completely empty logical rows from the rendered 3×3 card while
+ * keeping their zones intact in the Designer. With fewer than three occupied
+ * rows, content-sized tracks prevent an empty 1fr row from creating a large
+ * visual gap between widgets.
+ */
+export function compactGridRowDefinition(zoneIds: readonly ZoneId[]): CompactGridRowDefinition {
+    const rowZones = {
+        top: ['top-left', 'top-center', 'top-right'],
+        middle: ['middle-left', 'center', 'middle-right'],
+        bottom: ['bottom-left', 'bottom-center', 'bottom-right'],
+    } as const;
+    const occupied = (Object.keys(rowZones) as Array<keyof typeof rowZones>)
+        .filter(row => rowZones[row].some(zone => zoneIds.includes(zone)));
+
+    if (occupied.length === 0 || occupied.length === 3) {
+        return {
+            areas: `'top-left top-center top-right' ` +
+                `'middle-left center middle-right' ` +
+                `'bottom-left bottom-center bottom-right'`,
+            rows: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+            alignContent: 'stretch',
+        };
+    }
+
+    const areas = occupied
+        .map(row => `'${rowZones[row].join(' ')}'`)
+        .join(' ');
+    let alignContent: CompactGridRowDefinition['alignContent'] = 'center';
+    if (occupied.every(row => row !== 'bottom')) alignContent = 'start';
+    if (occupied.every(row => row !== 'top')) alignContent = 'end';
+    if (occupied.length === 1 && occupied[0] === 'middle') alignContent = 'center';
+
+    return {
+        areas,
+        rows: occupied.map(() => 'auto').join(' '),
+        alignContent,
+    };
 }
 
 export function layoutSplitAxis(format: LayoutFormat): LayoutSplitAxis | undefined {

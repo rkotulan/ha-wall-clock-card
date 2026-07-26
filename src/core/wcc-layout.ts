@@ -8,6 +8,7 @@ import {CssPaddingEdges, expandCssPadding, resolveSpacing} from './migrate-confi
 import {WidgetRegistry} from '../widgets/widget-registry';
 import {WidgetElement} from '../widgets/widget-element';
 import {
+    compactGridRowDefinition,
     layoutGridDefinition,
     layoutPanelEdge,
     layoutSplitAxis,
@@ -318,10 +319,10 @@ export class WccLayout extends LitElement {
         // Top/bottom center zones span the full row when their side zones are
         // empty (this is how the v2 bottom bar spanned the whole card).
         if (zoneId === 'bottom-center' && !this.hasZone('bottom-left') && !this.hasZone('bottom-right')) {
-            return `grid-row: 3; grid-column: 1 / -1; align-self: end; justify-self: stretch;`;
+            return `grid-area: bottom-center; grid-column: 1 / -1; align-self: end; justify-self: stretch;`;
         }
         if (zoneId === 'top-center' && !this.hasZone('top-left') && !this.hasZone('top-right')) {
-            return `grid-row: 1; grid-column: 1 / -1; align-self: start; justify-self: stretch;`;
+            return `grid-area: top-center; grid-column: 1 / -1; align-self: start; justify-self: stretch;`;
         }
 
         // Every zone fills its grid track. Horizontal placement of its widgets
@@ -439,6 +440,9 @@ export class WccLayout extends LitElement {
         const format = resolveLayoutFormat(this.layout);
         const preset = resolveLayoutVisualPreset(this.layout);
         const grid = layoutGridDefinition(format);
+        const compactRows = format === 'grid-3x3'
+            ? compactGridRowDefinition(this.zoneEntries.map(entry => entry.zoneId))
+            : undefined;
         const panelEdge = preset === 'glass' ? layoutPanelEdge(format) : undefined;
         const splitAxis = layoutSplitAxis(format);
         return html`
@@ -447,10 +451,10 @@ export class WccLayout extends LitElement {
                  style="--wcc-padding: ${spacing.padding}; --wcc-zone-gap: ${spacing.zoneGap}; --wcc-widget-gap: ${spacing.widgetGap};
                         --wcc-padding-top: ${padding.top}; --wcc-padding-right: ${padding.right};
                         --wcc-padding-bottom: ${padding.bottom}; --wcc-padding-left: ${padding.left};
-                        grid-template-columns: ${grid.columns}; grid-template-rows: ${grid.rows};
-                        grid-template-areas: ${format === 'grid-3x3'
-                             ? `'top-left top-center top-right' 'middle-left center middle-right' 'bottom-left bottom-center bottom-right'`
-                             : 'none'};">
+                        grid-template-columns: ${grid.columns};
+                        grid-template-rows: ${compactRows?.rows ?? grid.rows};
+                        grid-template-areas: ${compactRows?.areas ?? 'none'};
+                        align-content: ${compactRows?.alignContent ?? 'stretch'};">
                 ${panelEdge ? html`<div class="format-surface ${panelEdge}"></div>` : ''}
                 ${splitAxis
                     ? ([1, 2] as const).map(panel => this.renderSplitPanel(

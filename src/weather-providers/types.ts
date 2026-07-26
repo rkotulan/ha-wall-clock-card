@@ -20,6 +20,9 @@ export interface WeatherProviderConfig {
   [key: string]: any; // Allow additional provider-specific properties
 }
 
+/** Forecast granularities supported by Home Assistant weather entities. */
+export type WeatherForecastType = 'daily' | 'hourly' | 'twice_daily';
+
 /**
  * Interface for weather data
  */
@@ -55,6 +58,8 @@ export interface WeatherData {
   /** Temperature unit label, e.g. °C / °F (from the entity or hass.config.unit_system) */
   temperatureUnit?: string;
   entityId?: string;
+  /** Granularity of the returned forecast. Defaults to daily for legacy providers. */
+  forecastType?: WeatherForecastType;
 }
 
 /**
@@ -108,6 +113,6 @@ export interface WeatherProvider {
    */
   subscribeForecastAsync?(
     config: WeatherProviderConfig,
-    onDaily: (daily: WeatherData['daily']) => void
+    onForecast: (forecast: WeatherData['daily'], forecastType?: WeatherForecastType) => void
   ): Promise<(() => void) | null>;
 }
