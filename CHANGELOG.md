@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.4.0
+
+### Conditional sensor colors
+
+- Added per-sensor default colors and ordered numeric `colorRules` supporting
+  `<`, `<=`, `>`, `>=`, `=` and `!=` comparisons against the entity's raw
+  state.
+- Applied the resolved color consistently to the sensor icon, label and value,
+  while non-numeric or unavailable states fall back to the configured default
+  or inherited widget color.
+- Added visual editor controls for creating, removing and reordering color
+  rules, including Czech and English translations.
+- Documented the YAML configuration and covered rule matching, ordering and
+  fallback behavior with automated tests.
+
 ## 3.3.3
 
 ### Sensor layout fix
