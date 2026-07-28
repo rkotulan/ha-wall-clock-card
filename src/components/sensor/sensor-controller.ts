@@ -1,22 +1,16 @@
 import { ReactiveControllerHost } from 'lit';
 import { HomeAssistant, formatNumber, stateIcon } from 'custom-card-helpers';
 import { BaseController } from '../../utils/controllers';
+import type {SensorColorOperator, SensorConfig} from './sensor-types';
 
-export interface SensorConfig {
-    entity: string;
-    /** Custom label; unset falls back to the entity's friendly_name, '' hides the label */
-    label?: string;
-    /** Custom icon; unset follows Home Assistant's entity/device-class icon. */
-    icon?: string;
-    /** Decimal places override; unset falls back to HA display precision */
-    precision?: number;
-}
+export type {SensorColorOperator, SensorColorRule, SensorConfig} from './sensor-types';
 
 export interface SensorValue {
     entity: string;
     label?: string;
     icon?: string;
     value: string;
+    color?: string;
 }
 
 export interface SensorControllerConfig {
@@ -98,7 +92,8 @@ export class SensorController extends BaseController {
                 entity: entityId,
                 label: sensorConfig.label,
                 icon: sensorConfig.icon,
-                value: 'unavailable'
+                value: 'unavailable',
+                color: this.defaultColor(sensorConfig),
             };
         }
 
@@ -112,8 +107,62 @@ export class SensorController extends BaseController {
             // name; an empty string deliberately hides the label.
             label: sensorConfig.label ?? entityState.attributes?.friendly_name,
             icon: sensorConfig.icon ?? stateIcon(iconState),
-            value: this.formatState(sensorConfig, entityState)
+            value: this.formatState(sensorConfig, entityState),
+            color: this.resolveColor(sensorConfig, entityState.state),
         };
+    }
+
+    private defaultColor(sensorConfig: SensorConfig): string | undefined {
+        return sensorConfig.color?.trim() || undefined;
+    }
+
+    /**
+     * Resolve a sensor item's color from its raw (unformatted) numeric state.
+     * Rules are intentionally ordered so overlapping ranges remain predictable.
+     */
+    private resolveColor(sensorConfig: SensorConfig, rawState: unknown): string | undefined {
+        const fallback = this.defaultColor(sensorConfig);
+        const stateText = typeof rawState === 'string' ? rawState.trim() : rawState;
+        if (stateText === '' || stateText === null || stateText === undefined) {
+            return fallback;
+        }
+
+        const numericState = Number(stateText);
+        if (!Number.isFinite(numericState)) {
+            return fallback;
+        }
+
+        for (const rule of sensorConfig.colorRules ?? []) {
+            const threshold = Number(rule.value);
+            const color = rule.color?.trim();
+            if (!Number.isFinite(threshold) || !color) {
+                continue;
+            }
+            if (this.matchesColorRule(numericState, rule.operator, threshold)) {
+                return color;
+            }
+        }
+
+        return fallback;
+    }
+
+    private matchesColorRule(state: number, operator: SensorColorOperator, threshold: number): boolean {
+        switch (operator) {
+            case '<':
+                return state < threshold;
+            case '<=':
+                return state <= threshold;
+            case '>':
+                return state > threshold;
+            case '>=':
+                return state >= threshold;
+            case '=':
+                return state === threshold;
+            case '!=':
+                return state !== threshold;
+            default:
+                return false;
+        }
     }
 
     /**

@@ -7,6 +7,13 @@ import { WeatherProviderConfig } from '../weather-providers/types';
 import { TransportationConfig } from '../transportation-providers/types';
 import { ActionBarConfig } from '../components/action-bar/types';
 import { ExtendedDateTimeFormatOptions } from '../utils';
+import type {SensorConfig} from '../components/sensor/sensor-types';
+
+export type {
+    SensorColorOperator,
+    SensorColorRule,
+    SensorConfig,
+} from '../components/sensor/sensor-types';
 
 // Common interfaces
 
@@ -84,15 +91,6 @@ export interface WallClockCardConfig {
     transportation?: TransportationConfig;
     actionBar?: ActionBarConfig;
     logLevel?: string;
-}
-
-export interface SensorConfig {
-    entity: string;
-    name?: string;
-    icon?: string;
-    unit?: string;
-    precision?: number;
-    label?: string;
 }
 
 export interface BackgroundImageConfig {

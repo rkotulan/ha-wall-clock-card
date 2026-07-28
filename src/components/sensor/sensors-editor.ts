@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { BaseEditorSection } from '../../editors/editor-base/base-editor-section';
 import {getEditorSessionState, setEditorSessionState} from '../../editors/editor-session-state';
 import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
-import { SensorConfig } from '../../core/types';
+import { SensorColorOperator, SensorColorRule, SensorConfig } from '../../core/types';
 import { LabelPosition } from '../ha-selector/types';
 
 const EXPANSION_STATE_KEY = 'sensors.expansion';
@@ -133,6 +133,60 @@ export class SensorsEditor extends BaseEditorSection {
         }));
     }
 
+    private _commitSensors(sensors: SensorConfig[]): void {
+        this._sensors = sensors;
+        if (!this.config) return;
+
+        const newConfig = JSON.parse(JSON.stringify(this.config));
+        newConfig.sensors = [...this._sensors];
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: {config: newConfig},
+        }));
+    }
+
+    private _addColorRule(sensorIndex: number): void {
+        const sensors = this._sensors.map((sensor, index) => {
+            if (index !== sensorIndex) return sensor;
+            const rule: SensorColorRule = {operator: '<', value: 0, color: '#ffffff'};
+            return {...sensor, colorRules: [...(sensor.colorRules ?? []), rule]};
+        });
+        this._commitSensors(sensors);
+    }
+
+    private _removeColorRule(sensorIndex: number, ruleIndex: number): void {
+        const sensors = this._sensors.map((sensor, index) => {
+            if (index !== sensorIndex) return sensor;
+            const colorRules = (sensor.colorRules ?? []).filter((_, currentIndex) => currentIndex !== ruleIndex);
+            const updated = {...sensor};
+            if (colorRules.length > 0) {
+                updated.colorRules = colorRules;
+            } else {
+                delete updated.colorRules;
+            }
+            return updated;
+        });
+        this._commitSensors(sensors);
+    }
+
+    private _moveColorRule(sensorIndex: number, fromIndex: number, toIndex: number): void {
+        const sensors = this._sensors.map((sensor, index) => {
+            if (index !== sensorIndex) return sensor;
+            return {...sensor, colorRules: moveListItem(sensor.colorRules ?? [], fromIndex, toIndex)};
+        });
+        this._commitSensors(sensors);
+    }
+
+    private _operatorOptions(): Array<{value: SensorColorOperator; label: string}> {
+        return [
+            {value: '<', label: this.t('editor.sensors.operator_less_than', 'Less than (<)')},
+            {value: '<=', label: this.t('editor.sensors.operator_less_or_equal', 'Less than or equal (≤)')},
+            {value: '>', label: this.t('editor.sensors.operator_greater_than', 'Greater than (>)')},
+            {value: '>=', label: this.t('editor.sensors.operator_greater_or_equal', 'Greater than or equal (≥)')},
+            {value: '=', label: this.t('editor.sensors.operator_equal', 'Equal (=)')},
+            {value: '!=', label: this.t('editor.sensors.operator_not_equal', 'Not equal (≠)')},
+        ];
+    }
+
     static get styles() {
         return css`
             .content {
@@ -238,6 +292,110 @@ export class SensorsEditor extends BaseEditorSection {
                 display: block;
                 width: 100%;
                 padding: 2px 0;
+            }
+
+            .color-rules {
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+            }
+
+            .color-rules-header,
+            .color-rule-actions {
+                display: flex;
+                align-items: center;
+            }
+
+            .color-rules-header {
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+
+            .color-rules-title {
+                color: var(--secondary-text-color, #aaa);
+                font-size: 0.78rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .color-rule {
+                display: grid;
+                grid-template-columns: minmax(120px, 1fr) minmax(90px, 0.8fr) minmax(120px, 1fr) auto;
+                gap: 8px;
+                align-items: end;
+                margin-top: 8px;
+                padding: 8px;
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+                border-radius: 6px;
+            }
+
+            .color-rule-actions {
+                align-self: center;
+            }
+
+            .color-rule-button {
+                display: grid;
+                place-items: center;
+                width: 30px;
+                height: 30px;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--secondary-text-color, #aaa);
+                cursor: pointer;
+            }
+
+            .color-rule-button:hover:not(:disabled),
+            .color-rule-button:focus-visible {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-text-color, #fff);
+                outline: none;
+            }
+
+            .color-rule-button.remove:hover {
+                color: var(--error-color, #db4437);
+            }
+
+            .color-rule-button:disabled {
+                opacity: 0.3;
+                cursor: default;
+            }
+
+            .color-rule-button ha-icon {
+                --mdc-icon-size: 18px;
+            }
+
+            .add-color-rule {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                min-height: 32px;
+                padding: 0 9px;
+                border: 1px solid var(--primary-color, #03a9f4);
+                border-radius: 6px;
+                background: transparent;
+                color: var(--primary-color, #03a9f4);
+                font: inherit;
+                font-size: 0.82rem;
+                cursor: pointer;
+            }
+
+            .add-color-rule ha-icon {
+                --mdc-icon-size: 17px;
+            }
+
+            @media (max-width: 600px) {
+                .color-rule {
+                    grid-template-columns: 1fr 1fr;
+                }
+
+                .color-rule-actions {
+                    grid-column: 1 / -1;
+                    justify-content: flex-end;
+                }
             }
 
             .empty-sensors {
@@ -360,6 +518,83 @@ export class SensorsEditor extends BaseEditorSection {
                                 propertyName="sensors.${index}.icon"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{color_hex: ''}}
+                                .value=${sensor.color ?? ''}
+                                .label=${this.t('editor.sensors.default_color', 'Default color')}
+                                .helper=${this.t('editor.sensors.default_color_help', 'Used when no conditional rule matches; empty inherits the widget color.')}
+                                .labelPosition=${LabelPosition.Top}
+                                propertyName="sensors.${index}.color"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+
+                        <div class="color-rules">
+                            <div class="color-rules-header">
+                                <span class="color-rules-title">
+                                    ${this.t('editor.sensors.color_rules', 'Conditional colors')}
+                                </span>
+                                <button class="add-color-rule" type="button"
+                                        @click=${() => this._addColorRule(index)}>
+                                    <ha-icon icon="mdi:plus"></ha-icon>
+                                    ${this.t('editor.sensors.add_color_rule', 'Add rule')}
+                                </button>
+                            </div>
+                            ${(sensor.colorRules ?? []).map((rule, ruleIndex, rules) => html`
+                                <div class="color-rule">
+                                    <ha-row-selector
+                                            .hass=${this.hass}
+                                            .selector=${{select: {options: this._operatorOptions(), mode: 'dropdown'}}}
+                                            .value=${rule.operator}
+                                            .label=${this.t('editor.sensors.operator', 'Condition')}
+                                            .labelPosition=${LabelPosition.Top}
+                                            propertyName="sensors.${index}.colorRules.${ruleIndex}.operator"
+                                            @value-changed=${this._handleFormValueChanged}
+                                    ></ha-row-selector>
+                                    <ha-row-selector
+                                            .hass=${this.hass}
+                                            .selector=${{number: {step: 'any', mode: 'box'}}}
+                                            .value=${rule.value}
+                                            .label=${this.t('editor.sensors.threshold', 'Value')}
+                                            .labelPosition=${LabelPosition.Top}
+                                            propertyName="sensors.${index}.colorRules.${ruleIndex}.value"
+                                            @value-changed=${this._handleFormValueChanged}
+                                    ></ha-row-selector>
+                                    <ha-row-selector
+                                            .hass=${this.hass}
+                                            .selector=${{color_hex: ''}}
+                                            .value=${rule.color}
+                                            .label=${this.t('editor.sensors.rule_color', 'Color')}
+                                            .labelPosition=${LabelPosition.Top}
+                                            propertyName="sensors.${index}.colorRules.${ruleIndex}.color"
+                                            @value-changed=${this._handleFormValueChanged}
+                                    ></ha-row-selector>
+                                    <div class="color-rule-actions">
+                                        <button class="color-rule-button" type="button"
+                                                ?disabled=${ruleIndex === 0}
+                                                title=${this.t('editor.sensors.move_rule_up', 'Move rule up')}
+                                                aria-label=${this.t('editor.sensors.move_rule_up', 'Move rule up')}
+                                                @click=${() => this._moveColorRule(index, ruleIndex, ruleIndex - 1)}>
+                                            <ha-icon icon="mdi:arrow-up"></ha-icon>
+                                        </button>
+                                        <button class="color-rule-button" type="button"
+                                                ?disabled=${ruleIndex === rules.length - 1}
+                                                title=${this.t('editor.sensors.move_rule_down', 'Move rule down')}
+                                                aria-label=${this.t('editor.sensors.move_rule_down', 'Move rule down')}
+                                                @click=${() => this._moveColorRule(index, ruleIndex, ruleIndex + 1)}>
+                                            <ha-icon icon="mdi:arrow-down"></ha-icon>
+                                        </button>
+                                        <button class="color-rule-button remove" type="button"
+                                                title=${this.t('editor.sensors.remove_color_rule', 'Remove rule')}
+                                                aria-label=${this.t('editor.sensors.remove_color_rule', 'Remove rule')}
+                                                @click=${() => this._removeColorRule(index, ruleIndex)}>
+                                            <ha-icon icon="mdi:delete-outline"></ha-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                            `)}
+                        </div>
                         </div>` : ''}
                     </div>
                 `;})}

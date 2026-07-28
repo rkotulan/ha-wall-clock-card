@@ -202,7 +202,14 @@
       "icon_size": "Velikost ikony senzoru", "icon_size_help": "CSS délka (výchozí je responsivní velikost, maximálně 36px).",
       "show_separator": "Zobrazit separátor senzorů", "show_separator_help": "Zobrazí nebo skryje čáru mezi senzory ve vodorovném režimu.",
       "separator_color": "Barva separátoru", "separator_color_help": "Prázdná hodnota použije barvu textu widgetu.",
-      "separator_opacity": "Průhlednost separátoru", "separator_opacity_help": "Nastaví průhlednost separátoru."
+      "separator_opacity": "Průhlednost separátoru", "separator_opacity_help": "Nastaví průhlednost separátoru.",
+      "default_color": "Výchozí barva", "default_color_help": "Použije se, pokud nevyhoví žádné podmíněné pravidlo; prázdná hodnota převezme barvu widgetu.",
+      "color_rules": "Podmíněné barvy", "add_color_rule": "Přidat pravidlo", "remove_color_rule": "Odebrat pravidlo",
+      "operator": "Podmínka", "threshold": "Hodnota", "rule_color": "Barva",
+      "operator_less_than": "Menší než (<)", "operator_less_or_equal": "Menší nebo rovno (≤)",
+      "operator_greater_than": "Větší než (>)", "operator_greater_or_equal": "Větší nebo rovno (≥)",
+      "operator_equal": "Rovno (=)", "operator_not_equal": "Není rovno (≠)",
+      "move_rule_up": "Posunout pravidlo nahoru", "move_rule_down": "Posunout pravidlo dolů"
     },
     "transportation": {
       "source": "Zdroj dat", "appearance": "Zobrazení odjezdů", "behavior": "Aktualizace a automatické skrytí",

@@ -272,4 +272,88 @@ describe('SensorController', () => {
 
         expect(controller.sensorValues[0].value).toMatch(/100[.,]00 %/);
     });
+
+    it.each([
+        ['<', 21, 22],
+        ['<=', 22, 22],
+        ['>', 23, 22],
+        ['>=', 22, 22],
+        ['=', 22, 22],
+        ['!=', 21, 22],
+    ] as const)('applies the %s color rule to a matching numeric state', (operator, state, value) => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: String(state),
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: '#00ff00',
+                colorRules: [{operator, value, color: '#ff0000'}],
+            }],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].color).toBe('#ff0000');
+    });
+
+    it('uses the first matching color rule and falls back to the configured color', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: '75',
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'green',
+                colorRules: [
+                    {operator: '>=', value: 65, color: 'orange'},
+                    {operator: '<=', value: 90, color: 'blue'},
+                ],
+            }],
+        });
+        controller.updateHass(hass);
+        expect(controller.sensorValues[0].color).toBe('orange');
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'green',
+                colorRules: [{operator: '>', value: 90, color: 'red'}],
+            }],
+        });
+        expect(controller.sensorValues[0].color).toBe('green');
+    });
+
+    it('ignores color rules for a non-numeric state', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: 'unavailable',
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'gray',
+                colorRules: [{operator: '!=', value: 0, color: 'red'}],
+            }],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].color).toBe('gray');
+    });
 });

@@ -2,7 +2,8 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { createLogger, getSizeValue } from '../../utils';
-import { SensorController, SensorConfig } from './sensor-controller';
+import { SensorController } from './sensor-controller';
+import type {SensorConfig} from './sensor-types';
 import { Size } from '../../core/types';
 import type {ResolvedWidgetAlignment, ResolvedWidgetOrientation} from '../../widgets/widget-layout';
 
@@ -78,6 +79,7 @@ export class SensorComponent extends LitElement {
             min-width: 0;
             max-width: 100%;
             cursor: pointer;
+            color: var(--sensor-color, inherit);
         }
 
         .sensor-container.horizontal {
@@ -153,6 +155,7 @@ export class SensorComponent extends LitElement {
         .sensor-icon {
             --mdc-icon-size: var(--sensor-icon-size, clamp(1.8rem, 6cqw, 2.25rem));
             opacity: 0.9;
+            color: var(--sensor-color, currentColor);
         }
 
         .sensor-container.horizontal.show-separators .sensor-item:not(:first-child)::before {
@@ -189,12 +192,13 @@ export class SensorComponent extends LitElement {
             font-size: 1.0rem;
             font-weight: 300;
             opacity: 0.8;
+            color: var(--sensor-color, currentColor);
         }
 
         .sensor-value {
             font-size: 1.5rem;
             font-weight: 400;
-            color: var(--sensor-value-color, #ffffff);
+            color: var(--sensor-color, var(--sensor-value-color, #ffffff));
             white-space: nowrap;
         }
 
@@ -306,6 +310,7 @@ export class SensorComponent extends LitElement {
                         --sensor-separator-opacity: ${separatorOpacity};">
                 ${sensorValues.map(sensor => html`
                     <div class="sensor-item"
+                         style=${sensor.color ? `--sensor-color: ${sensor.color};` : ''}
                          role="button"
                          tabindex="0"
                          @click=${() => this._openMoreInfo(sensor.entity)}
@@ -326,7 +331,7 @@ export class SensorComponent extends LitElement {
                             <div class="sensor-copy">
                                 ${sensor.label ?
                                     html`
-                                        <div class="sensor-label" style="color: ${this.fontColor}; font-size: ${labelSize};">
+                                        <div class="sensor-label" style="font-size: ${labelSize};">
                                             ${sensor.label}
                                         </div>` :
                                     ''

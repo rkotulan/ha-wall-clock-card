@@ -259,7 +259,14 @@
       "icon_size": "Sensor icon size", "icon_size_help": "CSS length (default is responsive, maximum 36px).",
       "show_separator": "Show sensor separator", "show_separator_help": "Show or hide the line between sensors in horizontal mode.",
       "separator_color": "Separator color", "separator_color_help": "Empty uses the widget text color.",
-      "separator_opacity": "Separator opacity", "separator_opacity_help": "Adjust the separator transparency."
+      "separator_opacity": "Separator opacity", "separator_opacity_help": "Adjust the separator transparency.",
+      "default_color": "Default color", "default_color_help": "Used when no conditional rule matches; empty inherits the widget color.",
+      "color_rules": "Conditional colors", "add_color_rule": "Add rule", "remove_color_rule": "Remove rule",
+      "operator": "Condition", "threshold": "Value", "rule_color": "Color",
+      "operator_less_than": "Less than (<)", "operator_less_or_equal": "Less than or equal (≤)",
+      "operator_greater_than": "Greater than (>)", "operator_greater_or_equal": "Greater than or equal (≥)",
+      "operator_equal": "Equal (=)", "operator_not_equal": "Not equal (≠)",
+      "move_rule_up": "Move rule up", "move_rule_down": "Move rule down"
     },
     "transportation": {
       "source": "Data source", "appearance": "Departure display", "behavior": "Refresh and auto-hide",

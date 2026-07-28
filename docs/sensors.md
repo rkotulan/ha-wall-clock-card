@@ -24,6 +24,14 @@ layout:
               label: Temperature
               icon: mdi:thermometer
               precision: 1
+              color: green
+              colorRules:
+                - operator: '<'
+                  value: 18
+                  color: blue
+                - operator: '>'
+                  value: 26
+                  color: red
             - entity: sensor.living_room_humidity
               label: Humidity
               icon: mdi:water-percent
@@ -50,6 +58,13 @@ friendly name is used; an empty string hides the label. `precision` overrides Ho
 Assistant's display precision for that entry. Without it, the card respects Home
 Assistant's formatted state/display precision. `icon` optionally overrides the
 entity icon; an empty value uses Home Assistant's icon.
+
+`color` sets the sensor item's default CSS color. `colorRules` can override it from
+the entity's raw numeric state. Each rule contains an `operator` (`<`, `<=`, `>`,
+`>=`, `=` or `!=`), a numeric `value` and a CSS `color`. Rules are evaluated in
+their configured order and the first match wins. A non-numeric or unavailable state
+skips the rules and uses `color`; when `color` is omitted, the widget text color is
+inherited. The selected color applies to the sensor's icon, label and value.
 
 With `orientation: auto`, center-column zones (`top-center`, `center`,
 `bottom-center`) use a horizontal row and side columns use a vertical list.
