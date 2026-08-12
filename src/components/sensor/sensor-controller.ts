@@ -117,28 +117,26 @@ export class SensorController extends BaseController {
     }
 
     /**
-     * Resolve a sensor item's color from its raw (unformatted) numeric state.
+     * Resolve a sensor item's color from its raw (unformatted) state.
      * Rules are intentionally ordered so overlapping ranges remain predictable.
      */
     private resolveColor(sensorConfig: SensorConfig, rawState: unknown): string | undefined {
         const fallback = this.defaultColor(sensorConfig);
-        const stateText = typeof rawState === 'string' ? rawState.trim() : rawState;
-        if (stateText === '' || stateText === null || stateText === undefined) {
+        if (rawState === null || rawState === undefined) {
             return fallback;
         }
 
-        const numericState = Number(stateText);
-        if (!Number.isFinite(numericState)) {
+        const stateText = String(rawState).trim();
+        if (!stateText) {
             return fallback;
         }
 
         for (const rule of sensorConfig.colorRules ?? []) {
-            const threshold = Number(rule.value);
             const color = rule.color?.trim();
-            if (!Number.isFinite(threshold) || !color) {
+            if (!color) {
                 continue;
             }
-            if (this.matchesColorRule(numericState, rule.operator, threshold)) {
+            if (this.matchesColorRule(stateText, rule.operator, rule.value)) {
                 return color;
             }
         }
@@ -146,7 +144,44 @@ export class SensorController extends BaseController {
         return fallback;
     }
 
-    private matchesColorRule(state: number, operator: SensorColorOperator, threshold: number): boolean {
+    private matchesColorRule(
+        stateText: string,
+        operator: SensorColorOperator,
+        configuredValue: unknown,
+    ): boolean {
+        if (typeof configuredValue === 'number') {
+            const numericState = Number(stateText);
+            if (!Number.isFinite(numericState) || !Number.isFinite(configuredValue)) {
+                return false;
+            }
+            return this.matchesNumericColorRule(numericState, operator, configuredValue);
+        }
+
+        if (typeof configuredValue !== 'string') {
+            return false;
+        }
+
+        const valueText = configuredValue.trim();
+        if (!valueText) {
+            return false;
+        }
+
+        if (operator === '=') {
+            return stateText === valueText;
+        }
+        if (operator === '!=') {
+            return stateText !== valueText;
+        }
+
+        const numericState = Number(stateText);
+        const numericValue = Number(valueText);
+        if (!Number.isFinite(numericState) || !Number.isFinite(numericValue)) {
+            return false;
+        }
+        return this.matchesNumericColorRule(numericState, operator, numericValue);
+    }
+
+    private matchesNumericColorRule(state: number, operator: SensorColorOperator, threshold: number): boolean {
         switch (operator) {
             case '<':
                 return state < threshold;

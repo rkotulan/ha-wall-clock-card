@@ -57,4 +57,44 @@ describe('TransportationController', () => {
         expect(controller.transportationDataLoaded).toBe(false);
         expect((controller as unknown as {intervalId?: number}).intervalId).toBeUndefined();
     });
+
+    it('deactivates a modal when its auto-hide timer expires', async () => {
+        jest.useFakeTimers();
+        const previousWindow = (global as any).window;
+        (global as any).window = global;
+
+        try {
+            const provider: TransportationProvider = {
+                id: 'modal-auto-hide-test-provider',
+                name: 'Modal auto-hide test provider',
+                description: 'Test provider',
+                usesHassStateUpdates: true,
+                getDefaultConfig: () => ({}),
+                fetchTransportationAsync: async () => ({departures: [], loading: false}),
+            };
+            registerTransportationProvider(provider);
+
+            const controller = new TransportationController(mockHost as never, {
+                transportation: {
+                    enabled: true,
+                    provider: provider.id,
+                    displayMode: 'modal',
+                    stops: [],
+                    autoHideTimeout: 1,
+                },
+            });
+
+            await controller.handleTransportationClick();
+            expect(controller.isActive).toBe(true);
+            expect(controller.transportationDataLoaded).toBe(true);
+
+            jest.advanceTimersByTime(60_000);
+
+            expect(controller.isActive).toBe(false);
+            expect(controller.transportationDataLoaded).toBe(false);
+        } finally {
+            jest.useRealTimers();
+            (global as any).window = previousWindow;
+        }
+    });
 });

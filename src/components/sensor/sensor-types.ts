@@ -2,7 +2,8 @@ export type SensorColorOperator = '<' | '<=' | '>' | '>=' | '=' | '!=';
 
 export interface SensorColorRule {
     operator: SensorColorOperator;
-    value: number;
+    /** Numeric threshold or raw Home Assistant state for equality rules. */
+    value: number | string;
     /** Any valid CSS color value. */
     color: string;
 }
@@ -17,7 +18,7 @@ export interface SensorConfig {
     precision?: number;
     /** Default CSS color for this sensor item. */
     color?: string;
-    /** Ordered numeric-state rules; the first matching rule wins. */
+    /** Ordered raw-state rules; the first matching rule wins. */
     colorRules?: SensorColorRule[];
     /** Legacy fields retained for configuration compatibility. */
     name?: string;

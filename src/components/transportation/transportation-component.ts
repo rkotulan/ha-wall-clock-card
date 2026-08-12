@@ -290,17 +290,14 @@ export class TransportationComponent extends BottomBarComponent {
         const transportationData = this.transportationController.transportationData;
         const transportationDataLoaded = this.transportationController.transportationDataLoaded;
         const displayMode = this.transportation.displayMode ?? 'inline';
+        const isActive = this.controller.isActive;
 
         // this.logger.debug(`Rendering transportation component isActive: ${this.controller.isActive} data: ${JSON.stringify(transportationData)} loaded: ${transportationDataLoaded}`);
-
-        if (!this.controller.isActive) {
-            return html``;
-        }
 
         if (displayMode === 'modal') {
             return html`
                 <wcc-transportation-dialog
-                        .open=${true}
+                        .open=${isActive}
                         .data=${transportationDataLoaded
                             ? transportationData
                             : {...transportationData, loading: true}}
@@ -309,6 +306,10 @@ export class TransportationComponent extends BottomBarComponent {
                         @wcc-transportation-dialog-close=${this.closeTransportation}>
                 </wcc-transportation-dialog>
             `;
+        }
+
+        if (!isActive) {
+            return html``;
         }
 
         return html`

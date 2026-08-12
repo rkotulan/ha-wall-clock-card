@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Text sensor color rules
+
+- Extended `=` and `!=` sensor color rules to match raw text states such as
+  `good`, `moderate` and `unhealthy`, while preserving numeric comparisons.
+- Updated the visual editor to accept text values for equality rules and
+  documented the text-state YAML syntax and matching behavior.
+
+### Transportation modal auto-hide
+
+- Explicitly close the native transportation dialog when its auto-hide timer
+  expires instead of relying on removal from the rendered DOM to leave the
+  browser's modal top layer.
+
 ## 3.4.0
 
 ### Conditional sensor colors

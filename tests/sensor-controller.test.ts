@@ -356,4 +356,73 @@ describe('SensorController', () => {
 
         expect(controller.sensorValues[0].color).toBe('gray');
     });
+
+    it.each([
+        ['=', 'good', 'green'],
+        ['!=', 'moderate', 'red'],
+    ] as const)('applies the %s color rule to a matching text state', (operator, value, color) => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: 'good',
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'gray',
+                colorRules: [{operator, value, color}],
+            }],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].color).toBe(color);
+    });
+
+    it('compares text states exactly and falls back when they do not match', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: 'Good',
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'gray',
+                colorRules: [{operator: '=', value: 'good', color: 'green'}],
+            }],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].color).toBe('gray');
+    });
+
+    it('ignores relational rules with a non-numeric configured value', () => {
+        const hass = {
+            states: {
+                'sensor.test': {
+                    state: 'good',
+                    attributes: {},
+                },
+            },
+        } as any as HomeAssistant;
+
+        controller.updateConfig({
+            sensors: [{
+                entity: 'sensor.test',
+                color: 'gray',
+                colorRules: [{operator: '>', value: 'moderate', color: 'red'}],
+            }],
+        });
+        controller.updateHass(hass);
+
+        expect(controller.sensorValues[0].color).toBe('gray');
+    });
 });

@@ -35,6 +35,19 @@ layout:
             - entity: sensor.living_room_humidity
               label: Humidity
               icon: mdi:water-percent
+            - entity: sensor.outdoor_air_quality
+              label: Air quality
+              color: gray
+              colorRules:
+                - operator: '='
+                  value: 'good'
+                  color: green
+                - operator: '='
+                  value: 'moderate'
+                  color: orange
+                - operator: '='
+                  value: 'unhealthy'
+                  color: red
 ```
 
 ## Options
@@ -60,11 +73,13 @@ Assistant's formatted state/display precision. `icon` optionally overrides the
 entity icon; an empty value uses Home Assistant's icon.
 
 `color` sets the sensor item's default CSS color. `colorRules` can override it from
-the entity's raw numeric state. Each rule contains an `operator` (`<`, `<=`, `>`,
-`>=`, `=` or `!=`), a numeric `value` and a CSS `color`. Rules are evaluated in
-their configured order and the first match wins. A non-numeric or unavailable state
-skips the rules and uses `color`; when `color` is omitted, the widget text color is
-inherited. The selected color applies to the sensor's icon, label and value.
+the entity's raw state. Each rule contains an `operator` (`<`, `<=`, `>`, `>=`, `=`
+or `!=`), a `value` and a CSS `color`. The relational operators require numeric
+states and values. Equality operators accept either numbers or text; text matching
+is exact and case-sensitive. Rules are evaluated in their configured order and the
+first match wins. Invalid or unmatched rules use `color`; when `color` is omitted,
+the widget text color is inherited. The selected color applies to the sensor's icon,
+label and value.
 
 With `orientation: auto`, center-column zones (`top-center`, `center`,
 `bottom-center`) use a horizontal row and side columns use a vertical list.

@@ -187,6 +187,12 @@ export class SensorsEditor extends BaseEditorSection {
         ];
     }
 
+    private _colorRuleValueSelector(operator: SensorColorOperator) {
+        return operator === '=' || operator === '!='
+            ? {text: {type: 'text'}}
+            : {number: {step: 'any', mode: 'box'}};
+    }
+
     static get styles() {
         return css`
             .content {
@@ -554,7 +560,7 @@ export class SensorsEditor extends BaseEditorSection {
                                     ></ha-row-selector>
                                     <ha-row-selector
                                             .hass=${this.hass}
-                                            .selector=${{number: {step: 'any', mode: 'box'}}}
+                                            .selector=${this._colorRuleValueSelector(rule.operator)}
                                             .value=${rule.value}
                                             .label=${this.t('editor.sensors.threshold', 'Value')}
                                             .labelPosition=${LabelPosition.Top}
