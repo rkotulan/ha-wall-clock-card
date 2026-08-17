@@ -60,6 +60,7 @@ logLevel: info
 appearance:
   fontColor: '#FFFFFF'
   fontFamily: 'Roboto, sans-serif'
+  textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
   language: cs
   timeZone: Europe/Prague
   size: medium              # small | medium | large | custom
@@ -106,6 +107,7 @@ layout:
 |---|---|---|
 | `appearance.fontColor` | `#FFFFFF` | Card-wide text color |
 | `appearance.fontFamily` | Home Assistant font | CSS font family/stack; the font must already be loaded |
+| `appearance.textShadow` | `none` | Card-wide CSS `text-shadow`; use `none` to disable it |
 | `appearance.language` | HA language | UI/date/weather language where supported |
 | `appearance.timeZone` | HA time zone | IANA time-zone name such as `Europe/Prague` |
 | `appearance.size` | `medium` | Built-in component size preset |
@@ -113,7 +115,8 @@ layout:
 
 Per-widget appearance can override the card defaults. Widget-specific size controls
 (for example `clockSize`, `dateSize`, `labelSize`, `valueSize` or `iconSize`) take
-precedence over `appearance.size`.
+precedence over `appearance.size`. Set `style.textShadow` on a widget to override the
+card shadow; use `none` to disable the shadow for that widget.
 
 ## Loading custom fonts
 
@@ -173,6 +176,6 @@ file to invalidate browser caches.
 
 The 2.x root keys (`timeFormat`, `dateFormat`, `sensors`, `showWeather`,
 `weather*`, `transportation`, `actionBar`, `imageSource`, `backgroundImages`,
-`fontColor`, `language`, `size` and `customSizes`) remain accepted. They are converted
+`fontColor`, `fontFamily`, `textShadow`, `language`, `size` and `customSizes`) remain accepted. They are converted
 in memory to the equivalent 3.0 layout. The Designer writes the normalized 3.0 form
 after the first change. See the [migration table](layout.md#migration-from-2x).

@@ -96,6 +96,7 @@ type: custom:wall-clock-card
 appearance:
   language: cs
   fontColor: '#fff7bb'
+  textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
   size: medium
 background:
   source: picsum

@@ -65,6 +65,8 @@ export interface WidgetStyle {
     /** CSS font-family value; the font itself must be available in HA/browser. */
     fontFamily?: string;
     color?: string;
+    /** CSS text-shadow value; use 'none' to disable the card-wide shadow. */
+    textShadow?: string;
     /** Width policy inside a row zone; auto selects a suitable policy by widget type. */
     widthMode?: WidgetWidthMode;
     /** Relative share of available width when the hosting zone uses row direction. */
@@ -158,6 +160,8 @@ export interface AppearanceConfig {
     fontColor?: string;
     /** Card-wide CSS font-family value inherited by widgets. */
     fontFamily?: string;
+    /** Card-wide CSS text-shadow value inherited by widgets. */
+    textShadow?: string;
     language?: string;
     timeZone?: string;
     size?: Size;

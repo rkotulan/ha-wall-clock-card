@@ -117,7 +117,8 @@
     "title": "General", "layout": "Layout", "appearance": "Card appearance",
     "language_diagnostics": "Language and diagnostics",
     "font_color": "Font color", "custom_color": "Custom color", "font_family": "Font family",
-    "font_family_help": "CSS font family or stack; the font must already be loaded", "language": "Language", "log_level": "Log level",
+    "font_family_help": "CSS font family or stack; the font must already be loaded", "text_shadow": "Text shadow",
+    "text_shadow_help": "CSS text-shadow value, for example 0 2px 4px rgba(0, 0, 0, 0.8)", "language": "Language", "log_level": "Log level",
     "size": "Size", "large": "Large", "medium": "Medium", "small": "Small", "custom_sizes": "Custom sizes",
     "clock_top_margin": "Clock top margin (e.g., 0rem)", "spacing": "Spacing", "background": "Background",
     "time_format": "Time format", "date_format": "Date format"
@@ -174,6 +175,8 @@
     "font_size": "Font size (e.g., 2rem)",
     "font_family": "Font family override",
     "font_family_help": "CSS font family or stack; empty uses the card font",
+    "text_shadow": "Text shadow override",
+    "text_shadow_help": "CSS text-shadow value; empty uses the card shadow, none disables it",
     "max_width": "Maximum width (e.g., 420px)",
     "max_height": "Maximum height (e.g., 50vh)",
     "unsupported_width": "Maximum width (unsupported — clear this value)",

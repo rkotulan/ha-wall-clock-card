@@ -82,6 +82,7 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         this.style.fontSize = style?.fontSize ?? '';
         this.style.fontFamily = style?.fontFamily ?? this.appearance?.fontFamily ?? '';
         this.style.color = style?.color ?? '';
+        this.style.textShadow = style?.textShadow ?? this.appearance?.textShadow ?? '';
         this.style.flex = useRowGrow ? `${grow} 1 0%` : useContentWidth ? '0 1 auto' : '';
         this.style.width = useRowGrow ? '0px' : useContentWidth ? 'auto' : '';
         this.style.minWidth = useRowGrow || useContentWidth ? '0px' : '';

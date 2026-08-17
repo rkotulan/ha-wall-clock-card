@@ -194,7 +194,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     /** General-section value: appearance.* for v3 configs, root key for v2. */
-    private _generalValue(key: 'fontColor' | 'fontFamily' | 'language' | 'size'): unknown {
+    private _generalValue(key: 'fontColor' | 'fontFamily' | 'textShadow' | 'language' | 'size'): unknown {
         if (this._isV3) {
             return (this._config as unknown as WallClockConfigV3).appearance?.[key];
         }
@@ -367,6 +367,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 .label=${this.t('general.font_family', 'Font family')}
                                 .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
                                 propertyName="fontFamily"
+                                @value-changed=${this._handleFormValueChanged}
+                        ></ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
+                                .selector=${{text: {}}}
+                                .value=${this._generalValue('textShadow') ?? ''}
+                                .label=${this.t('general.text_shadow', 'Text shadow')}
+                                .helper=${this.t('general.text_shadow_help', 'CSS text-shadow value, for example 0 2px 4px rgba(0, 0, 0, 0.8)')}
+                                propertyName="textShadow"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
                         <ha-row-selector

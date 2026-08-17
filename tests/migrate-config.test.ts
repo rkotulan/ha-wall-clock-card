@@ -52,6 +52,7 @@ describe('migrateToLayout', () => {
             objectFit: 'cover',
             fontColor: '#EEEEEE',
             fontFamily: '"Roboto Condensed", sans-serif',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)',
             language: 'cs',
             timeZone: 'Europe/Prague',
             size: Size.Large,
@@ -135,6 +136,7 @@ describe('migrateToLayout', () => {
             appearance: {
                 fontColor: '#EEEEEE',
                 fontFamily: '"Roboto Condensed", sans-serif',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)',
                 language: 'cs',
                 timeZone: 'Europe/Prague',
                 size: Size.Large,
@@ -183,13 +185,15 @@ describe('migrateToLayout', () => {
             grid_options: {rows: 4},
             logLevel: 'debug',
             fontColor: '#FFF',
+            textShadow: 'none',
         });
 
         expect(result.type).toBe('custom:wall-clock-card');
         expect(result.grid_options).toEqual({rows: 4});
         expect(result.logLevel).toBe('debug');
         expect(result.fontColor).toBeUndefined();
-        expect(result.appearance).toEqual({fontColor: '#FFF'});
+        expect(result.textShadow).toBeUndefined();
+        expect(result.appearance).toEqual({fontColor: '#FFF', textShadow: 'none'});
     });
 });
 

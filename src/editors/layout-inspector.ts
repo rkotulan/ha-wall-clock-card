@@ -684,6 +684,12 @@ export class WccLayoutInspector extends LitElement {
                                 .helper=${this.t('inspector.font_family_help', 'CSS font family or stack; empty uses the card font')}
                                 @value-changed=${(ev: CustomEvent) => this.updateStyle('fontFamily', ev.detail.value)}>
                         </ha-row-selector>
+                        <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
+                                .value=${style.textShadow ?? ''}
+                                .label=${this.t('inspector.text_shadow', 'Text shadow override')}
+                                .helper=${this.t('inspector.text_shadow_help', 'CSS text-shadow value; empty uses the card shadow, none disables it')}
+                                @value-changed=${(ev: CustomEvent) => this.updateStyle('textShadow', ev.detail.value)}>
+                        </ha-row-selector>
                         ${this.renderWidgetSizeFields(widget, style)}
                         ${(this.layout.zones[zone]?.direction === 'row' && style.widthMode !== 'content')
                                 || style.grow !== undefined ? html`
@@ -786,6 +792,7 @@ export class WccLayoutInspector extends LitElement {
             color: this.t('inspector.color', 'Color override'),
             fontSize: this.t('inspector.font_size', 'Font size (e.g., 2rem)'),
             fontFamily: this.t('inspector.font_family', 'Font family override'),
+            textShadow: this.t('inspector.text_shadow', 'Text shadow override'),
             widthMode: this.t('inspector.width_mode', 'Row width behavior'),
             grow: this.t('inspector.row_width_ratio', 'Row width ratio'),
             maxWidth: this.t('inspector.max_width', 'Maximum width (e.g., 420px)'),
@@ -948,6 +955,14 @@ export class WccLayoutInspector extends LitElement {
                         .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
                         .labelPosition=${LabelPosition.Top}
                         @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontFamily', ev.detail.value)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{text: {}}}
+                        .value=${appearance.textShadow ?? ''}
+                        .label=${this.t('general.text_shadow', 'Text shadow')}
+                        .helper=${this.t('general.text_shadow_help', 'CSS text-shadow value, for example 0 2px 4px rgba(0, 0, 0, 0.8)')}
+                        .labelPosition=${LabelPosition.Top}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('textShadow', ev.detail.value)}>
                 </ha-row-selector>
             </section>
             <section class="section-card">

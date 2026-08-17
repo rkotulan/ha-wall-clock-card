@@ -347,6 +347,14 @@ describe('applyGeneralSetting', () => {
         expect(result.appearance).toEqual({fontColor: '#FFF', fontFamily: 'Inter, sans-serif'});
     });
 
+    it('routes the card text shadow under appearance.*', () => {
+        const result = applyGeneralSetting(v3(), 'textShadow', '0 2px 4px rgba(0, 0, 0, 0.8)');
+        expect(result.appearance).toEqual({
+            fontColor: '#FFF',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)',
+        });
+    });
+
     it('keeps logLevel top-level', () => {
         expect(applyGeneralSetting(v3(), 'logLevel', 'debug').logLevel).toBe('debug');
     });

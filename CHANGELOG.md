@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.6.0
+
+### Configurable text shadows
+
+- Added card-wide CSS text shadows through `appearance.textShadow`, including
+  migration of the legacy top-level `textShadow` key.
+- Added per-widget `style.textShadow` overrides; `none` disables an inherited
+  card shadow for an individual widget.
+- Added Designer and legacy-editor controls, Czech and English translations,
+  YAML documentation, migration/editor tests and live Home Assistant E2E
+  coverage.
+
 ## 3.5.0
 
 ### Text sensor color rules

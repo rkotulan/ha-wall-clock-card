@@ -41,7 +41,7 @@ const CONSUMED_V2_KEYS = [
     'weatherIconSet', 'weatherIconAnimation', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
     'backgroundRotationInterval', 'objectFit',
-    'fontColor', 'fontFamily', 'language', 'timeZone', 'size', 'customSizes',
+    'fontColor', 'fontFamily', 'textShadow', 'language', 'timeZone', 'size', 'customSizes',
 ];
 
 /**
@@ -159,6 +159,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
     const appearance = definedProps({
         fontColor: config.fontColor,
         fontFamily: config.fontFamily,
+        textShadow: config.textShadow,
         language: config.language,
         timeZone: config.timeZone,
         size: config.size,

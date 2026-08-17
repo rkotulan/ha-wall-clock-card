@@ -49,6 +49,7 @@ background:
   rotationInterval: 90
 appearance:
   fontColor: '#FFFFFF'
+  textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
   language: cs
   timeZone: Europe/Prague
   size: medium
@@ -111,6 +112,7 @@ export interface WidgetConfig {
 export interface WidgetStyle {
     fontSize?: string;          // scales the widget's base font
     color?: string;             // overrides appearance.fontColor for this widget
+    textShadow?: string;        // overrides appearance.textShadow; 'none' disables it
     maxWidth?: string;
     maxHeight?: string;
     margin?: string;            // per-instance escape hatch (CSS shorthand); see §2.3
@@ -141,7 +143,7 @@ export interface SpacingConfig {
 export interface WallClockConfigV3 {
     layout: LayoutConfig;
     background?: BackgroundConfig;   // groups today's imageSource/imageConfig/opacity/...
-    appearance?: AppearanceConfig;   // groups fontColor/language/timeZone/size
+    appearance?: AppearanceConfig;   // groups fontColor/fontFamily/textShadow/language/timeZone/size
     logLevel?: string;
 }
 ```
@@ -251,7 +253,7 @@ export interface WidgetPlugin<C extends WidgetConfig = WidgetConfig> {
 export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> extends LitElement {
     @property({ type: Object }) hass?: HomeAssistant;
     @property({ type: Object }) config!: C;
-    @property({ type: Object }) appearance!: AppearanceConfig; // fontColor, size, language, timeZone
+    @property({ type: Object }) appearance!: AppearanceConfig; // fontColor, fontFamily, textShadow, size, language, timeZone
 }
 ```
 
@@ -395,7 +397,7 @@ Display modes:
 | `transportation` | `bottom-center` (mode `exclusive`) → widget `transportation` (`priority: 10`; activity stays message-driven — `ShowTransportationMessage` + auto-hide — not config-driven) |
 | `actionBar` (+ deprecated `enableActionBar`) | `bottom-center` (mode `exclusive`) → widget `action-bar` (`priority: 5`, matching the v2 BottomBarManager registration) |
 | `imageSource`, `imageConfig`, `backgroundImages`, `backgroundOpacity`, `backgroundRotationInterval`, `objectFit` | `background.*` (background is **not** a widget — it stays a card-level layer) |
-| `fontColor`, `language`, `timeZone`, `size` | `appearance.*` |
+| `fontColor`, `fontFamily`, `textShadow`, `language`, `timeZone`, `size` | `appearance.*` |
 | `logLevel` | unchanged top-level |
 
 The exclusive `bottom-center` zone with priorities 10/5 reproduces today's

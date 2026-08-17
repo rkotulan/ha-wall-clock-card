@@ -396,6 +396,7 @@ export class WallClockCard extends LitElement {
         return {
             fontColor: appearance.fontColor ?? '#FFFFFF',
             fontFamily: appearance.fontFamily,
+            textShadow: appearance.textShadow,
             language: appearance.language,
             timeZone: appearance.timeZone ?? this.hass?.config?.time_zone,
             size: appearance.size ?? Size.Medium,

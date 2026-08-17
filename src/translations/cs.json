@@ -80,7 +80,8 @@
     "title": "Obecné", "layout": "Rozložení", "appearance": "Vzhled karty",
     "language_diagnostics": "Jazyk a diagnostika",
     "font_color": "Barva písma", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
-    "font_family_help": "CSS rodina nebo seznam písem; font musí být již načtený", "language": "Jazyk", "log_level": "Úroveň logování",
+    "font_family_help": "CSS rodina nebo seznam písem; font musí být již načtený", "text_shadow": "Stín textu",
+    "text_shadow_help": "Hodnota CSS text-shadow, například 0 2px 4px rgba(0, 0, 0, 0.8)", "language": "Jazyk", "log_level": "Úroveň logování",
     "size": "Velikost", "large": "Velká", "medium": "Střední", "small": "Malá", "custom_sizes": "Vlastní velikosti",
     "clock_top_margin": "Horní okraj hodin (např. 0rem)", "spacing": "Rozestupy", "background": "Pozadí",
     "time_format": "Formát času", "date_format": "Formát data"
@@ -122,6 +123,7 @@
     "event_detail_size": "Velikost detailu události (např. 0.82rem)",
     "font_size": "Velikost písma (např. 2rem)",
     "font_family": "Vlastní rodina písma", "font_family_help": "CSS rodina nebo seznam písem; prázdné použije font karty",
+    "text_shadow": "Vlastní stín textu", "text_shadow_help": "Hodnota CSS text-shadow; prázdné použije stín karty, none jej vypne",
     "max_width": "Maximální šířka (např. 420px)",
     "max_height": "Maximální výška (např. 50vh)",
     "unsupported_width": "Maximální šířka není podporována — hodnotu odstraňte",
