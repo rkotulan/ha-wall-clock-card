@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.1
+
+### Locale-specific date punctuation
+
+- Removed the forced comma between the day and month so date punctuation and
+  ordering now follow the selected locale, including Dutch.
+
 ## 3.6.0
 
 ### Configurable text shadows

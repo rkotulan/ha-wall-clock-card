@@ -457,6 +457,25 @@ describe('ClockController', () => {
   });
 
   describe('Language and TimeZone', () => {
+    it('preserves locale-specific date punctuation', () => {
+      const dateFormat: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      };
+      const controller = new ClockController(mockHost, {
+        language: 'nl',
+        dateFormat
+      });
+
+      controller['updateDate'](mockDate, 'nl', undefined);
+
+      expect(controller.currentDate).toBe(
+        mockDate.toLocaleDateString('nl-NL', dateFormat)
+      );
+      expect(controller.currentDate).not.toContain(',');
+    });
+
     it('should format date and time according to specified language', () => {
       const controller = new ClockController(mockHost, {
         language: 'de',

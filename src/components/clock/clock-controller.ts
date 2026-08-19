@@ -177,19 +177,12 @@ export class ClockController extends BaseController {
      * Update the date based on current configuration
      */
     private updateDate(now: Date, language: string, timeZone?: string): void {
-        // Format date with configurable format
-        let formattedDate = formatDate(now, language, this.config.dateFormat || {
+        // Let Intl preserve the punctuation and ordering of the selected locale.
+        this._currentDate = formatDate(now, language, this.config.dateFormat || {
             weekday: 'long',
             month: 'long',
             day: 'numeric'
         }, timeZone);
-
-        // Add comma after the day if it's not already there
-        // This regex looks for a number (the day) followed by a space and then a letter (start of month)
-        // and replaces it with the day, a comma, a space, and then the month
-        formattedDate = formattedDate.replace(/(\d+)(\s+)([A-Za-z])/, '$1,$2$3');
-
-        this._currentDate = formattedDate;
     }
 
     // Getter methods for time
