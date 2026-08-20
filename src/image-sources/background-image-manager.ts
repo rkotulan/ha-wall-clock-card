@@ -10,7 +10,7 @@ import { createLogger } from '../utils/logger';
 export class BackgroundImageManager {
     private imageSource: ImageSource | null = null;
     private sourceConfig: ImageSourceConfig = {};
-    private imageSourceId: string = 'picsum';
+    private imageSourceId: string = 'none';
     private logger = createLogger('background-image-manager');
     private hass?: HomeAssistant;
 
@@ -29,23 +29,30 @@ export class BackgroundImageManager {
      * @returns True if initialization was successful, false otherwise
      */
     public initialize(config: ImageSourceConfig = {}): boolean {
-        // Default to 'picsum' if not provided
-        const imageSourceId = config.imageSourceId || 'picsum';
+        // An absent source is disabled. Callers that want Picsum must select it
+        // explicitly; otherwise an incompletely initialized card can briefly
+        // fetch a random image before its real configuration arrives.
+        const imageSourceId = config.imageSourceId || 'none';
         this.logger.debug(`Initializing with image source ID: ${imageSourceId}`);
 
-        // Skip initialization if imageSource is 'none'
+        // Disabling a previously active source must also discard it. Keeping
+        // the old provider here allowed later fetches to keep using Picsum.
         if (imageSourceId === 'none') {
-            this.logger.debug('Image source is set to none, skipping initialization');
+            this.imageSource = null;
+            this.imageSourceId = 'none';
+            this.sourceConfig = {};
+            this.logger.debug('Image source is set to none, clearing initialization');
             return false;
         }
 
-        this.imageSourceId = imageSourceId || 'picsum';
+        this.imageSourceId = imageSourceId;
 
         // Get the image source using the factory function
         this.imageSource = getImageSource(this.imageSourceId);
 
         if (!this.imageSource) {
             this.logger.error(`Image source '${this.imageSourceId}' not found`);
+            this.sourceConfig = {};
             return false;
         }
 

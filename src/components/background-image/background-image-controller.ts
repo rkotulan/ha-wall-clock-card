@@ -32,6 +32,9 @@ export class BackgroundImageController extends BaseController {
     private _currentImageUrl = '';
     private _previousImageUrl = '';
     private _fetchingImageUrls = false;
+    private managerInitialized = false;
+    private hasReceivedWeather = false;
+    private imageRequestGeneration = 0;
 
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
         super(host, 'background-image-controller');
@@ -45,11 +48,13 @@ export class BackgroundImageController extends BaseController {
 
     private onWeather = (msg: WeatherMessage) => {
         this.logger.info('New message for weather:', msg.weather);
+        this.hasReceivedWeather = true;
         this.updateWeather(msg.weather);
     };
 
     private onFetchNextImage = (_msg: FetchNextImageMessage) => {
         this.logger.info('Fetch next image requested');
+        if (!this.isInitialized) return;
         this.setupImageRotation();
         this.fetchNewImageAsync(this.currentWeather);
     };
@@ -74,6 +79,8 @@ export class BackgroundImageController extends BaseController {
             clearInterval(this.imageRotationTimer);
             this.imageRotationTimer = undefined;
         }
+        this.managerInitialized = false;
+        this.imageRequestGeneration++;
     }
 
     /**
@@ -92,9 +99,10 @@ export class BackgroundImageController extends BaseController {
 
         // If imageSourceConfig changed, reinitialize
         if (needsReinitialize) {
+            this.imageRequestGeneration++;
             this.initializeManagerAsync().then(
-                () => {
-                    if (needFetchNewImage) {
+                (initialized) => {
+                    if (initialized && (needFetchNewImage || this.hasReceivedWeather)) {
                         this.fetchNewImageAsync(this.currentWeather).catch(error =>
                             this.logger.error('Error fetching image after reinitialization:', error)
                         );
@@ -112,24 +120,27 @@ export class BackgroundImageController extends BaseController {
     /**
      * Initialize the background image manager
      */
-    private async initializeManagerAsync(): Promise<void> {
-        if (this._fetchingImageUrls) return;
+    private async initializeManagerAsync(): Promise<boolean> {
+        if (this._fetchingImageUrls) return false;
         this._fetchingImageUrls = true;
 
         try {
-            // Get the configuration for the BackgroundImageManager
-            // Extract only the ImageSourceConfig properties from this.config.imageSourceConfig
-            const { backgroundRotationInterval, ...imageSourceConfigProps } = this.config.imageSourceConfig || {};
-            const imageSourceConfig: ImageSourceConfig = imageSourceConfigProps.imageSourceId ? imageSourceConfigProps : {
-                imageSourceId: 'picsum'
-            };
+            const imageSourceConfig = this.config.imageSourceConfig;
 
-            this.logger.debug(`Initializing BackgroundImageManager with imageSourceId: ${imageSourceConfig.imageSourceId || 'default'}`);
+            // A missing configuration is a transient state while Lit propagates
+            // properties to a newly connected card. It must never imply Picsum.
+            if (!imageSourceConfig || imageSourceConfig.imageSourceId === 'none') {
+                this.disableBackground();
+                return false;
+            }
+
+            this.logger.debug(`Initializing BackgroundImageManager with imageSourceId: ${imageSourceConfig.imageSourceId}`);
 
             // Initialize the BackgroundImageManager
             const initialized = this.backgroundImageManager.initialize(
                 imageSourceConfig
             );
+            this.managerInitialized = initialized;
 
             if (initialized) {
                 this.backgroundImageManager.setHass(this.hass);
@@ -137,14 +148,34 @@ export class BackgroundImageController extends BaseController {
 
             if (!initialized) {
                 this.logger.warn('Failed to initialize BackgroundImageManager');
-                return;
+                this.disableBackground();
+                return false;
             }
 
             this.setupImageRotation();
+            return true;
         } catch (error) {
+            this.managerInitialized = false;
             this.logger.error('Error fetching image URLs:', error);
+            return false;
         } finally {
             this._fetchingImageUrls = false;
+        }
+    }
+
+    /** Fully remove an active or partially initialized background source. */
+    private disableBackground(): void {
+        if (this.imageRotationTimer) {
+            clearInterval(this.imageRotationTimer);
+            this.imageRotationTimer = undefined;
+        }
+        this.managerInitialized = false;
+        this.backgroundImageManager.initialize({imageSourceId: 'none'});
+
+        if (this._currentImageUrl || this._previousImageUrl) {
+            this._currentImageUrl = '';
+            this._previousImageUrl = '';
+            this.host.requestUpdate();
         }
     }
 
@@ -179,6 +210,9 @@ export class BackgroundImageController extends BaseController {
      * Fetch a new image from the image source
      */
     private async fetchNewImageAsync(weather: Weather): Promise<void> {
+        if (!this.managerInitialized) return;
+        const requestGeneration = this.imageRequestGeneration;
+
         try {
             // Get current weather and time of day
             let currentWeather: Weather = weather; // Use provided weather
@@ -190,10 +224,17 @@ export class BackgroundImageController extends BaseController {
                 currentTimeOfDay
             );
 
+            if (requestGeneration !== this.imageRequestGeneration || !this.managerInitialized) {
+                return;
+            }
+
             if (newImageUrl) {
                 this.logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
                 const img = new Image();
                 img.onload = async () => {
+                    if (requestGeneration !== this.imageRequestGeneration || !this.managerInitialized) {
+                        return;
+                    }
                     this.logger.debug(`New image loaded successfully: ${newImageUrl}`);
 
                     // Save the current image URL as the previous one before updating
@@ -271,18 +312,25 @@ export class BackgroundImageController extends BaseController {
      * Update weather condition
      */
     public updateWeather(weather: Weather): void {
+        const weatherChanged = this.currentWeather !== weather;
+        this.currentWeather = weather;
+        const imageSourceId = this.config.imageSourceConfig?.imageSourceId;
+        if (!imageSourceId || imageSourceId === 'none') {
+            return;
+        }
+
         if(!this.isInitialized) {
             this.logger.info('BackgroundImageController is not initialized yet, run init before updating weather');
 
-            this.initializeManagerAsync().then(() => {
-                this.currentWeather = weather;
-                this.fetchNewImageAsync(weather).catch(error =>
-                    this.logger.error('Error fetching image after initialization:', error)
-                );
+            this.initializeManagerAsync().then((initialized) => {
+                if (initialized) {
+                    this.fetchNewImageAsync(weather).catch(error =>
+                        this.logger.error('Error fetching image after initialization:', error)
+                    );
+                }
             });
-        } else if (this.currentWeather !== weather) {
+        } else if (weatherChanged) {
             this.logger.info(`Updating weather condition to: ${weather}`);
-            this.currentWeather = weather;
 
             this.fetchNewImageAsync(weather).catch(error =>
                 this.logger.error('Error fetching image after weather update:', error)
@@ -291,7 +339,7 @@ export class BackgroundImageController extends BaseController {
     }
 
     get isInitialized(): boolean {
-        return this._currentImageUrl !== '' && this.imageRotationTimer !== undefined;
+        return this.managerInitialized;
     }
 
     /**

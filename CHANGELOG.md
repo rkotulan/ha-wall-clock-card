@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.6.2
+
+### Disabled background initialization
+
+- Prevented newly added cards from briefly loading a random Picsum image when
+  the configured background source is `none`.
+- Clear the active image, rotation timer and stale in-flight requests whenever
+  background images are disabled.
+
 ## 3.6.1
 
 ### Locale-specific date punctuation
