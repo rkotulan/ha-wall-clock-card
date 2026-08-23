@@ -89,6 +89,11 @@ Existing 2.x YAML is supported and is migrated in memory. Once the Designer save
 change, the stored configuration uses the 3.0 `appearance`, `background` and
 `layout.zones` structure.
 
+`appearance.fontColor` may also be a reactive Home Assistant Jinja template. The
+card subscribes to referenced entity changes without requiring card-mod. A public
+`--wall-clock-font-color` CSS custom property is available for theme/card-mod
+overrides. See [Dynamic font color](docs/configuration.md#dynamic-font-color).
+
 ## Minimal 3.0 example
 
 ```yaml

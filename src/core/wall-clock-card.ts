@@ -36,6 +36,10 @@ import {
     shouldDeferLayoutAutosave,
 } from './layout-autosave-policy';
 import {clearEditorSessionState} from '../editors/editor-session-state';
+import {
+    FontColorController,
+    withFontColorCssVariable,
+} from './font-color-controller';
 // Eagerly registers all built-in widgets (side effect)
 import '../widgets';
 
@@ -114,6 +118,7 @@ export class WallClockCard extends LitElement {
     private backgroundImageComponent: BackgroundImageComponent =
         document.createElement('ha-background-image') as BackgroundImageComponent;
     private layoutElement: WccLayout = document.createElement('wcc-layout') as WccLayout;
+    private fontColorController = new FontColorController(this, () => this.syncLayoutElement());
 
     private t(key: string, fallback: string): string {
         return localize(key, this.hass, fallback);
@@ -382,6 +387,7 @@ export class WallClockCard extends LitElement {
             layout: deduplicateWidgetTypes(migrated.layout, singletonTypes),
         };
 
+        this.syncFontColorController();
         this.initBackgroundImageComponent();
         this.syncLayoutElement();
 
@@ -394,13 +400,21 @@ export class WallClockCard extends LitElement {
     private computeAppearance(): AppearanceConfig {
         const appearance = this.configV3.appearance ?? {};
         return {
-            fontColor: appearance.fontColor ?? '#FFFFFF',
+            fontColor: this.fontColorController.color,
             fontFamily: appearance.fontFamily,
             textShadow: appearance.textShadow,
             language: appearance.language,
             timeZone: appearance.timeZone ?? this.hass?.config?.time_zone,
             size: appearance.size ?? Size.Medium,
         };
+    }
+
+    private syncFontColorController(): void {
+        this.fontColorController.update(
+            this.configV3.appearance?.fontColor,
+            this.hass,
+            this.config,
+        );
     }
 
     private syncLayoutElement(): void {
@@ -1115,9 +1129,12 @@ export class WallClockCard extends LitElement {
             }
         }
 
-        if (changedProperties.has('hass') && this.hass) {
-            this.backgroundImageComponent.hass = this.hass;
+        if (changedProperties.has('hass')) {
+            if (this.hass) {
+                this.backgroundImageComponent.hass = this.hass;
+            }
             // Re-sync appearance too: timeZone falls back to hass.config.time_zone
+            this.syncFontColorController();
             this.syncLayoutElement();
         }
 
@@ -1518,7 +1535,7 @@ export class WallClockCard extends LitElement {
             error: {icon: 'mdi:alert-circle-outline', label: this.layoutSaveError ?? this.t('designer.save_failed', 'Save failed — click to retry')},
         }[this.layoutSaveStatus];
         return html`
-            <ha-card style="color: ${this.computeAppearance().fontColor};">
+            <ha-card style="color: ${withFontColorCssVariable(this.computeAppearance().fontColor ?? '#FFFFFF')};">
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
                 ${inlineEditing && this.designerRequiresExplicitOpen && !this.designerOpen ? html`

@@ -79,7 +79,7 @@
   "general": {
     "title": "Obecné", "layout": "Rozložení", "appearance": "Vzhled karty",
     "language_diagnostics": "Jazyk a diagnostika",
-    "font_color": "Barva písma", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
+    "font_color": "Barva písma", "font_color_template": "Dynamická šablona je nastavena v editoru YAML", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
     "font_family_help": "CSS rodina nebo seznam písem; font musí být již načtený", "text_shadow": "Stín textu",
     "text_shadow_help": "Hodnota CSS text-shadow, například 0 2px 4px rgba(0, 0, 0, 0.8)", "language": "Jazyk", "log_level": "Úroveň logování",
     "size": "Velikost", "large": "Velká", "medium": "Střední", "small": "Malá", "custom_sizes": "Vlastní velikosti",

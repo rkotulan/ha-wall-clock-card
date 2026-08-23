@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.6.3
+
+### Dynamic font colors
+
+- Added reactive Home Assistant Jinja templates to `appearance.fontColor`; the
+  backend tracks referenced entities and pushes updated colors without requiring
+  card-mod.
+- Validate rendered template results as CSS colors, fall back to white until the
+  first valid result and retain the last valid color after transient errors.
+- Added the inherited `--wall-clock-font-color` CSS custom property for themes and
+  card-mod, with the configured or rendered color as its fallback.
+- Added Designer feedback, YAML documentation, unit coverage and live browser E2E
+  coverage for static, template, invalid-result and CSS-variable scenarios.
+
 ## 3.6.2
 
 ### Disabled background initialization

@@ -2,6 +2,7 @@ import {LitElement, PropertyValues} from 'lit';
 import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
+import {withFontColorCssVariable} from '../core/font-color-controller';
 import {
     resolveWidgetRowGrow,
     requiresWidgetIntrinsicWidth,
@@ -45,7 +46,8 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
 
     /** Effective font color: per-widget style override wins over the card default. */
     protected get fontColor(): string {
-        return this.config?.style?.color ?? this.appearance?.fontColor ?? '#FFFFFF';
+        const fallback = this.config?.style?.color ?? this.appearance?.fontColor ?? '#FFFFFF';
+        return withFontColorCssVariable(fallback);
     }
 
     updated(changedProperties: PropertyValues): void {

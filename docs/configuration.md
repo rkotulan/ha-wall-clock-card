@@ -105,7 +105,7 @@ layout:
 
 | Key | Default | Description |
 |---|---|---|
-| `appearance.fontColor` | `#FFFFFF` | Card-wide text color |
+| `appearance.fontColor` | `#FFFFFF` | Static CSS color or a reactive Home Assistant Jinja template |
 | `appearance.fontFamily` | Home Assistant font | CSS font family/stack; the font must already be loaded |
 | `appearance.textShadow` | `none` | Card-wide CSS `text-shadow`; use `none` to disable it |
 | `appearance.language` | HA language | UI/date/weather language where supported |
@@ -117,6 +117,54 @@ Per-widget appearance can override the card defaults. Widget-specific size contr
 (for example `clockSize`, `dateSize`, `labelSize`, `valueSize` or `iconSize`) take
 precedence over `appearance.size`. Set `style.textShadow` on a widget to override the
 card shadow; use `none` to disable the shadow for that widget.
+
+## Dynamic font color
+
+`appearance.fontColor` accepts either a normal CSS color or a Home Assistant Jinja
+template. Template configuration is available in the YAML code editor; the Designer
+shows when a template is active but keeps its color palette for switching back to a
+static value.
+
+The template is rendered by Home Assistant and automatically updates when any entity
+referenced by it changes. The result must be a valid CSS color. Until the first valid
+result arrives the card uses `#FFFFFF`; a later invalid result or transient template
+error keeps the last valid color.
+
+```yaml
+type: custom:wall-clock-card
+appearance:
+  fontColor: >
+    {% set light = 'light.ensuite' %}
+    {% if is_state(light, 'on') %}
+      {% set rgb = state_attr(light, 'rgb_color') or [255, 255, 255] %}
+      {% set brightness = (state_attr(light, 'brightness') | int(255)) / 255 %}
+      rgb(
+        {{ (rgb[0] * brightness) | round }},
+        {{ (rgb[1] * brightness) | round }},
+        {{ (rgb[2] * brightness) | round }}
+      )
+    {% else %}
+      #202020
+    {% endif %}
+```
+
+The inherited `--wall-clock-font-color` CSS custom property can override the
+configured or rendered color. This is useful for themes and optionally for card-mod:
+
+```yaml
+type: custom:wall-clock-card
+appearance:
+  fontColor: '#FFFFFF'  # fallback when the CSS variable is not set
+card_mod:
+  style: |
+    ha-card {
+      --wall-clock-font-color: rgb(255, 120, 160);
+    }
+```
+
+A widget's `style.color` remains the fallback for that widget. When
+`--wall-clock-font-color` is defined, the CSS variable intentionally has the highest
+priority across the card.
 
 ## Loading custom fonts
 

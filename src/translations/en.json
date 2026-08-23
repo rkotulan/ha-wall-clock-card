@@ -116,7 +116,7 @@
   "general": {
     "title": "General", "layout": "Layout", "appearance": "Card appearance",
     "language_diagnostics": "Language and diagnostics",
-    "font_color": "Font color", "custom_color": "Custom color", "font_family": "Font family",
+    "font_color": "Font color", "font_color_template": "Dynamic template configured in the YAML code editor", "custom_color": "Custom color", "font_family": "Font family",
     "font_family_help": "CSS font family or stack; the font must already be loaded", "text_shadow": "Text shadow",
     "text_shadow_help": "CSS text-shadow value, for example 0 2px 4px rgba(0, 0, 0, 0.8)", "language": "Language", "log_level": "Log level",
     "size": "Size", "large": "Large", "medium": "Medium", "small": "Small", "custom_sizes": "Custom sizes",

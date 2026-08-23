@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wall Clock Card font color E2E</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #111;
+            color: #fff;
+            font-family: sans-serif;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+        wall-clock-card {
+            display: block;
+            min-height: 180px;
+            border: 1px solid #555;
+        }
+        .controls, .results {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        output {
+            display: block;
+            min-width: 260px;
+            padding: 8px;
+            background: #222;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+<h1>Font color E2E</h1>
+<div class="cards">
+    <wall-clock-card id="static-card"></wall-clock-card>
+    <wall-clock-card id="dynamic-card"></wall-clock-card>
+    <wall-clock-card id="invalid-card"></wall-clock-card>
+</div>
+<div class="controls">
+    <button id="push-valid" type="button">Push valid template color</button>
+    <button id="push-invalid" type="button">Push invalid template color</button>
+    <button id="push-error" type="button">Push template error</button>
+    <button id="apply-css-variable" type="button">Apply card-mod CSS variable</button>
+    <button id="clear-css-variable" type="button">Clear card-mod CSS variable</button>
+</div>
+<div class="results">
+    <output id="static-result" data-testid="static-result"></output>
+    <output id="dynamic-result" data-testid="dynamic-result"></output>
+    <output id="invalid-result" data-testid="invalid-result"></output>
+    <output id="subscription-result" data-testid="subscription-result"></output>
+</div>
+
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+
+    const callbacks = new Map();
+    const subscriptions = [];
+
+    const hass = {
+        config: {time_zone: 'Europe/Prague'},
+        connection: {
+            subscribeMessage(callback, message) {
+                subscriptions.push(message);
+                callbacks.set(message.template, callback);
+                queueMicrotask(() => {
+                    if (message.template.includes('invalid_color')) {
+                        callback({result: 'not-a-css-color; display: none', listeners: {entities: ['sensor.invalid_color']}});
+                    } else {
+                        callback({result: 'rgb(12, 34, 56)', listeners: {entities: ['sensor.valid_color']}});
+                    }
+                });
+                return Promise.resolve(() => callbacks.delete(message.template));
+            },
+        },
+        language: 'en',
+        locale: {language: 'en', time_format: 'language', date_format: 'language'},
+        localize: key => key,
+        states: {},
+        themes: {themes: {}},
+        user: {name: 'E2E user'},
+    };
+
+    const layout = {
+        spacing: 'compact',
+        zones: {
+            center: {
+                widgets: [
+                    {type: 'clock', id: 'clock', timeFormat: {hour: '2-digit', minute: '2-digit'}},
+                    {type: 'date', id: 'date', dateFormat: {weekday: 'long'}},
+                ],
+            },
+        },
+    };
+
+    function configure(id, fontColor) {
+        const card = document.getElementById(id);
+        card.setConfig({
+            type: 'custom:wall-clock-card',
+            appearance: {fontColor, size: 'small'},
+            background: {source: 'none'},
+            layout,
+        });
+        card.hass = hass;
+        return card;
+    }
+
+    const staticCard = configure('static-card', '#123456');
+    const dynamicTemplate = "{{ states('sensor.valid_color') }}";
+    const invalidTemplate = "{{ states('sensor.invalid_color') }}";
+    const dynamicCard = configure('dynamic-card', dynamicTemplate);
+    const invalidCard = configure('invalid-card', invalidTemplate);
+
+    function deepQuery(root, selector) {
+        const queue = [root.shadowRoot ?? root];
+        while (queue.length) {
+            const current = queue.shift();
+            const match = current.querySelector?.(selector);
+            if (match) return match;
+            for (const element of current.querySelectorAll?.('*') ?? []) {
+                if (element.shadowRoot) queue.push(element.shadowRoot);
+            }
+        }
+        return null;
+    }
+
+    function cardState(card) {
+        const text = deepQuery(card, '.hours-minutes');
+        const haCard = card.shadowRoot?.querySelector('ha-card');
+        return {
+            computed: text ? getComputedStyle(text).color : null,
+            inline: text?.getAttribute('style') ?? null,
+            cssVariable: haCard ? getComputedStyle(haCard).getPropertyValue('--wall-clock-font-color').trim() : null,
+        };
+    }
+
+    function refreshResults() {
+        document.getElementById('static-result').value = JSON.stringify(cardState(staticCard));
+        document.getElementById('dynamic-result').value = JSON.stringify(cardState(dynamicCard));
+        document.getElementById('invalid-result').value = JSON.stringify(cardState(invalidCard));
+        document.getElementById('subscription-result').value = JSON.stringify(subscriptions);
+    }
+
+    function afterRender() {
+        requestAnimationFrame(() => requestAnimationFrame(refreshResults));
+    }
+
+    document.getElementById('push-valid').addEventListener('click', () => {
+        callbacks.get(dynamicTemplate)?.({result: 'rgb(78, 90, 123)', listeners: {entities: ['sensor.valid_color']}});
+        afterRender();
+    });
+    document.getElementById('push-invalid').addEventListener('click', () => {
+        callbacks.get(dynamicTemplate)?.({result: 'red; display: none', listeners: {entities: ['sensor.valid_color']}});
+        afterRender();
+    });
+    document.getElementById('push-error').addEventListener('click', () => {
+        callbacks.get(dynamicTemplate)?.({error: 'Temporary entity error', level: 'ERROR'});
+        afterRender();
+    });
+    document.getElementById('apply-css-variable').addEventListener('click', () => {
+        staticCard.shadowRoot.querySelector('ha-card')
+            .style.setProperty('--wall-clock-font-color', 'rgb(210, 45, 67)');
+        afterRender();
+    });
+    document.getElementById('clear-css-variable').addEventListener('click', () => {
+        staticCard.shadowRoot.querySelector('ha-card').style.removeProperty('--wall-clock-font-color');
+        afterRender();
+    });
+
+    afterRender();
+</script>
+</body>
+</html>

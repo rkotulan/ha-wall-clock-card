@@ -11,6 +11,7 @@ import {WidgetSelection, ZONE_LABELS} from './zone-overlay';
 import {getLanguageOptions, localize, normalizeLanguage} from '../utils';
 import {LabelPosition} from '../components/ha-selector/types';
 import {resolveLayoutFormat} from '../core/layout-format';
+import {isHomeAssistantTemplate} from '../core/font-color-controller';
 import {widgetHasEditorSection, WidgetSettingsTab} from './widget-settings-sections';
 import './layout-editor';
 import '../components/background-image/background-editor';
@@ -220,6 +221,13 @@ export class WccLayoutInspector extends LitElement {
                 margin-bottom: 7px;
                 color: var(--secondary-text-color, #a8adbd);
                 font-size: 0.76rem;
+            }
+
+            .template-note {
+                margin: -1px 0 8px;
+                color: var(--primary-color, #4f8cff);
+                font-size: 0.72rem;
+                line-height: 1.35;
             }
 
             .color-palette {
@@ -896,12 +904,18 @@ export class WccLayoutInspector extends LitElement {
 
     private renderFontColor(): TemplateResult {
         const color = this.config?.appearance?.fontColor ?? '#FFFFFF';
+        const template = isHomeAssistantTemplate(color);
         const normalized = color.toLowerCase();
         const paletteSelected = this.fontColors.some(option => option.toLowerCase() === normalized);
         const customColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ffffff';
         return html`
             <div class="font-color-field">
                 <span class="field-label">${this.t('general.font_color', 'Font color')}</span>
+                ${template ? html`
+                    <div class="template-note">
+                        ${this.t('general.font_color_template', 'Dynamic template configured in the YAML code editor')}
+                    </div>
+                ` : ''}
                 <div class="color-palette">
                     ${this.fontColors.map(option => html`
                         <button class="color-choice ${option.toLowerCase() === normalized ? 'selected' : ''}"
