@@ -163,6 +163,8 @@
       "hour_format": "Formát hodin", "hour_display": "Zobrazení hodin", "minute_display": "Zobrazení minut",
       "second_display": "Zobrazení sekund", "hour_12": "12hodinový", "hour_24": "24hodinový",
       "show_am_pm": "Zobrazit AM/PM", "show_am_pm_help": "Ponechá 12hodinový formát a pouze skryje nebo zobrazí označení období",
+      "am_pm_display": "Zobrazení AM/PM", "am_pm_display_help": "Skryje označení období nebo zobrazí a/p či AM/PM",
+      "am_pm_hidden": "Skryté", "am_pm_narrow": "1 znak (a/p)", "am_pm_full": "2 znaky (AM/PM)",
       "numeric": "Číslo", "two_digit": "Dvě číslice", "hidden": "Skryté",
       "custom_date": "Vlastní formát data",
       "custom_date_help": "Například yyyy-MM-dd nebo EEEE, MMMM d, yyyy. Vyplněná hodnota přepíše nastavení níže.",

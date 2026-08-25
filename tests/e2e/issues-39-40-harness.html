@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issues #39 and #40 E2E</title>
+    <style>
+        :root {
+            --primary-color: rgb(3, 169, 244);
+            --primary-text-color: #fff;
+            --secondary-text-color: #aaa;
+            --secondary-background-color: #181a20;
+            --divider-color: rgba(255, 255, 255, 0.16);
+        }
+        body {
+            margin: 0;
+            padding: 24px;
+            background: rgb(17, 17, 17);
+            color: #fff;
+            font-family: sans-serif;
+        }
+        .fixture {
+            max-width: 640px;
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 1px solid #555;
+        }
+        #clock-fixtures {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        wall-clock-card {
+            display: block;
+            min-height: 120px;
+        }
+        #e2e-result {
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+<h1>Issues #39 and #40 E2E</h1>
+<section id="background-fixture" class="fixture"></section>
+<section id="format-fixture" class="fixture"></section>
+<section id="clock-fixtures" class="fixture"></section>
+<pre id="e2e-result" data-status="running">Running…</pre>
+
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+
+    const resultElement = document.getElementById('e2e-result');
+    const assertions = [];
+
+    const hass = {
+        config: {time_zone: 'Europe/Prague'},
+        connection: {
+            subscribeMessage() {
+                return Promise.resolve(() => {});
+            },
+        },
+        language: 'en',
+        locale: {language: 'en', time_format: '12', date_format: 'language'},
+        localize: key => key,
+        states: {},
+        themes: {themes: {}},
+        user: {name: 'E2E user'},
+    };
+
+    function assert(condition, message) {
+        if (!condition) throw new Error(message);
+    }
+
+    async function check(name, callback) {
+        try {
+            await callback();
+            assertions.push({name, status: 'passed'});
+        } catch (error) {
+            assertions.push({name, status: 'failed', error: error.message});
+            throw error;
+        }
+    }
+
+    function nextFrame() {
+        return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
+    async function waitFor(callback, message, timeout = 4000) {
+        const started = performance.now();
+        while (performance.now() - started < timeout) {
+            const value = callback();
+            if (value) return value;
+            await nextFrame();
+        }
+        throw new Error(message);
+    }
+
+    function deepQuery(root, selector) {
+        const queue = [root.shadowRoot ?? root];
+        while (queue.length) {
+            const current = queue.shift();
+            const match = current.querySelector?.(selector);
+            if (match) return match;
+            for (const element of current.querySelectorAll?.('*') ?? []) {
+                if (element.shadowRoot) queue.push(element.shadowRoot);
+            }
+        }
+        return null;
+    }
+
+    function clockConfig(timeFormat) {
+        return {
+            type: 'custom:wall-clock-card',
+            appearance: {fontColor: '#fff', size: 'small'},
+            background: {source: 'none'},
+            layout: {
+                spacing: 'compact',
+                zones: {
+                    center: {
+                        widgets: [{type: 'clock', id: `clock-${Math.random()}`, timeFormat}],
+                    },
+                },
+            },
+        };
+    }
+
+    async function renderClock(timeFormat) {
+        const card = document.createElement('wall-clock-card');
+        card.setConfig(clockConfig(timeFormat));
+        card.hass = hass;
+        document.getElementById('clock-fixtures').append(card);
+        await waitFor(() => deepQuery(card, '.hours-minutes'), 'Clock did not render');
+        return card;
+    }
+
+    try {
+        await Promise.all([
+            customElements.whenDefined('background-editor'),
+            customElements.whenDefined('time-format-editor'),
+            customElements.whenDefined('wall-clock-card'),
+        ]);
+
+        await check('issue #40: add-image button is visible and adds a local image', async () => {
+            const editor = document.createElement('background-editor');
+            editor.hass = hass;
+            editor.config = {imageSource: 'local', backgroundImages: []};
+            document.getElementById('background-fixture').append(editor);
+            await editor.updateComplete;
+
+            const button = editor.shadowRoot.querySelector('.add-image');
+            assert(button, 'Add background image button is missing');
+            const style = getComputedStyle(button);
+            assert(style.color === 'rgb(3, 169, 244)', `Unexpected button color: ${style.color}`);
+            assert(style.display === 'flex', `Add button is not visibly laid out: ${style.display}`);
+
+            let changedConfig;
+            editor.addEventListener('config-changed', event => {
+                changedConfig = event.detail.config;
+                editor.config = changedConfig;
+            });
+            button.click();
+            await editor.updateComplete;
+            await nextFrame();
+
+            assert(changedConfig?.backgroundImages?.length === 1, 'Click did not add a background image');
+            assert(editor.shadowRoot.querySelectorAll('.image-card').length === 1, 'Added image editor is not visible');
+        });
+
+        await check('issue #39: editor exposes and persists all AM/PM display modes', async () => {
+            const editor = document.createElement('time-format-editor');
+            editor.hass = hass;
+            editor.config = {timeFormat: {hour12: true, showAmPm: false}};
+            document.getElementById('format-fixture').append(editor);
+            await editor.updateComplete;
+
+            const rows = [...editor.shadowRoot.querySelectorAll('ha-row-selector')];
+            const row = rows.find(candidate => candidate.propertyName === 'timeFormat.amPmDisplay');
+            assert(row, 'AM/PM display dropdown is missing');
+            assert(row.value === 'hidden', `Legacy showAmPm=false did not map to hidden: ${row.value}`);
+            assert(
+                JSON.stringify(row.selector.select.options.map(option => option.value)) === JSON.stringify(['hidden', 'narrow', 'full']),
+                'AM/PM dropdown options are incomplete',
+            );
+
+            let changedConfig;
+            editor.addEventListener('config-changed', event => changedConfig = event.detail.config);
+            row.dispatchEvent(new CustomEvent('value-changed', {
+                detail: {propertyName: 'timeFormat.amPmDisplay', value: 'narrow'},
+                bubbles: true,
+                composed: true,
+            }));
+            assert(changedConfig?.timeFormat?.amPmDisplay === 'narrow', 'Dropdown did not persist narrow mode');
+        });
+
+        await check('issue #39: clock renders hidden, a/p, and AM/PM modes', async () => {
+            const common = {hour: '2-digit', minute: '2-digit', second: 'hidden', hour12: true};
+            const hiddenCard = await renderClock({...common, amPmDisplay: 'hidden'});
+            const narrowCard = await renderClock({...common, amPmDisplay: 'narrow'});
+            const fullCard = await renderClock({...common, amPmDisplay: 'full'});
+            const legacyCard = await renderClock({...common, showAmPm: false});
+            await nextFrame();
+
+            assert(!deepQuery(hiddenCard, '.ampm'), 'Hidden mode rendered an AM/PM marker');
+            assert(/^[ap]$/.test(deepQuery(narrowCard, '.ampm')?.textContent?.trim() ?? ''), 'Narrow mode did not render a or p');
+            assert(/^(AM|PM)$/.test(deepQuery(fullCard, '.ampm')?.textContent?.trim() ?? ''), 'Full mode did not render AM or PM');
+            assert(!deepQuery(legacyCard, '.ampm'), 'Legacy showAmPm=false no longer hides the marker');
+        });
+
+        resultElement.dataset.status = 'passed';
+        resultElement.textContent = JSON.stringify({status: 'passed', assertions}, null, 2);
+    } catch (error) {
+        resultElement.dataset.status = 'failed';
+        resultElement.textContent = JSON.stringify({status: 'failed', error: error.message, assertions}, null, 2);
+    }
+</script>
+</body>
+</html>

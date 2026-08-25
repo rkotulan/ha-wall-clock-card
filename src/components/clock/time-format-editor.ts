@@ -16,6 +16,11 @@ export class TimeFormatEditor extends BaseEditorSection {
                 {value: 'true', label: this.t('editor.format.hour_12', '12-hour')},
                 {value: 'false', label: this.t('editor.format.hour_24', '24-hour')},
             ],
+            amPmDisplay: [
+                {value: 'hidden', label: this.t('editor.format.am_pm_hidden', 'Hidden')},
+                {value: 'narrow', label: this.t('editor.format.am_pm_narrow', '1-digit (a/p)')},
+                {value: 'full', label: this.t('editor.format.am_pm_full', '2-digit (AM/PM)')},
+            ],
             hour: [{value: 'numeric', label: numeric}, {value: '2-digit', label: twoDigit}],
             minute: [{value: 'numeric', label: numeric}, {value: '2-digit', label: twoDigit}],
             second: [
@@ -60,11 +65,17 @@ export class TimeFormatEditor extends BaseEditorSection {
                 ${this.config.timeFormat?.hour12 ? html`
                     <ha-row-selector
                             .hass=${this.hass}
-                            .selector=${{boolean: {}}}
-                            .value=${this.config.timeFormat?.showAmPm !== false}
-                            .label=${this.t('editor.format.show_am_pm', 'Show AM/PM')}
-                            .helper=${this.t('editor.format.show_am_pm_help', 'Keep 12-hour time while hiding or showing the period')}
-                            propertyName="timeFormat.showAmPm"
+                            .selector=${{
+                                select: {
+                                    options: options.amPmDisplay,
+                                    mode: 'dropdown'
+                                }
+                            }}
+                            .value=${this.config.timeFormat?.amPmDisplay
+                                ?? (this.config.timeFormat?.showAmPm === false ? 'hidden' : 'full')}
+                            .label=${this.t('editor.format.am_pm_display', 'AM/PM display')}
+                            .helper=${this.t('editor.format.am_pm_display_help', 'Hide the period, show a/p, or show AM/PM')}
+                            propertyName="timeFormat.amPmDisplay"
                             @value-changed=${this._handleFormValueChanged}
                     ></ha-row-selector>
                 ` : ''}

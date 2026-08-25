@@ -1,6 +1,6 @@
 {
   "name": "wall-clock-card",
-  "version": "3.6.3",
+  "version": "3.6.4",
   "description": "A customizable Home Assistant wall dashboard with zone-based clock, sensor, weather, calendar, transport, and action widgets",
   "main": "dist/wall-clock-card.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "update-card-tools": "npm uninstall card-tools && npm install thomasloven/lovelace-card-tools",
     "type-check": "tsc --noEmit",
     "test": "jest",
+    "test:e2e": "npm run build && node scripts/run-e2e.js",
     "analyze": "webpack --analyze",
     "deploy": "node scripts/deploy.js",
     "bump": "node scripts/bump-resource.js"

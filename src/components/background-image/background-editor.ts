@@ -247,6 +247,33 @@ export class BackgroundEditor extends BaseEditorSection {
                 width: 100%;
                 padding: 3px 0;
             }
+
+            .add-image {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                min-height: 42px;
+                margin-top: 10px;
+                border: 1px solid var(--primary-color, #03a9f4);
+                border-radius: 8px;
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, transparent);
+                color: var(--primary-color, #03a9f4);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .add-image:hover,
+            .add-image:focus-visible {
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 28%, transparent);
+                outline: none;
+            }
+
+            .add-image ha-icon {
+                --mdc-icon-size: 19px;
+            }
         `;
     }
 
@@ -415,7 +442,10 @@ export class BackgroundEditor extends BaseEditorSection {
             `;})}
             </div>
 
-            <mwc-button @click=${this._addBackgroundImage}>${this.t('editor.background.add', 'Add background image')}</mwc-button>
+            <button class="add-image" type="button" @click=${this._addBackgroundImage}>
+                <ha-icon icon="mdi:plus"></ha-icon>
+                ${this.t('editor.background.add', 'Add background image')}
+            </button>
         `;
     }
 

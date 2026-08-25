@@ -227,6 +227,8 @@ export function getLocaleForLanguage(language: string): string {
   return langDef?.locale || 'en-US';
 }
 
+export type AmPmDisplay = 'hidden' | 'narrow' | 'full';
+
 // Define a custom type that extends Intl.DateTimeFormatOptions to include 'hidden'
 export type ExtendedDateTimeFormatOptions = Omit<
     Intl.DateTimeFormatOptions,
@@ -237,7 +239,9 @@ export type ExtendedDateTimeFormatOptions = Omit<
   month?: 'numeric' | '2-digit' | 'long' | 'short' | 'narrow' | 'hidden';
   day?: 'numeric' | '2-digit' | 'hidden';
   second?: 'numeric' | '2-digit' | 'hidden';
-  /** Whether the AM/PM period is rendered in 12-hour mode (default: true). */
+  /** How the AM/PM period is rendered in 12-hour mode (default: full). */
+  amPmDisplay?: AmPmDisplay;
+  /** @deprecated Use amPmDisplay. Retained for backwards compatibility. */
   showAmPm?: boolean;
   custom?: string;
 };
@@ -319,8 +323,8 @@ export function formatDate(
   options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
-  // `showAmPm` controls our clock markup and is not an Intl option.
-  const {showAmPm: _showAmPm, ...formatOptions} = options;
+  // AM/PM display options control our clock markup and are not Intl options.
+  const {showAmPm: _showAmPm, amPmDisplay: _amPmDisplay, ...formatOptions} = options;
 
   // If custom format is specified, use it
   if (formatOptions.custom) {
@@ -402,8 +406,8 @@ export function formatTime(
   options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
-  // Create a copy of the options to avoid modifying the original
-  const formatOptions = { ...options };
+  // AM/PM display options control our clock markup and are not Intl options.
+  const {showAmPm: _showAmPm, amPmDisplay: _amPmDisplay, ...formatOptions} = options;
 
   // If custom format is specified, use it
   if (formatOptions.custom) {
@@ -450,8 +454,8 @@ export function formatDateTime(
   options: ExtendedDateTimeFormatOptions = {},
   timeZone?: string
 ): string {
-  // Create a copy of the options to avoid modifying the original
-  const formatOptions = { ...options };
+  // AM/PM display options control our clock markup and are not Intl options.
+  const {showAmPm: _showAmPm, amPmDisplay: _amPmDisplay, ...formatOptions} = options;
 
   // If custom format is specified, use it
   if (formatOptions.custom) {

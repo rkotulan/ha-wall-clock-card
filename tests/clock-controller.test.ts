@@ -187,6 +187,37 @@ describe('ClockController', () => {
         expect(controller.ampm).toBe('');
       });
 
+      it('should support the explicit hidden AM/PM display mode', () => {
+        const controller = new ClockController(mockHost, {
+          timeFormat: {hour12: true, amPmDisplay: 'hidden'}
+        });
+
+        controller['updateTime'](new Date(2023, 0, 1, 15, 30, 45), undefined);
+        expect(controller.hours).toBe('03');
+        expect(controller.ampm).toBe('');
+      });
+
+      it('should display a single lowercase AM/PM character in narrow mode', () => {
+        const controller = new ClockController(mockHost, {
+          timeFormat: {hour12: true, amPmDisplay: 'narrow'}
+        });
+
+        controller['updateTime'](new Date(2023, 0, 1, 9, 30, 45), undefined);
+        expect(controller.ampm).toBe('a');
+
+        controller['updateTime'](new Date(2023, 0, 1, 15, 30, 45), undefined);
+        expect(controller.ampm).toBe('p');
+      });
+
+      it('should prefer amPmDisplay over the legacy showAmPm option', () => {
+        const controller = new ClockController(mockHost, {
+          timeFormat: {hour12: true, showAmPm: false, amPmDisplay: 'full'}
+        });
+
+        controller['updateTime'](new Date(2023, 0, 1, 15, 30, 45), undefined);
+        expect(controller.ampm).toBe('PM');
+      });
+
       it('should handle midnight (12 AM) correctly in 12-hour format', () => {
         const controller = new ClockController(mockHost, { 
           timeFormat: { hour12: true } 
