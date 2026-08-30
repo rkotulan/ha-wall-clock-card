@@ -352,6 +352,13 @@ describe('translate function', () => {
     expect(translate('designer.widgets', 'de')).toBe('Widgets');
   });
 
+  test('should explain unrestricted background image conditions', () => {
+    expect(translate('editor.background.weather_any', 'en')).toBe('Any weather');
+    expect(translate('editor.background.time_any', 'en')).toBe('Any time');
+    expect(translate('editor.background.weather_any', 'cs')).toBe('Libovolné počasí');
+    expect(translate('editor.background.time_any', 'cs')).toBe('Libovolná denní doba');
+  });
+
   test('should normalize HA locale values and interpolate replacements', () => {
     expect(normalizeLanguage('cs-CZ')).toBe('cs');
     expect(normalizeLanguage('nb-NO')).toBe('no');

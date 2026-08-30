@@ -165,6 +165,20 @@
 
             assert(changedConfig?.backgroundImages?.length === 1, 'Click did not add a background image');
             assert(editor.shadowRoot.querySelectorAll('.image-card').length === 1, 'Added image editor is not visible');
+
+            const rows = [...editor.shadowRoot.querySelectorAll('ha-row-selector')];
+            const weatherRow = rows.find(candidate => candidate.propertyName === 'backgroundImages.0.weather');
+            const timeRow = rows.find(candidate => candidate.propertyName === 'backgroundImages.0.timeOfDay');
+            assert(weatherRow, 'Weather condition dropdown is missing');
+            assert(timeRow, 'Time-of-day dropdown is missing');
+            assert(
+                weatherRow.selector.select.options.find(option => option.value === 'all')?.label === 'Any weather',
+                'The unrestricted weather option does not have a clear label',
+            );
+            assert(
+                timeRow.selector.select.options.find(option => option.value === 'unspecified')?.label === 'Any time',
+                'The unrestricted time option does not have a clear label',
+            );
         });
 
         await check('issue #39: editor exposes and persists all AM/PM display modes', async () => {

@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.6.5
+
+### Background image condition labels
+
+- Replaced the raw `all` and `unspecified` values in the local background image
+  editor with the clearer **Any weather** and **Any time** labels, including Czech
+  translations, while preserving the stored configuration values.
+
+## 3.6.4
+
+### Background image editor and clock display
+
+- Fixed the nearly invisible **Add background image** button in dark Home Assistant
+  themes and added browser E2E coverage for adding local image entries.
+- Added configurable AM/PM display modes: hidden, a/p and AM/PM, while preserving
+  legacy configuration compatibility.
+
 ## 3.6.3
 
 ### Dynamic font colors

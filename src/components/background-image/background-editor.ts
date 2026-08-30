@@ -413,7 +413,9 @@ export class BackgroundEditor extends BaseEditorSection {
                                     select: {
                                         options: Object.values(Weather).map(weather => ({
                                             value: weather,
-                                            label: weather
+                                            label: weather === Weather.All
+                                                ? this.t('editor.background.weather_any', 'Any weather')
+                                                : weather
                                         }))
                                     }
                                 }}
@@ -428,7 +430,9 @@ export class BackgroundEditor extends BaseEditorSection {
                                     select: {
                                         options: Object.values(TimeOfDay).map(timeOfDay => ({
                                             value: timeOfDay,
-                                            label: timeOfDay
+                                            label: timeOfDay === TimeOfDay.Unspecified
+                                                ? this.t('editor.background.time_any', 'Any time')
+                                                : timeOfDay
                                         }))
                                     }
                                 }}
