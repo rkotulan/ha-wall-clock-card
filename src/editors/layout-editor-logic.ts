@@ -346,6 +346,9 @@ export function applyGeneralSetting(config: WallClockConfigV3, propertyPath: str
         case 'customSizes.actionBarIconSize':
             setOnWidgetsOfType(result, 'action-bar', 'iconSize', value);
             return result;
+        case 'customSizes.actionBarTitleSize':
+            setOnWidgetsOfType(result, 'action-bar', 'titleSize', value);
+            return result;
         default:
             // Unknown path (e.g. obsolete customSizes.clockTopMargin): ignore.
             return result;

@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.7.0
+
+### Action-bar title sizing
+
+- Added the per-widget `titleSize` setting for action button labels, with an
+  `18px` default and controls in both the Designer and legacy custom-size editor.
+- Preserved the setting through widget-editor round trips and legacy 2.x config
+  migration. Resolves #41.
+
+### Background image filters
+
+- Added card-wide `background.blur` (0–30 pixels) and `background.grayscale`
+  (0–1) filters for every image source, including Picsum, local images,
+  Unsplash and sensor-provided images.
+- Added Designer sliders, legacy config migration and edge compensation that
+  keeps blurred images from exposing dark borders. Resolves #42.
+
 ## 3.6.5
 
 ### Background image condition labels

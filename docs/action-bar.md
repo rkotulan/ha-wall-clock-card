@@ -18,6 +18,7 @@ layout:
           buttonGap: 12px
           padding: 12px 16px
           iconSize: 64px
+          titleSize: 16px
           actions:
             - actionId: action-ha
               title: Home
@@ -41,6 +42,7 @@ layout:
 | `buttonGap` | `16px` | CSS length between buttons |
 | `padding` | `16px` | CSS padding shorthand inside the panel |
 | `iconSize` | size preset | CSS icon size, for example `72px` |
+| `titleSize` | `18px` | CSS font size of action button titles |
 
 Auto orientation uses a horizontal row in center-column zones and a vertical stack
 in side zones. Auto alignment follows the zone. For a vertical action bar the dark

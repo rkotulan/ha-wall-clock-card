@@ -70,6 +70,8 @@ background:
   opacity: 0.3              # black overlay, 0–1
   rotationInterval: 90      # seconds
   objectFit: cover          # fill | contain | cover | none | scale-down
+  blur: 6                   # pixels, 0–30
+  grayscale: 0.5            # 0 = full color, 1 = fully grayscale
   images:
     - url: /local/images/day.jpg
       weather: all
@@ -97,8 +99,8 @@ layout:
             day: numeric
 ```
 
-`background.opacity` defaults to `0.3`, rotation to `90` seconds and
-`objectFit` to `cover`. See [Zone layout](layout.md) for all zone/widget fields and
+`background.opacity` defaults to `0.3`, rotation to `90` seconds, `objectFit` to
+`cover`, and both image filters to `0`. See [Zone layout](layout.md) for all zone/widget fields and
 [Image sources](image-sources.md) for source-specific settings.
 
 ## Common appearance values
@@ -114,7 +116,7 @@ layout:
 | `logLevel` | `info` | `debug`, `info`, `warn`, `error` or `none` |
 
 Per-widget appearance can override the card defaults. Widget-specific size controls
-(for example `clockSize`, `dateSize`, `labelSize`, `valueSize` or `iconSize`) take
+(for example `clockSize`, `dateSize`, `labelSize`, `valueSize`, `iconSize` or `titleSize`) take
 precedence over `appearance.size`. Set `style.textShadow` on a widget to override the
 card shadow; use `none` to disable the shadow for that widget.
 

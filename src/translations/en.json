@@ -169,6 +169,7 @@
     "label_size": "Label size (e.g., 1.2rem)",
     "value_size": "Value size (e.g., 2rem)",
     "icon_size": "Icon size (button is 2×, e.g., 72px)",
+    "action_title_size": "Button title size (e.g., 18px)",
     "calendar_date_size": "Date block size (e.g., 1rem)",
     "event_title_size": "Event title size (e.g., 1rem)",
     "event_detail_size": "Event detail size (e.g., 0.82rem)",
@@ -326,7 +327,7 @@
     },
     "background": {
       "source_group": "Image source", "appearance": "Image appearance", "rotation_group": "Image rotation",
-      "source": "Image source", "opacity": "Background opacity", "rotation": "Rotation interval (seconds)",
+      "source": "Image source", "opacity": "Background opacity", "blur": "Background blur (px)", "grayscale": "Background grayscale", "rotation": "Rotation interval (seconds)",
       "fit": "Background image fit", "images": "Background images", "image": "Background image {number}",
       "url": "Image URL", "weather": "Weather condition", "weather_any": "Any weather",
       "time": "Time of day", "time_any": "Any time",

@@ -768,7 +768,10 @@ export class WccLayoutInspector extends LitElement {
                     ${field('valueSize', this.t('inspector.value_size', 'Value size (e.g., 2rem)'))}
                 `;
             case 'action-bar':
-                return field('iconSize', this.t('inspector.icon_size', 'Icon size (button is 2×, e.g., 72px)'));
+                return html`
+                    ${field('iconSize', this.t('inspector.icon_size', 'Icon size (button is 2×, e.g., 72px)'))}
+                    ${field('titleSize', this.t('inspector.action_title_size', 'Button title size (e.g., 18px)'))}
+                `;
             case 'calendar':
                 return html`
                     ${field('calendarDateSize', this.t('inspector.calendar_date_size', 'Date block size (e.g., 1rem)'))}

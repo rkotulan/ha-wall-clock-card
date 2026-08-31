@@ -468,6 +468,8 @@ export class WallClockCard extends LitElement {
 
         this.backgroundImageComponent.backgroundOpacity = background.opacity ?? 0.3;
         this.backgroundImageComponent.objectFit = background.objectFit || 'cover';
+        this.backgroundImageComponent.backgroundBlur = background.blur ?? 0;
+        this.backgroundImageComponent.backgroundGrayscale = background.grayscale ?? 0;
         this.backgroundImageComponent.config = {
             imageSourceConfig: imageSourceConfig,
             backgroundRotationInterval: background.rotationInterval ?? 90,

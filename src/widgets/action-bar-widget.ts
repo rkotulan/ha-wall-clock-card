@@ -21,6 +21,8 @@ export interface ActionBarWidgetConfig extends WidgetConfig {
     padding?: string;
     /** Per-widget icon size; overrides the card-wide size preset when present. */
     iconSize?: string;
+    /** Per-widget font size for action button titles. */
+    titleSize?: string;
 }
 
 @customElement('wcc-action-bar-widget')
@@ -72,6 +74,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
                 showButtonBackground: this.config.showButtonBackground,
                 buttonGap: this.config.buttonGap,
                 padding: this.config.padding,
+                titleSize: this.config.titleSize,
             };
             this.actionBar.iconSize = this.config.iconSize;
             this.appliedConfig = this.config;

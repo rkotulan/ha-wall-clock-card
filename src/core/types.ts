@@ -25,6 +25,8 @@ export interface WallClockConfig {
     imageConfig?: ImageSourceConfig; // Configuration for the image source
     backgroundRotationInterval?: number;
     objectFit?: string;
+    backgroundBlur?: number;
+    backgroundGrayscale?: number;
     sensors?: SensorConfig[]; // Multiple sensors
     fontColor?: string; // Font color for all text elements
     fontFamily?: string; // CSS font-family; font must be loaded by HA/theme/browser
@@ -41,6 +43,7 @@ export interface WallClockConfig {
         labelSize?: string; // Custom size for labels
         valueSize?: string; // Custom size for values
         actionBarIconSize?: string; // Custom size for action bar icons
+        actionBarTitleSize?: string; // Custom size for action bar button titles
         clockTopMargin?: string; // Custom top margin for the clock container
     };
 
@@ -89,6 +92,8 @@ export interface WallClockCardConfig {
     backgroundOpacity?: number;
     rotationInterval?: number;
     objectFit?: string;
+    backgroundBlur?: number;
+    backgroundGrayscale?: number;
     weather?: WeatherConfig;
     transportation?: TransportationConfig;
     actionBar?: ActionBarConfig;

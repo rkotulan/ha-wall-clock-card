@@ -324,6 +324,40 @@ export class BackgroundEditor extends BaseEditorSection {
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
+                            number: {
+                                min: 0,
+                                max: 30,
+                                step: 1,
+                                mode: "slider",
+                                slider_ticks: true
+                            }
+                        }}
+                        .value=${this.config.backgroundBlur ?? 0}
+                        .label=${this.t('editor.background.blur', 'Background blur (px)')}
+                        propertyName="backgroundBlur"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
+                            number: {
+                                min: 0,
+                                max: 1,
+                                step: 0.05,
+                                mode: "slider",
+                                slider_ticks: true
+                            }
+                        }}
+                        .value=${this.config.backgroundGrayscale ?? 0}
+                        .label=${this.t('editor.background.grayscale', 'Background grayscale')}
+                        propertyName="backgroundGrayscale"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
                             select: {
                                 options: this._objectFitOptions(),
                                 mode: 'dropdown'

@@ -363,6 +363,11 @@ describe('applyGeneralSetting', () => {
         const result = applyGeneralSetting(v3(), 'customSizes.clockSize', '10rem');
         expect(result.layout.zones.center?.widgets[0]).toEqual({type: 'clock', id: 'clock', clockSize: '10rem'});
         expect(result.layout.zones.center?.widgets[1].clockSize).toBeUndefined();
+
+        const withActionBar = v3();
+        withActionBar.layout.zones['bottom-center']?.widgets.push({type: 'action-bar', id: 'actions'});
+        const actionTitle = applyGeneralSetting(withActionBar, 'customSizes.actionBarTitleSize', '14px');
+        expect(actionTitle.layout.zones['bottom-center']?.widgets[1].titleSize).toBe('14px');
     });
 
     it('ignores obsolete paths', () => {
@@ -467,10 +472,10 @@ describe('widget editor adapters', () => {
         });
     });
 
-    it('round-trips an action-bar widget and preserves iconSize', () => {
+    it('round-trips an action-bar widget and preserves its size settings', () => {
         const widget = {
             type: 'action-bar', id: 'action-bar', priority: 5,
-            enabled: true, actions: [], iconSize: '48px',
+            enabled: true, actions: [], iconSize: '48px', titleSize: '14px',
         };
 
         const roundTripped = fromEditorConfig(widget, {
@@ -479,7 +484,7 @@ describe('widget editor adapters', () => {
         expect(roundTripped).toEqual({
             type: 'action-bar', id: 'action-bar', priority: 5,
             enabled: false, actions: [{actionId: 'more-info', title: 'i', icon: 'mdi:i'}],
-            alignment: 'left', iconSize: '48px',
+            alignment: 'left', iconSize: '48px', titleSize: '14px',
         });
     });
 
@@ -509,24 +514,24 @@ describe('widget editor adapters', () => {
         const actions = {
             type: 'action-bar', id: 'actions', enabled: true, actions: [],
             orientation: 'vertical', alignment: 'left', columns: 2, showButtonBackground: false,
-            buttonGap: '12px', padding: '8px 16px',
+            buttonGap: '12px', padding: '8px 16px', titleSize: '16px',
         };
         expect(toEditorConfig(actions)).toEqual({
             actionBar: {
                 enabled: true, actions: [], orientation: 'vertical', alignment: 'left', columns: 2,
                 showButtonBackground: false,
-                buttonGap: '12px', padding: '8px 16px',
+                buttonGap: '12px', padding: '8px 16px', titleSize: '16px',
             },
         });
         expect(fromEditorConfig(actions, {
             actionBar: {
                 enabled: true, actions: [], orientation: 'horizontal', alignment: 'right', columns: 3,
-                showButtonBackground: true, buttonGap: '20px', padding: '4px',
+                showButtonBackground: true, buttonGap: '20px', padding: '4px', titleSize: '20px',
             },
         })).toEqual({
             type: 'action-bar', id: 'actions', enabled: true, actions: [],
             orientation: 'horizontal', alignment: 'right', columns: 3, showButtonBackground: true,
-            buttonGap: '20px', padding: '4px',
+            buttonGap: '20px', padding: '4px', titleSize: '20px',
         });
     });
 
@@ -588,6 +593,8 @@ describe('widget editor adapters', () => {
                 opacity: 0,
                 rotationInterval: 60,
                 objectFit: 'contain',
+                blur: 8,
+                grayscale: 0.75,
             },
         };
 
@@ -599,6 +606,8 @@ describe('widget editor adapters', () => {
             backgroundOpacity: 0,
             backgroundRotationInterval: 60,
             objectFit: 'contain',
+            backgroundBlur: 8,
+            backgroundGrayscale: 0.75,
         });
         expect(fromBackgroundEditorConfig(editorConfig)).toEqual(config.background);
     });

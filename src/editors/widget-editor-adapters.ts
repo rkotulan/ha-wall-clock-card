@@ -69,6 +69,7 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                     showButtonBackground: widget.showButtonBackground,
                     buttonGap: widget.buttonGap,
                     padding: widget.padding,
+                    titleSize: widget.titleSize,
                 }),
             };
         default:
@@ -139,6 +140,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
             return defined({
                 ...preservedFields(widget),
                 iconSize: widget.iconSize,
+                titleSize: actionBar.titleSize ?? widget.titleSize,
                 enabled: actionBar.enabled ?? true,
                 actions: actionBar.actions ?? [],
                 alignment: actionBar.alignment,
@@ -165,6 +167,8 @@ export function toBackgroundEditorConfig(config: WallClockConfigV3): EditorConfi
         backgroundOpacity: background.opacity,
         backgroundRotationInterval: background.rotationInterval,
         objectFit: background.objectFit,
+        backgroundBlur: background.blur,
+        backgroundGrayscale: background.grayscale,
     });
 }
 
@@ -177,5 +181,7 @@ export function fromBackgroundEditorConfig(editorConfig: EditorConfig): Backgrou
         opacity: editorConfig.backgroundOpacity,
         rotationInterval: editorConfig.backgroundRotationInterval,
         objectFit: editorConfig.objectFit,
+        blur: editorConfig.backgroundBlur,
+        grayscale: editorConfig.backgroundGrayscale,
     }) as BackgroundConfig;
 }

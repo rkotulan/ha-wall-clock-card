@@ -153,6 +153,10 @@ export interface BackgroundConfig {
     opacity?: number;
     rotationInterval?: number;
     objectFit?: string;
+    /** Background image blur radius in pixels. */
+    blur?: number;
+    /** Background image grayscale amount from 0 (color) to 1 (fully grayscale). */
+    grayscale?: number;
 }
 
 /** Card-wide appearance defaults; widgets may override via WidgetStyle. */

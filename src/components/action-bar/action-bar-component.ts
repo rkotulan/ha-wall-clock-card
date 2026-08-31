@@ -216,7 +216,7 @@ export class ActionBarComponent extends BottomBarComponent {
         .action-title {
             max-width: 100%;
             overflow: hidden;
-            font-size: 18px;
+            font-size: var(--action-title-size, 18px);
             font-weight: 400;
             text-align: center;
             text-overflow: ellipsis;
@@ -294,6 +294,7 @@ export class ActionBarComponent extends BottomBarComponent {
         const buttonBackgroundClass = this.config.showButtonBackground === false ? 'flat-buttons' : '';
         const padding = this.config.padding?.trim()
             || (buttonBackgroundClass ? '16px 16px 4px' : '16px');
+        const titleSize = this.config.titleSize?.trim() || '18px';
 
         this.logger.debug(`Rendering action bar - ButtonSize: ${buttonSize}`);
 
@@ -305,7 +306,8 @@ export class ActionBarComponent extends BottomBarComponent {
                        --action-button-size: ${buttonSize};
                        --action-button-gap: ${buttonGap};
                        --action-columns: ${columns ?? 1};
-                       --action-bar-padding: ${padding};">
+                       --action-bar-padding: ${padding};
+                       --action-title-size: ${titleSize};">
                 ${this.config.actions.map(action => this.renderActionButton(action))}
             </div>
         `;

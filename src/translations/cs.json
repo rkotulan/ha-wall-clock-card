@@ -118,6 +118,7 @@
     "clock_size": "Velikost hodin (např. 16rem)", "date_size": "Velikost data (např. 6rem)",
     "label_size": "Velikost popisku (např. 1.2rem)", "value_size": "Velikost hodnoty (např. 2rem)",
     "icon_size": "Velikost ikony (tlačítko je 2× větší, např. 72px)",
+    "action_title_size": "Velikost názvu tlačítka (např. 18px)",
     "calendar_date_size": "Velikost bloku data (např. 1rem)",
     "event_title_size": "Velikost názvu události (např. 1rem)",
     "event_detail_size": "Velikost detailu události (např. 0.82rem)",
@@ -268,7 +269,7 @@
     },
     "background": {
       "source_group": "Zdroj obrázků", "appearance": "Vzhled obrázku", "rotation_group": "Střídání obrázků",
-      "source": "Zdroj obrázků", "opacity": "Průhlednost pozadí", "rotation": "Interval změny (sekundy)",
+      "source": "Zdroj obrázků", "opacity": "Průhlednost pozadí", "blur": "Rozmazání pozadí (px)", "grayscale": "Odstíny šedi pozadí", "rotation": "Interval změny (sekundy)",
       "fit": "Přizpůsobení obrázku pozadí", "images": "Obrázky pozadí", "image": "Obrázek pozadí {number}",
       "url": "URL obrázku", "weather": "Podmínka počasí", "weather_any": "Libovolné počasí",
       "time": "Část dne", "time_any": "Libovolná denní doba",

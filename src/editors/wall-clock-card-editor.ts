@@ -101,6 +101,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     labelSize: wallClockConfig.customSizes.labelSize ?? '1.5rem',
                     valueSize: wallClockConfig.customSizes.valueSize ?? '3rem',
                     actionBarIconSize: wallClockConfig.customSizes.actionBarIconSize ?? '72px',
+                    actionBarTitleSize: wallClockConfig.customSizes.actionBarTitleSize ?? '18px',
                     clockTopMargin: wallClockConfig.customSizes.clockTopMargin ?? '0rem'
                 }
                 : {
@@ -109,6 +110,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                     labelSize: '1.5rem',
                     valueSize: '3rem',
                     actionBarIconSize: '72px',
+                    actionBarTitleSize: '18px',
                     clockTopMargin: '0rem'
                 },
             // Weather settings
@@ -487,6 +489,15 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                     .value=${this._sizeValue('actionBarIconSize', 'action-bar', 'iconSize', '72px')}
                                     .label=${this.t('inspector.icon_size', 'Action bar icon size (e.g., 72px)')}
                                     propertyName="customSizes.actionBarIconSize"
+                                    @value-changed=${this._handleFormValueChanged}
+                            ></ha-row-selector>
+
+                            <ha-row-selector
+                                    .hass=${this.hass}
+                                    .selector=${{ text: {} }}
+                                    .value=${this._sizeValue('actionBarTitleSize', 'action-bar', 'titleSize', '18px')}
+                                    .label=${this.t('inspector.action_title_size', 'Button title size (e.g., 18px)')}
+                                    propertyName="customSizes.actionBarTitleSize"
                                     @value-changed=${this._handleFormValueChanged}
                             ></ha-row-selector>
                         ` : ''}

@@ -8,13 +8,16 @@ background:
   opacity: 0.3
   rotationInterval: 90
   objectFit: cover
+  blur: 6
+  grayscale: 0.5
   images: []
   config: {}
 ```
 
 `source` selects an image-source plugin. `images` is the local/background image
-list; `config` contains source-specific values. The Designer exposes all built-in
-sources.
+list; `config` contains source-specific values. `blur` is a pixel radius from 0 to
+30 and `grayscale` ranges from 0 (full color) to 1 (fully grayscale). Both filters
+apply to every image source. The Designer exposes all built-in sources.
 
 ## None
 

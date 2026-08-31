@@ -123,6 +123,8 @@ export interface ActionBarConfig {
     buttonGap?: string;
     /** CSS padding shorthand inside the action bar panel. */
     padding?: string;
+    /** CSS font size used by action button titles. */
+    titleSize?: string;
 }
 
 /**

@@ -50,6 +50,8 @@ describe('migrateToLayout', () => {
             backgroundOpacity: 0.5,
             backgroundRotationInterval: 60,
             objectFit: 'cover',
+            backgroundBlur: 8,
+            backgroundGrayscale: 0.75,
             fontColor: '#EEEEEE',
             fontFamily: '"Roboto Condensed", sans-serif',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)',
@@ -62,6 +64,7 @@ describe('migrateToLayout', () => {
                 labelSize: '1rem',
                 valueSize: '2rem',
                 actionBarIconSize: '48px',
+                actionBarTitleSize: '14px',
             },
         });
 
@@ -120,6 +123,7 @@ describe('migrateToLayout', () => {
                                 enabled: true,
                                 actions: [{actionId: 'navigator', title: 'Domů', icon: 'mdi:home'}],
                                 iconSize: '48px',
+                                titleSize: '14px',
                                 priority: 5,
                             },
                         ],
@@ -132,6 +136,8 @@ describe('migrateToLayout', () => {
                 opacity: 0.5,
                 rotationInterval: 60,
                 objectFit: 'cover',
+                blur: 8,
+                grayscale: 0.75,
             },
             appearance: {
                 fontColor: '#EEEEEE',

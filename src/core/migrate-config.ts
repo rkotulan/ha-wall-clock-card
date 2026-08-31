@@ -40,7 +40,7 @@ const CONSUMED_V2_KEYS = [
     'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherShowTitle', 'weatherUpdateInterval',
     'weatherIconSet', 'weatherIconAnimation', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
-    'backgroundRotationInterval', 'objectFit',
+    'backgroundRotationInterval', 'objectFit', 'backgroundBlur', 'backgroundGrayscale',
     'fontColor', 'fontFamily', 'textShadow', 'language', 'timeZone', 'size', 'customSizes',
 ];
 
@@ -142,6 +142,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
                 ...config.actionBar,
                 enabled: true,
                 iconSize: config.customSizes?.actionBarIconSize,
+                titleSize: config.customSizes?.actionBarTitleSize ?? config.actionBar?.titleSize,
                 priority: 5,
             }),
             {mode: 'exclusive'});
@@ -154,6 +155,8 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
         opacity: config.backgroundOpacity,
         rotationInterval: config.backgroundRotationInterval,
         objectFit: config.objectFit,
+        blur: config.backgroundBlur,
+        grayscale: config.backgroundGrayscale,
     });
 
     const appearance = definedProps({

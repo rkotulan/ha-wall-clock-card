@@ -8,6 +8,8 @@ import {BackgroundImageController, BackgroundImageControllerConfig} from './back
 export class BackgroundImageComponent extends LitElement {
     @property({ type: Number }) backgroundOpacity?: number = 0.5;
     @property({ type: String }) objectFit?: string = 'cover';
+    @property({ type: Number }) backgroundBlur?: number = 0;
+    @property({ type: Number }) backgroundGrayscale?: number = 0;
     @property({ type: Object }) config?: BackgroundImageControllerConfig;
     @property({ type: Object }) hass?: HomeAssistant;
 
@@ -54,10 +56,11 @@ export class BackgroundImageComponent extends LitElement {
 
         .background-image {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: var(--background-blur-offset, 0px);
+            left: var(--background-blur-offset, 0px);
+            width: calc(100% + var(--background-blur-overflow, 0px));
+            height: calc(100% + var(--background-blur-overflow, 0px));
+            filter: blur(var(--background-blur, 0px)) grayscale(var(--background-grayscale, 0));
             /* No default opacity or z-index - will be controlled by inline styles and @lit-labs/motion */            
         }
 
@@ -108,9 +111,18 @@ export class BackgroundImageComponent extends LitElement {
         const currentImageUrl = this.currentImageUrl;
         const previousImageUrl = this.previousImageUrl;
         const objectFit = this.objectFit || 'cover';
+        const blur = Math.min(30, Math.max(0, Number(this.backgroundBlur) || 0));
+        const grayscaleValue = Number(this.backgroundGrayscale);
+        const grayscale = Number.isFinite(grayscaleValue)
+            ? Math.min(1, Math.max(0, grayscaleValue))
+            : 0;
 
         return html`
-            <div class="background-container">
+            <div class="background-container"
+                 style="--background-blur: ${blur}px;
+                        --background-blur-offset: ${-blur}px;
+                        --background-blur-overflow: ${blur * 2}px;
+                        --background-grayscale: ${grayscale};">
                 ${currentImageUrl ?
                     html`
                         ${previousImageUrl ? 
