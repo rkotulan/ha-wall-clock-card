@@ -166,6 +166,8 @@
       "show_am_pm": "Zobrazit AM/PM", "show_am_pm_help": "Ponechá 12hodinový formát a pouze skryje nebo zobrazí označení období",
       "am_pm_display": "Zobrazení AM/PM", "am_pm_display_help": "Skryje označení období nebo zobrazí a/p či AM/PM",
       "am_pm_hidden": "Skryté", "am_pm_narrow": "1 znak (a/p)", "am_pm_full": "2 znaky (AM/PM)",
+      "colon_blink": "Dvojtečka", "colon_blink_help": "Určuje, zda oddělovač zůstane viditelný, nebo bude blikat",
+      "colon_static": "Statická", "colon_fast": "Rychle (0,5 s zap./vyp.)", "colon_slow": "Pomalu (1 s zap./vyp.)",
       "numeric": "Číslo", "two_digit": "Dvě číslice", "hidden": "Skryté",
       "custom_date": "Vlastní formát data",
       "custom_date_help": "Například yyyy-MM-dd nebo EEEE, MMMM d, yyyy. Vyplněná hodnota přepíše nastavení níže.",

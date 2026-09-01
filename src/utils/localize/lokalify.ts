@@ -228,6 +228,7 @@ export function getLocaleForLanguage(language: string): string {
 }
 
 export type AmPmDisplay = 'hidden' | 'narrow' | 'full';
+export type ColonBlink = 'static' | 'fast' | 'slow';
 
 // Define a custom type that extends Intl.DateTimeFormatOptions to include 'hidden'
 export type ExtendedDateTimeFormatOptions = Omit<
@@ -243,6 +244,8 @@ export type ExtendedDateTimeFormatOptions = Omit<
   amPmDisplay?: AmPmDisplay;
   /** @deprecated Use amPmDisplay. Retained for backwards compatibility. */
   showAmPm?: boolean;
+  /** Animation mode for the separator between hours and minutes. */
+  colonBlink?: ColonBlink;
   custom?: string;
 };
 

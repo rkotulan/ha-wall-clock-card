@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.8.0
+
+### Flashing clock colon
+
+- Added `timeFormat.colonBlink` with static, fast (0.5 seconds on/off) and slow
+  (1 second on/off) modes, configurable in both the Designer and YAML.
+- Kept the clock width stable during blinking and respected the browser's reduced
+  motion preference. Requested in #44.
+
 ## 3.7.1
 
 ### Custom action-bar icons

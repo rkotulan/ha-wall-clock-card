@@ -225,6 +225,8 @@
       "show_am_pm": "Show AM/PM", "show_am_pm_help": "Keep 12-hour time while hiding or showing the period",
       "am_pm_display": "AM/PM display", "am_pm_display_help": "Hide the period, show a/p, or show AM/PM",
       "am_pm_hidden": "Hidden", "am_pm_narrow": "1-digit (a/p)", "am_pm_full": "2-digit (AM/PM)",
+      "colon_blink": "Colon", "colon_blink_help": "Choose whether the separator stays visible or blinks",
+      "colon_static": "Static", "colon_fast": "Fast (0.5 s on/off)", "colon_slow": "Slow (1 s on/off)",
       "numeric": "Numeric", "two_digit": "2-digit", "hidden": "Hidden",
       "custom_date": "Custom date format",
       "custom_date_help": "For example yyyy-MM-dd or EEEE, MMMM d, yyyy. When filled, it overrides the settings below.",

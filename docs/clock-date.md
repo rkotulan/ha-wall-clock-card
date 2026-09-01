@@ -40,9 +40,13 @@ setting so both remain consistent.
 | `timeFormat.second` | `2-digit` | `numeric`, `2-digit`; omit/choose hidden to hide |
 | `timeFormat.hour12` | HA profile | `true` or `false` |
 | `timeFormat.showAmPm` | `true` | Set `false` to hide AM/PM while keeping 12-hour time |
+| `timeFormat.colonBlink` | `static` | `static`, `fast` (0.5 s on/off), `slow` (1 s on/off) |
 
 YAML also accepts a `timeFormat.custom` pattern such as `HH:mm`; a custom pattern
 overrides the individual parts.
+
+The blinking colon keeps its layout width, so the clock does not shift as it
+changes visibility. It remains static when the browser requests reduced motion.
 
 ## Date options
 

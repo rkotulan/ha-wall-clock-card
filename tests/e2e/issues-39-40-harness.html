@@ -207,6 +207,32 @@
             assert(changedConfig?.timeFormat?.amPmDisplay === 'narrow', 'Dropdown did not persist narrow mode');
         });
 
+        await check('issue #44: editor exposes and persists all colon blink modes', async () => {
+            const editor = document.createElement('time-format-editor');
+            editor.hass = hass;
+            editor.config = {timeFormat: {hour12: false}};
+            document.getElementById('format-fixture').append(editor);
+            await editor.updateComplete;
+
+            const rows = [...editor.shadowRoot.querySelectorAll('ha-row-selector')];
+            const row = rows.find(candidate => candidate.propertyName === 'timeFormat.colonBlink');
+            assert(row, 'Colon blink dropdown is missing');
+            assert(row.value === 'static', `Colon blink did not default to static: ${row.value}`);
+            assert(
+                JSON.stringify(row.selector.select.options.map(option => option.value)) === JSON.stringify(['static', 'fast', 'slow']),
+                'Colon blink dropdown options are incomplete',
+            );
+
+            let changedConfig;
+            editor.addEventListener('config-changed', event => changedConfig = event.detail.config);
+            row.dispatchEvent(new CustomEvent('value-changed', {
+                detail: {propertyName: 'timeFormat.colonBlink', value: 'fast'},
+                bubbles: true,
+                composed: true,
+            }));
+            assert(changedConfig?.timeFormat?.colonBlink === 'fast', 'Dropdown did not persist fast mode');
+        });
+
         await check('issue #39: clock renders hidden, a/p, and AM/PM modes', async () => {
             const common = {hour: '2-digit', minute: '2-digit', second: 'hidden', hour12: true};
             const hiddenCard = await renderClock({...common, amPmDisplay: 'hidden'});
@@ -219,6 +245,26 @@
             assert(/^[ap]$/.test(deepQuery(narrowCard, '.ampm')?.textContent?.trim() ?? ''), 'Narrow mode did not render a or p');
             assert(/^(AM|PM)$/.test(deepQuery(fullCard, '.ampm')?.textContent?.trim() ?? ''), 'Full mode did not render AM or PM');
             assert(!deepQuery(legacyCard, '.ampm'), 'Legacy showAmPm=false no longer hides the marker');
+        });
+
+        await check('issue #44: clock renders static, fast, and slow colon modes', async () => {
+            const common = {hour: '2-digit', minute: '2-digit', second: 'hidden', hour12: false};
+            const staticCard = await renderClock({...common, colonBlink: 'static'});
+            const defaultCard = await renderClock(common);
+            const fastCard = await renderClock({...common, colonBlink: 'fast'});
+            const slowCard = await renderClock({...common, colonBlink: 'slow'});
+            await nextFrame();
+
+            const staticColon = deepQuery(staticCard, '.colon');
+            const defaultColon = deepQuery(defaultCard, '.colon');
+            const fastColon = deepQuery(fastCard, '.colon');
+            const slowColon = deepQuery(slowCard, '.colon');
+            assert(staticColon?.classList.contains('static'), 'Explicit static mode did not render a static colon');
+            assert(defaultColon?.classList.contains('static'), 'Missing mode did not default to a static colon');
+            assert(fastColon?.classList.contains('blink-fast'), 'Fast mode did not render the fast animation class');
+            assert(slowColon?.classList.contains('blink-slow'), 'Slow mode did not render the slow animation class');
+            assert(getComputedStyle(fastColon).animationDuration === '1s', 'Fast mode does not use a 1 s cycle');
+            assert(getComputedStyle(slowColon).animationDuration === '2s', 'Slow mode does not use a 2 s cycle');
         });
 
         resultElement.dataset.status = 'passed';

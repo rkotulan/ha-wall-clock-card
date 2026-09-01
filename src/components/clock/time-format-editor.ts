@@ -28,6 +28,11 @@ export class TimeFormatEditor extends BaseEditorSection {
                 {value: '2-digit', label: twoDigit},
                 {value: 'hidden', label: this.t('editor.format.hidden', 'Hidden')},
             ],
+            colonBlink: [
+                {value: 'static', label: this.t('editor.format.colon_static', 'Static')},
+                {value: 'fast', label: this.t('editor.format.colon_fast', 'Fast (0.5 s on/off)')},
+                {value: 'slow', label: this.t('editor.format.colon_slow', 'Slow (1 s on/off)')},
+            ],
         };
     }
 
@@ -91,6 +96,21 @@ export class TimeFormatEditor extends BaseEditorSection {
                         .value=${this.config.timeFormat?.hour || '2-digit'}
                         .label=${this.t('editor.format.hour_display', 'Hour display')}
                         propertyName="timeFormat.hour"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{
+                            select: {
+                                options: options.colonBlink,
+                                mode: 'dropdown'
+                            }
+                        }}
+                        .value=${this.config.timeFormat?.colonBlink || 'static'}
+                        .label=${this.t('editor.format.colon_blink', 'Colon')}
+                        .helper=${this.t('editor.format.colon_blink_help', 'Choose whether the separator stays visible or blinks')}
+                        propertyName="timeFormat.colonBlink"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 

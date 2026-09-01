@@ -68,6 +68,30 @@ export class ClockComponent extends LitElement {
             line-height: 1;
         }
 
+        .colon.blink-fast {
+            animation: colon-blink 1s step-end infinite;
+        }
+
+        .colon.blink-slow {
+            animation: colon-blink 2s step-end infinite;
+        }
+
+        @keyframes colon-blink {
+            0%, 49.999% {
+                opacity: 1;
+            }
+            50%, 100% {
+                opacity: 0;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .colon.blink-fast,
+            .colon.blink-slow {
+                animation: none;
+            }
+        }
+
         .seconds-container {
             display: flex;
             flex-direction: column;
@@ -210,6 +234,12 @@ export class ClockComponent extends LitElement {
         return '0rem';
     }
 
+    private getColonBlinkClass(): string {
+        if (this.timeFormat?.colonBlink === 'fast') return 'blink-fast';
+        if (this.timeFormat?.colonBlink === 'slow') return 'blink-slow';
+        return 'static';
+    }
+
     render() {
         // Log rendering information for debugging
         const seconds = this.getSeconds();
@@ -220,7 +250,7 @@ export class ClockComponent extends LitElement {
         return html`
             ${this.showClock ? html`
                 <div class="clock" style="color: ${this.fontColor}; font-size: ${clockSize}; margin-top: ${this.getClockTopMargin()};">
-                    <span class="hours-minutes" style="color: ${this.fontColor};">${this.getHours()}:${this.getMinutes()}</span>
+                    <span class="hours-minutes" style="color: ${this.fontColor};"><span class="hours">${this.getHours()}</span><span class="colon ${this.getColonBlinkClass()}">:</span><span class="minutes">${this.getMinutes()}</span></span>
                     ${shouldShowSeconds ? html`
                         <div class="seconds-container">
                             <span class="seconds" style="color: ${this.fontColor};">${seconds}</span>
