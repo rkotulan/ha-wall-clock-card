@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.1
+
+### Custom action-bar icons
+
+- Fixed action-bar rendering for namespaced Home Assistant icons from custom
+  collections such as `local:` and Iconify, including state-specific icons.
+- Preserved backwards compatibility with raw SVG path data. Resolves #43.
+
 ## 3.7.0
 
 ### Action-bar title sizing

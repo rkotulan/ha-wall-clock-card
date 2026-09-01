@@ -20,6 +20,7 @@ import { actionHandler } from './action-handler-directive';
 import { PluginRegistry } from './plugin-registry';
 import { BottomBarComponent } from '../bottom-bar';
 import { Size } from '../../core/types';
+import { isHomeAssistantIconName } from './action-icon-kind';
 
 export interface ActionBarComponentConfig {
     actionBar?: ActionBarConfig;
@@ -353,8 +354,8 @@ export class ActionBarComponent extends BottomBarComponent {
                      hasDoubleClick: hasAction(action.double_tap_action),
                  })}
                  @action=${(ev: CustomEvent) => this._handleAction(action, ev.detail?.action || 'tap')}>
-                ${iconToUse && iconToUse.startsWith('mdi:')
-                    ? html`<ha-icon icon="${iconToUse}"
+                ${isHomeAssistantIconName(iconToUse)
+                    ? html`<ha-icon .icon=${iconToUse}
                                    style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''}
                                           width: ${this.getIconSize()};
                                           height: ${this.getIconSize()};

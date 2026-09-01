@@ -52,9 +52,9 @@ individual circular surfaces. Set `columns: 2` to render four actions as a 2×2
 grid. Grid cells and buttons shrink responsively when the action-bar widget is
 narrow, so a two-column grid does not overflow a compact tablet panel.
 
-Each action requires `actionId`, `title` and `icon`. `icon` accepts an `mdi:` name or
-raw SVG path data. Buttons are keyboard accessible and support tap, hold and
-double-tap gestures.
+Each action requires `actionId`, `title` and `icon`. `icon` accepts any Home
+Assistant icon name (including custom icon collections) or raw SVG path data.
+Buttons are keyboard accessible and support tap, hold and double-tap gestures.
 
 ## Built-in actions
 
