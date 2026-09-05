@@ -62,8 +62,8 @@ export class WccLayoutInspector extends LitElement {
                 height: 100%;
                 min-width: 0;
                 min-height: 0;
-                color: var(--primary-text-color, #fff);
-                background: #111217;
+                color: var(--primary-text-color, #212121);
+                background: var(--card-background-color, #fff);
             }
 
             .header {
@@ -72,8 +72,8 @@ export class WccLayoutInspector extends LitElement {
                 gap: 12px;
                 min-height: 60px;
                 padding: 0 16px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-                background: #101116;
+                border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                background: var(--secondary-background-color, #f2f2f2);
             }
 
             .header-icon {
@@ -83,7 +83,7 @@ export class WccLayoutInspector extends LitElement {
                 height: 36px;
                 border-radius: 9px;
                 background: var(--primary-color, #2878d8);
-                color: #fff;
+                color: var(--text-primary-color, #fff);
                 flex: 0 0 auto;
             }
 
@@ -114,8 +114,8 @@ export class WccLayoutInspector extends LitElement {
                 display: grid;
                 grid-template-columns: repeat(3, minmax(0, 1fr));
                 padding: 8px 10px 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-                background: #111217;
+                border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                background: var(--card-background-color, #fff);
             }
 
             .tab {
@@ -124,7 +124,7 @@ export class WccLayoutInspector extends LitElement {
                 border: 0;
                 border-bottom: 2px solid transparent;
                 background: transparent;
-                color: #9297a8;
+                color: var(--secondary-text-color, #666);
                 font: inherit;
                 font-size: 0.78rem;
                 cursor: pointer;
@@ -132,14 +132,14 @@ export class WccLayoutInspector extends LitElement {
 
             .tab:hover,
             .tab:focus-visible {
-                color: #fff;
+                color: var(--primary-text-color, #212121);
                 outline: none;
             }
 
             .tab.active {
                 border-bottom-color: var(--primary-color, #3b82f6);
-                color: #fff;
-                background: linear-gradient(to top, rgba(59, 130, 246, 0.1), transparent 72%);
+                color: var(--primary-text-color, #212121);
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
             }
 
             .body {
@@ -150,7 +150,7 @@ export class WccLayoutInspector extends LitElement {
                 padding: 12px 12px 64px;
                 box-sizing: border-box;
                 scroll-padding-bottom: 64px;
-                background: #111217;
+                background: var(--card-background-color, #fff);
                 overflow-y: auto;
             }
 
@@ -166,14 +166,14 @@ export class WccLayoutInspector extends LitElement {
                 font-weight: 700;
                 letter-spacing: 0.04em;
                 text-transform: uppercase;
-                color: var(--secondary-text-color, #aaa);
+                color: var(--secondary-text-color, #666);
             }
 
             .section-card {
                 padding: 10px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 10px;
-                background: rgba(255, 255, 255, 0.028);
+                background: var(--secondary-background-color, #f2f2f2);
             }
 
             .section-card + .section-card {
@@ -187,7 +187,7 @@ export class WccLayoutInspector extends LitElement {
 
             .settings-list ha-row-selector {
                 padding: 5px 0;
-                border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+                border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
             }
 
             .settings-list ha-row-selector:first-child {
@@ -205,7 +205,7 @@ export class WccLayoutInspector extends LitElement {
                 padding: 10px 16px 64px;
                 box-sizing: border-box;
                 overflow-y: auto;
-                background: #111217;
+                background: var(--card-background-color, #fff);
             }
 
             .card-settings-body ha-row-selector {
@@ -219,7 +219,7 @@ export class WccLayoutInspector extends LitElement {
             .field-label {
                 display: block;
                 margin-bottom: 7px;
-                color: var(--secondary-text-color, #a8adbd);
+                color: var(--secondary-text-color, #666);
                 font-size: 0.76rem;
             }
 
@@ -249,7 +249,7 @@ export class WccLayoutInspector extends LitElement {
                 border: 2px solid transparent;
                 border-radius: 7px;
                 background: var(--color-choice, transparent);
-                color: #8c91a1;
+                color: var(--secondary-text-color, #666);
                 cursor: pointer;
             }
 
@@ -257,19 +257,19 @@ export class WccLayoutInspector extends LitElement {
             .color-choice:focus-visible,
             .color-custom:hover,
             .color-custom:focus-within {
-                outline: 1px solid rgba(255, 255, 255, 0.42);
+                outline: 1px solid var(--primary-color, #03a9f4);
                 outline-offset: 2px;
             }
 
             .color-choice.selected,
             .color-custom.selected {
-                border-color: #111217;
-                outline: 2px solid var(--color-choice, var(--primary-color, #3b82f6));
+                border-color: var(--card-background-color, #fff);
+                outline: 2px solid var(--primary-color, #03a9f4);
                 outline-offset: 1px;
             }
 
             .color-custom {
-                border: 1px dashed rgba(255, 255, 255, 0.24);
+                border: 1px dashed var(--divider-color, rgba(0, 0, 0, 0.12));
                 background: var(--custom-color, transparent);
             }
 
@@ -298,7 +298,7 @@ export class WccLayoutInspector extends LitElement {
                 align-items: center;
                 justify-content: center;
                 padding: 28px;
-                color: #858a9b;
+                color: var(--secondary-text-color, #666);
                 text-align: center;
                 line-height: 1.5;
             }

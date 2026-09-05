@@ -3,6 +3,24 @@
 The background is a card-wide layer below all zones. Configuration and source
 examples are in [Image sources](image-sources.md).
 
+To show the dashboard wallpaper through the card, enable **Transparent card
+background** in the Designer's background settings and select no image source:
+
+```yaml
+background:
+  source: none
+  transparent: true
+```
+
+`transparent` defaults to `false`. It removes the card's own background, border
+and shadow without fading its text or widgets. Image backgrounds and individual
+widget backgrounds remain independent. For a fully transparent action bar, also
+set its `backgroundOpacity: 0` and `showButtonBackground: false`.
+The fullscreen Designer keeps its own editing surface.
+
+Setting only `opacity: 0` does not make the card surface transparent: that setting
+controls the black overlay on background images.
+
 - `opacity` controls the black readability overlay (`0` transparent, `1` black;
   default `0.3`).
 - `rotationInterval` is measured in seconds and defaults to `90`.

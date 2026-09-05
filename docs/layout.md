@@ -7,6 +7,10 @@ the equivalent zone layout. The first saved Designer change writes the normalize
 
 ## Zones
 
+The Designer follows the active Home Assistant theme, including light and dark
+themes. Its controls use the theme's text and surface colors; the configured
+dashboard font color and background still apply to the card and live preview.
+
 ```
 top-left     top-center     top-right
 middle-left  center         middle-right
@@ -136,6 +140,7 @@ Explicit values win over the preset. Invalid CSS lengths are ignored with a warn
 | `transportation` | the [transportation config](transportation.md) keys, flattened |
 | `action-bar` | `enabled`, `actions`, `alignment`, `orientation`, `columns`, `backgroundOpacity`, `showButtonBackground`, `buttonGap`, `padding`, `iconSize`, `titleSize` (see [action-bar.md](action-bar.md)) |
 | `calendar` | `entities`, `displayMode`, `daysAhead`, `maxEvents`, event detail/background/font options and `updateInterval` (see [calendar.md](calendar.md)) |
+| `calendar-month` | Monthly grid with `entities`, `firstDayOfWeek`, `eventsPerDay`, cell/text styling and `updateInterval` (see [calendar-month.md](calendar-month.md)) |
 | `separator` | `orientation`, `color`, `opacity`, `thickness`, `length` (see [separator.md](separator.md)) |
 | `ha-card` | `card` (ordinary Lovelace card configuration), `transparent` |
 

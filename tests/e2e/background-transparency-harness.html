@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Transparent card #48</title>
+<style>
+body { font: 16px sans-serif; background: repeating-linear-gradient(45deg,#286590 0 60px,#50844f 60px 120px); }
+#fixture { width: 700px; height: 350px; --ha-card-background: #fff; --card-background-color: #fff; }
+background-editor { display: block; background: white; max-width: 500px; }
+#e2e-result { white-space: pre-wrap; color: white; }
+</style>
+<div id="fixture"></div>
+<pre id="e2e-result" data-status="running">Running…</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+// Reproduce HA's native card surface; a plain undefined ha-card would hide this bug.
+if (!customElements.get('ha-card')) customElements.define('ha-card', class extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({mode: 'open'}).innerHTML = `<style>:host {
+            display:block; background:var(--ha-card-background,var(--card-background-color,#fff));
+            border:1px solid #888; box-shadow:0 2px 5px #555;
+        }</style><slot></slot>`;
+    }
+});
+const result = document.querySelector('#e2e-result'), checks = [];
+function assert(value, name) {if (!value) throw Error(name); checks.push(name);}
+async function settle(element) {
+    await element.updateComplete;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await element.updateComplete;
+}
+const hass = {states: {}, config: {time_zone: 'Europe/Prague'}, language: 'en', locale: {language: 'en'}, themes: {themes: {}}, localize: key => key};
+const config = {type: 'custom:wall-clock-card', background: {source: 'none', opacity: 0}, layout: {zones: {center: {widgets: [{type: 'clock'}]}}}};
+try {
+    const card = document.createElement('wall-clock-card');
+    card.setConfig(config); card.hass = hass;
+    document.querySelector('#fixture').append(card);
+    await settle(card);
+    const surface = () => card.shadowRoot.querySelector('ha-card');
+    assert(getComputedStyle(surface()).backgroundColor === 'rgb(255, 255, 255)', 'Existing cards retain the themed surface at opacity zero');
+    card.setConfig({...config, background: {...config.background, transparent: true}});
+    await settle(card);
+    let style = getComputedStyle(surface());
+    assert(style.backgroundColor === 'rgba(0, 0, 0, 0)' && style.backgroundImage === 'none', 'Transparent mode reveals the dashboard background');
+    assert(style.borderTopWidth === '0px' && style.boxShadow === 'none', 'Transparent mode removes the border and shadow');
+    assert(style.opacity === '1', 'Card content is not faded');
+    const background = card.shadowRoot.querySelector('ha-background-image');
+    await settle(background);
+    assert(!background.shadowRoot.querySelector('img, .background-overlay'), 'No image source leaves no overlay covering the dashboard');
+    const nested = document.createElement('ha-card');
+    surface().append(nested);
+    assert(getComputedStyle(nested).backgroundColor === 'rgb(255, 255, 255)', 'Nested HA cards keep their own background');
+    nested.remove();
+    card.setConfig({...config, background: {...config.background, transparent: false}});
+    await settle(card);
+    style = getComputedStyle(surface());
+    assert(style.backgroundColor === 'rgb(255, 255, 255)' && style.borderTopWidth === '1px' && style.boxShadow !== 'none', 'Disabling restores background, border and shadow');
+
+    const inspector = document.createElement('wcc-layout-inspector');
+    inspector.hass = hass; inspector.config = config; inspector.layout = config.layout;
+    document.body.append(inspector); await settle(inspector);
+    const tab = [...inspector.shadowRoot.querySelectorAll('.tab')].find(tab => tab.textContent.trim() === 'Background');
+    tab.click(); await settle(inspector);
+    const editor = inspector.shadowRoot.querySelector('background-editor');
+    await settle(editor);
+    let saved;
+    inspector.addEventListener('wcc-card-config-changed', ev => {saved = ev.detail;});
+    const toggle = editor.shadowRoot.querySelector('[propertyName="backgroundTransparent"]');
+    assert(toggle && toggle.value === false, 'Editor exposes an opt-in transparency toggle');
+    toggle.dispatchEvent(new CustomEvent('value-changed', {detail: {value: true, propertyName: 'backgroundTransparent'}, bubbles: true, composed: true}));
+    await settle(editor); await settle(inspector);
+    const updated = saved?.config ?? saved;
+    assert(updated.background.transparent === true && updated.background.opacity === 0, 'Editor saves transparency independently of overlay opacity');
+    inspector.config = updated; await settle(inspector); await settle(editor);
+    assert(editor.shadowRoot.querySelector('[propertyName="backgroundTransparent"]').value === true, 'Transparency survives editor reload');
+    result.dataset.status = 'passed'; result.textContent = checks.join('\n');
+} catch(error) { result.dataset.status = 'failed'; result.textContent = checks.join('\n') + '\n' + error.stack; }
+</script>
+</html>

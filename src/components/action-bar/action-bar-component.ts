@@ -21,6 +21,7 @@ import { PluginRegistry } from './plugin-registry';
 import { BottomBarComponent } from '../bottom-bar';
 import { Size } from '../../core/types';
 import { isHomeAssistantIconName } from './action-icon-kind';
+import { resolveActionAppearance } from './action-appearance';
 
 export interface ActionBarComponentConfig {
     actionBar?: ActionBarConfig;
@@ -338,6 +339,12 @@ export class ActionBarComponent extends BottomBarComponent {
 
         const activeClass = isActive ? 'active' : '';
 
+        const appearance = resolveActionAppearance(action, this.hass?.states, {
+            icon: iconToUse,
+            color: isActive ? action.activeColor : action.color,
+        });
+        iconToUse = appearance.icon;
+
         // Use the configured activeColor or default to the CSS-defined color
         const activeColorStyle = isActive && action.activeColor 
             ? `--active-icon-color: ${action.activeColor};` 
@@ -356,13 +363,13 @@ export class ActionBarComponent extends BottomBarComponent {
                  @action=${(ev: CustomEvent) => this._handleAction(action, ev.detail?.action || 'tap')}>
                 ${isHomeAssistantIconName(iconToUse)
                     ? html`<ha-icon .icon=${iconToUse}
-                                   style="${isActive && action.activeColor ? `color: ${action.activeColor};` : ''}
+                                   style="${appearance.color ? `color: ${appearance.color};` : ''}
                                           width: ${this.getIconSize()};
                                           height: ${this.getIconSize()};
                                           --mdc-icon-size: ${this.getIconSize()};">
                            </ha-icon>`
                     : html`<svg viewBox="0 0 24 24"
-                               style="${isActive && action.activeColor ? `fill: ${action.activeColor};` : ''}
+                               style="${appearance.color ? `fill: ${appearance.color};` : ''}
                                       width: ${this.getIconSize()};
                                       height: ${this.getIconSize()};">
                         <path d="${iconToUse}"></path>

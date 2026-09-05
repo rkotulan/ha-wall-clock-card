@@ -103,6 +103,64 @@ Any plugin action can also carry `tap_action`, `hold_action` or
 `double_tap_action`. When a valid standard action exists for the gesture, Home
 Assistant handles it instead of the plugin handler.
 
+## Icons and colors by entity state
+
+In the action editor, open **Appearance by entity state**, select **Entity to
+track**, and add rules with a state, optional icon, and optional icon color.
+Use Home Assistant's raw state values (`open`, `closed`, `on`, etc.), not
+translated display text. Rules work with every action type and do not change
+tap, hold or double-tap behavior, so an existing popup action can stay as it is.
+
+| Action field | Meaning |
+|---|---|
+| `color` | Optional default icon color when inactive; otherwise inherits the card color |
+| `stateEntity` | Entity tracked for appearance, independent of action targets |
+| `stateRules` | Ordered rules, each with `state` and optional `icon` / `color` |
+
+The first exact matching rule wins. Its nonempty icon/color overrides the normal
+plugin appearance, including the active color. Unspecified fields and unmatched
+states retain the normal appearance. A missing entity is treated as `unavailable`;
+an entity reporting `unknown` matches `unknown`. Add explicit rules for these
+states so they are distinguishable from a closed garage.
+
+For example, this button opens entity details while displaying garage status.
+To keep an existing popup, add only `color`, `stateEntity`, and `stateRules` to
+your existing button configuration:
+
+```yaml
+- type: action-bar
+  actions:
+    - actionId: action-ha
+      title: Garage
+      icon: mdi:garage-alert
+      color: '#9e9e9e'
+      entity: cover.garage
+      tap_action:
+        action: more-info
+      stateEntity: cover.garage
+      stateRules:
+        - state: open
+          icon: mdi:garage-open
+          color: '#f44336'
+        - state: closed
+          icon: mdi:garage
+          color: '#4caf50'
+        - state: opening
+          icon: mdi:garage-open
+          color: '#ff9800'
+        - state: closing
+          icon: mdi:garage-open
+          color: '#ff9800'
+        - state: unknown
+          icon: mdi:help-circle-outline
+          color: '#9e9e9e'
+        - state: unavailable
+          icon: mdi:alert-circle-outline
+          color: '#9e9e9e'
+```
+
+Quote boolean-looking YAML state values such as `"on"` and `"off"`.
+
 ## Plugin-specific examples
 
 ```yaml

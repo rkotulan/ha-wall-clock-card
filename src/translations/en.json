@@ -1,4 +1,5 @@
 {
+  "month": {"wrapEventTitles":"Wrap event text to two lines","previous":"Previous month","next":"Next month","today":"Today","more":"more","close":"Close","loading":"Loading calendar…","error":"Some calendars could not be loaded.","firstDayOfWeek":"First day of week","eventsPerDay":"Events per day","showAllDay":"Show all-day events","cellMinHeight":"Minimum day height (px)","calendarDateSize":"Date text size","eventTitleSize":"Event text size","gridColor":"Grid color","eventBackgroundOpacity":"Event background opacity","updateInterval":"Refresh interval (seconds)"},
   "common": {
     "title": "Weather",
     "description": "Current weather and forecast",
@@ -214,6 +215,7 @@
     "legacy_hint": "The first spacing change converts this legacy configuration to the zone format."
   },
   "widgets": {
+    "calendar_month": "Monthly overview",
     "sensors": "Sensors", "weather": "Weather", "calendar": "Calendar", "transportation": "Transportation",
     "clock": "Clock", "date": "Date", "action_bar": "Action bar", "ha_card": "Home Assistant card",
     "separator": "Separator"
@@ -303,6 +305,11 @@
       "title_help": "Title for the action button", "icon": "Icon", "icon_help": "Icon for the action button",
       "add": "Add action", "remove": "Remove action", "expand": "Expand action", "collapse": "Collapse action",
       "move_up": "Move action up", "move_down": "Move action down",
+      "appearance": "Appearance by entity state", "default_color": "Default icon color",
+      "state_entity": "Entity to track", "state_entity_help": "Changes appearance only. Tap, hold and double-tap actions stay the same.",
+      "state_rules_help": "The first matching state wins. Unmatched states use the normal button appearance. Add unknown and unavailable rules if needed.",
+      "rule_state": "State (for example open or closed)", "rule_color": "Icon color",
+      "add_rule": "Add state rule", "remove_rule": "Remove rule",
       "types": {
         "weather_update": "Update weather", "transportation": "Transportation", "light_toggle": "Toggle light",
         "action_navigate": "Navigate to page", "background_next": "Next background",
@@ -329,6 +336,8 @@
     },
     "background": {
       "source_group": "Image source", "appearance": "Image appearance", "rotation_group": "Image rotation",
+      "transparent": "Transparent card background",
+      "transparent_help": "Removes the card background, border and shadow. Select no image to reveal the dashboard wallpaper.",
       "source": "Image source", "opacity": "Background opacity", "blur": "Background blur (px)", "grayscale": "Background grayscale", "rotation": "Rotation interval (seconds)",
       "fit": "Background image fit", "images": "Background images", "image": "Background image {number}",
       "url": "Image URL", "weather": "Weather condition", "weather_any": "Any weather",

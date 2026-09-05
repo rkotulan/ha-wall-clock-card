@@ -14,6 +14,7 @@ export type ResolvedWidgetWidthMode = Exclude<WidgetWidthMode, 'auto'>;
 const DEFAULT_ROW_GROW: Record<string, number> = {
     weather: 3,
     calendar: 3,
+    'calendar-month': 4,
     transportation: 3,
     'action-bar': 2,
 };

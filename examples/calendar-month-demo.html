@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Měsíční přehled · ukázka</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#202126;color:#fff;font-family:Arial,sans-serif;padding:24px;--card-background-color:#202126;--primary-text-color:#fff;--secondary-text-color:#aaa;--primary-color:#df5047}
+.display{max-width:760px;margin:auto;background:#090a0c;border:14px solid #111216;box-shadow:0 20px 60px #0008}
+.hero{height:340px;position:relative;background:#454559;overflow:hidden}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 45%,#000b)}
+.clock{position:absolute;bottom:22px;left:24px;z-index:1;font-size:64px;font-weight:300;letter-spacing:-2px}.date{font-size:16px;letter-spacing:0;margin-top:3px}.weather{position:absolute;bottom:24px;right:24px;z-index:1;font-size:28px}
+.month-area{padding:20px 14px 12px}.legend{display:flex;gap:18px;font-size:12px;color:#ccc;margin:12px 0 0}.legend span:before{content:'●';color:var(--c);margin-right:5px}
+.note{max-width:760px;margin:16px auto;color:#bfc1c8;font-size:12px;text-align:center}a{color:inherit}
+</style>
+<div class="display"><div class="hero"><img alt="Silnice při západu slunce" src="https://images.unsplash.com/photo-1571924886786-d1aef91a04b1?auto=format&fit=crop&w=1200&q=85"><div class="clock">18:42<div class="date">Sobota 5. září 2026</div></div><div class="weather">☀ 22°</div></div><div class="month-area"><div id="calendar"></div><div class="legend"><span style="--c:#ed675f">Rodina</span><span style="--c:#61bce9">Práce</span><span style="--c:#84bd78">Volný čas</span></div></div></div>
+<div class="note">Ukázková data · hodiny a počasí jsou simulované · kalendář je skutečný widget<br>Fotografie: <a href="https://unsplash.com/photos/a-estrada-conduz-atraves-da-paisagem-no-por-do-sol-J9RFnXJ12TQ">Jonas Degener / Unsplash</a></div>
+<script type="module">
+import '../dist/wall-clock-card.js';
+const sources=[{entity:'calendar.family',label:'Rodina',color:'#ed675f'},{entity:'calendar.work',label:'Práce',color:'#61bce9'},{entity:'calendar.fun',label:'Volný čas',color:'#84bd78'}];
+function timed(day,time,summary){return {summary,start:{dateTime:'2026-09-'+String(day).padStart(2,'0')+'T'+time+':00+02:00'},end:{dateTime:'2026-09-'+String(day).padStart(2,'0')+'T'+String(Number(time.slice(0,2))+1).padStart(2,'0')+time.slice(2)+':00+02:00'},location:'Praha'};}
+const sample={
+'calendar.family':[timed(1,'08:00','Začátek školy'),timed(5,'10:00','Nákup'),timed(5,'12:00','Oběd u babičky'),timed(5,'15:00','Narozeniny'),timed(5,'18:00','Večeře'),timed(9,'16:00','Zubař'),timed(17,'17:00','Třídní schůzky'),timed(24,'15:00','Kroužek'),{summary:'Víkend na horách',start:{date:'2026-09-11'},end:{date:'2026-09-14'}}],
+'calendar.work':[2,8,15,22,29].map(day=>timed(day,'09:00','Porada týmu')).concat([timed(10,'14:00','Prezentace'),timed(23,'10:00','Workshop')]),
+'calendar.fun':[6,13,20,27].map(day=>timed(day,'09:00','Výlet na kole')).concat([timed(18,'19:00','Koncert'),timed(26,'14:00','Fotbal')])};
+const widget=document.createElement('wcc-calendar-month');
+widget.config={type:'calendar-month',entities:sources,firstDayOfWeek:1,eventsPerDay:3,wrapEventTitles:true,cellMinHeight:125,eventTitleSize:'.73em',gridColor:'#ffffff20',eventBackgroundOpacity:.25};
+widget.appearance={language:'cs',timeZone:'Europe/Prague',fontColor:'#f4f4f4'};
+widget.hass={states:{},config:{time_zone:'Europe/Prague'},locale:{language:'cs',time_format:'24'},language:'cs',callApi:async(method,url)=>sample[decodeURIComponent(url.split('/')[1].split('?')[0])] || []};
+// Pin the sample month so this example remains reproducible after September 2026.
+widget.displayedMonth='2026-09';
+document.getElementById('calendar').append(widget);
+window.monthDemo=widget;
+</script></html>

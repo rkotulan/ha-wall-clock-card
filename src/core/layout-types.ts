@@ -151,6 +151,8 @@ export interface BackgroundConfig {
     config?: ImageSourceConfig;
     images?: BackgroundImage[];
     opacity?: number;
+    /** Remove the card surface, border and shadow to reveal the dashboard. */
+    transparent?: boolean;
     rotationInterval?: number;
     objectFit?: string;
     /** Background image blur radius in pixels. */

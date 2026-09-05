@@ -5,7 +5,7 @@ const path = require('path');
 const {spawn, spawnSync} = require('child_process');
 
 const projectRoot = path.resolve(__dirname, '..');
-const harnessPath = '/tests/e2e/issues-39-40-harness.html';
+const harnessPath = process.argv[2] || '/tests/e2e/issues-39-40-harness.html';
 
 function findExecutable(command) {
     const locator = process.platform === 'win32' ? 'where.exe' : 'which';
@@ -146,6 +146,8 @@ function connectDevTools(webSocketUrl) {
 
 async function runBrowser(browserPath, url, profilePath) {
     const args = [
+        // Edge's compatibility launcher can exit while its browser child keeps running.
+        ...(path.basename(browserPath).toLowerCase() === 'msedge.exe' ? ['--edge-skip-compat-layer-relaunch'] : []),
         '--headless=new',
         '--disable-gpu',
         '--disable-extensions',
@@ -159,6 +161,7 @@ async function runBrowser(browserPath, url, profilePath) {
         'about:blank',
     ];
     const browser = spawn(browserPath, args, {windowsHide: true});
+    const browserExited = new Promise(resolve => browser.once('exit', resolve));
     let stderr = '';
     browser.stderr.on('data', chunk => stderr += chunk);
 
@@ -191,7 +194,7 @@ async function runBrowser(browserPath, url, profilePath) {
     } finally {
         devTools?.close();
         browser.kill();
-        await new Promise(resolve => browser.once('close', resolve));
+        await browserExited;
     }
 }
 

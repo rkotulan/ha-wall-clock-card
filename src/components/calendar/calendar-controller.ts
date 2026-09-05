@@ -12,6 +12,7 @@ import {calendarRequestWindow, normalizeCalendarEvent} from '../../widgets/calen
 
 export interface CalendarControllerConfig extends CalendarWidgetSettings {
     timeZone?: string;
+    requestWindow?: {start: string; end: string};
 }
 
 interface CalendarFetchResult {
@@ -69,10 +70,12 @@ export class CalendarController extends BaseController {
             daysAhead: config.daysAhead ?? 7,
             updateInterval: config.updateInterval ?? 300,
             timeZone: config.timeZone,
+            requestWindow: config.requestWindow,
         });
         if (signature === this.configSignature && !hassBecameAvailable) return;
 
         if (signature !== this.configSignature) {
+            if (config.requestWindow) this._events = [];
             this.configSignature = signature;
             this.setupInterval();
         }
@@ -98,6 +101,8 @@ export class CalendarController extends BaseController {
     }
 
     private async fetchEvents(): Promise<void> {
+        const sequence = ++this.requestSequence;
+        const timeZone = this.config.timeZone;
         const hass = this.hass;
         const sources = (this.config.entities ?? [])
             .filter(source => Boolean(source.entity))
@@ -115,13 +120,12 @@ export class CalendarController extends BaseController {
             return;
         }
 
-        const sequence = ++this.requestSequence;
         this._loading = true;
         this._error = undefined;
         this.host.requestUpdate();
         Messenger.getInstance().publish(new BottomBarRequestUpdateMessage());
 
-        const windowRange = calendarRequestWindow(new Date(), this.config.daysAhead ?? 7);
+        const windowRange = this.config.requestWindow ?? calendarRequestWindow(new Date(), this.config.daysAhead ?? 7);
         const query = `start=${encodeURIComponent(windowRange.start)}&end=${encodeURIComponent(windowRange.end)}`;
         const results = await Promise.all(sources.map(async (source): Promise<CalendarFetchResult> => {
             try {
@@ -140,7 +144,7 @@ export class CalendarController extends BaseController {
         const successful = results.filter(result => result.events !== undefined);
         if (successful.length > 0) {
             this._events = successful.flatMap(result => (result.events ?? [])
-                .map(event => normalizeCalendarEvent(event, result.source, this.config.timeZone))
+                .map(event => normalizeCalendarEvent(event, result.source, timeZone))
                 .filter((event): event is CalendarEventItem => event !== undefined));
         }
 

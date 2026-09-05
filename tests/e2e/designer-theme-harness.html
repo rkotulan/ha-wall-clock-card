@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Designer theme #47</title>
+<style>
+    body { margin: 0; padding: 16px; font: 16px sans-serif; background: #ddd; }
+    .fixture { height: 600px; margin-bottom: 16px; }
+    wall-clock-card { display: block; height: 100%; }
+    #e2e-result { white-space: pre-wrap; }
+</style>
+<div id="light" class="fixture"></div>
+<div id="dark" class="fixture"></div>
+<pre id="e2e-result" data-status="running">Running…</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result');
+const checks = [];
+const themes = {
+    light: {primary: '#212121', secondary: '#616161', surface: '#ffffff', background: '#fafafa', inset: '#eeeeee', divider: '#bdbdbd'},
+    dark: {primary: '#eeeeee', secondary: '#bdbdbd', surface: '#1c1c1c', background: '#111111', inset: '#282828', divider: '#555555'},
+};
+function applyTheme(element, theme) {
+    for (const [name, value] of Object.entries({
+        'primary-text-color': theme.primary, 'secondary-text-color': theme.secondary,
+        'card-background-color': theme.surface, 'primary-background-color': theme.background,
+        'secondary-background-color': theme.inset, 'divider-color': theme.divider,
+        'primary-color': '#1976d2', 'text-primary-color': '#ffffff',
+    })) element.style.setProperty('--' + name, value);
+}
+function assert(value, message) { if (!value) throw Error(message); checks.push(message); }
+function rgb(value) { return value.match(/[\d.]+/g).slice(0, 3).map(Number); }
+function luminance(color) {
+    const channels = rgb(color).map(v => {v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;});
+    return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+}
+function contrast(element, background, name) {
+    const a = luminance(getComputedStyle(element).color);
+    const b = luminance(getComputedStyle(background).backgroundColor);
+    assert((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, name + ' text contrast >= 4.5');
+}
+async function settle(element) {
+    await element.updateComplete;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await element.updateComplete;
+}
+const cards = [];
+try {
+    for (const [name, theme] of Object.entries(themes)) {
+        const fixture = document.getElementById(name);
+        applyTheme(fixture, theme);
+        const card = document.createElement('wall-clock-card');
+        card.setConfig({type: 'custom:wall-clock-card', appearance: {fontColor: '#ff00ff'},
+            background: {source: 'none'}, layout: {zones: {center: {widgets: [{type: 'clock', id: 'clock'}]}}}});
+        card.hass = {states: {}, config: {time_zone: 'Europe/Prague'}, language: 'en',
+            locale: {language: 'en'}, themes: {themes: {}}, localize: key => key};
+        card.preview = true;
+        fixture.append(card);
+        await settle(card);
+        card.designerOpen = true;
+        await settle(card);
+        const root = card.shadowRoot;
+        const inspector = root.querySelector('wcc-layout-inspector');
+        const overlay = root.querySelector('wcc-zone-overlay');
+        await settle(inspector); await settle(overlay);
+        contrast(root.querySelector('.designer-toolbar'), root.querySelector('.designer-toolbar'), name + ' toolbar');
+        contrast(root.querySelector('.designer-statusbar'), root.querySelector('.designer-statusbar'), name + ' status');
+        contrast(inspector, inspector, name + ' inspector');
+        const tabs = inspector.shadowRoot.querySelector('.tabs');
+        contrast(tabs.querySelector('.tab.active'), tabs, name + ' active tab');
+        contrast(tabs.querySelector('.tab:not(.active)'), tabs, name + ' inactive tab');
+        const palette = overlay.shadowRoot.querySelector('.palette');
+        contrast(overlay.shadowRoot.querySelector('.palette-title'), palette, name + ' palette heading');
+        const input = overlay.shadowRoot.querySelector('input');
+        contrast(input, input, name + ' search input');
+        assert(getComputedStyle(root.querySelector('ha-card')).color === 'rgb(255, 0, 255)', name + ' preserves dashboard font color');
+        card.selectedWidget = {zone: 'center', index: 0};
+        await settle(card); await settle(inspector);
+        contrast(inspector.shadowRoot.querySelector('.body'), inspector, name + ' widget settings');
+        assert(getComputedStyle(inspector).getPropertyValue('--primary-text-color').trim() === theme.primary,
+            name + ' form controls inherit the HA theme');
+        cards.push(card);
+    }
+    applyTheme(document.getElementById('light'), themes.dark);
+    await settle(cards[0]);
+    assert(getComputedStyle(cards[0].shadowRoot.querySelector('wcc-layout-inspector')).backgroundColor === 'rgb(28, 28, 28)',
+        'Theme changes update the existing Designer without recreating it');
+    applyTheme(document.getElementById('light'), themes.light);
+    result.dataset.status = 'passed'; result.textContent = checks.join('\n');
+} catch (error) {
+    result.dataset.status = 'failed'; result.textContent = checks.join('\n') + '\n' + error.stack;
+}
+</script>
+</html>

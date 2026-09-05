@@ -21,8 +21,15 @@ export interface BaseActionConfig {
 }
 
 /**
- * Configuration for a module-provided action
+ * First exact state match overrides the button's normal appearance.
  */
+export interface ActionStateRule {
+    state: string;
+    icon?: string;
+    color?: string;
+}
+
+/** Configuration for a module-provided action. */
 export interface ModuleActionConfig extends BaseActionConfig {
     // actionId is inherited from BaseActionConfig
     /**
@@ -34,6 +41,12 @@ export interface ModuleActionConfig extends BaseActionConfig {
      * Color to use when the action is in active state
      */
     activeColor?: string;
+
+    /** Default icon color when the action is not active. */
+    color?: string;
+    /** Entity used only for appearance; independent of action targets. */
+    stateEntity?: string;
+    stateRules?: ActionStateRule[];
 
     /**
      * Entity read by handleAction() for the more-info and toggle actions

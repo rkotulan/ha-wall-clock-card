@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Action appearance #46</title>
+<style>
+    body { font: 16px sans-serif; background: #181a20; color: white; padding: 20px;
+        --primary-text-color: white; --secondary-text-color: #bbb; --primary-color: #03a9f4; }
+    action-bar-editor { display: block; max-width: 520px; }
+</style>
+<h1>Action appearance #46</h1>
+<pre id="e2e-result" data-status="running">Running…</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result');
+const checks = [];
+function assert(value, message) {
+    if (!value) throw new Error(message);
+    checks.push(message);
+}
+async function settle(element) {
+    await element.updateComplete;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await element.updateComplete;
+}
+const action = {
+    actionId: 'action-ha', title: 'Garage', icon: 'mdi:garage-alert', color: '#999999',
+    entity: 'light.garage', tap_action: {action: 'more-info'},
+    stateEntity: 'cover.garage', stateRules: [
+        {state: 'open', icon: 'mdi:garage-open', color: '#ff0000'},
+        {state: 'closed', icon: 'mdi:garage', color: '#00ff00'},
+        {state: 'unavailable', icon: 'mdi:alert', color: '#999999'},
+    ],
+};
+let hass = {
+    config: {}, language: 'en', locale: {language: 'en'}, localize: key => key,
+    states: {'cover.garage': {state: 'open'}, 'light.garage': {state: 'on'}},
+    themes: {themes: {}},
+};
+try {
+    await customElements.whenDefined('action-bar-editor');
+    const bar = document.createElement('ha-action-bar');
+    bar.hass = hass;
+    bar.config = {enabled: true, actions: [action, {
+        actionId: 'light-toggle', title: 'Light', icon: 'mdi:lightbulb',
+        entity_id: 'light.garage', icon_on: 'mdi:lightbulb-on', activeColor: '#ffff00',
+    }]};
+    document.body.append(bar);
+    await settle(bar);
+    const icon = () => bar.shadowRoot.querySelector('.action-button ha-icon');
+    assert(icon().icon === 'mdi:garage-open' && getComputedStyle(icon()).color === 'rgb(255, 0, 0)', 'Open garage is red');
+    hass = {...hass, states: {...hass.states, 'cover.garage': {state: 'closed'}}};
+    bar.hass = hass;
+    await settle(bar);
+    assert(icon().icon === 'mdi:garage' && getComputedStyle(icon()).color === 'rgb(0, 255, 0)', 'Closed garage updates to green');
+    const lightIcon = bar.shadowRoot.querySelectorAll('.action-button ha-icon')[1];
+    assert(lightIcon.icon === 'mdi:lightbulb-on' && getComputedStyle(lightIcon).color === 'rgb(255, 255, 0)', 'Legacy light plugin retains its active appearance');
+    bar.hass = {...hass, states: {'light.garage': {state: 'on'}}};
+    await settle(bar);
+    assert(icon().icon === 'mdi:alert', 'Removed entity no longer shows closed garage');
+    bar.hass = hass;
+    bar.config = {...bar.config, actions: [{...action, stateRules: [{state: 'closed', icon: 'M0 0h24v24z', color: '#123456'}]}]};
+    await settle(bar);
+    assert(getComputedStyle(bar.shadowRoot.querySelector('.action-button svg')).fill === 'rgb(18, 52, 86)', 'State color applies to SVG paths');
+
+    const editor = document.createElement('action-bar-editor');
+    editor.hass = hass;
+    editor.config = {actionBar: {enabled: true, actions: [action]}};
+    document.body.append(editor);
+    let saved;
+    editor.addEventListener('config-changed', event => {saved = event.detail.config;});
+    await settle(editor);
+    editor.shadowRoot.querySelector('.action-toggle').click();
+    await settle(editor);
+    assert(editor.shadowRoot.querySelectorAll('.state-rule').length === 3, 'Editor loads existing rules');
+    editor.shadowRoot.querySelector('.add-state-rule').click();
+    await settle(editor);
+    assert(saved.actionBar.actions[0].stateRules.length === 4, 'Adding a rule saves configuration');
+    // Use the last rule directly because it is followed by the add button.
+    const ruleElement = [...editor.shadowRoot.querySelectorAll('.state-rule')].at(-1);
+    const fields = ruleElement.querySelectorAll('ha-row-selector');
+    for (const [field, value] of [[fields[0], 'opening'], [fields[1], 'mdi:garage-open'], [fields[2], '#ffaa00']]) {
+        field.dispatchEvent(new CustomEvent('value-changed', {detail: {value}, bubbles: true, composed: true}));
+        await settle(editor);
+    }
+    assert(saved.actionBar.actions[0].stateRules[3].state === 'opening' && saved.actionBar.actions[0].stateRules[3].color === '#ffaa00', 'State and appearance edits are saved');
+    assert(saved.actionBar.actions[0].entity === 'light.garage' && saved.actionBar.actions[0].tap_action.action === 'more-info', 'Editor preserves the original gesture target');
+    editor.config = saved;
+    await settle(editor);
+    assert(editor.shadowRoot.querySelectorAll('.state-rule').length === 4, 'Rules survive configuration reload');
+    editor.shadowRoot.querySelector('.remove-state-rule').click();
+    await settle(editor);
+    assert(saved.actionBar.actions[0].stateRules.length === 3 && saved.actionBar.actions[0].stateRules[0].state === 'closed', 'Removing a rule preserves remaining order');
+    const tracker = [...editor.shadowRoot.querySelectorAll('.state-appearance ha-row-selector')].find(row => row.selector?.entity);
+    tracker.dispatchEvent(new CustomEvent('value-changed', {detail: {value: ''}, bubbles: true, composed: true}));
+    await settle(editor);
+    assert(saved.actionBar.actions[0].stateEntity === '' && saved.actionBar.actions[0].entity === 'light.garage', 'Clearing appearance tracking leaves action targets intact');
+    result.dataset.status = 'passed';
+    result.textContent = checks.join('\n');
+} catch (error) {
+    result.dataset.status = 'failed';
+    result.textContent = checks.join('\n') + '\n' + error.stack;
+}
+</script>
+</html>

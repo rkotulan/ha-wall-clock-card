@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.9.0
+
+### Monthly calendar overview
+
+- Added the standalone `calendar-month` widget with a seven-column grid, month
+  navigation, Today button, locale-aware week start and multiple colored calendar
+  sources. Requested in #49.
+- Show all-day and multi-day events, optionally wrap event text to two lines,
+  open full event details on click and list all events for a day with the
+  additional-events button.
+- Added Designer controls for calendar sources, day heights, text sizes, grid
+  color and event backgrounds, plus a portrait display example.
+- Shared calendar loading now accepts explicit date ranges and discards stale
+  responses when changing months or removing calendar sources.
+
+### Action buttons and appearance
+
+- Added entity-state rules for action button icons and colors, independently of
+  the button's action target, with Designer controls and YAML examples. (#46)
+- Made the Designer follow Home Assistant light/dark theme colors to improve
+  text readability. (#47)
+- Added transparent card backgrounds that reveal the dashboard wallpaper,
+  including removal of the card border and shadow. (#48)
+
+### Weather fixes
+
+- Use the forecast instant and location to select nighttime partly-cloudy icons
+  across the supported Home Assistant weather icon sets. This fixes the confirmed
+  icon issue from #45; the separately reported time offset remains under investigation.
+
 ## 3.8.0
 
 ### Flashing clock colon

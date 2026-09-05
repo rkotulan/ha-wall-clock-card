@@ -1211,6 +1211,12 @@ export class WallClockCard extends LitElement {
                 position: relative;
             }
 
+            ha-card.transparent-background {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+
             /* The zone grid is the single in-flow child of ha-card; flex-fill it
                so its height is definite and its rows redistribute to fit. */
             wcc-layout {
@@ -1249,9 +1255,9 @@ export class WallClockCard extends LitElement {
                 height: 44px;
                 padding: 0 12px;
                 box-sizing: border-box;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-                background: #0d0e13;
-                color: #f2f3f7;
+                border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                background: var(--card-background-color, #fff);
+                color: var(--primary-text-color, #212121);
             }
 
             .designer-heading {
@@ -1269,7 +1275,7 @@ export class WallClockCard extends LitElement {
 
             .designer-heading span {
                 overflow: hidden;
-                color: #777d90;
+                color: var(--secondary-text-color, #666);
                 font-size: 0.73rem;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -1285,7 +1291,7 @@ export class WallClockCard extends LitElement {
                 border: 1px solid transparent;
                 border-radius: 7px;
                 background: transparent;
-                color: #a0a5b5;
+                color: var(--secondary-text-color, #666);
                 font: inherit;
                 font-size: 0.8rem;
                 font-weight: 700;
@@ -1298,14 +1304,14 @@ export class WallClockCard extends LitElement {
 
             .designer-card-settings:hover,
             .designer-card-settings:focus-visible {
-                color: #fff;
+                color: var(--primary-text-color, #212121);
                 outline: none;
             }
 
             .designer-card-settings.active {
                 border-color: var(--primary-color, #3b82f6);
-                color: #e9f2ff;
-                background: rgba(59, 130, 246, 0.08);
+                color: var(--primary-text-color, #212121);
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
             }
 
             .designer-toolbar-actions {
@@ -1320,9 +1326,9 @@ export class WallClockCard extends LitElement {
                 flex-shrink: 0;
                 gap: 5px;
                 padding: 3px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 8px;
-                background: #15161c;
+                background: var(--secondary-background-color, #f2f2f2);
             }
 
             .designer-mode {
@@ -1334,7 +1340,7 @@ export class WallClockCard extends LitElement {
                 border: 0;
                 border-radius: 6px;
                 background: transparent;
-                color: #777d90;
+                color: var(--secondary-text-color, #666);
                 font: inherit;
                 font-size: 0.82rem;
                 font-weight: 600;
@@ -1347,13 +1353,13 @@ export class WallClockCard extends LitElement {
 
             .designer-mode:hover,
             .designer-mode:focus-visible {
-                color: #fff;
+                color: var(--primary-text-color, #212121);
                 outline: none;
             }
 
             .designer-mode.active {
-                background: #242631;
-                color: #f5f6fa;
+                background: var(--card-background-color, #fff);
+                color: var(--primary-text-color, #212121);
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
             }
 
@@ -1399,7 +1405,7 @@ export class WallClockCard extends LitElement {
             .designer-launch:hover,
             .designer-launch:focus-visible {
                 filter: brightness(1.12);
-                outline: 2px solid rgba(255, 255, 255, 0.5);
+                outline: 2px solid var(--primary-color, #03a9f4);
                 outline-offset: 1px;
             }
 
@@ -1422,7 +1428,7 @@ export class WallClockCard extends LitElement {
                 z-index: 8;
                 width: 400px;
                 overflow: hidden;
-                border-left: 1px solid rgba(255, 255, 255, 0.09);
+                border-left: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
             }
 
             .designer-statusbar {
@@ -1438,9 +1444,9 @@ export class WallClockCard extends LitElement {
                 height: 28px;
                 padding: 0 12px;
                 box-sizing: border-box;
-                border-top: 1px solid rgba(255, 255, 255, 0.09);
-                background: #0d0e13;
-                color: #747a8d;
+                border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                background: var(--card-background-color, #fff);
+                color: var(--secondary-text-color, #666);
                 font-size: 0.68rem;
             }
 
@@ -1464,11 +1470,11 @@ export class WallClockCard extends LitElement {
 
             .layout-save-status.saved ha-icon,
             .layout-save-status.idle ha-icon {
-                color: #69d7a0;
+                color: var(--success-color, #2e7d32);
             }
 
             .layout-save-status.pending ha-icon {
-                color: #fbc02d;
+                color: var(--warning-color, #9c6500);
             }
 
             .layout-save-status.error {
@@ -1515,7 +1521,7 @@ export class WallClockCard extends LitElement {
                     bottom: 36px;
                     width: auto;
                     height: min(52%, 560px);
-                    border: 1px solid rgba(255, 255, 255, 0.14);
+                    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
                     border-radius: 12px 12px 0 0;
                     box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.42);
                 }
@@ -1537,7 +1543,8 @@ export class WallClockCard extends LitElement {
             error: {icon: 'mdi:alert-circle-outline', label: this.layoutSaveError ?? this.t('designer.save_failed', 'Save failed — click to retry')},
         }[this.layoutSaveStatus];
         return html`
-            <ha-card style="color: ${withFontColorCssVariable(this.computeAppearance().fontColor ?? '#FFFFFF')};">
+            <ha-card class=${this.configV3.background?.transparent === true ? 'transparent-background' : ''}
+                     style="color: ${withFontColorCssVariable(this.computeAppearance().fontColor ?? '#FFFFFF')};">
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
                 ${inlineEditing && this.designerRequiresExplicitOpen && !this.designerOpen ? html`

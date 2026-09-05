@@ -153,6 +153,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
         config: config.imageConfig,
         images: config.backgroundImages,
         opacity: config.backgroundOpacity,
+        transparent: config.backgroundTransparent,
         rotationInterval: config.backgroundRotationInterval,
         objectFit: config.objectFit,
         blur: config.backgroundBlur,

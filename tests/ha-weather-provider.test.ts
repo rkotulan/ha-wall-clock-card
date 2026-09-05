@@ -178,6 +178,119 @@ describe('HomeAssistantWeatherProvider', () => {
     });
   });
 
+  describe('day and night icons (issue #45)', () => {
+    const entityId = 'weather.test';
+    const nightTime = '2026-09-04T23:00:00+00:00'; // 01:00 in Berlin
+    const dayTime = '2026-09-05T12:00:00+00:00';
+
+    beforeEach(() => {
+      mockHass.config = {latitude: 52.52, longitude: 13.405, time_zone: 'Europe/Berlin'};
+    });
+
+    function setForecast(items: any[]) {
+      mockHass.callWS.mockResolvedValue({response: {[entityId]: {forecast: items}}});
+    }
+
+    it.each([
+      ['metno', 'fair_night.svg', 'fair_day.svg', 'clearsky_night.svg'],
+      ['basmilius', 'partly-cloudy-night.svg', 'partly-cloudy-day.svg', 'clear-night.svg'],
+      ['openweathermap', '02n@2x.png', '02d@2x.png', '01n@2x.png'],
+      ['wall-clock', 'fair_night.svg', 'fair_day.svg', 'clearsky_night.svg'],
+    ])('selects hourly icons by instant for %s and preserves clear-night', async (iconSet, night, day, clear) => {
+      setForecast([
+        {datetime: nightTime, condition: 'partlycloudy', temperature: 16},
+        {datetime: '2026-09-05T01:00:00+02:00', condition: 'partlycloudy', temperature: 16},
+        {datetime: dayTime, condition: 'partlycloudy', temperature: 20},
+        ...[0, 1, 2, 3].map(hour => ({
+          datetime: `2026-09-05T0${hour}:00:00+00:00`, condition: 'clear-night', temperature: 15,
+        })),
+        {datetime: dayTime, condition: 'clear-night', temperature: 20},
+      ]);
+      const result = await provider.fetchWeatherAsync({entityId, forecastType: 'hourly', iconSet});
+      expect(result.daily.map(item => item.icon.split('/').pop())).toEqual([
+        night, night, day, clear, clear, clear, clear, clear,
+      ]);
+    });
+
+    it('keeps daily summaries daytime even when their timestamp is midnight', async () => {
+      setForecast([{datetime: nightTime, condition: 'partlycloudy'}]);
+      const result = await provider.fetchWeatherAsync({entityId, forecastType: 'daily'});
+      expect(result.daily[0].icon).toContain('fair_day');
+    });
+
+    it('honors explicit day/night flags for twice-daily periods', async () => {
+      setForecast([
+        {datetime: dayTime, condition: 'partlycloudy', is_daytime: false},
+        {datetime: nightTime, condition: 'partlycloudy', is_daytime: true},
+      ]);
+      const result = await provider.fetchWeatherAsync({entityId, forecastType: 'twice_daily'});
+      expect(result.daily[0].icon).toContain('fair_night');
+      expect(result.daily[1].icon).toContain('fair_day');
+    });
+
+    it.each([
+      undefined,
+      {latitude: NaN, longitude: 13},
+      {latitude: 91, longitude: 13},
+      {latitude: 52, longitude: Infinity},
+      {latitude: 52, longitude: 181},
+    ])('falls back to daytime with unavailable or invalid coordinates: %p', async config => {
+      mockHass.config = config;
+      setForecast([{datetime: nightTime, condition: 'partlycloudy'}]);
+      const result = await provider.fetchWeatherAsync({entityId, forecastType: 'hourly'});
+      expect(result.daily[0].icon).toContain('fair_day');
+    });
+
+    it('handles invalid dates without failing the forecast', async () => {
+      setForecast([{datetime: 'invalid', condition: 'partlycloudy'}]);
+      const result = await provider.fetchWeatherAsync({entityId, forecastType: 'hourly'});
+      expect(result.daily[0].icon).toContain('fair_day');
+    });
+
+    it('uses configured coordinates, including zero, ahead of the HA location', async () => {
+      setForecast([{datetime: '2026-09-05T12:00:00Z', condition: 'partlycloudy'}]);
+      const result = await provider.fetchWeatherAsync({
+        entityId, forecastType: 'hourly', latitude: 0, longitude: 180,
+      });
+      expect(result.daily[0].icon).toContain('fair_night');
+    });
+
+    it.each([
+      ['2026-06-21T23:00:00Z', 'fair_day'],
+      ['2026-12-21T12:00:00Z', 'fair_night'],
+    ])('handles polar day/night at %s', async (datetime, icon) => {
+      setForecast([{datetime, condition: 'partlycloudy'}]);
+      const result = await provider.fetchWeatherAsync({
+        entityId, forecastType: 'hourly', latitude: 78.22, longitude: 15.65,
+      });
+      expect(result.daily[0].icon).toContain(icon);
+    });
+
+    it('also maps automatically selected hourly subscription updates to night icons', async () => {
+      mockHass.states[entityId].attributes.supported_features = 2;
+      let callback: (event: any) => void = () => {};
+      mockHass.connection = {subscribeMessage: jest.fn(async (cb: any) => {
+        callback = cb;
+        return () => {};
+      })};
+      const onForecast = jest.fn();
+      await provider.subscribeForecastAsync({entityId}, onForecast);
+      callback({forecast: [{datetime: nightTime, condition: 'partlycloudy'}]});
+      expect(onForecast.mock.calls[0][0][0].icon).toContain('fair_night');
+      expect(onForecast.mock.calls[0][1]).toBe('hourly');
+    });
+
+    it('uses the current instant for current partly-cloudy weather', () => {
+      jest.useFakeTimers().setSystemTime(new Date(nightTime));
+      try {
+        mockHass.states[entityId].state = 'partlycloudy';
+        expect(provider.getCurrentWeather({entityId})?.icon).toContain('fair_night');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
   describe('subscribeForecastAsync', () => {
     it('subscribes via weather/subscribe_forecast and maps pushed forecasts', async () => {
       const unsubscribe = jest.fn();

@@ -7,6 +7,7 @@ const BUILT_IN_EDITOR_SECTIONS: Record<string, readonly WidgetSettingsTab[]> = {
     weather: ['content', 'appearance', 'behavior'],
     transportation: ['content', 'appearance', 'behavior'],
     'action-bar': ['content', 'behavior'],
+    'calendar-month': ['content', 'appearance', 'behavior'],
     calendar: ['content', 'appearance', 'behavior'],
     separator: ['appearance'],
     'ha-card': ['content', 'appearance'],

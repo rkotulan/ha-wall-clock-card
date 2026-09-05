@@ -1,0 +1,77 @@
+<!doctype html><meta charset="utf-8">
+<style>body{margin:0}iframe{width:100%;height:1200px;border:0}</style>
+<iframe src="../../examples/calendar-month-demo.html"></iframe><pre id="e2e-result" data-status="running"></pre>
+<script>
+const result=document.querySelector('#e2e-result');
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const assert=(condition,message)=>{if(!condition)throw new Error(message);};
+(async()=>{
+ try{
+ const frame=document.querySelector('iframe').contentWindow;
+ // The remote example photograph must not delay widget assertions.
+ for(let attempt=0;!frame.monthDemo && attempt<150;attempt++) await wait(50);
+ const w=frame.monthDemo;
+ assert(w,'Demo widget initialized');
+ await wait(200);await w.updateComplete;
+ const root=w.shadowRoot;
+ assert(root.querySelectorAll('.day').length===35,'September has five complete weeks');
+ assert(root.querySelectorAll('.weekday').length===7,'Seven weekday headings');
+ const wrappedEvent=root.querySelector('[data-date="2026-09-17"] .event');
+ const wrappedText=wrappedEvent.querySelector('.event-text');
+ const lineHeight=parseFloat(frame.getComputedStyle(wrappedText).lineHeight);
+ assert(wrappedText.clientHeight>lineHeight && wrappedText.clientHeight<=Math.ceil(lineHeight*2),'Long event wraps to at most two lines');
+ wrappedEvent.click();await w.updateComplete;await wait(30);
+ const popup=root.querySelector('wcc-calendar-event-dialog').shadowRoot;
+ assert(popup.querySelector('dialog').open && popup.querySelector('.title').textContent.includes('Třídní schůzky'),'Clicking wrapped event opens full details');
+ popup.querySelector('.close').click();await wait(30);
+ w.config={...w.config,wrapEventTitles:false};await w.updateComplete;
+ assert(wrappedText.clientHeight<=Math.ceil(lineHeight),'Wrapping can be disabled');
+ w.config={...w.config,wrapEventTitles:true};await w.updateComplete;
+ const day=root.querySelector('[data-date="2026-09-05"]');
+ assert(day.querySelectorAll('.event').length===3,'Daily limit');
+ day.querySelector('.more').click();await w.updateComplete;
+ assert(root.querySelector('dialog').open,'Day dialog opens');
+ assert(root.querySelectorAll('dialog .event').length===4,'All four events in day dialog');
+ root.querySelector('dialog .event').click();await w.updateComplete;await wait(30);
+ assert(root.querySelector('wcc-calendar-event-dialog').shadowRoot.querySelector('dialog').open,'Shared event details open');
+ root.querySelector('wcc-calendar-event-dialog').shadowRoot.querySelector('.close').click();await wait(30);
+ root.querySelector('header button:last-child').click();await wait(50);
+ assert(w.displayedMonth==='2026-10','Next month');
+ assert(root.querySelectorAll('.day').length===35,'October grid');
+ root.querySelector('header button').click();await wait(50);
+ assert(w.displayedMonth==='2026-09','Previous month');
+ assert(root.querySelector('[data-date="2026-09-13"]').textContent.includes('Víkend'),'Multi-day last day included');
+ assert(!root.querySelector('[data-date="2026-09-14"]').textContent.includes('Víkend'),'Exclusive end excluded');
+ const editor=frame.document.createElement('calendar-month-editor');
+ editor.config=w.config;editor.hass=w.hass;frame.document.body.append(editor);await editor.updateComplete;
+ const sources=editor.shadowRoot.querySelector('calendar-editor');await sources.updateComplete;
+ assert(sources.sourcesOnly===true,'Source editor reused');
+ assert(![...sources.shadowRoot.querySelectorAll('ha-row-selector')].some(field=>field.propertyName==='displayMode'),'No agenda mode in month editor');
+ let updatedConfig;
+ editor.addEventListener('config-changed',event=>updatedConfig=event.detail.config);
+ const wrapField=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName==='wrapEventTitles');
+ assert(wrapField.value===true,'Editor shows wrapping preference');
+ wrapField.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'wrapEventTitles',value:false},bubbles:true,composed:true}));
+ assert(updatedConfig.wrapEventTitles===false,'Editor saves wrapping preference');
+ const firstDay=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName==='firstDayOfWeek');
+ firstDay.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'firstDayOfWeek',value:'0'},bubbles:true,composed:true}));
+ assert(updatedConfig.firstDayOfWeek===0,'Editor saves numeric Sunday');
+ firstDay.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'firstDayOfWeek',value:'auto'},bubbles:true,composed:true}));
+ assert(updatedConfig.firstDayOfWeek===undefined,'Editor resets locale default');
+ sources.sourcesOnly=false;await sources.updateComplete;
+ assert([...sources.shadowRoot.querySelectorAll('ha-row-selector')].some(field=>field.propertyName==='displayMode'),'Agenda editor controls preserved');
+ editor.remove();
+ const empty=frame.document.createElement('wcc-calendar-month');empty.config={type:'calendar-month',entities:[]};empty.hass=w.hass;frame.document.body.append(empty);await wait(50);
+ assert(empty.shadowRoot.querySelectorAll('.day').length>=28,'Empty calendar renders grid');
+ empty.style.width='320px';
+ assert(empty.shadowRoot.querySelector('.scroll').scrollWidth>empty.shadowRoot.querySelector('.scroll').clientWidth,'Narrow grid scrolls');
+ empty.displayedMonth='2020-01';await empty.updateComplete;
+ empty.shadowRoot.querySelectorAll('header button')[1].click();await empty.updateComplete;
+ assert(empty.displayedMonth==='','Today resumes current month');
+ assert(w.displayedMonth==='2026-09','Instances navigate independently');
+ empty.config={type:'calendar-month',entities:[{entity:'calendar.fail'}]};empty.hass={...w.hass,callApi:async()=>{throw new Error('Expected fixture failure');}};await wait(50);
+ assert(empty.shadowRoot.querySelector('[role="status"]'),'Fetch error shown');empty.remove();
+ result.textContent='PASS: month grid, overflow, shared details, navigation, multi-day dates, editor, empty and error states';result.dataset.status='passed';
+ }catch(error){result.textContent=error.stack;result.dataset.status='failed';}
+})();
+</script>

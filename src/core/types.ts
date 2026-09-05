@@ -21,6 +21,7 @@ export interface WallClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
     dateFormat?: ExtendedDateTimeFormatOptions;
     backgroundOpacity?: number;
+    backgroundTransparent?: boolean;
     imageSource?: string; // ID of the image source plugin ('none', 'local', 'picsum', etc.)
     imageConfig?: ImageSourceConfig; // Configuration for the image source
     backgroundRotationInterval?: number;
@@ -90,6 +91,7 @@ export interface WallClockCardConfig {
     imageSource?: string;
     backgroundImages?: BackgroundImageConfig[];
     backgroundOpacity?: number;
+    backgroundTransparent?: boolean;
     rotationInterval?: number;
     objectFit?: string;
     backgroundBlur?: number;

@@ -287,6 +287,15 @@ export class BackgroundEditor extends BaseEditorSection {
                 <div class="section-subheader">${this.t('editor.background.source_group', 'Image source')}</div>
                 <ha-row-selector
                         .hass=${this.hass}
+                        .selector=${{boolean: {}}}
+                        .value=${this.config.backgroundTransparent === true}
+                        .label=${this.t('editor.background.transparent', 'Transparent card background')}
+                        .helper=${this.t('editor.background.transparent_help', 'Removes the card background, border and shadow. Select no image to reveal the dashboard wallpaper.')}
+                        propertyName="backgroundTransparent"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+                <ha-row-selector
+                        .hass=${this.hass}
                         .selector=${{
                             select: {
                                 options: this._imageSourceOptions(),

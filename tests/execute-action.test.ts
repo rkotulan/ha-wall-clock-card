@@ -16,6 +16,19 @@ const mockHass = {} as HomeAssistant;
 const fakeElement = {} as HTMLElement;
 
 describe('executeAction', () => {
+    it.each(['tap', 'hold', 'double_tap'] as const)('keeps %s targets independent of appearance tracking', gesture => {
+        const action: ModuleActionConfig = {
+            actionId: 'action-ha', title: 'Garage', icon: 'mdi:garage',
+            entity: 'light.garage', stateEntity: 'cover.garage',
+            stateRules: [{state: 'open', color: '#ff0000'}],
+            tap_action: {action: 'more-info'},
+            hold_action: {action: 'toggle'},
+            double_tap_action: {action: 'more-info'},
+        };
+        executeAction(action, mockHass, fakeElement, gesture);
+        expect(handleAction).toHaveBeenCalledWith(fakeElement, mockHass,
+            expect.objectContaining({entity: 'light.garage'}), gesture);
+    });
     beforeEach(() => {
         (ActionRegistry as any).instance = undefined;
         (handleAction as jest.Mock).mockClear();

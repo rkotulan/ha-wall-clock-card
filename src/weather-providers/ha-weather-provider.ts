@@ -7,6 +7,7 @@ import {
 import { Weather } from '../image-sources/types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { logger } from '../utils';
+import { getPosition } from 'suncalc';
 
 /**
  * Configuration for the Home Assistant weather provider
@@ -67,7 +68,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
 
     const forecastTypes = this.resolveForecastTypes(config, state);
     const forecastResult = await this.fetchForecastAsync(entityId, forecastTypes);
-    const daily = this.mapForecastItems(forecastResult.forecast, config, state);
+    const daily = this.mapForecastItems(forecastResult.forecast, config, state, forecastResult.forecastType);
 
     const temperatureUnit = attributes.temperature_unit
       || (this.hass.config as any)?.unit_system?.temperature;
@@ -119,7 +120,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
             if (event?.forecast && Array.isArray(event.forecast)) {
               const currentState = this.hass?.states[entityId];
               onForecast(
-                this.mapForecastItems(event.forecast, config, currentState),
+                this.mapForecastItems(event.forecast, config, currentState, forecastType),
                 forecastType
               );
             }
@@ -216,7 +217,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       condition: this.mapConditionToKey(condition),
       conditionText: this.localizeCondition(state),
       conditionUnified: this.mapWeatherCondition(condition),
-      icon: this.getIconUrl(condition, config.iconSet),
+      icon: this.getIconUrl(condition, config.iconSet, this.isNight(new Date(), config)),
       humidity: attributes.humidity,
       windSpeed: attributes.wind_speed,
       pressure: attributes.pressure,
@@ -230,7 +231,8 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   private mapForecastItems(
     forecastData: any[],
     config: HomeAssistantWeatherConfig,
-    state: any
+    state: any,
+    forecastType: WeatherForecastType
   ): WeatherData['daily'] {
     return forecastData.map((item: any) => ({
       date: new Date(item.datetime),
@@ -238,11 +240,26 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
       temperatureMax: item.temperature,
       condition: this.mapConditionToKey(item.condition),
       conditionText: state ? this.localizeCondition(state, item.condition) : undefined,
-      icon: this.getIconUrl(item.condition, config.iconSet),
+      icon: this.getIconUrl(item.condition, config.iconSet,
+        typeof item.is_daytime === 'boolean'
+          ? !item.is_daytime
+          : forecastType === 'hourly' && this.isNight(new Date(item.datetime), config)),
       precipitation: item.precipitation,
       humidity: item.humidity,
       windSpeed: item.wind_speed
     }));
+  }
+
+  /** Use the forecast instant, never today's sun state or browser-local hours. */
+  private isNight(date: Date, config: HomeAssistantWeatherConfig): boolean {
+    const latitude = config.latitude ?? this.hass?.config?.latitude;
+    const longitude = config.longitude ?? this.hass?.config?.longitude;
+    if (!Number.isFinite(date.getTime()) ||
+        typeof latitude !== 'number' || !Number.isFinite(latitude) || Math.abs(latitude) > 90 ||
+        typeof longitude !== 'number' || !Number.isFinite(longitude) || Math.abs(longitude) > 180) {
+      return false; // Preserve the day icon when the location/time is unavailable.
+    }
+    return getPosition(date, latitude, longitude).altitude < 0;
   }
 
   /**
@@ -346,15 +363,15 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   /**
    * Get icon for condition
    */
-  private getIconUrl(condition: string, iconSet?: string): string {
+  private getIconUrl(condition: string, iconSet?: string, night = false): string {
     const lowerCondition = condition?.toLowerCase();
 
     if (iconSet === 'basmilius') {
-      return this.getAnimatedIconUrl(lowerCondition);
+      return this.getAnimatedIconUrl(lowerCondition, night);
     }
 
     if (iconSet === 'openweathermap') {
-      return this.getOpenWeatherMapIconUrl(lowerCondition);
+      return this.getOpenWeatherMapIconUrl(lowerCondition, night);
     }
 
     let symbol = 'clearsky_day'; // Default
@@ -370,7 +387,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
         symbol = 'cloudy';
         break;
       case 'partlycloudy':
-        symbol = 'fair_day';
+        symbol = night ? 'fair_night' : 'fair_day';
         break;
       case 'rainy':
         symbol = 'rain';
@@ -400,7 +417,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   /**
    * Get OpenWeatherMap icon URL for Home Assistant condition
    */
-  private getOpenWeatherMapIconUrl(condition: string): string {
+  private getOpenWeatherMapIconUrl(condition: string, night = false): string {
     let iconCode = '01d'; // Default
 
     switch (condition) {
@@ -414,7 +431,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
         iconCode = '03d';
         break;
       case 'partlycloudy':
-        iconCode = '02d';
+        iconCode = night ? '02n' : '02d';
         break;
       case 'rainy':
         iconCode = '10d';
@@ -443,7 +460,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
   /**
    * Get Bas Milius animated icon URL for Home Assistant condition
    */
-  private getAnimatedIconUrl(condition: string): string {
+  private getAnimatedIconUrl(condition: string, night = false): string {
     let symbol = 'clear-day'; // Default
 
     switch (condition) {
@@ -457,7 +474,7 @@ export class HomeAssistantWeatherProvider implements WeatherProvider {
         symbol = 'cloudy';
         break;
       case 'partlycloudy':
-        symbol = 'partly-cloudy-day';
+        symbol = night ? 'partly-cloudy-night' : 'partly-cloudy-day';
         break;
       case 'rainy':
         symbol = 'rain';

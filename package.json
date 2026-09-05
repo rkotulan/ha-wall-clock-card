@@ -1,6 +1,6 @@
 {
   "name": "wall-clock-card",
-  "version": "3.8.0",
+  "version": "3.9.0",
   "description": "A customizable Home Assistant wall dashboard with zone-based clock, sensor, weather, calendar, transport, and action widgets",
   "main": "dist/wall-clock-card.js",
   "scripts": {
@@ -29,7 +29,8 @@
   "dependencies": {
     "custom-card-helpers": "^2.0.0",
     "lit": "^3.3.0",
-    "sortablejs": "^1.15.7"
+    "sortablejs": "^1.15.7",
+    "suncalc": "^2.0.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

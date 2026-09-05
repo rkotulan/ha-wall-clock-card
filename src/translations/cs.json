@@ -1,4 +1,5 @@
 {
+  "month": {"wrapEventTitles":"Zalomit text událostí na dva řádky","previous":"Předchozí měsíc","next":"Další měsíc","today":"Dnes","more":"další","close":"Zavřít","loading":"Načítání kalendáře…","error":"Některé kalendáře se nepodařilo načíst.","firstDayOfWeek":"Začátek týdne","eventsPerDay":"Událostí na den","showAllDay":"Zobrazit celodenní události","cellMinHeight":"Minimální výška dne (px)","calendarDateSize":"Velikost data","eventTitleSize":"Velikost textu událostí","gridColor":"Barva mřížky","eventBackgroundOpacity":"Neprůhlednost pozadí událostí","updateInterval":"Obnovení (sekundy)"},
   "common": {
     "title": "Počasí",
     "description": "Aktuální počasí a předpověď",
@@ -155,6 +156,7 @@
     "legacy_hint": "První změna rozestupů převede starší konfiguraci na formát zón."
   },
   "widgets": {
+    "calendar_month": "Měsíční přehled",
     "sensors": "Senzory", "weather": "Počasí", "calendar": "Kalendář", "transportation": "Doprava",
     "clock": "Hodiny", "date": "Datum", "action_bar": "Panel akcí", "ha_card": "Karta Home Assistantu",
     "separator": "Oddělovač"
@@ -245,6 +247,11 @@
       "title_help": "Název tlačítka akce", "icon": "Ikona", "icon_help": "Ikona tlačítka akce",
       "add": "Přidat akci", "remove": "Odebrat akci", "expand": "Rozbalit akci", "collapse": "Sbalit akci",
       "move_up": "Posunout akci nahoru", "move_down": "Posunout akci dolů",
+      "appearance": "Vzhled podle stavu entity", "default_color": "Výchozí barva ikony",
+      "state_entity": "Sledovaná entita", "state_entity_help": "Mění pouze vzhled. Akce klepnutí, podržení a dvojitého klepnutí zůstávají stejné.",
+      "state_rules_help": "Použije se první odpovídající stav. Ostatní stavy zachovají běžný vzhled tlačítka. Podle potřeby přidejte pravidla pro unknown a unavailable.",
+      "rule_state": "Stav (například open nebo closed)", "rule_color": "Barva ikony",
+      "add_rule": "Přidat pravidlo stavu", "remove_rule": "Odstranit pravidlo",
       "types": {
         "weather_update": "Aktualizovat počasí", "transportation": "Doprava", "light_toggle": "Přepnout světlo",
         "action_navigate": "Přejít na stránku", "background_next": "Další pozadí",
@@ -271,6 +278,8 @@
     },
     "background": {
       "source_group": "Zdroj obrázků", "appearance": "Vzhled obrázku", "rotation_group": "Střídání obrázků",
+      "transparent": "Průhledné pozadí karty",
+      "transparent_help": "Odstraní podklad, rámeček a stín karty. Pro zobrazení tapety dashboardu vyberte zdroj bez obrázku.",
       "source": "Zdroj obrázků", "opacity": "Průhlednost pozadí", "blur": "Rozmazání pozadí (px)", "grayscale": "Odstíny šedi pozadí", "rotation": "Interval změny (sekundy)",
       "fit": "Přizpůsobení obrázku pozadí", "images": "Obrázky pozadí", "image": "Obrázek pozadí {number}",
       "url": "URL obrázku", "weather": "Podmínka počasí", "weather_any": "Libovolné počasí",

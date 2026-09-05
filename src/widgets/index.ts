@@ -10,6 +10,8 @@ import './weather-widget';
 import './transportation-widget';
 import './action-bar-widget';
 import './calendar-widget';
+import './calendar-month-widget';
+import '../components/calendar/calendar-month-editor';
 import './ha-card-widget';
 import './separator-widget';
 import '../components/ha-card';
@@ -89,6 +91,14 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
         elementTag: 'wcc-action-bar-widget',
         editorTag: 'action-bar-editor',
         defaultConfig: () => ({type: 'action-bar', enabled: true, actions: []}),
+    },
+    {
+        widgetId: 'calendar-month',
+        name: 'Monthly overview',
+        icon: 'mdi:calendar-month',
+        elementTag: 'wcc-calendar-month',
+        editorTag: 'calendar-month-editor',
+        defaultConfig: () => ({type:'calendar-month',entities:[],eventsPerDay:3,cellMinHeight:110}),
     },
     {
         widgetId: 'calendar',

@@ -33,7 +33,7 @@ export const ZONE_LABELS: Record<ZoneId, string> = {
 };
 
 const PALETTE_GROUPS: {labelKey: string; fallback: string; widgetIds: string[]}[] = [
-    {labelKey: 'designer.information', fallback: 'Information', widgetIds: ['sensors', 'weather', 'calendar', 'transportation']},
+    {labelKey: 'designer.information', fallback: 'Information', widgetIds: ['sensors', 'weather', 'calendar', 'calendar-month', 'transportation']},
     {labelKey: 'designer.time', fallback: 'Time', widgetIds: ['clock', 'date']},
     {labelKey: 'designer.controls', fallback: 'Controls', widgetIds: ['action-bar']},
 ];
@@ -96,9 +96,8 @@ export class WccZoneOverlay extends LitElement {
                 min-height: 0;
                 box-sizing: border-box;
                 background:
-                    radial-gradient(circle at 28% 15%, rgba(61, 69, 110, 0.24), transparent 46%),
-                    linear-gradient(135deg, #191923, #211b21);
-                color: #f2f3f7;
+                    var(--primary-background-color, #fafafa);
+                color: var(--primary-text-color, #212121);
             }
 
             .zone-grid {
@@ -127,7 +126,7 @@ export class WccZoneOverlay extends LitElement {
             .format-preview-surface::before {
                 content: '';
                 position: absolute;
-                background: rgba(79, 140, 255, 0.08);
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
             }
 
             .format-preview-surface.left {
@@ -141,7 +140,7 @@ export class WccZoneOverlay extends LitElement {
                     calc(-1 * var(--preview-zone-gap))
                     calc(-1 * var(--preview-padding-bottom))
                     calc(-1 * var(--preview-padding-left));
-                border-right: 2px solid rgba(135, 181, 255, 0.46);
+                border-right: 2px solid var(--primary-color, #03a9f4);
             }
 
             .format-preview-surface.right {
@@ -155,7 +154,7 @@ export class WccZoneOverlay extends LitElement {
                     calc(-1 * var(--preview-padding-right))
                     calc(-1 * var(--preview-padding-bottom))
                     calc(-1 * var(--preview-zone-gap));
-                border-left: 2px solid rgba(135, 181, 255, 0.46);
+                border-left: 2px solid var(--primary-color, #03a9f4);
             }
 
             .format-preview-surface.top {
@@ -169,7 +168,7 @@ export class WccZoneOverlay extends LitElement {
                     calc(-1 * var(--preview-padding-right))
                     calc(-1 * var(--preview-zone-gap))
                     calc(-1 * var(--preview-padding-left));
-                border-bottom: 2px solid rgba(135, 181, 255, 0.46);
+                border-bottom: 2px solid var(--primary-color, #03a9f4);
             }
 
             .format-preview-surface.bottom {
@@ -183,12 +182,12 @@ export class WccZoneOverlay extends LitElement {
                     calc(-1 * var(--preview-padding-right))
                     calc(-1 * var(--preview-padding-bottom))
                     calc(-1 * var(--preview-padding-left));
-                border-top: 2px solid rgba(135, 181, 255, 0.46);
+                border-top: 2px solid var(--primary-color, #03a9f4);
             }
 
             .format-preview-surface.glass::before {
                 background:
-                    linear-gradient(135deg, rgba(11, 15, 23, 0.56), rgba(57, 49, 53, 0.38));
+                    color-mix(in srgb, var(--card-background-color, #fff) 72%, transparent);
                 box-shadow: 0 0 32px rgba(0, 0, 0, 0.22);
             }
 
@@ -200,9 +199,9 @@ export class WccZoneOverlay extends LitElement {
                 min-height: 0;
                 padding: 22px 9px 9px;
                 box-sizing: border-box;
-                border: 1px dashed rgba(190, 194, 220, 0.32);
+                border: 1px dashed var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 12px;
-                background: rgba(255, 255, 255, 0.012);
+                background: var(--card-background-color, #fff);
             }
 
             .split-panel.vertical {
@@ -220,8 +219,8 @@ export class WccZoneOverlay extends LitElement {
                 z-index: 2;
                 padding: 1px 7px 2px;
                 border-radius: 3px;
-                background: #111116;
-                color: #d7d9e2;
+                background: var(--card-background-color, #fff);
+                color: var(--primary-text-color, #212121);
                 font-size: 0.64rem;
                 font-weight: 800;
                 letter-spacing: 0.08em;
@@ -287,7 +286,7 @@ export class WccZoneOverlay extends LitElement {
                 min-height: 42px;
                 padding: 17px 7px 6px;
                 border-radius: 8px;
-                background: rgba(4, 5, 9, 0.46);
+                background: var(--secondary-background-color, #f2f2f2);
             }
 
             .split-panel .zone-list {
@@ -307,17 +306,17 @@ export class WccZoneOverlay extends LitElement {
                 min-width: 0;
                 min-height: 0;
                 padding: 20px 8px 8px;
-                border: 1px dashed rgba(190, 194, 220, 0.25);
+                border: 1px dashed var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 12px;
-                background: rgba(255, 255, 255, 0.012);
+                background: var(--card-background-color, #fff);
                 overflow: visible;
                 cursor: pointer;
                 transition: border-color 120ms ease, background-color 120ms ease;
             }
 
             .zone-cell:hover {
-                border-color: rgba(135, 181, 255, 0.55);
-                background-color: rgba(64, 105, 180, 0.06);
+                border-color: var(--primary-color, #03a9f4);
+                background-color: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
             }
 
             .zone-cell.selected {
@@ -339,8 +338,8 @@ export class WccZoneOverlay extends LitElement {
                 max-width: calc(100% - 20px);
                 padding: 1px 7px 2px;
                 border-radius: 3px;
-                background: #111116;
-                color: #aeb3c5;
+                background: var(--card-background-color, #fff);
+                color: var(--secondary-text-color, #666);
                 font-size: 0.64rem;
                 font-weight: 700;
                 letter-spacing: 0.08em;
@@ -355,7 +354,7 @@ export class WccZoneOverlay extends LitElement {
             }
 
             .zone-label:hover {
-                color: #fff;
+                color: var(--primary-text-color, #212121);
             }
 
             .zone-list {
@@ -394,12 +393,12 @@ export class WccZoneOverlay extends LitElement {
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 8px;
                 padding: 2px 4px;
                 font-size: 0.85rem;
-                background-color: rgba(9, 9, 13, 0.82);
-                color: #f4f5f8;
+                background-color: var(--card-background-color, #fff);
+                color: var(--primary-text-color, #212121);
                 user-select: none;
                 min-width: 0;
             }
@@ -426,7 +425,7 @@ export class WccZoneOverlay extends LitElement {
 
             .zone-list .chip-edit > ha-icon:first-child,
             .palette .chip > ha-icon:first-child {
-                color: #e4c75a;
+                color: var(--primary-color, #03a9f4);
             }
 
             .zone-list .chip-edit > ha-icon:first-child {
@@ -480,7 +479,7 @@ export class WccZoneOverlay extends LitElement {
             .chip-edit:hover,
             .chip-action:focus-visible,
             .chip-edit:focus-visible {
-                background-color: rgba(255, 255, 255, 0.14);
+                background-color: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
                 opacity: 1;
                 outline: none;
             }
@@ -488,7 +487,7 @@ export class WccZoneOverlay extends LitElement {
             .chip.selected {
                 border-color: var(--primary-color, #3b82f6);
                 outline: 1px solid var(--primary-color, #3b82f6);
-                background: color-mix(in srgb, var(--primary-color, #3b82f6) 28%, #11131a);
+                background: color-mix(in srgb, var(--primary-color, #3b82f6) 15%, var(--card-background-color, #fff));
             }
 
             .chip.sortable-ghost {
@@ -506,15 +505,15 @@ export class WccZoneOverlay extends LitElement {
                 min-height: 0;
                 padding: 14px 10px;
                 box-sizing: border-box;
-                border-right: 1px solid rgba(255, 255, 255, 0.09);
-                background: rgba(12, 12, 17, 0.94);
+                border-right: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+                background: var(--card-background-color, #fff);
                 overflow-x: hidden;
                 overflow-y: auto;
             }
 
             .palette-title {
                 margin: 0 4px 2px;
-                color: #8f94a6;
+                color: var(--secondary-text-color, #666);
                 font-size: 0.68rem;
                 font-weight: 800;
                 letter-spacing: 0.1em;
@@ -532,7 +531,7 @@ export class WccZoneOverlay extends LitElement {
                 left: 10px;
                 z-index: 1;
                 --mdc-icon-size: 16px;
-                color: #7f8496;
+                color: var(--secondary-text-color, #666);
                 transform: translateY(-50%);
                 pointer-events: none;
             }
@@ -542,11 +541,11 @@ export class WccZoneOverlay extends LitElement {
                 height: 34px;
                 padding: 0 10px 0 34px;
                 box-sizing: border-box;
-                border: 1px solid rgba(255, 255, 255, 0.13);
+                border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
                 border-radius: 8px;
                 outline: none;
-                background: #0d0e13;
-                color: #f2f3f7;
+                background: var(--card-background-color, #fff);
+                color: var(--primary-text-color, #212121);
                 font: inherit;
                 font-size: 0.8rem;
             }
@@ -557,7 +556,7 @@ export class WccZoneOverlay extends LitElement {
 
             .palette-category {
                 margin: 8px 4px 0;
-                color: #696f81;
+                color: var(--secondary-text-color, #666);
                 font-size: 0.62rem;
                 font-weight: 800;
                 letter-spacing: 0.1em;
@@ -569,13 +568,13 @@ export class WccZoneOverlay extends LitElement {
                 min-height: 36px;
                 padding: 4px 8px;
                 box-sizing: border-box;
-                background: rgba(255, 255, 255, 0.045);
+                background: var(--secondary-background-color, #f2f2f2);
                 cursor: pointer;
             }
 
             .palette .chip:hover {
-                border-color: rgba(104, 161, 255, 0.45);
-                background: rgba(67, 111, 190, 0.12);
+                border-color: var(--primary-color, #03a9f4);
+                background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent);
             }
 
             .palette .palette-name {
@@ -588,7 +587,7 @@ export class WccZoneOverlay extends LitElement {
 
             .palette .drag-handle {
                 margin-left: auto;
-                color: #5f6473;
+                color: var(--secondary-text-color, #666);
             }
 
             .palette .chip.unavailable {
@@ -603,7 +602,7 @@ export class WccZoneOverlay extends LitElement {
                 justify-content: center;
                 flex: 1;
                 min-height: 36px;
-                color: #777b8c;
+                color: var(--secondary-text-color, #666);
                 font-size: 0.74rem;
                 opacity: 0;
                 pointer-events: none;

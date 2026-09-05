@@ -1,5 +1,5 @@
 import {css, html, PropertyValues} from 'lit';
-import {customElement, state} from 'lit/decorators.js';
+import {customElement, property, state} from 'lit/decorators.js';
 import {fireEvent} from 'custom-card-helpers';
 import {BaseEditorSection} from '../../editors/editor-base/base-editor-section';
 import {moveListItem, movedListIndex, SortableListController} from '../../editors/sortable-list';
@@ -15,6 +15,7 @@ const EXPANSION_STATE_KEY = 'calendar-sources.expansion';
 
 @customElement('calendar-editor')
 export class CalendarEditor extends BaseEditorSection {
+    @property({type: Boolean}) sourcesOnly = false;
     @state() private sources: CalendarSourceConfig[] = [];
     @state() private addingAll = false;
     @state() private expandedSourceIndex: number | null = null;
@@ -418,7 +419,7 @@ export class CalendarEditor extends BaseEditorSection {
                         </button>
                     </div>
 
-                    <div class="section-title">${this.t('editor.calendar.range', 'Event range')}</div>
+                    ${!this.sourcesOnly ? html`<div class="section-title">${this.t('editor.calendar.range', 'Event range')}</div>
                     <div class="options">
                         <ha-row-selector
                                 .hass=${this.hass}
@@ -478,9 +479,10 @@ export class CalendarEditor extends BaseEditorSection {
                                 @value-changed=${this._handleFormValueChanged}>
                         </ha-row-selector>
                     </div>
+                    ` : ''}
                 ` : ''}
 
-                ${showAppearance ? html`
+                ${showAppearance && !this.sourcesOnly ? html`
                     <div class="section-title">${this.t('editor.calendar.event_appearance', 'Event appearance')}</div>
                     <div class="options">
                         <ha-row-selector
@@ -503,7 +505,7 @@ export class CalendarEditor extends BaseEditorSection {
                     </div>
                 ` : ''}
 
-                ${showBehavior ? html`
+                ${showBehavior && !this.sourcesOnly ? html`
                     <div class="section-title">${this.t('editor.calendar.filtering', 'Filtering and visibility')}</div>
                     <div class="options">
                         <ha-row-selector

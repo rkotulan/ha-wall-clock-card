@@ -5,6 +5,7 @@ import {moveListItem, movedListIndex, SortableListController} from '../../editor
 import { ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-bar';
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';
+import type {ActionStateRule} from './types';
 
 const EXPANSION_STATE_KEY = 'actions.expansion';
 
@@ -456,10 +457,104 @@ export class ActionBarEditor extends BaseEditorSection {
         }
     }
 
+    private _updateStateRule(actionIndex: number, ruleIndex: number, field: keyof ActionStateRule, ev: CustomEvent): void {
+        ev.stopPropagation();
+        const rules = (this._actions[actionIndex].stateRules || []).map((rule, index) =>
+            index === ruleIndex ? {...rule, [field]: ev.detail.value ?? ''} : rule);
+        this._actionChanged(actionIndex, 'stateRules', rules);
+    }
+
+    private _renderAppearance(action: ModuleActionConfig, index: number) {
+        const rules = action.stateRules || [];
+        return html`
+            <div class="state-appearance">
+                <h4>${this.t('editor.actions.appearance', 'Appearance by entity state')}</h4>
+                <ha-row-selector
+                    .hass=${this.hass} .selector=${{color_hex: {}}}
+                    .value=${action.color || ''} .required=${false}
+                    .label=${this.t('editor.actions.default_color', 'Default icon color')}
+                    .labelPosition=${LabelPosition.Top}
+                    @value-changed=${(ev: CustomEvent) => {
+                        ev.stopPropagation();
+                        this._actionChanged(index, 'color', ev.detail.value || '');
+                    }}
+                ></ha-row-selector>
+                <ha-row-selector
+                    .hass=${this.hass} .selector=${{entity: {}}}
+                    .value=${action.stateEntity || ''} .required=${false}
+                    .label=${this.t('editor.actions.state_entity', 'Entity to track')}
+                    .helper=${this.t('editor.actions.state_entity_help', 'Changes appearance only. Tap, hold and double-tap actions stay the same.')}
+                    .labelPosition=${LabelPosition.Top}
+                    @value-changed=${(ev: CustomEvent) => {
+                        ev.stopPropagation();
+                        this._actionChanged(index, 'stateEntity', ev.detail.value || '');
+                    }}
+                ></ha-row-selector>
+                ${action.stateEntity || rules.length ? html`
+                    <p class="info-text">${this.t('editor.actions.state_rules_help', 'The first matching state wins. Unmatched states use the normal button appearance. Add unknown and unavailable rules if needed.')}</p>
+                    ${rules.map((rule, ruleIndex) => html`
+                        <div class="state-rule">
+                            <ha-row-selector
+                                .hass=${this.hass} .selector=${{text: {}}}
+                                .value=${rule.state}
+                                .label=${this.t('editor.actions.rule_state', 'State (for example open or closed)')}
+                                .labelPosition=${LabelPosition.Top}
+                                @value-changed=${(ev: CustomEvent) => this._updateStateRule(index, ruleIndex, 'state', ev)}
+                            ></ha-row-selector>
+                            <ha-row-selector
+                                .hass=${this.hass} .selector=${{icon: {}}}
+                                .value=${rule.icon || ''} .required=${false}
+                                .label=${this.t('editor.actions.icon', 'Icon')}
+                                .labelPosition=${LabelPosition.Top}
+                                @value-changed=${(ev: CustomEvent) => this._updateStateRule(index, ruleIndex, 'icon', ev)}
+                            ></ha-row-selector>
+                            <ha-row-selector
+                                .hass=${this.hass} .selector=${{color_hex: {}}}
+                                .value=${rule.color || ''} .required=${false}
+                                .label=${this.t('editor.actions.rule_color', 'Icon color')}
+                                .labelPosition=${LabelPosition.Top}
+                                @value-changed=${(ev: CustomEvent) => this._updateStateRule(index, ruleIndex, 'color', ev)}
+                            ></ha-row-selector>
+                            <button class="remove-state-rule" type="button"
+                                @click=${() => this._actionChanged(index, 'stateRules', rules.filter((_, i) => i !== ruleIndex))}>
+                                ${this.t('editor.actions.remove_rule', 'Remove rule')}
+                            </button>
+                        </div>
+                    `)}
+                    <button class="add-action add-state-rule" type="button"
+                        @click=${() => this._actionChanged(index, 'stateRules', [...rules, {state: ''}])}>
+                        ${this.t('editor.actions.add_rule', 'Add state rule')}
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
     static get styles() {
         return css`
             .content {
                 padding: 12px;
+            }
+
+            .state-appearance {
+                border-top: 1px solid var(--divider-color, #777);
+                margin-top: 12px;
+            }
+            .state-appearance h4 { color: var(--primary-text-color); margin: 12px 0; }
+            .state-rule {
+                border: 1px solid var(--divider-color, #777);
+                border-radius: 8px;
+                padding: 8px;
+                margin: 8px 0;
+            }
+            .remove-state-rule {
+                background: transparent;
+                color: var(--error-color, #db4437);
+                border: 1px solid currentColor;
+                border-radius: 6px;
+                padding: 8px;
+                cursor: pointer;
+                font: inherit;
             }
             
             .info-text {
@@ -747,6 +842,7 @@ export class ActionBarEditor extends BaseEditorSection {
 
                         <!-- Editor components are now dynamically created by the factory pattern -->
                         ${this._createEditorTagComponent(action, index)}
+                        ${this._renderAppearance(action, index)}
                         </div>` : ''}
                         </div>
                     `;})}
