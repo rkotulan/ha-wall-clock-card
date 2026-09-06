@@ -29,6 +29,17 @@ updateInterval: 300
 
 Omit `firstDayOfWeek` for the locale default; otherwise use 0 (Sunday) through 6 (Saturday). The widget follows the card/Home Assistant language and time zone. Previous/next buttons browse months; Today returns to the current month. Adjacent-month days complete the first and last weeks.
 
+Choose **Four weeks from the current week** in Content (`viewMode: four-weeks`) for a rolling 28-day grid. The current week is always the first row, followed by three weeks even across month and year boundaries. The range advances automatically within a minute of the local week boundary and follows `firstDayOfWeek`. Days earlier in the current week remain visible to keep complete weeks. The heading shows the date range and month labels mark transitions in the grid. Month navigation is unavailable in this mode. The default `viewMode: month` preserves the monthly view.
+
+In Appearance, **Show calendar heading** (`showTitle`, default `true`) and **Show month navigation** (`showNavigation`, default `true`) are independent. Disable both to remove the whole header without leaving space above the weekday labels. **Show grid lines** (`showGridLines`, default `true`) hides all day-cell and weekday separator lines when disabled, preserving spacing and event colors. For a passive four-week wall display:
+
+```yaml
+viewMode: four-weeks
+showTitle: false
+showNavigation: false
+showGridLines: false
+```
+
 Click an event to open its details. Days show up to `eventsPerDay` entries (1–10); the additional-events button opens the full day's list. Multi-day events appear on each covered day, respecting exclusive end dates. `showAllDay: false` hides all-day events.
 
 Enable **Wrap event text to two lines** in Appearance (`wrapEventTitles: true`) to display up to two lines per event. Longer text is truncated; clicking the event opens its full details in a popup. The default is a single line.

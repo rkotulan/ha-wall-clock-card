@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.11.0
+
+### Rolling calendar and display options
+
+- Added a rolling four-week view starting with the current week, including days
+  and events across month/year boundaries and automatic local-week rollover.
+- Added independent controls for the calendar heading and month navigation, plus
+  an option to hide grid lines. Includes English and Czech Designer labels.
+- Made the expanded day event list easier to read with larger text, more padding,
+  gaps between events and wrapping for long titles.
+- Added coverage for four-week ranges, time zones, DST, editor persistence and
+  display controls. Requested in #49.
+
 ## 3.10.0
 
 ### Monthly calendar appearance

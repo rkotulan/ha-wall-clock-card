@@ -5,7 +5,7 @@ import type {WidgetConfig} from '../core/layout-types';
 import {CalendarController} from '../components/calendar/calendar-controller';
 import '../components/calendar/calendar-event-dialog';
 import {dayKey} from './calendar/calendar-data';
-import {MonthSettings, weekStart, monthGrid, shiftMonth, monthRequestWindow, eventsOnDay, isCalendarEventPast, calendarBackgroundOpacity} from './calendar/month-data';
+import {MonthSettings, weekStart, monthGrid, fourWeekGrid, shiftMonth, monthRequestWindow, eventsOnDay, isCalendarEventPast, calendarBackgroundOpacity} from './calendar/month-data';
 import type {CalendarEventItem} from './calendar/calendar-types';
 import {resolveLanguage, resolveHour12} from '../utils/ha-locale';
 import {localize} from '../utils/localize';
@@ -22,7 +22,11 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
     private get language() { return resolveLanguage(this.appearance?.language, this.hass); }
     private get timeZone() { return this.appearance?.timeZone ?? this.hass?.config?.time_zone; }
     private get month() { return this.displayedMonth || dayKey(new Date(), this.timeZone).slice(0, 7); }
-    private get days() { return monthGrid(this.month, weekStart(this.language, this.config?.firstDayOfWeek)); }
+    private get rolling() { return this.config?.viewMode === 'four-weeks'; }
+    private get days() {
+        const firstDay = weekStart(this.language, this.config?.firstDayOfWeek);
+        return this.rolling ? fourWeekGrid(new Date(), firstDay, this.timeZone) : monthGrid(this.month, firstDay);
+    }
     private t(key: string, fallback: string) { return localize('month.' + key, this.language, fallback); }
     connectedCallback() {
         super.connectedCallback();
@@ -59,7 +63,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
     static styles = css`
         :host {display:block;width:100%;min-width:0;}
         .month {color:var(--month-color);width:100%;background:rgba(18,20,24,var(--wcc-calendar-local-background-opacity,var(--calendar-background-opacity,0)));}
-        header {display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+        header {display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;}
         h2 {font-size:1.35em;margin:0;flex:1;font-weight:500;}
         button {font:inherit;color:inherit;cursor:pointer;}
         header button {background:transparent;border:1px solid currentColor;border-radius:6px;min-height:32px;padding:3px 10px;}
@@ -69,6 +73,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         .weekday {text-align:center;padding:8px 2px;font-size:.85em;border-bottom:1px solid var(--grid-color);}
         .day {min-width:0;min-height:var(--cell-height,110px);padding:5px;box-sizing:border-box;border-bottom:1px solid var(--grid-color);border-right:1px solid var(--grid-color);}
         .day:nth-child(7n + 1) {border-left:1px solid var(--grid-color);}
+        .no-grid-lines .weekday, .no-grid-lines .day {border-color:transparent;}
         .outside .number {opacity:.45;}
         .number {display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;font-size:var(--date-size,1em);margin-bottom:4px;border-radius:50%;}
         .today .number {background:var(--primary-color,#1976d2);color:var(--text-primary-color,#fff);}
@@ -78,10 +83,13 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         .event-text {display:block;overflow:hidden;text-overflow:ellipsis;}
         .wrap-events .event-text {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere;}
         .status {font-size:.8em;padding:6px 0;}
-        dialog {width:min(520px,calc(100vw - 40px));max-height:80vh;overflow:auto;border:1px solid var(--divider-color,#888);border-radius:12px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121);padding:16px;}
+        dialog {box-sizing:border-box;width:min(580px,calc(100vw - 32px));max-height:80vh;overflow:auto;border:1px solid var(--divider-color,#888);border-radius:12px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121);padding:24px;font-size:max(16px,1em);}
         dialog::backdrop {background:#0008;}
-        dialog .event {white-space:normal;}
-        dialog .close {float:right;background:transparent;border:0;min-width:32px;min-height:32px;}
+        dialog h3 {margin:0 48px 24px 0;min-height:40px;display:flex;align-items:center;font-size:1.15em;}
+        dialog .day-events {display:grid;gap:8px;clear:both;}
+        dialog .event {box-sizing:border-box;min-height:44px;margin:0;padding:11px 14px;font-size:1em;line-height:1.5;white-space:normal;border-radius:6px;}
+        dialog .event-text {overflow-wrap:anywhere;}
+        dialog .close {float:right;background:transparent;border:0;min-width:40px;min-height:40px;}
     `;
     render() {
         if (!this.config) return html``;
@@ -93,18 +101,27 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         const opacity = Math.max(0, Math.min(1, this.config.eventBackgroundOpacity ?? .2));
         const backgroundOpacity = calendarBackgroundOpacity(this.config.backgroundOpacity);
         const events = (date: string) => eventsOnDay(this.controller.events, date, this.timeZone, this.config.showAllDay !== false);
-        return html`<section class="month ${this.config.wrapEventTitles === true ? 'wrap-events' : ''}" style=${'--month-color:' + this.fontColor + ';--calendar-background-opacity:' + backgroundOpacity + ';--cell-height:' + height + 'px;--grid-color:' + (this.config.gridColor || '#88888866') + ';--event-size:' + (this.config.eventTitleSize || '.8em') + ';--date-size:' + (this.config.calendarDateSize || '1em') + ';--event-opacity:' + opacity * 100 + '%;'}>
-            <header><h2>${this.dateLabel(this.month + '-01', {month:'long',year:'numeric'})}</h2>
+        const showTitle = this.config.showTitle !== false;
+        const showNavigation = !this.rolling && this.config.showNavigation !== false;
+        const title = this.rolling
+            ? this.dateLabel(days[0], {day:'numeric',month:'short',year:'numeric'}) + ' – ' + this.dateLabel(days[27], {day:'numeric',month:'short',year:'numeric'})
+            : this.dateLabel(this.month + '-01', {month:'long',year:'numeric'});
+        return html`<section class="month ${this.config.wrapEventTitles === true ? 'wrap-events' : ''} ${this.config.showGridLines === false ? 'no-grid-lines' : ''}" style=${'--month-color:' + this.fontColor + ';--calendar-background-opacity:' + backgroundOpacity + ';--cell-height:' + height + 'px;--grid-color:' + (this.config.gridColor || '#88888866') + ';--event-size:' + (this.config.eventTitleSize || '.8em') + ';--date-size:' + (this.config.calendarDateSize || '1em') + ';--event-opacity:' + opacity * 100 + '%;'}>
+            ${showTitle || showNavigation ? html`<header>
+                ${showTitle ? html`<h2>${title}</h2>` : ''}
+                ${showNavigation ? html`
                 <button aria-label=${this.t('previous','Previous month')} @click=${() => this.navigate(-1)}>‹</button>
                 <button @click=${() => {this.displayedMonth = ''; this.selectedDay = undefined; this.selectedEvent = undefined;}}>${this.t('today','Today')}</button>
                 <button aria-label=${this.t('next','Next month')} @click=${() => this.navigate(1)}>›</button>
-            </header>
+                ` : ''}
+            </header>` : ''}
             ${this.controller.loading ? html`<div class="status" role="status">${this.t('loading','Loading calendar…')}</div>` : ''}
             ${this.controller.error ? html`<div class="status" role="status">${this.t('error','Some calendars could not be loaded.')}</div>` : ''}
             <div class="scroll"><div class="grid">
                 ${days.slice(0,7).map(date => html`<div class="weekday">${this.dateLabel(date,{weekday:'short'})}</div>`)}
-                ${days.map(date => {const items = events(date); return html`<div class="day ${date === today ? 'today' : ''} ${date.startsWith(this.month) ? '' : 'outside'}" data-date=${date}>
+                ${days.map(date => {const items = events(date); return html`<div class="day ${date === today ? 'today' : ''} ${this.rolling || date.startsWith(this.month) ? '' : 'outside'}" data-date=${date}>
                     <span class="number" aria-current=${date === today ? 'date' : 'false'}>${Number(date.slice(-2))}</span>
+                    ${this.rolling && (date === days[0] || date.endsWith('-01')) ? html`<span class="month-label">${this.dateLabel(date,{month:'short'})}</span>` : ''}
                     ${items.slice(0,limit).map(event => this.renderEvent(event,date,now))}
                     ${items.length > limit ? html`<button class="more" @click=${() => {this.selectedDay=date;}}>+${items.length-limit} ${this.t('more','more')}</button>` : ''}
                 </div>`;})}
@@ -113,7 +130,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         <dialog @close=${() => {this.selectedDay=undefined;}} @cancel=${() => {this.selectedDay=undefined;}}>
             <button class="close" aria-label=${this.t('close','Close')} @click=${() => {this.selectedDay=undefined;}}>×</button>
             <h3>${this.selectedDay ? this.dateLabel(this.selectedDay,{weekday:'long',day:'numeric',month:'long'}) : ''}</h3>
-            ${this.selectedDay ? events(this.selectedDay).map(event => this.renderEvent(event,this.selectedDay!,now)) : ''}
+            <div class="day-events">${this.selectedDay ? events(this.selectedDay).map(event => this.renderEvent(event,this.selectedDay!,now)) : ''}</div>
         </dialog>
         <wcc-calendar-event-dialog .event=${this.selectedEvent} .open=${!!this.selectedEvent} .language=${this.language} .timeZone=${this.timeZone}
             .hour12=${resolveHour12(undefined,this.hass)} @wcc-calendar-dialog-close=${() => {this.selectedEvent=undefined;}}></wcc-calendar-event-dialog>`;

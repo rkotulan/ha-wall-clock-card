@@ -1,7 +1,29 @@
-import {monthGrid, shiftMonth, weekStart, eventsOnDay, monthRequestWindow, isCalendarEventPast} from '../src/widgets/calendar/month-data';
+import {monthGrid, fourWeekGrid, shiftMonth, weekStart, eventsOnDay, monthRequestWindow, isCalendarEventPast} from '../src/widgets/calendar/month-data';
 import {normalizeCalendarEvent} from '../src/widgets/calendar/calendar-data';
 
 describe('monthly overview', () => {
+    it('shows four complete weeks across the year boundary', () => {
+        const days = fourWeekGrid(new Date('2026-12-31T12:00:00Z'), 1, 'Europe/Prague');
+        expect(days).toHaveLength(28);
+        expect(days[0]).toBe('2026-12-28');
+        expect(days[27]).toBe('2027-01-24');
+        expect(new Set(days).size).toBe(28);
+        expect(monthRequestWindow(days)).toEqual({start:'2026-12-27T00:00:00Z',end:'2027-01-26T00:00:00Z'});
+    });
+    it('rolls over at the local week boundary and honors the configured first day', () => {
+        const now = new Date('2026-09-06T22:00:00Z');
+        expect(fourWeekGrid(now, 1, 'Europe/Prague')[0]).toBe('2026-09-07');
+        expect(fourWeekGrid(new Date(now.getTime() - 1), 1, 'Europe/Prague')[0]).toBe('2026-08-31');
+        expect(fourWeekGrid(now, 1, 'America/Los_Angeles')[0]).toBe('2026-08-31');
+        expect(fourWeekGrid(now, 0, 'America/Los_Angeles')[0]).toBe('2026-09-06');
+    });
+    it('keeps local dates continuous across leap days and DST', () => {
+        expect(fourWeekGrid(new Date('2024-02-28T12:00:00Z'), 1, 'Europe/Prague')).toContain('2024-02-29');
+        const days = fourWeekGrid(new Date('2026-03-28T12:00:00Z'), 1, 'Europe/Prague');
+        expect(days[0]).toBe('2026-03-23');
+        expect(days[27]).toBe('2026-04-19');
+        expect(days.slice(5,8)).toEqual(['2026-03-28','2026-03-29','2026-03-30']);
+    });
     it('grays timed events only when they finish, including overnight DST events', () => {
         const event = normalizeCalendarEvent({summary:'Night',start:{dateTime:'2026-03-28T23:00:00+01:00'},end:{dateTime:'2026-03-29T04:00:00+02:00'}},{entity:'calendar.home'},'Europe/Prague')!;
         expect(isCalendarEventPast(event,new Date('2026-03-28T20:00:00Z'))).toBe(false);

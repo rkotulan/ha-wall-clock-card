@@ -2,6 +2,10 @@ import {addDaysToKey, dayKey} from './calendar-data';
 import type {CalendarEventItem, CalendarSourceConfig} from './calendar-types';
 
 export interface MonthSettings {
+    viewMode?: 'month' | 'four-weeks';
+    showTitle?: boolean;
+    showNavigation?: boolean;
+    showGridLines?: boolean;
     entities?: CalendarSourceConfig[];
     firstDayOfWeek?: number; // 0 Sunday ... 6 Saturday; omitted follows locale
     eventsPerDay?: number;
@@ -46,6 +50,13 @@ export function monthGrid(month: string, firstDay: number): string[] {
     const result: string[] = [];
     for (let date = start; date <= last || result.length % 7 !== 0; date = addDaysToKey(date, 1)) result.push(date);
     return result;
+}
+/** Four complete local calendar weeks, beginning with the current week. */
+export function fourWeekGrid(now: Date, firstDay: number, timeZone?: string): string[] {
+    const today = dayKey(now, timeZone);
+    const weekday = new Date(`${today}T12:00:00Z`).getUTCDay();
+    const start = addDaysToKey(today, -((weekday - firstDay + 7) % 7));
+    return Array.from({length: 28}, (_, index) => addDaysToKey(start, index));
 }
 /** Pad the API range to cover every timezone and DST boundary; cells filter exact local days. */
 export function monthRequestWindow(days: string[]): {start: string; end: string} {

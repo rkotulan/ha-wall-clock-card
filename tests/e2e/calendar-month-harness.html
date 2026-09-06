@@ -97,6 +97,13 @@ const assert=(condition,message)=>{if(!condition)throw new Error(message);};
  assert(updatedConfig.firstDayOfWeek===0,'Editor saves numeric Sunday');
  firstDay.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'firstDayOfWeek',value:'auto'},bubbles:true,composed:true}));
  assert(updatedConfig.firstDayOfWeek===undefined,'Editor resets locale default');
+ for(const [key,value] of [['showTitle',false],['showNavigation',false],['showGridLines',false],['viewMode','four-weeks']]){
+   const field=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName===key);
+   assert(field,'Editor exposes '+key);
+   field.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:key,value},bubbles:true,composed:true}));
+   assert(updatedConfig[key]===value,'Editor saves '+key);
+   editor.config=updatedConfig;await editor.updateComplete;
+ }
  sources.sourcesOnly=false;await sources.updateComplete;
  assert([...sources.shadowRoot.querySelectorAll('ha-row-selector')].some(field=>field.propertyName==='displayMode'),'Agenda editor controls preserved');
  editor.remove();
@@ -136,6 +143,43 @@ const assert=(condition,message)=>{if(!condition)throw new Error(message);};
  assert(frame.getComputedStyle(panel()).backgroundColor==='rgba(0, 0, 0, 0)','Non-spanning calendar leaves panel transparent');
  assert(frame.getComputedStyle(calendar().shadowRoot.querySelector('.month')).backgroundColor==='rgba(18, 20, 24, 0.65)','Non-spanning calendar restores its own surface');
  layout.remove();
+ // Rolling range uses the local date, follows the week boundary, and fetches the next month.
+ now=RealDate.parse('2026-09-27T21:59:59Z');
+ frame.Date=class extends RealDate {constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}};
+ const rolling=frame.document.createElement('wcc-calendar-month');
+ const requests=[];
+ rolling.appearance={timeZone:'Europe/Prague',language:'en'};
+ rolling.hass={...w.hass,callApi:async(method,path)=>{requests.push(path);return [{summary:'October event',start:{date:'2026-10-01'},end:{date:'2026-10-02'}}];}};
+ rolling.config={type:'calendar-month',viewMode:'four-weeks',firstDayOfWeek:1,entities:[{entity:'calendar.home'}]};
+ frame.document.body.append(rolling);await wait(50);await rolling.updateComplete;
+ const rr=rolling.shadowRoot;
+ assert(rr.querySelectorAll('.day').length===28,'Rolling view has exactly four weeks');
+ assert(rr.querySelector('.day').dataset.date==='2026-09-21','Current local week is first');
+ assert(rr.querySelector('h2').textContent.includes('2026'),'Rolling heading shows range');
+ assert(!rr.querySelector('header button'),'Rolling view has no month navigation');
+ assert(!rr.querySelector('.outside'),'Next month is not dimmed in rolling view');
+ assert(rr.querySelector('[data-date="2026-10-01"] .month-label'),'Month boundary labeled');
+ assert(rr.querySelector('[data-date="2026-10-01"] .event').textContent.includes('October event'),'Next month events render');
+ assert(requests.some(path=>decodeURIComponent(path).includes('end=2026-10-20T00:00:00Z')),'Fetch covers full rolling range');
+ now=RealDate.parse('2026-09-27T22:00:00Z');rolling.requestUpdate();await wait(50);await rolling.updateComplete;
+ assert(rr.querySelector('.day').dataset.date==='2026-09-28','Range advances at local Monday');
+ assert(requests.some(path=>decodeURIComponent(path).includes('end=2026-10-27T00:00:00Z')),'New week fetches new range');
+ rolling.config={...rolling.config,showTitle:false,showGridLines:false};await rolling.updateComplete;
+ assert(!rr.querySelector('header'),'Hidden header leaves no element or margin');
+ for(const cell of rr.querySelectorAll('.day,.weekday')){
+   const style=frame.getComputedStyle(cell);
+   assert(style.borderBottomColor==='rgba(0, 0, 0, 0)' && style.borderRightColor==='rgba(0, 0, 0, 0)','Grid separators are transparent');
+ }
+ assert(frame.getComputedStyle(rr.querySelector('.event')).borderLeftColor!=='rgba(0, 0, 0, 0)','Event stripe stays visible');
+ rolling.config={...rolling.config,viewMode:'month',showTitle:true,showNavigation:false,showGridLines:true};await wait(50);
+ assert(rr.querySelector('h2') && !rr.querySelector('header button'),'Title can show without navigation');
+ assert(frame.getComputedStyle(rr.querySelector('.day')).borderBottomColor!=='rgba(0, 0, 0, 0)','Grid lines restored');
+ rolling.config={...rolling.config,showTitle:false,showNavigation:true};await rolling.updateComplete;
+ assert(!rr.querySelector('h2') && rr.querySelectorAll('header button').length===3,'Navigation can show without title');
+ rolling.config={...rolling.config,showNavigation:false};await rolling.updateComplete;
+ assert(!rr.querySelector('header'),'Both monthly header parts can be hidden');
+ assert(w.displayedMonth==='2026-09','Rolling settings do not affect another instance');
+ rolling.remove();frame.Date=RealDate;
  result.textContent='PASS: month grid, overflow, shared details, navigation, multi-day dates, editor, empty and error states';result.dataset.status='passed';
  }catch(error){result.textContent=error.stack;result.dataset.status='failed';}
 })();

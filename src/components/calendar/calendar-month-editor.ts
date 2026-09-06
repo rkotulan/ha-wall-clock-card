@@ -16,6 +16,10 @@ export class CalendarMonthEditor extends BaseEditorSection {
         const appearance = this.section === 'all' || this.section === 'appearance';
         return html`
             ${content ? html`<calendar-editor .hass=${this.hass} .config=${this.config} .sourcesOnly=${true} .section=${'content'} .editorSessionKey=${this.editorSessionKey}></calendar-editor>
+                ${field('viewMode','Calendar view',{select:{options:[
+                    {value:'month',label:this.t('month.viewMonth','Month')},
+                    {value:'four-weeks',label:this.t('month.viewFourWeeks','Four weeks from the current week')},
+                ],mode:'dropdown'}},settings.viewMode || 'month')}
                 ${field('firstDayOfWeek','First day of week',{select:{options:[
                     {value:'auto',label:this.t('ui.auto','Auto')},
                     ...Array.from({length:7},(_,day) => ({value:String(day),label:new Intl.DateTimeFormat(this.hass?.locale?.language || 'en',{weekday:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,4+day)))})),
@@ -24,6 +28,9 @@ export class CalendarMonthEditor extends BaseEditorSection {
                 ${field('showAllDay','Show all-day events',{boolean:{}},settings.showAllDay !== false)}
             ` : ''}
             ${appearance ? html`
+                ${field('showTitle','Show calendar heading',{boolean:{}},settings.showTitle !== false)}
+                ${settings.viewMode !== 'four-weeks' ? field('showNavigation','Show month navigation',{boolean:{}},settings.showNavigation !== false) : ''}
+                ${field('showGridLines','Show grid lines',{boolean:{}},settings.showGridLines !== false)}
                 ${field('backgroundOpacity','Calendar background opacity',{number:{min:0,max:1,step:.05,mode:'slider'}},settings.backgroundOpacity ?? 0)}
                 ${field('cellMinHeight','Minimum day height (px)',{number:{min:70,max:400,mode:'box'}},settings.cellMinHeight ?? 110)}
                 ${field('calendarDateSize','Date text size',{text:{}},settings.calendarDateSize || '1em')}
