@@ -24,10 +24,12 @@ export class CalendarMonthEditor extends BaseEditorSection {
                 ${field('showAllDay','Show all-day events',{boolean:{}},settings.showAllDay !== false)}
             ` : ''}
             ${appearance ? html`
+                ${field('backgroundOpacity','Calendar background opacity',{number:{min:0,max:1,step:.05,mode:'slider'}},settings.backgroundOpacity ?? 0)}
                 ${field('cellMinHeight','Minimum day height (px)',{number:{min:70,max:400,mode:'box'}},settings.cellMinHeight ?? 110)}
                 ${field('calendarDateSize','Date text size',{text:{}},settings.calendarDateSize || '1em')}
                 ${field('eventTitleSize','Event text size',{text:{}},settings.eventTitleSize || '.8em')}
                 ${field('wrapEventTitles','Wrap event text to two lines',{boolean:{}},settings.wrapEventTitles === true)}
+                ${field('grayOutPastEvents','Gray out past events',{boolean:{}},settings.grayOutPastEvents === true)}
                 ${field('gridColor','Grid color',{color_hex:{}},settings.gridColor || '#888888')}
                 ${field('eventBackgroundOpacity','Event background opacity',{number:{min:0,max:1,step:.05,mode:'slider'}},settings.eventBackgroundOpacity ?? .2)}
             ` : ''}

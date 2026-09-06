@@ -6,6 +6,7 @@ import {createLogger} from '../utils/logger/logger';
 import {AppearanceConfig, defaultZoneAlignment, LayoutConfig, ZoneConfig, ZoneId, ZONE_IDS} from './layout-types';
 import {CssPaddingEdges, expandCssPadding, resolveSpacing} from './migrate-config';
 import {WidgetRegistry} from '../widgets/widget-registry';
+import {calendarBackgroundOpacity} from '../widgets/calendar/month-data';
 import {WidgetElement} from '../widgets/widget-element';
 import {
     compactGridRowDefinition,
@@ -397,8 +398,17 @@ export class WccLayout extends LitElement {
             ? populated[0].anchor
             : undefined;
 
+        // A calendar spanning this panel owns its surface, including zone padding
+        // and companion widgets such as a legend. Paint it once on the panel.
+        const calendars = spanningAnchor
+            ? populated[0].entry!.widgets.filter(widget => widget.config.type === 'calendar-month')
+            : [];
+        const surface = calendars.length === 1
+            ? `background: rgba(18,20,24,${calendarBackgroundOpacity(calendars[0].config.backgroundOpacity)}); --wcc-calendar-local-background-opacity: 0;`
+            : '';
+
         return html`
-            <div class="split-panel ${axis}" style=${this.splitPanelStyle(axis, panel)}>
+            <div class="split-panel ${axis}" style=${this.splitPanelStyle(axis, panel) + surface}>
                 ${anchors.map(group => group.entry ? html`
                     <div class="split-anchor ${group.anchor} ${group.anchor === spanningAnchor ? 'panel-span' : ''}">
                         ${this.renderZone(group.entry, format, padding)}

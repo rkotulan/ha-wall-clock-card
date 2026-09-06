@@ -19,6 +19,8 @@ showAllDay: true
 cellMinHeight: 125
 eventTitleSize: .8em
 wrapEventTitles: true
+grayOutPastEvents: true
+backgroundOpacity: 0.65
 calendarDateSize: 1em
 gridColor: '#88888866'
 eventBackgroundOpacity: 0.2
@@ -31,7 +33,13 @@ Click an event to open its details. Days show up to `eventsPerDay` entries (1–
 
 Enable **Wrap event text to two lines** in Appearance (`wrapEventTitles: true`) to display up to two lines per event. Longer text is truncated; clicking the event opens its full details in a popup. The default is a single line.
 
+Enable **Gray out past events** in Appearance (`grayOutPastEvents: true`) to show finished events in gray, including their source stripe and background. Ongoing and future events retain their colors. All-day and multi-day events turn gray after their exclusive end date in the calendar's time zone. The appearance refreshes every minute, also in the day's expanded list; events remain clickable. This option is off by default.
+
 Minimum cell height is 70–400 px. Event and date text sizes accept CSS sizes. Background opacity ranges from 0 (transparent) to 1. The grid needs 490 px; narrower containers scroll horizontally to keep seven columns readable. A calendar without sources still displays the date grid.
+
+**Calendar background opacity** in Appearance (`backgroundOpacity`) controls the dark surface behind the entire calendar, including its heading and date grid: 0 is fully transparent (the default), 1 is opaque. Text and controls remain opaque. This is independent of `eventBackgroundOpacity`, which controls individual event backgrounds. To see the card photograph through the calendar, remove any opaque background on its enclosing panel.
+
+In a horizontal split, when the calendar's zone spans the whole panel (`span: panel`) and contains only one monthly calendar, the background covers the entire panel, including padding and companion widgets such as a legend. It is painted once, so the calendar itself is not darker than the surrounding panel.
 
 The shared calendar controller requests the visible date range, padded for time-zone boundaries, and discards superseded responses when navigating. The existing agenda remains independently configurable.
 

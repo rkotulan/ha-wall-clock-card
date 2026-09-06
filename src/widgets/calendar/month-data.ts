@@ -10,9 +10,19 @@ export interface MonthSettings {
     cellMinHeight?: number;
     eventTitleSize?: string;
     wrapEventTitles?: boolean;
+    grayOutPastEvents?: boolean;
     calendarDateSize?: string;
     gridColor?: string;
     eventBackgroundOpacity?: number;
+    /** Opacity of the whole calendar's dark surface; 0 preserves a transparent widget. */
+    backgroundOpacity?: number;
+}
+export function calendarBackgroundOpacity(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+}
+/** All-day end dates are exclusive local dates, not UTC instants. */
+export function isCalendarEventPast(event: CalendarEventItem, now: Date, timeZone?: string): boolean {
+    return event.allDay ? event.endDayKey <= dayKey(now, timeZone) : event.end.getTime() <= now.getTime();
 }
 export function weekStart(language: string, override?: number): number {
     if (Number.isInteger(override) && override! >= 0 && override! <= 6) return override!;

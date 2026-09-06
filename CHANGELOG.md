@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.10.0
+
+### Monthly calendar appearance
+
+- Added optional gray styling for completed events, including event lists opened
+  from a day. Timed events change after their end time; all-day events respect
+  the calendar time zone and exclusive end date.
+- Added a calendar background opacity slider to the Designer, from fully
+  transparent to opaque, without dimming event text.
+- Extended the calendar background across its full spanning panel, including
+  padding and companion widgets, to avoid transparent gaps and double shading.
+- Added regression coverage for calendar appearance and Designer labels when
+  switching between Home Assistant light and dark themes.
+
 ## 3.9.0
 
 ### Monthly calendar overview

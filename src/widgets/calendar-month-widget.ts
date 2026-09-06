@@ -5,7 +5,7 @@ import type {WidgetConfig} from '../core/layout-types';
 import {CalendarController} from '../components/calendar/calendar-controller';
 import '../components/calendar/calendar-event-dialog';
 import {dayKey} from './calendar/calendar-data';
-import {MonthSettings, weekStart, monthGrid, shiftMonth, monthRequestWindow, eventsOnDay} from './calendar/month-data';
+import {MonthSettings, weekStart, monthGrid, shiftMonth, monthRequestWindow, eventsOnDay, isCalendarEventPast, calendarBackgroundOpacity} from './calendar/month-data';
 import type {CalendarEventItem} from './calendar/calendar-types';
 import {resolveLanguage, resolveHour12} from '../utils/ha-locale';
 import {localize} from '../utils/localize';
@@ -51,13 +51,14 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         }).format(event.start);
         return time + ' ' + event.summary;
     }
-    private renderEvent(event: CalendarEventItem, date: string) {
-        return html`<button class="event" style=${'--event-color:' + event.color} title=${event.summary}
+    private renderEvent(event: CalendarEventItem, date: string, now: Date) {
+        const past = this.config.grayOutPastEvents === true && isCalendarEventPast(event, now, this.timeZone);
+        return html`<button class="event ${past ? 'past' : ''}" style=${'--event-color:' + event.color} title=${event.summary}
             @click=${() => {this.selectedDay = undefined; this.selectedEvent = event;}}><span class="event-text">${this.eventLabel(event, date)}</span></button>`;
     }
     static styles = css`
         :host {display:block;width:100%;min-width:0;}
-        .month {color:var(--month-color);width:100%;}
+        .month {color:var(--month-color);width:100%;background:rgba(18,20,24,var(--wcc-calendar-local-background-opacity,var(--calendar-background-opacity,0)));}
         header {display:flex;align-items:center;gap:8px;margin-bottom:12px;}
         h2 {font-size:1.35em;margin:0;flex:1;font-weight:500;}
         button {font:inherit;color:inherit;cursor:pointer;}
@@ -73,6 +74,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         .today .number {background:var(--primary-color,#1976d2);color:var(--text-primary-color,#fff);}
         .event {display:block;width:100%;text-align:left;font-size:var(--event-size,.8em);line-height:1.35;padding:3px 4px;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;border-left:3px solid var(--event-color);border-radius:3px;background:color-mix(in srgb,var(--event-color) var(--event-opacity,20%),transparent);}
         .more {font-size:.75em;border:0;background:transparent;padding:4px;}
+        .event.past {filter:grayscale(1);color:#888;}
         .event-text {display:block;overflow:hidden;text-overflow:ellipsis;}
         .wrap-events .event-text {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere;}
         .status {font-size:.8em;padding:6px 0;}
@@ -84,12 +86,14 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
     render() {
         if (!this.config) return html``;
         const days = this.days;
-        const today = dayKey(new Date(), this.timeZone);
+        const now = new Date();
+        const today = dayKey(now, this.timeZone);
         const limit = Math.max(1, Math.min(10, Math.trunc(Number(this.config.eventsPerDay) || 3)));
         const height = Math.max(70, Math.min(400, Number(this.config.cellMinHeight) || 110));
         const opacity = Math.max(0, Math.min(1, this.config.eventBackgroundOpacity ?? .2));
+        const backgroundOpacity = calendarBackgroundOpacity(this.config.backgroundOpacity);
         const events = (date: string) => eventsOnDay(this.controller.events, date, this.timeZone, this.config.showAllDay !== false);
-        return html`<section class="month ${this.config.wrapEventTitles === true ? 'wrap-events' : ''}" style=${'--month-color:' + this.fontColor + ';--cell-height:' + height + 'px;--grid-color:' + (this.config.gridColor || '#88888866') + ';--event-size:' + (this.config.eventTitleSize || '.8em') + ';--date-size:' + (this.config.calendarDateSize || '1em') + ';--event-opacity:' + opacity * 100 + '%;'}>
+        return html`<section class="month ${this.config.wrapEventTitles === true ? 'wrap-events' : ''}" style=${'--month-color:' + this.fontColor + ';--calendar-background-opacity:' + backgroundOpacity + ';--cell-height:' + height + 'px;--grid-color:' + (this.config.gridColor || '#88888866') + ';--event-size:' + (this.config.eventTitleSize || '.8em') + ';--date-size:' + (this.config.calendarDateSize || '1em') + ';--event-opacity:' + opacity * 100 + '%;'}>
             <header><h2>${this.dateLabel(this.month + '-01', {month:'long',year:'numeric'})}</h2>
                 <button aria-label=${this.t('previous','Previous month')} @click=${() => this.navigate(-1)}>‹</button>
                 <button @click=${() => {this.displayedMonth = ''; this.selectedDay = undefined; this.selectedEvent = undefined;}}>${this.t('today','Today')}</button>
@@ -101,7 +105,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
                 ${days.slice(0,7).map(date => html`<div class="weekday">${this.dateLabel(date,{weekday:'short'})}</div>`)}
                 ${days.map(date => {const items = events(date); return html`<div class="day ${date === today ? 'today' : ''} ${date.startsWith(this.month) ? '' : 'outside'}" data-date=${date}>
                     <span class="number" aria-current=${date === today ? 'date' : 'false'}>${Number(date.slice(-2))}</span>
-                    ${items.slice(0,limit).map(event => this.renderEvent(event,date))}
+                    ${items.slice(0,limit).map(event => this.renderEvent(event,date,now))}
                     ${items.length > limit ? html`<button class="more" @click=${() => {this.selectedDay=date;}}>+${items.length-limit} ${this.t('more','more')}</button>` : ''}
                 </div>`;})}
             </div></div>
@@ -109,7 +113,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         <dialog @close=${() => {this.selectedDay=undefined;}} @cancel=${() => {this.selectedDay=undefined;}}>
             <button class="close" aria-label=${this.t('close','Close')} @click=${() => {this.selectedDay=undefined;}}>×</button>
             <h3>${this.selectedDay ? this.dateLabel(this.selectedDay,{weekday:'long',day:'numeric',month:'long'}) : ''}</h3>
-            ${this.selectedDay ? events(this.selectedDay).map(event => this.renderEvent(event,this.selectedDay!)) : ''}
+            ${this.selectedDay ? events(this.selectedDay).map(event => this.renderEvent(event,this.selectedDay!,now)) : ''}
         </dialog>
         <wcc-calendar-event-dialog .event=${this.selectedEvent} .open=${!!this.selectedEvent} .language=${this.language} .timeZone=${this.timeZone}
             .hour12=${resolveHour12(undefined,this.hass)} @wcc-calendar-dialog-close=${() => {this.selectedEvent=undefined;}}></wcc-calendar-event-dialog>`;

@@ -14,6 +14,37 @@ const assert=(condition,message)=>{if(!condition)throw new Error(message);};
  assert(w,'Demo widget initialized');
  await wait(200);await w.updateComplete;
  const root=w.shadowRoot;
+ const surface=()=>frame.getComputedStyle(root.querySelector('.month'));
+ assert(surface().backgroundColor==='rgba(18, 20, 24, 0)','Calendar surface is transparent by default');
+ const eventBackground=frame.getComputedStyle(root.querySelector('.event')).backgroundColor;
+ for(const [value,alpha] of [[0,0],[.65,.65],[1,1],[-1,0],[2,1],[NaN,0]]){
+   w.config={...w.config,backgroundOpacity:value};await w.updateComplete;
+   const expected=alpha===1?'rgb(18, 20, 24)':`rgba(18, 20, 24, ${alpha})`;
+   assert(surface().backgroundColor===expected,'Calendar background opacity clamps safely: '+value);
+   assert(surface().opacity==='1','Surface opacity never fades text and controls');
+   assert(frame.getComputedStyle(root.querySelector('.event')).backgroundColor===eventBackground,'Event background is independent');
+ }
+ w.config={...w.config,backgroundOpacity:0};await w.updateComplete;
+ // Freeze the widget's clock at an event boundary, independently of the run date.
+ const RealDate=frame.Date;
+ let now=RealDate.parse('2026-09-05T08:59:59Z');
+ frame.Date=class extends RealDate {constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}};
+ const pastButton=()=>root.querySelector('[data-date="2026-09-05"] .event');
+ assert(!pastButton().classList.contains('past'),'Past styling is disabled by default');
+ w.config={...w.config,grayOutPastEvents:true};await w.updateComplete;
+ assert(!pastButton().classList.contains('past'),'Ongoing event stays colored');
+ now=RealDate.parse('2026-09-05T09:00:00Z');w.requestUpdate();await w.updateComplete;
+ assert(pastButton().classList.contains('past'),'Event becomes gray exactly at its end');
+ assert(frame.getComputedStyle(pastButton()).filter==='grayscale(1)','Finished event stripe and background are desaturated');
+ assert(!root.querySelector('[data-date="2026-09-09"] .event').classList.contains('past'),'Future event stays colored');
+ root.querySelector('[data-date="2026-09-05"] .more').click();await w.updateComplete;
+ assert(root.querySelector('dialog .event').classList.contains('past'),'Day list also marks finished events');
+ root.querySelector('dialog .event').click();await w.updateComplete;await wait(30);
+ assert(root.querySelector('wcc-calendar-event-dialog').shadowRoot.querySelector('dialog').open,'Gray event remains clickable');
+ root.querySelector('wcc-calendar-event-dialog').shadowRoot.querySelector('.close').click();await wait(30);
+ w.config={...w.config,grayOutPastEvents:false};await w.updateComplete;
+ assert(!pastButton().classList.contains('past'),'Disabling preference restores colors');
+ frame.Date=RealDate;
  assert(root.querySelectorAll('.day').length===35,'September has five complete weeks');
  assert(root.querySelectorAll('.weekday').length===7,'Seven weekday headings');
  const wrappedEvent=root.querySelector('[data-date="2026-09-17"] .event');
@@ -49,6 +80,14 @@ const assert=(condition,message)=>{if(!condition)throw new Error(message);};
  assert(![...sources.shadowRoot.querySelectorAll('ha-row-selector')].some(field=>field.propertyName==='displayMode'),'No agenda mode in month editor');
  let updatedConfig;
  editor.addEventListener('config-changed',event=>updatedConfig=event.detail.config);
+ const backgroundField=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName==='backgroundOpacity');
+ assert(backgroundField.value===0,'Editor preserves fully transparent surface');
+ backgroundField.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'backgroundOpacity',value:.65},bubbles:true,composed:true}));
+ assert(updatedConfig.backgroundOpacity===.65,'Editor saves calendar surface opacity');
+ const grayField=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName==='grayOutPastEvents');
+ assert(grayField.value===false,'Editor shows gray preference disabled');
+ grayField.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'grayOutPastEvents',value:true},bubbles:true,composed:true}));
+ assert(updatedConfig.grayOutPastEvents===true,'Editor saves gray preference');
  const wrapField=[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(field=>field.propertyName==='wrapEventTitles');
  assert(wrapField.value===true,'Editor shows wrapping preference');
  wrapField.dispatchEvent(new frame.CustomEvent('value-changed',{detail:{propertyName:'wrapEventTitles',value:false},bubbles:true,composed:true}));
@@ -71,6 +110,32 @@ const assert=(condition,message)=>{if(!condition)throw new Error(message);};
  assert(w.displayedMonth==='2026-09','Instances navigate independently');
  empty.config={type:'calendar-month',entities:[{entity:'calendar.fail'}]};empty.hass={...w.hass,callApi:async()=>{throw new Error('Expected fixture failure');}};await wait(50);
  assert(empty.shadowRoot.querySelector('[role="status"]'),'Fetch error shown');empty.remove();
+ // A full-width calendar must shade panel padding and its legend, not leave
+ // transparent strips around a second, darker calendar rectangle.
+ const layout=frame.document.createElement('wcc-layout');
+ layout.style.cssText='display:block;width:900px;height:700px';
+ layout.hass=w.hass;layout.appearance=w.appearance;
+ const panelLayout=(opacity,span='panel')=>({format:'horizontal-1-2',spacing:{padding:'0px',zoneGap:'0px'},zones:{
+   'top-left':{widgets:[{type:'clock',id:'test-clock'}]},
+   'bottom-center':{span,padding:'24px 40px',widgets:[
+     {type:'calendar-month',id:'test-month',entities:[],backgroundOpacity:opacity},
+     {type:'date',id:'test-companion'}
+   ]}
+ }});
+ layout.layout=panelLayout(.65);frame.document.body.append(layout);await wait(50);await layout.updateComplete;
+ const panel=()=>layout.shadowRoot.querySelector('.split-panel:last-child');
+ const calendar=()=>panel().querySelector('wcc-zone').shadowRoot.querySelector('wcc-calendar-month');
+ await calendar().updateComplete;
+ assert(frame.getComputedStyle(panel()).backgroundColor==='rgba(18, 20, 24, 0.65)','Full panel covers padding and companion widgets');
+ assert(frame.getComputedStyle(calendar().shadowRoot.querySelector('.month')).backgroundColor==='rgba(18, 20, 24, 0)','Panel calendar is not shaded twice');
+ for(const opacity of [0,1]){
+   layout.layout=panelLayout(opacity);await layout.updateComplete;await calendar().updateComplete;
+   assert(frame.getComputedStyle(panel()).backgroundColor===(opacity?'rgb(18, 20, 24)':'rgba(18, 20, 24, 0)'),'Panel follows opacity changes');
+ }
+ layout.layout=panelLayout(.65,undefined);delete layout.layout.zones['bottom-center'].span;layout.requestUpdate();await layout.updateComplete;await calendar().updateComplete;
+ assert(frame.getComputedStyle(panel()).backgroundColor==='rgba(0, 0, 0, 0)','Non-spanning calendar leaves panel transparent');
+ assert(frame.getComputedStyle(calendar().shadowRoot.querySelector('.month')).backgroundColor==='rgba(18, 20, 24, 0.65)','Non-spanning calendar restores its own surface');
+ layout.remove();
  result.textContent='PASS: month grid, overflow, shared details, navigation, multi-day dates, editor, empty and error states';result.dataset.status='passed';
  }catch(error){result.textContent=error.stack;result.dataset.status='failed';}
 })();

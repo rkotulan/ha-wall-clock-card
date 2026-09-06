@@ -44,13 +44,45 @@ async function settle(element) {
     await element.updateComplete;
 }
 const cards = [];
+async function checkActionAppearance(card, name) {
+    const inspector = card.shadowRoot.querySelector('wcc-layout-inspector');
+    card.selectedWidget = {zone: 'center', index: 1};
+    await settle(card); await settle(inspector);
+    inspector.shadowRoot.querySelectorAll('.tab')[1].click();
+    await settle(inspector);
+    const rows = [...inspector.shadowRoot.querySelectorAll('ha-row-selector')];
+    for (const label of ['Button orientation', 'Button alignment', 'Grid columns',
+        'Circular button background', 'Button gap', 'Color override', 'Font family override',
+        'Text shadow override']) {
+        assert(rows.some(row => row.label === label), name + ' renders ' + label);
+    }
+    for (const row of rows) {
+        await settle(row);
+        const surface = row.closest('.section-card');
+        const label = row.shadowRoot.querySelector('.label');
+        if (label) contrast(label, surface, name + ' ' + row.label);
+        const helper = row.shadowRoot.querySelector('.boolean-helper');
+        if (helper) contrast(helper, surface, name + ' ' + row.label + ' helper');
+        // HA supplies the selector implementation at runtime. Check its theme
+        // boundary here; this standalone fixture cannot test HA's internal inputs.
+        const selector = row.shadowRoot.querySelector('ha-selector');
+        assert(getComputedStyle(selector).getPropertyValue('--primary-text-color').trim() ===
+            getComputedStyle(inspector).getPropertyValue('--primary-text-color').trim(),
+            name + ' ' + row.label + ' passes theme to HA selector');
+    }
+    for (const title of inspector.shadowRoot.querySelectorAll('.section-title')) {
+        contrast(title, title.closest('.section-card'), name + ' action section heading');
+    }
+}
 try {
     for (const [name, theme] of Object.entries(themes)) {
         const fixture = document.getElementById(name);
         applyTheme(fixture, theme);
         const card = document.createElement('wall-clock-card');
         card.setConfig({type: 'custom:wall-clock-card', appearance: {fontColor: '#ff00ff'},
-            background: {source: 'none'}, layout: {zones: {center: {widgets: [{type: 'clock', id: 'clock'}]}}}});
+            background: {source: 'none'}, layout: {zones: {center: {widgets: [
+                {type: 'clock', id: 'clock'}, {type: 'action-bar', id: 'actions', actions: []}
+            ]}}}});
         card.hass = {states: {}, config: {time_zone: 'Europe/Prague'}, language: 'en',
             locale: {language: 'en'}, themes: {themes: {}}, localize: key => key};
         card.preview = true;
@@ -78,13 +110,16 @@ try {
         contrast(inspector.shadowRoot.querySelector('.body'), inspector, name + ' widget settings');
         assert(getComputedStyle(inspector).getPropertyValue('--primary-text-color').trim() === theme.primary,
             name + ' form controls inherit the HA theme');
+        await checkActionAppearance(card, name);
         cards.push(card);
     }
     applyTheme(document.getElementById('light'), themes.dark);
     await settle(cards[0]);
     assert(getComputedStyle(cards[0].shadowRoot.querySelector('wcc-layout-inspector')).backgroundColor === 'rgb(28, 28, 28)',
         'Theme changes update the existing Designer without recreating it');
+    await checkActionAppearance(cards[0], 'light to dark');
     applyTheme(document.getElementById('light'), themes.light);
+    await checkActionAppearance(cards[0], 'dark to light');
     result.dataset.status = 'passed'; result.textContent = checks.join('\n');
 } catch (error) {
     result.dataset.status = 'failed'; result.textContent = checks.join('\n') + '\n' + error.stack;
