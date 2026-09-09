@@ -20,7 +20,7 @@ split-panel layouts.
 - Calendar agenda with multiple calendars, event styling and an event-detail dialog.
 - Inline or modal public-transport departures with multiple stop profiles.
 - Built-in and installed Home Assistant cards as dashboard widgets.
-- Local, Picsum, Unsplash and Home Assistant sensor-backed backgrounds.
+- Local, Picsum, Unsplash, Home Assistant sensor and media backgrounds (including Immich albums).
 - Automatic in-memory migration of existing 2.x configurations.
 - Czech and English Designer UI; weather-condition translations cover additional languages.
 

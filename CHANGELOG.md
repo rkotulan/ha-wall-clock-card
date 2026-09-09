@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.12.0
+
+### Home Assistant media backgrounds
+
+- Added a Home Assistant media browser for selecting an album or folder as the
+  background source, including albums from the official Immich integration. (#51)
+- Rotate through direct photos without repeating until the collection is exhausted;
+  skip videos and subfolders and refresh the collection on the next cycle.
+- Resolve each photo through Home Assistant, keeping Immich credentials out of the
+  card configuration. Verified photo display through a Nabu Casa external URL.
+- Preserve source-specific settings, including the selected album, when initializing
+  the background component. Added English/Czech controls, documentation and tests.
+
+### Layout and weather documentation
+
+- Preserve an empty middle row between populated top and bottom rows by default.
+  Enable `layout.compactRows` to restore the previous compact behavior. (#50)
+- Document Pirate Weather setup through the existing Home Assistant weather entity
+  provider. Live Pirate Weather verification is still pending user testing. (#52)
+
 ## 3.11.0
 
 ### Rolling calendar and display options

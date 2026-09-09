@@ -68,6 +68,49 @@ and Home Assistant's forecast API.
   displayMode: both
 ```
 
+### Pirate Weather
+
+Pirate Weather should work through the existing Home Assistant provider; a
+separate direct API provider is not required. Compatibility is based on its
+standard Home Assistant weather entity and forecast API, but has not yet been
+verified with a live Pirate Weather integration.
+
+1. Install the Pirate Weather integration through HACS and configure it in
+   **Settings → Devices & services → Add integration → Pirate Weather**.
+   Follow the [Pirate Weather setup guide](https://docs.pirateweather.net/en/latest/ha/)
+   to obtain an API key, set your location, and enable a **Weather Entity**.
+2. Check that its `weather.*` entity shows current conditions and a forecast in
+   Home Assistant's built-in weather card.
+3. Edit the Wall Clock weather widget, select **Home Assistant entity** as the
+   provider, and select that weather entity.
+4. Choose current conditions, forecast, or both. Leave the forecast type on
+   **Automatic**, or select **Daily** or **Hourly** explicitly. Automatic prefers
+   daily forecasts when the entity supports both.
+
+For YAML, add this widget to a zone's `widgets` list, replacing the example entity
+ID with the actual entity ID from your installation:
+
+```yaml
+- type: weather
+  provider: homeassistant
+  providerConfig:
+    entityId: weather.pirate_weather
+    forecastType: daily    # auto, daily, or hourly
+  displayMode: both
+  forecastDays: 5
+```
+
+The API key belongs in the Home Assistant integration settings, not in the card.
+For hourly forecasts, `forecastDays` controls the number of forecast entries shown,
+not the number of days.
+
+If the built-in weather card works but Wall Clock does not, please report your
+Home Assistant, Wall Clock Card, and Pirate Weather integration versions, the
+selected forecast type, and a sanitized widget configuration in
+[issue #52](https://github.com/rkotulan/ha-wall-clock-card/issues/52).
+Include whether current conditions, the forecast, or both are missing, and any
+relevant browser console error. Do not include API keys or access tokens.
+
 ## OpenWeatherMap provider
 
 The direct provider calls OpenWeatherMap's 5-day/3-hour forecast endpoint. It needs
