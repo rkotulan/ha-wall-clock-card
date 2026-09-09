@@ -66,7 +66,7 @@ appearance:
   size: medium              # small | medium | large | custom
 
 background:
-  source: local             # none | local | picsum | unsplash | sensor
+  source: local             # none | local | picsum | unsplash | sensor | media-source
   opacity: 0.3              # black overlay, 0–1
   rotationInterval: 90      # seconds
   objectFit: cover          # fill | contain | cover | none | scale-down

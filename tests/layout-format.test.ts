@@ -12,14 +12,45 @@ import {
     resolveLayoutFormat,
     resolveLayoutVisualPreset,
 } from '../src/core/layout-format';
+import {ZoneId} from '../src/core/layout-types';
 
 describe('layout formats', () => {
     describe('compactGridRowDefinition', () => {
-        it('skips an empty middle row between top and bottom widgets', () => {
-            expect(compactGridRowDefinition(['top-center', 'bottom-center'])).toEqual({
+        it('restores the original centered grouping when compact rows are enabled', () => {
+            expect(compactGridRowDefinition(['top-left', 'bottom-left'], true)).toEqual({
                 areas: `'top-left top-center top-right' 'bottom-left bottom-center bottom-right'`,
                 rows: 'auto auto',
                 alignContent: 'center',
+            });
+            expect(compactGridRowDefinition(['top-left', 'center', 'bottom-left'], true)).toMatchObject({
+                rows: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                alignContent: 'stretch',
+            });
+        });
+
+        it.each<[ZoneId, ZoneId]>([
+            ['top-left', 'bottom-left'],
+            ['top-center', 'bottom-center'],
+            ['top-right', 'bottom-right'],
+            ['top-left', 'bottom-right'],
+        ])('keeps %s and %s at opposite edges with an empty middle row (issue #50)', (top, bottom) => {
+            expect(compactGridRowDefinition([top, bottom])).toEqual({
+                areas: `'top-left top-center top-right' ` +
+                    `'middle-left center middle-right' ` +
+                    `'bottom-left bottom-center bottom-right'`,
+                rows: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                alignContent: 'stretch',
+            });
+        });
+
+        it('keeps adjacent occupied rows compact when the opposite edge is empty', () => {
+            expect(compactGridRowDefinition(['top-left', 'center'])).toMatchObject({
+                rows: 'auto auto',
+                alignContent: 'start',
+            });
+            expect(compactGridRowDefinition(['center', 'bottom-left'])).toMatchObject({
+                rows: 'auto auto',
+                alignContent: 'end',
             });
         });
 

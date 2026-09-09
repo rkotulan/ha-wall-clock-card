@@ -229,13 +229,13 @@ export class BackgroundImageController extends BaseController {
             }
 
             if (newImageUrl) {
-                this.logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
+                this.logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}`);
                 const img = new Image();
                 img.onload = async () => {
                     if (requestGeneration !== this.imageRequestGeneration || !this.managerInitialized) {
                         return;
                     }
-                    this.logger.debug(`New image loaded successfully: ${newImageUrl}`);
+                    this.logger.debug('New image loaded successfully');
 
                     // Save the current image URL as the previous one before updating
                     if (this._currentImageUrl) {
@@ -254,7 +254,7 @@ export class BackgroundImageController extends BaseController {
                     await this.fireAnimate();
                 };
                 img.onerror = () => {
-                    this.logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}: ${newImageUrl}`);
+                    this.logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}`);
                 };
 
                 img.src = newImageUrl;

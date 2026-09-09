@@ -17,10 +17,17 @@ middle-left  center         middle-right
 bottom-left  bottom-center  bottom-right
 ```
 
-- Empty zones take no space — the center grows automatically.
+- When top and bottom rows contain widgets, they stay anchored to opposite edges
+  even if the middle row is empty.
 - `top-center` / `bottom-center` span the full card width when their side zones are
   empty (this is how the bottom bar behaves).
 - The side columns are always equal, so the `center` zone stays truly centered.
+
+In **Card settings → Layout**, enable **Compact rows (original behavior)** to
+group the top and bottom widgets in the middle when the middle row is empty.
+The YAML option is `layout.compactRows: true` (default: `false`). It applies only
+to the `grid-3x3` format. Single occupied rows and adjacent occupied rows retain
+their existing alignment in both modes.
 
 ## Layout formats and visual presets
 

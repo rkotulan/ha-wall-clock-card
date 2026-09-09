@@ -28,6 +28,37 @@ background:
 
 No image is rendered.
 
+## Home Assistant media (including Immich)
+
+In **Card settings → Background**, choose **Home Assistant media**, browse to
+an album or folder, then select **Use this album / folder**. For Immich, first
+configure the [official HA integration](https://www.home-assistant.io/integrations/immich/),
+then browse **Immich → your account → albums → your album**.
+
+```yaml
+background:
+  source: media-source
+  config:
+    mediaContentId: "media-source://immich/USER_ID|albums|ALBUM_ID"
+    mediaTitle: "My photos" # optional display label
+  rotationInterval: 60
+  objectFit: cover
+```
+
+Use the picker to obtain the media identifier; its format belongs to the HA
+integration. Only images directly inside the selected folder are used; videos
+and nested folders are skipped. Photos are shuffled without repeating within
+a cycle; the album is refreshed after each cycle. Existing rotation and next-image
+actions work as with other image sources. Each card has its own rotation queue.
+
+Media identifiers are resolved through HA before each display so temporary
+authorized URLs are renewed. The official Immich integration serves the actual
+photo through HA, keeping the Immich API key out of card configuration. This
+allows remote HA access without exposing Immich itself. HA must be able to reach
+Immich; a test instance running on a PC requires that PC and Docker to stay on.
+Other media integrations may return external URLs; their remote reachability
+depends on that integration. No separate Immich API key is entered in the card.
+
 ## Local images
 
 Files under `/config/www` are served as `/local/...` URLs:

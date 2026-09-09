@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="cs">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Media source picker test</title>
+<style>
+body {font:14px Arial; background:#181818;color:#eee;padding:16px;--primary-color:#03a9f4;--secondary-text-color:#aaa;--divider-color:#444;--error-color:#ff7777;}
+wcc-media-browser {max-width:380px;} output {display:block;max-width:380px;overflow-wrap:anywhere;margin-top:16px;}
+</style>
+<h2>Média Home Assistantu</h2>
+<wcc-media-browser></wcc-media-browser>
+<output id="result">Žádné album není vybráno</output>
+<button id="fail">Simulovat výpadek</button>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const folder=(title,id,children=[])=>({title,media_content_id:id,can_expand:true,children});
+const photo={title:'Photo',media_content_id:'media-source://test/photo',media_content_type:'image/jpeg'};
+const albums=folder('alba','media-source://test/albums',[
+    folder('HA pozadí','media-source://test/backgrounds'),folder('Prázdné album','media-source://test/empty')]);
+const root=folder('Média','media-source://', [folder('Immich','media-source://test')]);
+const items={'':root,'media-source://':root,'media-source://test':folder('Immich','media-source://test',[albums]),
+    'media-source://test/albums':albums,'media-source://test/backgrounds':folder('HA pozadí','media-source://test/backgrounds',[photo,{...photo,media_content_id:'media-source://test/video',media_content_type:'video/mp4'}]),
+    'media-source://test/empty':folder('Prázdné album','media-source://test/empty')};
+let fail=false;
+const picker=document.querySelector('wcc-media-browser');
+picker.hass={language:'cs',locale:{language:'cs'},states:{},callWS:async request=>{
+    if(fail){fail=false;throw new Error('offline');} return items[request.media_content_id||''];
+}};
+picker.addEventListener('media-selected',e=>{
+    picker.selected=e.detail.id;picker.selectedTitle=e.detail.title;
+    document.querySelector('#result').textContent=JSON.stringify(e.detail);
+});
+document.querySelector('#fail').onclick=()=>{fail=true;};
+</script>
+</html>

@@ -96,17 +96,19 @@ export class BackgroundImageManager {
                         media_content_id: imageUrl
                     });
                     // Result is typically { url: string, mime_type: string }
-                    imageUrl = result && result.url ? result.url : imageUrl;
+                    imageUrl = result?.url || '';
                 } else {
-                    this.logger.warn('Home Assistant instance not available to resolve media-source URL; using original URL');
+                    this.logger.warn('Home Assistant instance not available to resolve media-source URL');
+                    return '';
                 }
             } catch (e) {
                 this.logger.error('Failed to resolve media-source URL', e);
+                return '';
             }
         }
 
         if (imageUrl) {
-              this.logger.debug(`Got image URL: ${imageUrl}`);
+              this.logger.debug('Resolved background image');
               return imageUrl;
           } else {
               this.logger.warn('No image URL returned from source');

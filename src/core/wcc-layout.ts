@@ -451,7 +451,7 @@ export class WccLayout extends LitElement {
         const preset = resolveLayoutVisualPreset(this.layout);
         const grid = layoutGridDefinition(format);
         const compactRows = format === 'grid-3x3'
-            ? compactGridRowDefinition(this.zoneEntries.map(entry => entry.zoneId))
+            ? compactGridRowDefinition(this.zoneEntries.map(entry => entry.zoneId), this.layout?.compactRows === true)
             : undefined;
         const panelEdge = preset === 'glass' ? layoutPanelEdge(format) : undefined;
         const splitAxis = layoutSplitAxis(format);

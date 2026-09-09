@@ -1,7 +1,8 @@
 import {css, CSSResult, html, LitElement} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
-import {ImageSourceConfig, Weather} from '../providers/image';
+import {Weather} from '../providers/image';
+import {backgroundSourceConfig} from './background-source-config';
 
 import {configureLogger, getLogLevelFromString, localize, logger, loadTranslationsAsync} from '../utils';
 // Side-effect import: registers the ha-background-image element. The class import
@@ -455,16 +456,7 @@ export class WallClockCard extends LitElement {
     private initBackgroundImageComponent(): void {
         const background = this.configV3.background ?? {};
 
-        // Create the full ImageSourceConfig
-        const imageSourceConfig: ImageSourceConfig = {
-            imageSourceId: background.source || 'none',
-            backgroundImages: background.images,
-            entity: background.config?.entity,
-            apiKey: background.config?.apiKey,
-            contentFilter: background.config?.contentFilter,
-            category: background.config?.category,
-            count: background.config?.count
-        };
+        const imageSourceConfig = backgroundSourceConfig(background);
 
         this.backgroundImageComponent.backgroundOpacity = background.opacity ?? 0.3;
         this.backgroundImageComponent.objectFit = background.objectFit || 'cover';

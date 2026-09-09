@@ -87,11 +87,13 @@ function zoneCoordinates(zoneId: ZoneId): {
 
 /**
  * Removes completely empty logical rows from the rendered 3×3 card while
- * keeping their zones intact in the Designer. With fewer than three occupied
- * rows, content-sized tracks prevent an empty 1fr row from creating a large
- * visual gap between widgets.
+ * keeping their zones intact in the Designer. When both the top and bottom
+ * rows are occupied, preserve the full grid so those zones stay at opposite
+ * edges even if the middle row is empty, unless compactRows restores legacy
+ * grouping. Other sparse layouts use
+ * content-sized tracks to avoid unnecessary gaps between widgets.
  */
-export function compactGridRowDefinition(zoneIds: readonly ZoneId[]): CompactGridRowDefinition {
+export function compactGridRowDefinition(zoneIds: readonly ZoneId[], compactRows = false): CompactGridRowDefinition {
     const rowZones = {
         top: ['top-left', 'top-center', 'top-right'],
         middle: ['middle-left', 'center', 'middle-right'],
@@ -100,7 +102,8 @@ export function compactGridRowDefinition(zoneIds: readonly ZoneId[]): CompactGri
     const occupied = (Object.keys(rowZones) as Array<keyof typeof rowZones>)
         .filter(row => rowZones[row].some(zone => zoneIds.includes(zone)));
 
-    if (occupied.length === 0 || occupied.length === 3) {
+    if (occupied.length === 0 || occupied.length === 3
+        || (!compactRows && occupied.includes('top') && occupied.includes('bottom'))) {
         return {
             areas: `'top-left top-center top-right' ` +
                 `'middle-left center middle-right' ` +

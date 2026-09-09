@@ -5,6 +5,7 @@ import {moveListItem, movedListIndex, SortableListController} from '../../editor
 import { BackgroundImage, TimeOfDay, Weather } from '../../image-sources';
 
 const EXPANSION_STATE_KEY = 'background-images.expansion';
+import './media-browser';
 
 /**
  * Editor component for background settings
@@ -29,6 +30,7 @@ export class BackgroundEditor extends BaseEditorSection {
             {value: 'local', label: this.t('editor.background.source_local', 'Local images')},
             {value: 'unsplash', label: 'Unsplash'},
             {value: 'sensor', label: this.t('editor.background.source_sensor', 'Sensor images')},
+            {value: 'media-source', label: this.t('editor.background.source_media', 'Home Assistant media')},
         ];
     }
 
@@ -311,6 +313,19 @@ export class BackgroundEditor extends BaseEditorSection {
                 ${this.config.imageSource === 'local' ? this._renderLocalImagesSection() : ''}
                 ${this.config.imageSource === 'unsplash' ? this._renderUnsplashSection() : ''}
                 ${this.config.imageSource === 'sensor' ? this._renderSensorImagesSection() : ''}
+                ${this.config.imageSource === 'media-source' ? html`
+                    <wcc-media-browser .hass=${this.hass}
+                        .selected=${this.config.imageConfig?.mediaContentId || ''}
+                        .selectedTitle=${this.config.imageConfig?.mediaTitle || ''}
+                        @media-selected=${(ev: CustomEvent) => {
+                            ev.stopPropagation();
+                            this.dispatchEvent(new CustomEvent('config-changed', {detail: {config: {
+                                ...this.config, imageConfig: {
+                                    mediaContentId: ev.detail.id, mediaTitle: ev.detail.title,
+                                },
+                            }}}));
+                        }}></wcc-media-browser>
+                ` : ''}
 
                 <div class="section-subheader">${this.t('editor.background.appearance', 'Image appearance')}</div>
                 <ha-row-selector

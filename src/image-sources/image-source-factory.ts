@@ -3,6 +3,7 @@ import { localSource } from './local-source';
 import { picsumSource } from './picsum-source';
 import { unsplashSource } from './unsplash-source';
 import { sensorSource } from './sensor-source';
+import {MediaSource, mediaSource} from './media-source';
 import { createLogger } from '../utils/logger';
 
 /**
@@ -37,7 +38,8 @@ const sourceMap: Record<string, ImageSource> = {
   'local': localSource,
   'picsum': picsumSource,
   'unsplash': unsplashSource,
-  'sensor': sensorSource
+  'sensor': sensorSource,
+  'media-source': mediaSource
 };
 
 /**
@@ -46,6 +48,8 @@ const sourceMap: Record<string, ImageSource> = {
  * @returns An instance of the specified image source
  */
 export function getImageSource(sourceType: string): ImageSource {
+  // Each card owns its media rotation and connection independently.
+  if (sourceType === 'media-source') return new MediaSource();
   return sourceMap[sourceType] || nullSource;
 }
 

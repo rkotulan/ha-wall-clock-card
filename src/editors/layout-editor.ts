@@ -146,6 +146,21 @@ export class LayoutEditor extends LitElement {
             <div class="field-help">
                 ${this.t('layout.format_help', 'Changes the canvas geometry; widgets keep their current zones and settings.')}
             </div>
+            ${format === 'grid-3x3' ? html`
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{boolean: {}}}
+                        .value=${this.layout.compactRows === true}
+                        .label=${this.t('layout.compact_rows', 'Compact rows (original behavior)')}
+                        .labelPosition=${this.inspector ? LabelPosition.Top : LabelPosition.Left}
+                        @value-changed=${(ev: CustomEvent) => this.emitLayout({
+                            ...this.layout, compactRows: ev.detail.value === true,
+                        })}
+                ></ha-row-selector>
+                <div class="field-help">
+                    ${this.t('layout.compact_rows_help', 'Group top and bottom widgets in the middle when the middle row is empty. Off keeps them at opposite edges.')}
+                </div>
+            ` : ''}
             ${format !== 'grid-3x3' ? html`
                 <ha-row-selector
                         .hass=${this.hass}

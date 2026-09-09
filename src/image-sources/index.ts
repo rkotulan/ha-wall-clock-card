@@ -4,9 +4,11 @@ import { picsumSource, localSource, unsplashSource, sensorSource } from './image
 
 // Get the registry instance
 const registry = ImageSourceRegistry.getInstance();
+import {mediaSource} from './media-source';
 
 // Register all built-in image sources at once
-registry.registerAll([picsumSource, localSource, unsplashSource, sensorSource]);
+registry.registerAll([picsumSource, localSource, unsplashSource, sensorSource, mediaSource]);
+export * from './media-source';
 
 // Export everything for external use
 export * from './image-source';
