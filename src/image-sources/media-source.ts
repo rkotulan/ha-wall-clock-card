@@ -29,7 +29,7 @@ export class MediaSource extends AbstractImageSource {
     setHass(hass?: HomeAssistant): void { this.hass = hass; }
     getDefaultConfig(): ImageSourceConfig { return {mediaContentId: ''}; }
 
-    async getNextImageUrlAsync(config: ImageSourceConfig, weather: Weather, time: TimeOfDay): Promise<string> {
+    async getNextImageUrlAsync(config: ImageSourceConfig, _weather: Weather, _time: TimeOfDay): Promise<string> {
         const selection = String(config.mediaContentId ?? '');
         if (selection !== this.selection) {
             this.selection = selection;
@@ -37,7 +37,8 @@ export class MediaSource extends AbstractImageSource {
             this.currentIndex = 0;
             this.cacheFullyCycled = false;
         }
-        return super.getNextImageUrlAsync(config, weather, time);
+        // Albums are independent of weather and time; keep one rotation queue.
+        return super.getNextImageUrlAsync(config, Weather.All, TimeOfDay.Unspecified);
     }
 
     protected async fetchImagesInternalAsync(config: ImageSourceConfig): Promise<string[]> {

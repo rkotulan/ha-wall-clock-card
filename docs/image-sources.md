@@ -19,6 +19,25 @@ list; `config` contains source-specific values. `blur` is a pixel radius from 0 
 30 and `grayscale` ranges from 0 (full color) to 1 (fully grayscale). Both filters
 apply to every image source. The Designer exposes all built-in sources.
 
+## Color behind the image
+
+In **Card settings → Background**, set **Bar / letterbox color** to choose a solid
+fill behind the image. This is especially useful with **Contain** fit and albums
+containing both portrait and landscape photos:
+
+```yaml
+background:
+  source: media-source
+  config:
+    mediaContentId: "YOUR_SELECTED_MEDIA_ID"
+  objectFit: contain
+  color: "#000000"
+```
+
+Clear the color field (or omit `background.color`) to use the HA theme's card color.
+`background.transparent: true` takes precedence over the fill color. The color is
+also visible when no image is loaded. The legacy/editor key is `backgroundColor`.
+
 ## None
 
 ```yaml

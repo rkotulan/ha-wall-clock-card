@@ -39,7 +39,7 @@ const CONSUMED_V2_KEYS = [
     'timeFormat', 'dateFormat', 'sensors', 'showWeather', 'weatherProvider', 'weatherConfig',
     'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherShowTitle', 'weatherUpdateInterval',
     'weatherIconSet', 'weatherIconAnimation', 'transportation', 'actionBar', 'enableActionBar',
-    'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity',
+    'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity', 'backgroundColor',
     'backgroundRotationInterval', 'objectFit', 'backgroundBlur', 'backgroundGrayscale',
     'fontColor', 'fontFamily', 'textShadow', 'language', 'timeZone', 'size', 'customSizes',
 ];
@@ -154,6 +154,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
         images: config.backgroundImages,
         opacity: config.backgroundOpacity,
         transparent: config.backgroundTransparent,
+        color: config.backgroundColor,
         rotationInterval: config.backgroundRotationInterval,
         objectFit: config.objectFit,
         blur: config.backgroundBlur,

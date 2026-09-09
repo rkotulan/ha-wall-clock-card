@@ -35,6 +35,7 @@ export class BackgroundImageController extends BaseController {
     private managerInitialized = false;
     private hasReceivedWeather = false;
     private imageRequestGeneration = 0;
+    private pendingImageGeneration?: number;
 
     constructor(host: ReactiveControllerHost, config: BackgroundImageControllerConfig = {}) {
         super(host, 'background-image-controller');
@@ -95,7 +96,8 @@ export class BackgroundImageController extends BaseController {
         const needFetchNewImage = this.isInitialized;
 
         // Check if imageSourceConfig changed
-        const needsReinitialize = oldConfig.imageSourceConfig !== this.config.imageSourceConfig;
+        const needsReinitialize = JSON.stringify(oldConfig.imageSourceConfig) !==
+            JSON.stringify(this.config.imageSourceConfig);
 
         // If imageSourceConfig changed, reinitialize
         if (needsReinitialize) {
@@ -212,6 +214,11 @@ export class BackgroundImageController extends BaseController {
     private async fetchNewImageAsync(weather: Weather): Promise<void> {
         if (!this.managerInitialized) return;
         const requestGeneration = this.imageRequestGeneration;
+        if (this.pendingImageGeneration === requestGeneration) return;
+        this.pendingImageGeneration = requestGeneration;
+        const finishRequest = () => {
+            if (this.pendingImageGeneration === requestGeneration) this.pendingImageGeneration = undefined;
+        };
 
         try {
             // Get current weather and time of day
@@ -225,6 +232,7 @@ export class BackgroundImageController extends BaseController {
             );
 
             if (requestGeneration !== this.imageRequestGeneration || !this.managerInitialized) {
+                finishRequest();
                 return;
             }
 
@@ -232,6 +240,7 @@ export class BackgroundImageController extends BaseController {
                 this.logger.debug(`Successfully fetched new image from ${this.backgroundImageManager.getImageSourceId()}`);
                 const img = new Image();
                 img.onload = async () => {
+                    finishRequest();
                     if (requestGeneration !== this.imageRequestGeneration || !this.managerInitialized) {
                         return;
                     }
@@ -254,14 +263,17 @@ export class BackgroundImageController extends BaseController {
                     await this.fireAnimate();
                 };
                 img.onerror = () => {
+                    finishRequest();
                     this.logger.error(`Error loading new image from ${this.backgroundImageManager.getImageSourceId()}`);
                 };
 
                 img.src = newImageUrl;
             } else {
+                finishRequest();
                 this.logger.warn(`Could not fetch new image from ${this.backgroundImageManager.getImageSourceId()}.`);
             }
         } catch (error) {
+            finishRequest();
             this.logger.error('Error fetching new dynamic image:', error);
         }
     }
@@ -329,7 +341,7 @@ export class BackgroundImageController extends BaseController {
                     );
                 }
             });
-        } else if (weatherChanged) {
+        } else if (!this._currentImageUrl || (weatherChanged && imageSourceId !== 'media-source')) {
             this.logger.info(`Updating weather condition to: ${weather}`);
 
             this.fetchNewImageAsync(weather).catch(error =>

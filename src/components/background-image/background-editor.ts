@@ -393,6 +393,16 @@ export class BackgroundEditor extends BaseEditorSection {
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>
 
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{color_hex: ''}}
+                        .value=${this.config.backgroundColor || ''}
+                        .label=${this.t('editor.background.color', 'Bar / letterbox color')}
+                        .helper=${this.t('editor.background.color_help', 'Fill behind the image. Leave blank for the theme color. Transparent background takes precedence.')}
+                        propertyName="backgroundColor"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+
                 <div class="section-subheader">${this.t('editor.background.rotation_group', 'Image rotation')}</div>
                 <ha-row-selector
                         .hass=${this.hass}

@@ -88,4 +88,27 @@ describe('BackgroundImageController', () => {
         expect(state.backgroundImageManager.getImageSourceId()).toBe('none');
         expect(host.requestUpdate).toHaveBeenCalled();
     });
+
+    it('keeps the 90-second media cadence across weather and equivalent config updates', async () => {
+        const config = {
+            backgroundRotationInterval: 90,
+            imageSourceConfig: {imageSourceId: 'media-source', mediaContentId: 'media-source://test/album'},
+        };
+        controller = new BackgroundImageController(host as never, config);
+        const fetchImage = jest.spyOn(controller as any, 'fetchNewImageAsync').mockResolvedValue(undefined);
+        controller.hostConnected();
+        await flushPromises();
+        jest.advanceTimersByTime(30000);
+        (controller as any)._currentImageUrl = '/immich/current';
+        controller.updateWeather(Weather.Rain);
+        controller.updateConfig({...config, imageSourceConfig: {...config.imageSourceConfig}});
+        await flushPromises();
+        expect(fetchImage).not.toHaveBeenCalled();
+        jest.advanceTimersByTime(59999);
+        expect(fetchImage).not.toHaveBeenCalled();
+        jest.advanceTimersByTime(1);
+        expect(fetchImage).toHaveBeenCalledTimes(1);
+        jest.advanceTimersByTime(90000);
+        expect(fetchImage).toHaveBeenCalledTimes(2);
+    });
 });

@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.13.0
+
+### Background rotation and letterbox color (#51)
+
+- Keep media album rotation independent of weather changes and preserve the timer
+  when equivalent source settings are reapplied.
+- Use one album queue across weather/time changes and prevent overlapping image
+  loads within the same source configuration.
+- Add `background.color` and a Designer color picker for the fill behind photos,
+  including bars with `objectFit: contain`. Clear it to use the theme card color;
+  `background.transparent: true` takes precedence.
+- Include legacy configuration migration, English/Czech labels, documentation,
+  and regression coverage for rotation timing and color persistence.
+
 ## 3.12.0
 
 ### Home Assistant media backgrounds

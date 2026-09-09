@@ -2,6 +2,16 @@ import {migrateToLayout} from '../src/core/migrate-config';
 import {toBackgroundEditorConfig, fromBackgroundEditorConfig} from '../src/editors/widget-editor-adapters';
 
 describe('background transparency', () => {
+    it.each(['#000000', '#abcdef', '', undefined])('preserves fill color %p through editing and migration', color => {
+        const background = {source: 'media-source', color, transparent: true, objectFit: 'contain'};
+        const editor = toBackgroundEditorConfig({type: 'custom:wall-clock-card', layout: {zones: {}}, background});
+        expect(editor.backgroundColor).toBe(color);
+        expect(fromBackgroundEditorConfig(editor)).toEqual(background);
+        const migrated = migrateToLayout({backgroundColor: color});
+        expect(migrated.background?.color).toBe(color);
+        expect(migrated).not.toHaveProperty('backgroundColor');
+    });
+
     it.each([true, false, undefined])('preserves %p through the background editor', transparent => {
         const background = {source: 'none', opacity: 0, transparent, blur: 3, grayscale: .2};
         const editor = toBackgroundEditorConfig({type: 'custom:wall-clock-card', layout: {zones: {}}, background});

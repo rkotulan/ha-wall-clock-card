@@ -283,6 +283,8 @@
       "transparent": "Průhledné pozadí karty",
       "transparent_help": "Odstraní podklad, rámeček a stín karty. Pro zobrazení tapety dashboardu vyberte zdroj bez obrázku.",
       "source": "Zdroj obrázků", "opacity": "Průhlednost pozadí", "blur": "Rozmazání pozadí (px)", "grayscale": "Odstíny šedi pozadí", "rotation": "Interval změny (sekundy)",
+      "color": "Barva pruhů kolem obrázku",
+      "color_help": "Výplň za obrázkem. Prázdná hodnota použije barvu motivu. Průhledné pozadí má přednost.",
       "fit": "Přizpůsobení obrázku pozadí", "images": "Obrázky pozadí", "image": "Obrázek pozadí {number}",
       "url": "URL obrázku", "weather": "Podmínka počasí", "weather_any": "Libovolné počasí",
       "time": "Část dne", "time_any": "Libovolná denní doba",

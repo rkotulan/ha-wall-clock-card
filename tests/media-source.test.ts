@@ -25,7 +25,7 @@ describe('Home Assistant media backgrounds', () => {
         source.setHass({callWS} as never);
         const config = {mediaContentId: 'media-source://test/album'};
         const first = await source.getNextImageUrlAsync(config, weather, time);
-        const second = await source.getNextImageUrlAsync(config, weather, time);
+        const second = await source.getNextImageUrlAsync(config, Weather.Rain, TimeOfDay.Night);
         expect(new Set([first, second]).size).toBe(2);
         expect(callWS).toHaveBeenCalledTimes(1);
         callWS.mockResolvedValue(album([photo('new')]));

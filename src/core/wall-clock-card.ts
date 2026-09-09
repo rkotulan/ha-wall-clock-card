@@ -1,5 +1,6 @@
 import {css, CSSResult, html, LitElement} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
+import {styleMap} from 'lit/directives/style-map.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {Weather} from '../providers/image';
 import {backgroundSourceConfig} from './background-source-config';
@@ -1536,7 +1537,11 @@ export class WallClockCard extends LitElement {
         }[this.layoutSaveStatus];
         return html`
             <ha-card class=${this.configV3.background?.transparent === true ? 'transparent-background' : ''}
-                     style="color: ${withFontColorCssVariable(this.computeAppearance().fontColor ?? '#FFFFFF')};">
+                     style=${styleMap({
+                         color: withFontColorCssVariable(this.computeAppearance().fontColor ?? '#FFFFFF'),
+                         background: this.configV3.background?.transparent === true
+                             ? undefined : this.configV3.background?.color || undefined,
+                     })}>
                 ${this.backgroundImageComponent}
                 ${this.layoutElement}
                 ${inlineEditing && this.designerRequiresExplicitOpen && !this.designerOpen ? html`
