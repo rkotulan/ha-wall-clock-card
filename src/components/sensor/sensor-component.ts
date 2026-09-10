@@ -190,14 +190,19 @@ export class SensorComponent extends LitElement {
 
         .sensor-label {
             font-size: 1.0rem;
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             opacity: 0.8;
             color: var(--sensor-color, currentColor);
         }
 
         .sensor-value {
+            line-height: 1;
+            /* A tight line box aligns with the clock, but some fonts extend
+               below it. Reserve room for that text overflow without moving
+               the baseline or creating a scrollbar for a single value. */
+            padding-bottom: 0.2em;
             font-size: 1.5rem;
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             color: var(--sensor-color, var(--sensor-value-color, #ffffff));
             white-space: nowrap;
         }

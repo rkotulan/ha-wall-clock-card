@@ -229,3 +229,19 @@ The 2.x root keys (`timeFormat`, `dateFormat`, `sensors`, `showWeather`,
 `fontColor`, `fontFamily`, `textShadow`, `language`, `size` and `customSizes`) remain accepted. They are converted
 in memory to the equivalent 3.0 layout. The Designer writes the normalized 3.0 form
 after the first change. See the [migration table](layout.md#migration-from-2x).
+
+### Matching widget typography
+
+Set `appearance.fontWeight: 300` (or another weight from 100 to 900) to give
+built-in widgets a common font weight. A widget's `style.fontWeight` overrides
+this value. Leaving these options unset preserves each component's original
+weight. Both options are available in the Designer's appearance settings.
+
+Use matching `clockSize` and sensor `valueSize` values, such as `3rem`, for
+matching text sizes. Sensor values and clock digits use a line height of 1.
+Labels and icons can still affect the surrounding widget layout; this does not
+add baseline alignment between widgets with different font sizes.
+
+Unitless custom `clockSize`, `dateSize`, `labelSize`, and `valueSize` values are
+interpreted as rem: `2` means `2rem`. The Designer saves these with the unit.
+Explicit CSS units and expressions are preserved.

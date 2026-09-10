@@ -83,6 +83,10 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         this.style.overflow = supportsBoundedHeight && style?.maxHeight ? 'auto' : '';
         this.style.fontSize = style?.fontSize ?? '';
         this.style.fontFamily = style?.fontFamily ?? this.appearance?.fontFamily ?? '';
+        const fontWeight = style?.fontWeight ?? this.appearance?.fontWeight;
+        this.style.fontWeight = fontWeight === undefined ? '' : String(fontWeight);
+        if (fontWeight === undefined) this.style.removeProperty('--wcc-font-weight');
+        else this.style.setProperty('--wcc-font-weight', String(fontWeight));
         this.style.color = style?.color ?? '';
         this.style.textShadow = style?.textShadow ?? this.appearance?.textShadow ?? '';
         this.style.flex = useRowGrow ? `${grow} 1 0%` : useContentWidth ? '0 1 auto' : '';

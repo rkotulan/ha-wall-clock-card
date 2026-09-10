@@ -74,6 +74,10 @@ export class WeatherComponent extends LitElement {
             display: block;
             max-width: 100%;
             container-type: inline-size;
+            /* Size containment hides the content's intrinsic width. Supply a
+               preferred width for content-sized grid tracks (center zones),
+               while still allowing definite tracks to shrink or expand. */
+            contain-intrinsic-inline-size: 20rem;
         }
 
         .weather-container {
@@ -92,7 +96,7 @@ export class WeatherComponent extends LitElement {
 
         .weather-title {
             font-size: 1.5rem;
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             opacity: 0.8;
             text-align: right;
         }
@@ -114,12 +118,12 @@ export class WeatherComponent extends LitElement {
         .weather-temp {
             font-size: 3rem; /* Medium size (default) */
             line-height: 3rem;
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
         }
 
         .weather-condition {
             font-size: 1.5rem; /* Medium size (default) */
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             opacity: 0.8;
         }
 
@@ -156,7 +160,7 @@ export class WeatherComponent extends LitElement {
 
         .forecast-date {
             font-size: 1.4rem; /* Medium size (default) */
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             margin-right: 8px;
             opacity: 0.8;
             width: 2rem;
@@ -171,7 +175,7 @@ export class WeatherComponent extends LitElement {
 
         .forecast-temp {
             font-size: 1.4rem; /* Medium size (default) */
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             width: 80px;
             text-align: right;
         }

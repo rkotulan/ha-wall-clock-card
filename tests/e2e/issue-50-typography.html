@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Issue 50 typography</title>
+<style>html{font-size:14px}body{font-family:Arial;line-height:1.6}wall-clock-card{display:block;width:1000px;height:500px}</style></head><body><pre id="e2e-result" data-status="running">Running</pre><script type="module">
+import '../../dist/wall-clock-card.js';
+const out=document.querySelector('#e2e-result');
+const hass={config:{time_zone:'Europe/Prague'},connection:{subscribeMessage:()=>Promise.resolve(()=>{})},language:'en',locale:{language:'en'},localize:k=>k,states:{'sensor.test':{entity_id:'sensor.test',state:'14.2',attributes:{unit_of_measurement:'°C',friendly_name:'Temperature'}}},themes:{themes:{}},user:{name:'Test'}};
+function deep(root,sel){return [...root.querySelectorAll('*')].flatMap(e=>[...(e.matches(sel)?[e]:[]),...(e.shadowRoot?deep(e.shadowRoot,sel):[])]);}
+function assert(value,message){if(!value)throw Error(message);}
+const records=[];
+try{for(const scenario of ['plain','label','icon','both','unitless']){
+const card=document.createElement('wall-clock-card');const cfg={type:'custom:wall-clock-card',background:{source:'none'},appearance:{fontWeight:300},layout:{zones:{'top-left':{widgets:[{type:'clock',id:'clock',clockSize:'3rem'}]},'top-right':{widgets:[{type:'sensors',id:'sensor',sensors:[{entity:'sensor.test',label:['label','both'].includes(scenario)?'Temperature':'',icon:'mdi:thermometer'}],showIcons:['icon','both'].includes(scenario),labelSize:'1rem',valueSize:scenario==='unitless'?'3':'3rem'}]}}}};
+card.setConfig(cfg);card.hass=hass;document.body.append(card);
+const started=performance.now();while(!deep(card.shadowRoot,'.sensor-value').length){assert(performance.now()-started<3000,'Sensor did not render');await new Promise(r=>setTimeout(r,20));}
+await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+const clock=deep(card.shadowRoot,'.hours-minutes')[0],value=deep(card.shadowRoot,'.sensor-value')[0];
+assert(getComputedStyle(value).fontSize==='42px',scenario+': font size');
+assert(getComputedStyle(value).lineHeight==='42px',scenario+': line height');
+assert(getComputedStyle(value).fontWeight==='300'&&getComputedStyle(clock).fontWeight==='300',scenario+': global weight');
+if(scenario==='plain'||scenario==='unitless')assert(Math.abs(clock.getBoundingClientRect().top-value.getBoundingClientRect().top)<1,scenario+': alignment');
+const label=deep(card.shadowRoot,'.sensor-label')[0];if(label)assert(label.getBoundingClientRect().bottom<=value.getBoundingClientRect().top+1,'Label overlaps value');
+const container=deep(card.shadowRoot,'.sensor-container')[0];
+assert(container.scrollHeight <= container.clientHeight, scenario+': unexpected vertical scrollbar');
+const host=deep(card.shadowRoot,'wcc-sensors-widget')[0];host.config={...host.config,style:{fontWeight:700}};await host.updateComplete;
+assert(getComputedStyle(value).fontWeight==='700','Widget override');host.config={...host.config,style:{}};await host.updateComplete;
+assert(getComputedStyle(value).fontWeight==='300','Clearing override');
+host.appearance={};await host.updateComplete;assert(getComputedStyle(value).fontWeight==='400','Restoring default');
+const component=deep(host.shadowRoot,'ha-sensors')[0];
+component.style.maxHeight='80px';
+component.sensors=Array.from({length:8},()=>({entity:'sensor.test',label:''}));
+await component.updateComplete;
+await new Promise(r=>setTimeout(r,100));
+const list=deep(host.shadowRoot,'.sensor-container')[0];
+list.style.maxHeight='80px';
+assert(list.scrollHeight > list.clientHeight, 'Long sensor list should scroll');
+list.scrollTop=20;
+assert(list.scrollTop > 0, 'Long sensor list scrolling is disabled');
+records.push(scenario+': passed');card.remove();}
+out.dataset.status='passed';out.textContent=records.join('\n');}catch(e){out.dataset.status='failed';out.textContent=records.join('\n')+'\n'+e.stack;}
+</script></body></html>

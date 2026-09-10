@@ -219,7 +219,7 @@ export class ActionBarComponent extends BottomBarComponent {
             max-width: 100%;
             overflow: hidden;
             font-size: var(--action-title-size, 18px);
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             text-align: center;
             text-overflow: ellipsis;
             white-space: nowrap;

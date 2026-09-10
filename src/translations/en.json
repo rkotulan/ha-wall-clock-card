@@ -115,6 +115,8 @@
     "bottom_right": "Bottom right"
   },
   "general": {
+    "font_weight": "Font weight",
+    "font_weight_default": "Default",
     "title": "General", "layout": "Layout", "appearance": "Card appearance",
     "language_diagnostics": "Language and diagnostics",
     "font_color": "Font color", "font_color_template": "Dynamic template configured in the YAML code editor", "custom_color": "Custom color", "font_family": "Font family",

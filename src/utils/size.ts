@@ -96,6 +96,12 @@ export const DEFAULT_SIZES: SizeDefinitions = {
   },
 };
 
+/** Unitless custom font sizes use rem, matching the editor examples. */
+export function normalizeFontSize(value: string): string {
+  const trimmed = String(value).trim();
+  return /^(?:\d+(?:\.\d+)?|\.\d+)$/.test(trimmed) ? trimmed + 'rem' : trimmed;
+}
+
 /**
  * Get the size value based on the current size setting
  * 
@@ -111,7 +117,8 @@ export function getSizeValue(
 ): string {
   // If custom size is provided and size is set to Custom, return the custom size
   if (size === Size.Custom && customSize) {
-    return customSize;
+    return ['clockSize', 'dateSize', 'labelSize', 'valueSize'].includes(sizeType)
+      ? normalizeFontSize(customSize) : customSize;
   }
   
   // Get the size definitions for the requested type

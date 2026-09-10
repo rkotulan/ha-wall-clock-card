@@ -64,6 +64,8 @@ export interface WidgetStyle {
     fontSize?: string;
     /** CSS font-family value; the font itself must be available in HA/browser. */
     fontFamily?: string;
+    /** Optional CSS font weight; omitted preserves component defaults. */
+    fontWeight?: number;
     color?: string;
     /** CSS text-shadow value; use 'none' to disable the card-wide shadow. */
     textShadow?: string;
@@ -170,6 +172,8 @@ export interface AppearanceConfig {
     fontColor?: string;
     /** Card-wide CSS font-family value inherited by widgets. */
     fontFamily?: string;
+    /** Optional CSS font weight; omitted preserves component defaults. */
+    fontWeight?: number;
     /** Card-wide CSS text-shadow value inherited by widgets. */
     textShadow?: string;
     language?: string;

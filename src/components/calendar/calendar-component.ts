@@ -63,20 +63,20 @@ export class CalendarComponent extends LitElement {
 
         .day-weekday {
             font-size: 0.78em;
-            font-weight: 700;
+            font-weight: var(--wcc-font-weight, 700);
             opacity: 0.86;
         }
 
         .day-number {
             margin: 2px 0 1px;
             font-size: 2em;
-            font-weight: 450;
+            font-weight: var(--wcc-font-weight, 450);
             letter-spacing: -0.04em;
         }
 
         .day-month {
             font-size: 0.69em;
-            font-weight: 700;
+            font-weight: var(--wcc-font-weight, 700);
             letter-spacing: 0.04em;
             opacity: 0.78;
         }
@@ -127,7 +127,7 @@ export class CalendarComponent extends LitElement {
             overflow: hidden;
             color: var(--event-color);
             font-size: var(--wcc-calendar-title-size, 1em);
-            font-weight: 650;
+            font-weight: var(--wcc-font-weight, 650);
             line-height: 1.35;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -142,7 +142,7 @@ export class CalendarComponent extends LitElement {
             margin-top: 3px;
             color: var(--wcc-calendar-color, #fff);
             font-size: var(--wcc-calendar-detail-size, 0.82em);
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             line-height: 1.35;
             opacity: 0.76;
         }

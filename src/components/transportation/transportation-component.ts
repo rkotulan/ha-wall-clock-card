@@ -98,7 +98,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         .transportation-title {
             font-size: 1.5rem;
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             opacity: 0.8;
             margin-bottom: 8px;
         }
@@ -176,7 +176,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         .stop-name {
             font-size: 1.3rem;
-            font-weight: 500;
+            font-weight: var(--wcc-font-weight, 500);
             text-align: left;
             width: 100%;
             margin-top: 0;
@@ -204,7 +204,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         .departure-line {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: var(--wcc-font-weight, 700);
             margin-right: 8px;
             min-width: 2rem;
             text-align: center;
@@ -217,7 +217,7 @@ export class TransportationComponent extends BottomBarComponent {
 
         .departure-time {
             font-size: 1.2rem;
-            font-weight: 700;
+            font-weight: var(--wcc-font-weight, 700);
             color: #4CAF50;
         }
 

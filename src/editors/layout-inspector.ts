@@ -1,3 +1,4 @@
+import {normalizeFontSize} from '../utils/size';
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
@@ -368,6 +369,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private updateWidgetSize(key: string, value: string): void {
+        if (['clockSize', 'dateSize', 'labelSize', 'valueSize'].includes(key)) value = normalizeFontSize(value);
         const located = this.resolveWidget();
         if (!located) return;
         const widget = {...located.widget};
@@ -692,7 +694,13 @@ export class WccLayoutInspector extends LitElement {
                                 .helper=${this.t('inspector.font_family_help', 'CSS font family or stack; empty uses the card font')}
                                 @value-changed=${(ev: CustomEvent) => this.updateStyle('fontFamily', ev.detail.value)}>
                         </ha-row-selector>
-                        <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
+                        <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: [{value: '', label: this.t('general.font_weight_default', 'Default')}, ...[100,200,300,400,500,600,700,800,900].map(weight => ({value: String(weight), label: String(weight)}))], mode: 'dropdown'}}}
+                        .value=${style.fontWeight === undefined ? '' : String(style.fontWeight)}
+                        .label=${this.t('general.font_weight', 'Font weight')}
+                        @value-changed=${(ev: CustomEvent) => this.updateStyle('fontWeight', ev.detail.value === '' ? undefined : Number(ev.detail.value))}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
                                 .value=${style.textShadow ?? ''}
                                 .label=${this.t('inspector.text_shadow', 'Text shadow override')}
                                 .helper=${this.t('inspector.text_shadow_help', 'CSS text-shadow value; empty uses the card shadow, none disables it')}
@@ -803,6 +811,7 @@ export class WccLayoutInspector extends LitElement {
             color: this.t('inspector.color', 'Color override'),
             fontSize: this.t('inspector.font_size', 'Font size (e.g., 2rem)'),
             fontFamily: this.t('inspector.font_family', 'Font family override'),
+            fontWeight: this.t('general.font_weight', 'Font weight'),
             textShadow: this.t('inspector.text_shadow', 'Text shadow override'),
             widthMode: this.t('inspector.width_mode', 'Row width behavior'),
             grow: this.t('inspector.row_width_ratio', 'Row width ratio'),
@@ -972,6 +981,12 @@ export class WccLayoutInspector extends LitElement {
                         .helper=${this.t('general.font_family_help', 'CSS font family or stack; the font must already be loaded')}
                         .labelPosition=${LabelPosition.Top}
                         @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontFamily', ev.detail.value)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{select: {options: [{value: '', label: this.t('general.font_weight_default', 'Default')}, ...[100,200,300,400,500,600,700,800,900].map(weight => ({value: String(weight), label: String(weight)}))], mode: 'dropdown'}}}
+                        .value=${appearance.fontWeight === undefined ? '' : String(appearance.fontWeight)}
+                        .label=${this.t('general.font_weight', 'Font weight')}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontWeight', ev.detail.value === '' ? undefined : Number(ev.detail.value))}>
                 </ha-row-selector>
                 <ha-row-selector .hass=${this.hass}
                         .selector=${{text: {}}}

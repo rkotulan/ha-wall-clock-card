@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Issue #52: weather intrinsic width</title>
+    <style>
+        body { background: #171717; color: white; margin: 0; }
+        wall-clock-card { display: block; height: 500px; }
+    </style>
+</head>
+<body>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+
+    const result = document.querySelector('#e2e-result');
+    const state = {
+        entity_id: 'weather.pirate_weather', state: 'sunny',
+        attributes: {temperature: 100, temperature_unit: '°F', supported_features: 7},
+    };
+    const forecast = Array.from({length: 5}, (_, day) => ({
+        datetime: `2026-09-${10 + day}T12:00:00Z`,
+        temperature: 100, templow: 75, condition: 'sunny',
+    }));
+    const hass = {
+        config: {time_zone: 'Europe/Prague', latitude: 49, longitude: 16},
+        connection: {subscribeMessage: () => Promise.resolve(() => {})},
+        language: 'en', locale: {language: 'en'}, localize: key => key,
+        states: {[state.entity_id]: state}, themes: {themes: {}}, user: {name: 'Test'},
+        callWS: async () => ({response: {[state.entity_id]: {forecast}}}),
+    };
+
+    function deep(root, selector) {
+        const matches = [];
+        for (const element of root.querySelectorAll('*')) {
+            if (element.matches(selector)) matches.push(element);
+            if (element.shadowRoot) matches.push(...deep(element.shadowRoot, selector));
+        }
+        return matches;
+    }
+
+    function assert(value, message) {
+        if (!value) throw new Error(message);
+    }
+
+    const records = [];
+    try {
+        for (const displayMode of ['current', 'both', 'forecast']) {
+            for (const scenario of ['center', 'top-center', 'right', 'row', 'narrow']) {
+                const card = document.createElement('wall-clock-card');
+                card.style.width = scenario === 'narrow' ? '280px' : '1000px';
+                const widget = id => ({
+                    type: 'weather', id, provider: 'homeassistant',
+                    providerConfig: {entityId: state.entity_id}, displayMode,
+                });
+                const zoneId = scenario === 'right' || scenario === 'narrow' ? 'top-right'
+                    : scenario === 'center' ? 'center' : 'top-center';
+                const zones = {[zoneId]: {
+                    direction: scenario === 'row' ? 'row' : 'column',
+                    widgets: [widget('weather')],
+                }};
+                // Prevent top-center's full-row fallback; exercise the auto grid track.
+                if (scenario === 'center' || scenario === 'top-center') {
+                    zones['top-right'] = {widgets: [widget('control')]};
+                }
+                card.setConfig({
+                    type: 'custom:wall-clock-card', background: {source: 'none'},
+                    appearance: {fontColor: '#fff'}, layout: {zones},
+                });
+                card.hass = hass;
+                document.body.append(card);
+                const started = performance.now();
+                while (!deep(card.shadowRoot, '.weather-container').length) {
+                    assert(performance.now() - started < 3000, 'Weather never rendered');
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                }
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const widgets = deep(card.shadowRoot, 'wcc-weather-widget');
+                assert(widgets.length === Object.keys(zones).length, 'Missing widget');
+                for (const host of widgets) {
+                    const content = deep(host.shadowRoot, '.weather-container')[0];
+                    const width = host.getBoundingClientRect().width;
+                    const context = `${scenario}/${displayMode}/${host.getAttribute('data-orientation')}`;
+                    assert(width > 0, `${context}: host collapsed to zero width`);
+                    assert(content.getBoundingClientRect().width > 0, `${context}: content collapsed`);
+                    assert(content.textContent.includes('100'), `${context}: weather data missing`);
+                    const zone = host.getRootNode().host;
+                    assert(width <= zone.getBoundingClientRect().width + 1, `${context}: exceeds its zone`);
+                    if (displayMode !== 'current') {
+                        const days = deep(host.shadowRoot, '.forecast-day');
+                        assert(days.length > 0, `${context}: forecast missing`);
+                        assert(days.every(day => day.getBoundingClientRect().width > 0), `${context}: forecast columns collapsed`);
+                    }
+                    records.push(`${context}: ${width}px`);
+                }
+                card.remove();
+            }
+        }
+        result.textContent = records.join('\n');
+        result.dataset.status = 'passed';
+    } catch (error) {
+        result.dataset.status = 'failed';
+        result.textContent = records.join('\n') + '\n' + error.stack;
+    }
+</script>
+</body>
+</html>

@@ -64,7 +64,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         :host {display:block;width:100%;min-width:0;}
         .month {color:var(--month-color);width:100%;background:rgba(18,20,24,var(--wcc-calendar-local-background-opacity,var(--calendar-background-opacity,0)));}
         header {display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;}
-        h2 {font-size:1.35em;margin:0;flex:1;font-weight:500;}
+        h2 {font-size:1.35em;margin:0;flex:1;font-weight:var(--wcc-font-weight, 500);}
         button {font:inherit;color:inherit;cursor:pointer;}
         header button {background:transparent;border:1px solid currentColor;border-radius:6px;min-height:32px;padding:3px 10px;}
         button:focus-visible {outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px;}

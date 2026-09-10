@@ -78,6 +78,8 @@
     "bottom_left": "Vlevo dole", "bottom_center": "Uprostřed dole", "bottom_right": "Vpravo dole"
   },
   "general": {
+    "font_weight": "Tloušťka písma",
+    "font_weight_default": "Výchozí",
     "title": "Obecné", "layout": "Rozložení", "appearance": "Vzhled karty",
     "language_diagnostics": "Jazyk a diagnostika",
     "font_color": "Barva písma", "font_color_template": "Dynamická šablona je nastavena v editoru YAML", "custom_color": "Vlastní barva", "font_family": "Rodina písma",

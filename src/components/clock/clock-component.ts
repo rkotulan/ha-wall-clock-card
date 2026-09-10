@@ -54,7 +54,7 @@ export class ClockComponent extends LitElement {
         .clock {
             font-size: 16rem; /* Medium size (default) */
             line-height: 14rem;
-            font-weight: 300;
+            font-weight: var(--wcc-font-weight, 300);
             text-align: center;
             z-index: 2;
             position: relative;
@@ -103,14 +103,14 @@ export class ClockComponent extends LitElement {
 
         .seconds {
             font-size: 0.5em;
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             line-height: 1;
             vertical-align: top;
         }
 
         .ampm {
             font-size: 0.3em;
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             line-height: 1;
             text-transform: lowercase;
             opacity: 0.6;
@@ -123,7 +123,7 @@ export class ClockComponent extends LitElement {
 
         .date {
             font-size: 6rem; /* Medium size (default) */
-            font-weight: 400;
+            font-weight: var(--wcc-font-weight, 400);
             text-align: center;
             margin-top: 0.2rem;
             opacity: 1;
