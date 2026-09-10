@@ -191,11 +191,14 @@ export class HaRowSelector extends LitElement {
                         .hass=${this.hass}
                         .selector=${this.selector}
                         .value=${this.selectorValue}
-                        .helper=${this.isBooleanSelector ? undefined : this.helper}
+                        .helper=${this.isBooleanSelector || this.selector && 'color_hex' in this.selector ? undefined : this.helper}
                         .disabled=${this.disabled}
                         .required=${this.required}
                         @value-changed=${this._valueChanged}
                     ></ha-selector>
+                    ${this.selector && 'color_hex' in this.selector && this.helper ? html`
+                        <div class="color-helper">${this.helper}</div>
+                    ` : ''}
                 </div>
                 <div class="action-buttons">
                     ${this.actionButtons ? 
@@ -348,6 +351,13 @@ export class HaRowSelector extends LitElement {
     }
 
     static styles = css`
+        .color-helper {
+            color: var(--secondary-text-color);
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+
         .row {
             display: flex;
             margin-bottom: 12px;

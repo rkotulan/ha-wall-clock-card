@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Farve på aktivt ikon",
+      "active_color_help": "Ikonets farve, når handlingen er aktiv",
+      "light_color_help": "Ikonets farve, når lyset er tændt",
+      "switch_color_help": "Ikonets farve, når kontakten er slået til"
+    }
   }
 }

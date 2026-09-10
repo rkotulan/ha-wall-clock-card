@@ -71,9 +71,9 @@ export class SwitchToggleEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.switchToggleAction.activeColor || '#4CAF50'}
-                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
-                    .helper=${this.t('editor.action_plugin.switch_color_help', 'Color to use when the switch is on')}
-                    .labelPosition=${LabelPosition.Hidden}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active icon color')}
+                    .helper=${this.t('editor.action_plugin.switch_color_help', 'Icon color when the switch is on')}
+                    .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>
         `;

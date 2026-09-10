@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Farge på aktivt ikon",
+      "active_color_help": "Ikonfarge når handlingen er aktiv",
+      "light_color_help": "Ikonfarge når lyset er på",
+      "switch_color_help": "Ikonfarge når bryteren er på"
+    }
   }
 }

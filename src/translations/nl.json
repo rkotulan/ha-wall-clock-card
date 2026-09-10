@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Kleur van het actieve pictogram",
+      "active_color_help": "Kleur van het pictogram wanneer de actie actief is",
+      "light_color_help": "Kleur van het pictogram wanneer het licht aan is",
+      "switch_color_help": "Kleur van het pictogram wanneer de schakelaar aan staat"
+    }
   }
 }

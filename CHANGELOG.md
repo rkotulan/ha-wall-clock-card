@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.14.0
+
+### Weather visibility and widget typography (#50, #52)
+
+- Prevent the weather widget from collapsing to zero width in content-sized
+  center zones, including when displaying a Home Assistant weather entity.
+- Add a shared font weight in the Designer (`appearance.fontWeight`) and
+  per-widget overrides (`style.fontWeight`).
+- Use consistent line heights for clock digits and sensor values, and interpret
+  unitless custom clock/date/sensor font sizes as rem. Set matching explicit sizes
+  to match clock and sensor text; this does not add a baseline-alignment selector.
+
+### Clearer action icon color settings (#53)
+
+- Show the previously hidden active icon color label and display helper text
+  explaining when the color applies, including light and switch on states.
+- Translate these labels and explanations into all 19 supported languages.
+
 ## 3.13.0
 
 ### Background rotation and letterbox color (#51)

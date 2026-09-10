@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Cor do ícone ativo",
+      "active_color_help": "Cor do ícone quando a ação está ativa",
+      "light_color_help": "Cor do ícone quando a luz está acesa",
+      "switch_color_help": "Cor do ícone quando o interruptor está ligado"
+    }
   }
 }

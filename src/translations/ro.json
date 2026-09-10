@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Culoarea pictogramei active",
+      "active_color_help": "Culoarea pictogramei când acțiunea este activă",
+      "light_color_help": "Culoarea pictogramei când lumina este aprinsă",
+      "switch_color_help": "Culoarea pictogramei când întrerupătorul este pornit"
+    }
   }
 }

@@ -47,5 +47,13 @@
       "mph": "mph",
       "kmh": "km/h"
     }
+  },
+  "editor": {
+    "action_plugin": {
+      "active_color": "Färg på aktiv ikon",
+      "active_color_help": "Ikonens färg när åtgärden är aktiv",
+      "light_color_help": "Ikonens färg när lampan är tänd",
+      "switch_color_help": "Ikonens färg när strömbrytaren är på"
+    }
   }
 }

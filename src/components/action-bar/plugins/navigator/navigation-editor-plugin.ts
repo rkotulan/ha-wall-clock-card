@@ -57,9 +57,9 @@ export class NavigationEditorPlugin extends BasePluginEditor {
                     .hass=${this.hass}
                     .selector=${{ color_hex: "" }}
                     .value=${this.navigationAction.activeColor || '#ffeb3b'}
-                    .label=${this.t('editor.action_plugin.active_color', 'Active color')}
-                    .helper=${this.t('editor.action_plugin.active_color_help', 'Color to use when the action is active')}
-                    .labelPosition=${LabelPosition.Hidden}
+                    .label=${this.t('editor.action_plugin.active_color', 'Active icon color')}
+                    .helper=${this.t('editor.action_plugin.active_color_help', 'Icon color when the action is active')}
+                    .labelPosition=${LabelPosition.Top}
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
             ></ha-row-selector>
         `;
