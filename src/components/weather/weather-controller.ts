@@ -107,8 +107,10 @@ export class WeatherController extends BaseController {
         this.config = { ...this.config, ...config };
         const dataSourceChanged = previousDataSource !== this.dataSourceSignature(this.config);
 
-        // If update interval changed, reset the interval
-        if (previousUpdateInterval !== this.config.weatherUpdateInterval) {
+        // Start/stop polling when weather is enabled/disabled, even when the
+        // interval is omitted and both configs use the default value.
+        if (previousShowWeather !== this.config.showWeather ||
+            previousUpdateInterval !== this.config.weatherUpdateInterval) {
             this.setupUpdateInterval();
         }
 

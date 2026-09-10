@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.14.1
+
+### Weather forecast refresh (#54)
+
+- Start automatic weather refresh when the widget is enabled, including when
+  no update interval is explicitly configured (the default is 30 minutes).
+- Stop polling when weather is disabled and resume it when enabled again.
+- Keep the polling schedule stable across Home Assistant state updates.
+- Add five regression tests covering 24-hour forecast refresh, enable/disable,
+  interval changes, state updates, and disconnect/reconnect behavior.
+
 ## 3.14.0
 
 ### Weather visibility and widget typography (#50, #52)
