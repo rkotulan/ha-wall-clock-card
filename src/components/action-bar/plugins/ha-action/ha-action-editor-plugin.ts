@@ -65,15 +65,6 @@ export class HaActionEditorPlugin extends BasePluginEditor {
                     @value-changed=${(ev: CustomEvent) => this.handleValueChange('double_tap_action', ev)}
             ></ha-row-selector>
 
-            <ha-row-selector
-                    .hass=${this.hass}
-                    .selector=${{ color_hex: '' }}
-                    .value=${this.haAction.activeColor || '#ffeb3b'}
-                    .label=${this.t('editor.action_plugin.active_color', 'Active icon color')}
-                    .helper=${this.t('editor.action_plugin.active_color_help', 'Icon color when the action is active')}
-                    .labelPosition=${LabelPosition.Top}
-                    @value-changed=${(ev: CustomEvent) => this.handleValueChange('activeColor', ev)}
-            ></ha-row-selector>
         `;
     }
 }

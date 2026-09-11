@@ -73,6 +73,16 @@ Buttons are keyboard accessible and support tap, hold and double-tap gestures.
 The visual editor is the safest way to add actions because it exposes the fields
 supported by the selected plugin.
 
+**Active icon color** is available for **Toggle Light** and **Toggle Switch**.
+It colors the icon while the selected entity is `on`. To try it, add a
+**Toggle Light** action, select a light, set **Active icon color**, then turn
+the light on and off.
+
+Navigation, service calls and standard Home Assistant actions do not
+automatically track an active state, so their editors do not offer this field.
+Use `stateEntity` and `stateRules` to color those buttons based on an entity's
+state instead.
+
 ## Standard Home Assistant actions
 
 `action-ha` delegates to Home Assistant's own action handler:

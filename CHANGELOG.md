@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.14.2
+
+### Relevant action icon color settings (#53)
+
+- Remove the active icon color control from navigation, service-call and standard
+  Home Assistant action editors, which do not automatically track an active state.
+- Keep the control for Toggle Light and Toggle Switch, where it reflects the
+  entity's on state.
+- Document how to test the setting and use entity state rules for other actions.
+
 ## 3.14.1
 
 ### Weather forecast refresh (#54)
