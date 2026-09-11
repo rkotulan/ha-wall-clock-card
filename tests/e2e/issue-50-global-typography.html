@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Issue 50: global typography controls</title>
+<style>wall-clock-card { display: block; width: 1000px; height: 500px; }</style></head>
+<body><pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+    const result = document.querySelector('#e2e-result');
+    const records = [];
+    const hass = {
+        config: {time_zone: 'Europe/Prague'}, language: 'en', locale: {language: 'en'},
+        connection: {subscribeMessage: () => Promise.resolve(() => {})},
+        localize: key => key, themes: {themes: {}}, user: {name: 'Test'},
+        states: {'sensor.test': {entity_id: 'sensor.test', state: '14.2', attributes: {unit_of_measurement: '°C'}}},
+    };
+    function assert(condition, message) { if (!condition) throw new Error(message); }
+    function deep(root, selector) {
+        return [...root.querySelectorAll('*')].flatMap(element => [
+            ...(element.matches(selector) ? [element] : []),
+            ...(element.shadowRoot ? deep(element.shadowRoot, selector) : []),
+        ]);
+    }
+    const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const card = document.createElement('wall-clock-card');
+    const inspector = document.createElement('wcc-layout-inspector');
+    let config = {
+        type: 'custom:wall-clock-card', background: {source: 'none'},
+        layout: {zones: {
+            'top-left': {widgets: [{type: 'clock', id: 'clock', clockSize: '3rem'}]},
+            'top-right': {widgets: [{type: 'sensors', id: 'sensor', sensors: [{entity: 'sensor.test', label: 'Temperature'}]}]},
+        }},
+    };
+    function sync() {
+        card.setConfig(config);
+        inspector.config = config;
+        inspector.layout = config.layout;
+    }
+    inspector.hass = hass;
+    inspector.addEventListener('wcc-card-config-changed', event => {
+        config = event.detail.config;
+        sync();
+    });
+    async function select(label, value) {
+        const row = [...inspector.shadowRoot.querySelectorAll('ha-row-selector')].find(row => row.label === label);
+        assert(row, 'Missing global field: ' + label);
+        await row.updateComplete;
+        // Start at the HA selector boundary and exercise the row, inspector,
+        // saved configuration and rendered card together.
+        row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed', {
+            detail: {value}, bubbles: true, composed: true,
+        }));
+        await inspector.updateComplete;
+        await frame();
+    }
+    function textStyles() {
+        return ['.hours-minutes', '.sensor-value', '.sensor-label'].map(selector => {
+            const element = deep(card.shadowRoot, selector)[0];
+            assert(element, 'Missing text: ' + selector);
+            const css = getComputedStyle(element);
+            return {selector, family: css.fontFamily, weight: css.fontWeight, shadow: css.textShadow};
+        });
+    }
+    try {
+        sync(); card.hass = hass;
+        document.body.append(card, inspector);
+        await inspector.updateComplete;
+        const start = performance.now();
+        while (!deep(card.shadowRoot, '.sensor-value').length) {
+            assert(performance.now() - start < 3000, 'Sensor did not render');
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        await frame();
+        const defaults = textStyles();
+        await select('Font family', 'monospace');
+        await select('Font weight', '700');
+        await select('Text shadow', 'rgb(255, 0, 0) 2px 3px 4px');
+        assert(config.appearance.fontFamily === 'monospace', 'Family not saved');
+        assert(config.appearance.fontWeight === 700, 'Weight not saved');
+        assert(config.appearance.textShadow === 'rgb(255, 0, 0) 2px 3px 4px', 'Shadow not saved');
+        for (const text of textStyles()) {
+            assert(text.family === 'monospace' && text.weight === '700' && text.shadow === 'rgb(255, 0, 0) 2px 3px 4px', JSON.stringify(text));
+        }
+        records.push('All three global controls save and affect clock and sensor text');
+        config = JSON.parse(JSON.stringify(config));
+        config.layout.zones['top-right'].widgets[0].style = {fontFamily: 'serif', fontWeight: 300, textShadow: 'none'};
+        sync(); await frame();
+        for (const text of textStyles().slice(1)) {
+            assert(text.family === 'serif' && text.weight === '300' && text.shadow === 'none', 'Widget override failed: ' + JSON.stringify(text));
+        }
+        await select('Font weight', '900');
+        assert(textStyles()[0].weight === '900' && textStyles()[1].weight === '300', 'Global update overwrote widget style');
+        records.push('Widget overrides take precedence after a global change');
+        config = JSON.parse(JSON.stringify(config));
+        delete config.layout.zones['top-right'].widgets[0].style;
+        sync(); await frame();
+        assert(textStyles()[1].weight === '900' && textStyles()[1].family === 'monospace', 'Removing widget override did not restore inheritance');
+        await select('Font family', '');
+        await select('Font weight', '');
+        await select('Text shadow', '');
+        assert(JSON.stringify(textStyles()) === JSON.stringify(defaults), 'Clearing global settings did not restore defaults: ' + JSON.stringify(textStyles()));
+        records.push('Clearing widget and global overrides restores inherited/default styles');
+        result.textContent = records.join('\n'); result.dataset.status = 'passed';
+    } catch (error) {
+        result.textContent = records.join('\n') + '\n' + error.stack; result.dataset.status = 'failed';
+    }
+</script></body></html>

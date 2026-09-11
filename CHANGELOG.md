@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.14.3
+
+### Typography controls (#50, #52)
+
+- Save global font weight changes from the card settings.
+- Preserve partially typed font sizes so decimals and unit deletion work without
+  the editor immediately adding `rem` back.
+- Honor explicit weather label and value sizes in horizontal layouts while
+  keeping responsive sizing when no custom size is set.
+- Add browser regression checks for typography controls, widget overrides,
+  custom weather font sizes and clearing overrides.
+
+### Action defaults (#53)
+
+- Update empty or default titles and icons when selecting a different action type.
+- Preserve custom titles and icons independently and use the editor language
+  for automatic titles.
+
 ## 3.14.2
 
 ### Relevant action icon color settings (#53)

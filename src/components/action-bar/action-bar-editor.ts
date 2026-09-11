@@ -6,6 +6,7 @@ import { ModuleActionConfig, NAVIGATION_ACTION } from '../../components/action-b
 import { PluginRegistry } from './plugin-registry';
 import { LabelPosition } from '../ha-selector/types';
 import type {ActionStateRule} from './types';
+import {changeActionTypeAppearance} from './action-type-appearance';
 
 const EXPANSION_STATE_KEY = 'actions.expansion';
 
@@ -423,6 +424,16 @@ export class ActionBarEditor extends BaseEditorSection {
 
         this._actions = this._actions.map((action, i) => {
             if (i === index) {
+                if (property === 'actionId') {
+                    const registry = PluginRegistry.getInstance();
+                    const previousPlugin = registry.getPlugin(action.actionId);
+                    const nextPlugin = registry.getPlugin(value);
+                    return changeActionTypeAppearance(
+                        action, value, previousPlugin, nextPlugin,
+                        previousPlugin && this.t(`editor.actions.types.${action.actionId.replace(/-/g, '_')}`, previousPlugin.name),
+                        nextPlugin && this.t(`editor.actions.types.${value.replace(/-/g, '_')}`, nextPlugin.name),
+                    );
+                }
                 return {...action, [property]: value};
             }
             return action;

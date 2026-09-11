@@ -490,6 +490,8 @@ export class WeatherComponent extends LitElement {
 
         const labelSize = this.getLabelSize();
         const valueSize = this.getValueSize();
+        const customLabelSize = this.size === Size.Custom && !!this.labelSize?.trim();
+        const customValueSize = this.size === Size.Custom && !!this.valueSize?.trim();
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
@@ -513,19 +515,19 @@ export class WeatherComponent extends LitElement {
                                     this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)
                                 )}
                                 <div class="weather-temp"
-                                     style="font-size: ${horizontal
+                                     style="font-size: ${horizontal && !customValueSize
                                          ? `min(${valueSize}, clamp(1.8rem, 10cqw, 3rem))`
                                          : valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
                                 ${horizontal ? html`
                                     <div class="weather-current-copy">
                                         ${this.weatherShowTitle !== false ? html`
                                             <div class="weather-title"
-                                                 style="color: ${this.fontColor}; font-size: clamp(0.75rem, 3cqw, 1rem);">
+                                                 style="color: ${this.fontColor}; font-size: ${customLabelSize ? labelSize : 'clamp(0.75rem, 3cqw, 1rem)'};">
                                                 ${horizontalTitle}
                                             </div>
                                         ` : ''}
                                         <div class="weather-condition"
-                                             style="font-size: clamp(0.9rem, 3.5cqw, 1.15rem);">
+                                             style="font-size: ${customLabelSize ? labelSize : 'clamp(0.9rem, 3.5cqw, 1.15rem)'};">
                                             ${this.conditionDisplayText(weatherData.current.condition, weatherData.current.conditionText)}
                                         </div>
                                     </div>
@@ -547,7 +549,7 @@ export class WeatherComponent extends LitElement {
                             ${weatherData.daily.slice(0, limitedForecastDays).map(day => html`
                                 <div class="forecast-day">
                                     <div class="forecast-date"
-                                         style="font-size: ${horizontal
+                                         style="font-size: ${horizontal && !customLabelSize
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
                                              : labelSize};">${this.formatForecastDate(day.date, weatherData.forecastType)}</div>
                                     ${this.renderWeatherIcon(
@@ -557,7 +559,7 @@ export class WeatherComponent extends LitElement {
                                         this.conditionDisplayText(day.condition, day.conditionText)
                                     )}
                                     <div class="forecast-temp"
-                                         style="font-size: ${horizontal
+                                         style="font-size: ${horizontal && !customLabelSize
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
                                              : labelSize}; width: ${forecastTempWidth};">
                                         <span>${Math.round(day.temperatureMin)}°</span>

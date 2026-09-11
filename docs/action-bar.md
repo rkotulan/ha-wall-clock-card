@@ -73,6 +73,10 @@ Buttons are keyboard accessible and support tap, hold and double-tap gestures.
 The visual editor is the safest way to add actions because it exposes the fields
 supported by the selected plugin.
 
+Changing the action type automatically updates an empty or default title and
+icon to match the selected type. Custom titles and icons are preserved
+independently. The automatic title uses the editor's language.
+
 **Active icon color** is available for **Toggle Light** and **Toggle Switch**.
 It colors the icon while the selected entity is `on`. To try it, add a
 **Toggle Light** action, select a light, set **Active icon color**, then turn

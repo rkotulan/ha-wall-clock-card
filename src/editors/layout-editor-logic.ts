@@ -321,6 +321,7 @@ export function applyGeneralSetting(config: WallClockConfigV3, propertyPath: str
     switch (propertyPath) {
         case 'fontColor':
         case 'fontFamily':
+        case 'fontWeight':
         case 'textShadow':
         case 'language':
         case 'size':

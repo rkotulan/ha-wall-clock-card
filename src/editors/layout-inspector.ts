@@ -1,4 +1,3 @@
-import {normalizeFontSize} from '../utils/size';
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
@@ -369,7 +368,8 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private updateWidgetSize(key: string, value: string): void {
-        if (['clockSize', 'dateSize', 'labelSize', 'valueSize'].includes(key)) value = normalizeFontSize(value);
+        // Preserve partial input while typing/deleting. Components add the
+        // default font unit when rendering, without rewriting the editor value.
         const located = this.resolveWidget();
         if (!located) return;
         const widget = {...located.widget};

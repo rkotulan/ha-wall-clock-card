@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Issue 52: editable weather font sizes</title>
+    <style>html { font-size: 16px; } wall-clock-card { display: block; width: 1000px; height: 500px; }</style>
+</head>
+<body>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+
+    const output = document.querySelector('#e2e-result');
+    const records = [];
+    const state = {
+        entity_id: 'weather.test', state: 'sunny',
+        attributes: {temperature: 25, temperature_unit: '°C', supported_features: 7},
+    };
+    const hass = {
+        config: {time_zone: 'Europe/Prague', latitude: 49, longitude: 16},
+        connection: {subscribeMessage: () => Promise.resolve(() => {})},
+        language: 'en', locale: {language: 'en'}, localize: key => key,
+        states: {[state.entity_id]: state}, themes: {themes: {}}, user: {name: 'Test'},
+        callWS: async () => ({response: {[state.entity_id]: {forecast: [{
+            datetime: '2026-09-12T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny',
+        }]}}}),
+    };
+    function assert(condition, message) { if (!condition) throw new Error(message); }
+    function deep(root, selector) {
+        return [...root.querySelectorAll('*')].flatMap(element => [
+            ...(element.matches(selector) ? [element] : []),
+            ...(element.shadowRoot ? deep(element.shadowRoot, selector) : []),
+        ]);
+    }
+    const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const selectors = ['weather-title', 'weather-condition', 'weather-temp', 'forecast-date', 'forecast-temp'];
+    function sizes(card) {
+        return Object.fromEntries(selectors.map(selector => {
+            const element = deep(card.shadowRoot, '.' + selector)[0];
+            assert(element, 'Missing ' + selector);
+            return [selector, getComputedStyle(element).fontSize];
+        }));
+    }
+    try {
+        // Exercise the actual inspector update path and its emitted config,
+        // including every intermediate value produced when deleting a unit.
+        const inspector = document.createElement('wcc-layout-inspector');
+        inspector.layout = {zones: {center: {widgets: [{type: 'weather', id: 'weather'}]}}};
+        inspector.selectedWidget = {zone: 'center', index: 0, widgetId: 'weather'};
+        inspector.addEventListener('wcc-widget-config-changed', event => {
+            inspector.layout = {zones: {center: {widgets: [event.detail.widget]}}};
+        });
+        for (const key of ['labelSize', 'valueSize', 'clockSize', 'dateSize']) {
+            for (const input of ['1', '1.', '1.2', '12', '8rem', '8re', '8r', '8', '']) {
+                inspector.updateWidgetSize(key, input);
+                const saved = inspector.layout.zones.center.widgets[0][key];
+                assert(saved === (input || undefined), `${key}: ${input} rewritten to ${saved}`);
+            }
+            records.push(key + ': decimal entry and deletion preserved');
+        }
+
+        for (const orientation of ['vertical', 'horizontal']) {
+            const card = document.createElement('wall-clock-card');
+            card.setConfig({
+                type: 'custom:wall-clock-card', background: {source: 'none'},
+                layout: {zones: {center: {widgets: [{
+                    type: 'weather', id: 'weather', provider: 'homeassistant',
+                    providerConfig: {entityId: state.entity_id}, displayMode: 'both', orientation,
+                }]}}},
+            });
+            card.hass = hass;
+            document.body.append(card);
+            const start = performance.now();
+            while (!deep(card.shadowRoot, '.weather-temp').length) {
+                assert(performance.now() - start < 3000, 'Weather did not render');
+                await new Promise(resolve => setTimeout(resolve, 20));
+            }
+            await frame();
+            const defaults = sizes(card);
+            const host = deep(card.shadowRoot, 'wcc-weather-widget')[0];
+            const originalConfig = {...host.config};
+            for (const size of ['1.2', '2rem', '8rem']) {
+                host.config = {...originalConfig, labelSize: size, valueSize: size};
+                await host.updateComplete;
+                await frame();
+                const actual = sizes(card);
+                const expected = parseFloat(size) * 16 + 'px';
+                for (const selector of selectors) {
+                    assert(actual[selector] === expected, `${orientation}/${size}/${selector}: ${actual[selector]} != ${expected}`);
+                }
+                records.push(`${orientation}/${size}: all text sizes ${expected}`);
+            }
+            host.config = {...originalConfig, labelSize: '1.2rem', valueSize: '2rem'};
+            await host.updateComplete;
+            await frame();
+            const independent = sizes(card);
+            assert(independent['weather-temp'] === '32px', 'Value size not independent');
+            assert(independent['weather-condition'] === '19.2px', 'Label size not independent');
+            host.config = originalConfig;
+            await host.updateComplete;
+            await frame();
+            assert(JSON.stringify(sizes(card)) === JSON.stringify(defaults), orientation + ': defaults not restored');
+            records.push(orientation + ': independent sizes and clearing overrides passed');
+            card.remove();
+        }
+        output.textContent = records.join('\n');
+        output.dataset.status = 'passed';
+    } catch (error) {
+        output.textContent = records.join('\n') + '\n' + error.stack;
+        output.dataset.status = 'failed';
+    }
+</script>
+</body>
+</html>

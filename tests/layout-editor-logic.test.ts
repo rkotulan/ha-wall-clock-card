@@ -332,6 +332,17 @@ describe('widget editor sections', () => {
 });
 
 describe('applyGeneralSetting', () => {
+    it('stores global font weight and allows clearing it without changing widget overrides', () => {
+        const config: WallClockConfigV3 = {
+            appearance: {fontFamily: 'serif'},
+            layout: {zones: {center: {widgets: [{type: 'clock', style: {fontWeight: 300}}]}}},
+        };
+        const changed = applyGeneralSetting(config, 'fontWeight', 700);
+        expect(changed.appearance).toEqual({fontFamily: 'serif', fontWeight: 700});
+        expect(changed.layout).toEqual(config.layout);
+        expect(config.appearance).toEqual({fontFamily: 'serif'});
+        expect(applyGeneralSetting(changed, 'fontWeight', undefined).appearance?.fontWeight).toBeUndefined();
+    });
     const v3 = (): WallClockConfigV3 => ({
         layout: layout(),
         appearance: {fontColor: '#FFF'},
