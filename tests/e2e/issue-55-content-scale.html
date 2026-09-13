@@ -1,0 +1,171 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Content scale and row alignment #55</title>
+<style>html {font-size:16px;} body {margin:0;} wall-clock-card {display:block;width:1000px;height:2400px;} #e2e-result {white-space:pre-wrap;}</style>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.getElementById('e2e-result'), records = [];
+const assert = (condition, message) => {if (!condition) throw Error(message);};
+const near = (actual, expected, message) => assert(Math.abs(actual - expected) < 1.5, `${message}: ${actual} != ${expected}`);
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(element => [
+        ...(element.matches(selector) ? [element] : []),
+        ...(element.shadowRoot ? deep(element.shadowRoot, selector) : []),
+    ]);
+}
+const weather = {entity_id:'weather.test',state:'sunny',attributes:{temperature:25,temperature_unit:'°C',supported_features:7}};
+window.loadCardHelpers=async () => ({createCardElement: () => {
+    const element=document.createElement('div');element.className='embedded-probe';
+    element.style.fontSize='20px';element.textContent='Embedded card';return element;
+}});
+const hass = {
+    config:{time_zone:'Europe/Prague',latitude:49,longitude:16}, language:'en',locale:{language:'en'},
+    connection:{subscribeMessage:async () => () => {}}, localize:key=>key, themes:{themes:{}}, user:{name:'Test'},
+    states:{'weather.test':weather,'sensor.test':{entity_id:'sensor.test',state:'14.2',attributes:{unit_of_measurement:'°C'}}},
+    callWS:async () => ({response:{'weather.test':{forecast:[{datetime:'2026-09-12T12:00:00Z',temperature:25,condition:'sunny'}]}}}),
+};
+const widgets = [
+    {type:'clock',id:'clock',clockSize:'48px'},
+    {type:'date',id:'date',dateSize:'1.5rem'},
+    {type:'sensors',id:'sensors',labelSize:'1rem',valueSize:'2rem',sensors:[{entity:'sensor.test',label:'Temperature',icon:'mdi:thermometer'}]},
+    {type:'weather',id:'weather',provider:'homeassistant',providerConfig:{entityId:'weather.test'},displayMode:'current',labelSize:'1rem',valueSize:'2rem'},
+    {type:'action-bar',id:'actions',iconSize:'24px',titleSize:'16px',padding:'10px',buttonGap:'12px',orientation:'horizontal',actions:[
+        {action:'more-info',entity:'sensor.test',title:'Temperature',icon:'mdi:thermometer'},
+        {action:'more-info',entity:'sensor.test',title:'Details',icon:'mdi:information'},
+    ]},
+    {type:'calendar',id:'calendar',entities:[]},
+    {type:'calendar-month',id:'month',entities:[],cellMinHeight:50},
+    {type:'transportation',id:'transport',provider:'',stops:[]},
+    {type:'separator',id:'separator'},
+    {type:'ha-card',id:'nested',card:{type:'markdown',content:'Embedded card'}},
+];
+let config = {type:'custom:wall-clock-card',background:{source:'none',color:'#123456'},appearance:{fontFamily:'monospace'},
+    layout:{zones:{'top-left':{widgets}}}};
+const card = document.createElement('wall-clock-card'), inspector = document.createElement('wcc-layout-inspector');
+const one = selector => {const element = deep(card.shadowRoot,selector)[0];assert(element,'Missing '+selector);return element;};
+function sync() {card.setConfig(config);inspector.config=config;inspector.layout=config.layout;}
+inspector.hass=hass;
+inspector.addEventListener('wcc-card-config-changed', event=>{config=event.detail.config;sync();});
+async function scale(value) {
+    const row=[...inspector.shadowRoot.querySelectorAll('ha-row-selector')].find(row=>row.label==='Content scale');
+    assert(row,'Content scale is exposed in the visual settings');
+    await row.updateComplete;
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed',{detail:{value},bubbles:true,composed:true}));
+    await frame();
+    assert(config.appearance.contentScale===value,'Scale saved to appearance.contentScale');
+}
+function textHeight(element) {
+    const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+    let text;do {text=walker.nextNode();} while(text && !text.textContent.trim());
+    assert(text,'Text is present');
+    const start=text.textContent.search(/\S/),range=document.createRange();
+    range.setStart(text,start);range.setEnd(text,start+1);return range.getBoundingClientRect().height;
+}
+try {
+    sync();card.hass=hass;document.body.append(card,inspector);await frame();
+    const started=performance.now();
+    while(!deep(card.shadowRoot,'.weather-temp').length) {
+        assert(performance.now()-started<3000,'Weather renders');await new Promise(resolve=>setTimeout(resolve,20));
+    }
+    await frame();
+    const field=[...inspector.shadowRoot.querySelectorAll('ha-row-selector')].find(row=>row.label==='Content scale');
+    assert(field.value===100,'Default scale is 100%');
+    const textSelectors=['.hours-minutes','.date','.sensor-value','.weather-temp','.action-title'];
+    const baseText=Object.fromEntries(textSelectors.map(selector=>[selector,textHeight(one(selector))]));
+    const baseButton=one('.action-button').getBoundingClientRect().height;
+    const baseIcon=one('.action-button ha-icon').getBoundingClientRect().width;
+    const buttons=deep(card.shadowRoot,'.action-button');
+    const buttonGap=()=>buttons[1].getBoundingClientRect().left-buttons[0].getBoundingClientRect().right;
+    const buttonPadding=()=>buttons[0].getBoundingClientRect().top-one('.action-bar-container').getBoundingClientRect().top;
+    const baseButtonGap=buttonGap(),baseButtonPadding=buttonPadding();
+    const embeddedHeight=textHeight(one('.embedded-probe'));
+    const baseCell=one('.day').getBoundingClientRect().height;
+    const originalLayout=JSON.stringify(config.layout);
+    const layout=one('wcc-layout');
+    const grid=layout.shadowRoot.querySelector('.grid');
+    const baseGap=getComputedStyle(grid).gap, basePadding=getComputedStyle(grid).padding;
+    const background=one('ha-background-image').getBoundingClientRect();
+    const cardHeight=card.getBoundingClientRect().height;
+    for (const value of [50,120,150,200,100]) {
+        await scale(value);
+        for(const selector of textSelectors) near(textHeight(one(selector)),baseText[selector]*value/100,`${value}% text ${selector}`);
+        near(one('.action-button').getBoundingClientRect().height,baseButton*value/100,`${value}% button`);
+        near(one('.action-button ha-icon').getBoundingClientRect().width,baseIcon*value/100,`${value}% icon`);
+        near(buttonGap(),baseButtonGap*value/100,`${value}% button gap`);
+        near(buttonPadding(),baseButtonPadding*value/100,`${value}% button padding`);
+        near(textHeight(one('.embedded-probe')),embeddedHeight,'Embedded card content stays unscaled');
+        near(one('.day').getBoundingClientRect().height,baseCell*value/100,`${value}% fixed calendar cell`);
+        near(card.getBoundingClientRect().width,1000,'Card width');near(card.getBoundingClientRect().height,cardHeight,'Card height');
+        near(one('ha-background-image').getBoundingClientRect().width,background.width,'Background width');
+        assert(getComputedStyle(grid).gap===baseGap && getComputedStyle(grid).padding===basePadding,'Zone spacing does not scale');
+        assert(JSON.stringify(config.layout)===originalLayout,'Explicit widget sizes and zone config are untouched');
+        for(const tag of ['wcc-ha-card-widget','wcc-separator-widget']) assert(one(tag).style.getPropertyValue('zoom')==='','External cards and separators do not scale');
+        for(const element of deep(card.shadowRoot,'*').filter(element=>element.config?.id && element.supportsContentScale)) {
+            near(Number(getComputedStyle(element).zoom),value/100,'One scale boundary for '+element.config.id);
+        }
+        records.push(value+'%: text proportions, button/cell sizes, geometry and exclusions pass');
+    }
+    // Check wrapping and hit testing in a bounded row using native calendar controls.
+    config={...config,layout:{zones:{'top-left':{direction:'row',widgets:[widgets[6]]}}}};
+    card.style.width='360px';sync();await frame();
+    for(const value of [100,150,200,100]) {
+        await scale(value);
+        const month=one('wcc-calendar-month'), scroll=month.shadowRoot.querySelector('.scroll');
+        assert(month.getBoundingClientRect().right<=card.getBoundingClientRect().right+1,`${value}% month stays inside narrow card`);
+        assert(scroll.scrollWidth>scroll.clientWidth,'Wide month grid remains scrollable');
+        const next=month.shadowRoot.querySelector('button[aria-label="Next month"]');
+        const before=month.shadowRoot.querySelector('h2').textContent;
+        next.click();await frame();
+        assert(month.shadowRoot.querySelector('h2').textContent!==before,'Calendar navigation works after scaling');
+        month.selectedEvent={entity:'calendar.test',sourceLabel:'Test',color:'#123456',summary:'Scaled calendar details',
+            start:new Date(),end:new Date(Date.now()+3600000),allDay:false};
+        await frame();
+        const dialogHost=month.shadowRoot.querySelector('wcc-calendar-event-dialog');
+        const dialog=dialogHost.shadowRoot.querySelector('dialog');
+        assert(dialog.open,'Event dialog opens at '+value+'%');
+        const box=dialog.getBoundingClientRect();
+        assert(box.left>=0 && box.right<=innerWidth+1 && box.top>=0 && box.bottom<=innerHeight+1,
+            `Dialog stays in viewport at ${value}%: ${JSON.stringify(box.toJSON())} / ${innerWidth}x${innerHeight}`);
+        dialogHost.shadowRoot.querySelector('.close').click();await frame();
+        assert(!dialog.open,'Event dialog closes at '+value+'%');
+        month.selectedDay=month.shadowRoot.querySelector('.day').dataset.date;await frame();
+        const dayDialog=month.shadowRoot.querySelector('dialog');
+        assert(dayDialog.open,'Day dialog opens');
+        assert(dayDialog.getBoundingClientRect().right<=innerWidth+1,'Day dialog stays in viewport');
+        month.shadowRoot.querySelector('dialog .close').click();await frame();
+        assert(!dayDialog.open,'Day dialog closes');
+    }
+    records.push('Narrow calendar stays bounded, scrolls and remains interactive through reset');
+    config={...config,layout:{zones:{'top-left':{direction:'row',widgets:[{type:'date',id:'wrapping',dateSize:'18px',style:{widthMode:'fill'}}]}}}};
+    sync();await frame();
+    const lineCount=()=>one('.date').getBoundingClientRect().height/textHeight(one('.date'));
+    const originalLines=lineCount();await scale(200);
+    assert(lineCount()>originalLines,'Larger text wraps into additional lines');
+    await scale(100);near(lineCount(),originalLines,'Reset restores original wrapping');
+    records.push('Narrow date wraps in normal layout and resets');
+    // Real clock widgets with different font sizes: align top edges and text baselines.
+    card.style.width='1000px';
+    config={...config,layout:{zones:{'top-left':{direction:'row',crossAlign:'start',widgets:[
+        {type:'clock',id:'large',clockSize:'64px'}, {type:'clock',id:'small',clockSize:'24px'},
+    ]}}}};
+    sync();await frame();
+    const clocks=deep(card.shadowRoot,'wcc-clock-widget');
+    near(clocks[0].getBoundingClientRect().top,clocks[1].getBoundingClientRect().top,'Top edge alignment');
+    config={...config,layout:{zones:{'top-left':{...config.layout.zones['top-left'],crossAlign:'baseline'}}}};
+    sync();await frame();
+    const baseline=host=>{const text=deep(host.shadowRoot,'.hours-minutes')[0],mark=document.createElement('span');
+        mark.style.cssText='display:inline-block;width:0;height:0;padding:0;margin:0;';text.append(mark);return mark.getBoundingClientRect().top;};
+    near(baseline(clocks[0]),baseline(clocks[1]),'Text baseline alignment');
+    records.push('Different-size clocks align at the top edge and text baseline');
+    // An external widget owns its sizing unless its plugin explicitly opts in.
+    customElements.define('custom-scale-clock',class extends customElements.get('wcc-clock-widget') {});
+    const custom=document.createElement('custom-scale-clock');custom.config={type:'custom-clock',clockSize:'48px'};
+    custom.style.setProperty('zoom','0.8');custom.appearance={contentScale:200};document.body.append(custom);await frame();
+    assert(custom.style.getPropertyValue('zoom')==='0.8','Custom widget keeps its own zoom');
+    custom.remove();records.push('Custom widgets retain their own scaling');
+    result.dataset.status='passed';
+} catch(error) {records.push(error.stack);result.dataset.status='failed';}
+result.textContent=records.join('\n');
+</script>

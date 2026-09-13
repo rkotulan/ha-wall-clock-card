@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Issue 56 color selector regression</title>
+<style>body {font: 16px Arial; margin: 24px;} #fixture {width: 450px;} pre {white-space: pre-wrap;}</style>
+<div id="fixture"></div>
+<pre id="e2e-result" data-status="running">Running...</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+// Stand-in for HA's dynamic selector dispatch. The color control and row below
+// are the real components from the shipped bundle, including their real CSS.
+customElements.define('ha-selector', class extends HTMLElement {
+    connectedCallback() {
+        const child = document.createElement('ha-selector-color_hex');
+        for (const key of ['hass', 'selector', 'value', 'disabled', 'required']) child[key] = this[key];
+        this.attachShadow({mode: 'open'}).append(child);
+    }
+});
+const output = document.getElementById('e2e-result');
+const checks = [];
+const assert = (condition, message) => { if (!condition) throw Error(message); checks.push(message); };
+const settle = async () => { await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); };
+try {
+    for (const width of [280, 450, 800]) {
+    for (const labelPosition of ['top', 'left']) {
+    for (const helper of ['', 'Fill behind the image. Leave blank for the theme color. Transparent background takes precedence.']) {
+    const fixture = document.getElementById('fixture');
+    fixture.style.width = width + 'px';
+    const row = document.createElement('ha-row-selector');
+    row.selector = {color_hex: ''};
+    row.labelPosition = labelPosition;
+    row.label = 'Bar / letterbox color';
+    row.helper = helper;
+    row.value = '#123456';
+    row.propertyName = 'backgroundColor';
+    fixture.replaceChildren(row);
+    await settle();
+    const selector = row.shadowRoot.querySelector('ha-selector');
+    const color = selector.shadowRoot.querySelector('ha-selector-color_hex');
+    await color.updateComplete;
+    const context = `${width}px / ${labelPosition} / ${helper ? 'with' : 'without'} help`;
+    const selectorRect = selector.getBoundingClientRect();
+    const input = color.shadowRoot.querySelector('input[type=text]');
+    const swatch = color.shadowRoot.querySelector('input[type=color]');
+    assert(selectorRect.width > 180 && input.getBoundingClientRect().width > 110 &&
+        swatch.getBoundingClientRect().width === 52, context + ': both color inputs remain visible');
+    assert(input.getBoundingClientRect().right <= selectorRect.right + 1,
+        context + ': inputs fit inside the selector');
+    if (helper) {
+        const helpElement = row.shadowRoot.querySelector('.color-helper');
+        assert(helpElement.getBoundingClientRect().top >= selectorRect.bottom,
+            context + ': help is below the inputs');
+        assert(helpElement.scrollWidth <= helpElement.clientWidth + 1,
+            context + ': help wraps without horizontal overflow');
+    }
+    assert(input.value === '#123456', context + ': configured color is preserved');
+    const events = [];
+    row.addEventListener('value-changed', event => events.push(event.detail));
+    for (const value of ['#abcdef', '']) {
+        input.value = value;
+        input.dispatchEvent(new Event('change', {bubbles: true}));
+        assert(events.at(-1)?.value === value && events.at(-1)?.propertyName === 'backgroundColor',
+            context + ': color change forwards ' + JSON.stringify(value));
+    }
+    }
+    }
+    }
+    output.dataset.status = 'passed';
+} catch (error) { checks.push(error.stack || String(error)); output.dataset.status = 'failed'; }
+output.textContent = checks.join('\n');
+</script>
+</html>

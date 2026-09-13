@@ -3,6 +3,7 @@ import {customElement, property} from 'lit/decorators.js';
 import {TemplateResult, CSSResult} from 'lit';
 import {HomeAssistant, fireEvent, LovelaceCardEditor, LovelaceCardConfig} from 'custom-card-helpers';
 import {WallClockConfig, Size} from '../core/types';
+import {normalizeContentScale} from '../core/content-scale';
 import {SensorConfig} from '../core/types';
 import {BackgroundImage} from '../image-sources';
 import {StopConfig as TransportationStopConfig} from '../transportation-providers';
@@ -196,7 +197,7 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
     }
 
     /** General-section value: appearance.* for v3 configs, root key for v2. */
-    private _generalValue(key: 'fontColor' | 'fontFamily' | 'textShadow' | 'language' | 'size'): unknown {
+    private _generalValue(key: 'fontColor' | 'fontFamily' | 'textShadow' | 'language' | 'size' | 'contentScale'): unknown {
         if (this._isV3) {
             return (this._config as unknown as WallClockConfigV3).appearance?.[key];
         }
@@ -371,6 +372,14 @@ export class WallClockCardEditor extends LitElement implements LovelaceCardEdito
                                 propertyName="fontFamily"
                                 @value-changed=${this._handleFormValueChanged}
                         ></ha-row-selector>
+                        <ha-row-selector .hass=${this.hass}
+                                .selector=${{number: {min: 50, max: 200, step: 5, mode: 'slider', unit_of_measurement: '%'}}}
+                                .value=${normalizeContentScale(this._generalValue('contentScale'))}
+                                .label=${this.t('general.content_scale', 'Content scale')}
+                                .helper=${this.t('general.content_scale_help', 'Scale widget text, icons and internal spacing. 100% keeps the original sizes.')}
+                                propertyName="contentScale"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
                         <ha-row-selector
                                 .hass=${this.hass}
                                 .selector=${{text: {}}}

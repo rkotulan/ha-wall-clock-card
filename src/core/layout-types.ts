@@ -102,6 +102,8 @@ export interface ZoneConfig {
     mode?: 'stack' | 'exclusive';
     direction?: 'column' | 'row';
     align?: 'start' | 'center' | 'end';
+    /** Vertical alignment of widgets in row zones; column zones ignore it. */
+    crossAlign?: 'start' | 'center' | 'end' | 'baseline';
     /** Overrides the spacing preset's widgetGap for this zone. */
     gap?: string;
     /** Inner inset of the zone box. */
@@ -169,6 +171,8 @@ export interface BackgroundConfig {
 
 /** Card-wide appearance defaults; widgets may override via WidgetStyle. */
 export interface AppearanceConfig {
+    /** Content magnification in percent (50–200); defaults to 100. */
+    contentScale?: number;
     fontColor?: string;
     /** Card-wide CSS font-family value inherited by widgets. */
     fontFamily?: string;

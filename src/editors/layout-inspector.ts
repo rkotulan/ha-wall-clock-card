@@ -3,6 +3,7 @@ import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3, WidgetConfig, WidgetStyle, ZoneId} from '../core/layout-types';
 import {Size} from '../core/types';
+import {normalizeContentScale} from '../core/content-scale';
 import {WidgetRegistry} from '../widgets/widget-registry';
 import {supportsWidgetMaxWidth} from '../widgets/widget-layout';
 import {applyGeneralSetting, findWidgetById} from './layout-editor-logic';
@@ -777,7 +778,7 @@ export class WccLayoutInspector extends LitElement {
                 `;
             case 'action-bar':
                 return html`
-                    ${field('iconSize', this.t('inspector.icon_size', 'Icon size (button is 2×, e.g., 72px)'))}
+                    ${field('iconSize', this.t('inspector.icon_size', 'Icon size (e.g., 72px icon → 144px button)'))}
                     ${field('titleSize', this.t('inspector.action_title_size', 'Button title size (e.g., 18px)'))}
                 `;
             case 'calendar':
@@ -871,6 +872,19 @@ export class WccLayoutInspector extends LitElement {
                             @value-changed=${(ev: CustomEvent) =>
                                 this.updateZone({align: ev.detail.value === 'auto' ? undefined : ev.detail.value})}>
                     </ha-row-selector>
+                    ${config.direction === 'row' && config.mode !== 'exclusive' ? html`
+                        <ha-row-selector .hass=${this.hass}
+                                .selector=${{select: {options: [
+                                    {value: 'start', label: this.t('inspector.align_top', 'Top edge')},
+                                    {value: 'center', label: this.t('ui.center', 'Center')},
+                                    {value: 'end', label: this.t('inspector.align_bottom', 'Bottom edge')},
+                                    {value: 'baseline', label: this.t('inspector.align_baseline', 'Text baseline')},
+                                ], mode: 'dropdown'}}}
+                                .value=${config.crossAlign ?? 'center'}
+                                .label=${this.t('inspector.vertical_alignment', 'Vertical alignment')}
+                                @value-changed=${(ev: CustomEvent) => this.updateZone({crossAlign: ev.detail.value === 'center' ? undefined : ev.detail.value})}>
+                        </ha-row-selector>
+                    ` : ''}
                     <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
                             .value=${config.gap ?? ''} .label=${this.t('inspector.widget_gap', 'Widget gap override (e.g., 4px)')}
                             @value-changed=${(ev: CustomEvent) => this.updateZone({gap: ev.detail.value})}>
@@ -995,6 +1009,13 @@ export class WccLayoutInspector extends LitElement {
                         .helper=${this.t('general.text_shadow_help', 'CSS text-shadow value, for example 0 2px 4px rgba(0, 0, 0, 0.8)')}
                         .labelPosition=${LabelPosition.Top}
                         @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('textShadow', ev.detail.value)}>
+                </ha-row-selector>
+                <ha-row-selector .hass=${this.hass}
+                        .selector=${{number: {min: 50, max: 200, step: 5, mode: 'slider', unit_of_measurement: '%'}}}
+                        .value=${normalizeContentScale(appearance.contentScale)}
+                        .label=${this.t('general.content_scale', 'Content scale')}
+                        .helper=${this.t('general.content_scale_help', 'Scale widget text, icons and internal spacing. 100% keeps the original sizes.')}
+                        @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('contentScale', normalizeContentScale(ev.detail.value))}>
                 </ha-row-selector>
             </section>
             <section class="section-card">

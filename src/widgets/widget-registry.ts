@@ -21,6 +21,8 @@ export interface WidgetPlugin<C extends WidgetConfig = WidgetConfig> {
     readonly editorTag?: string;
     /** Only one instance may exist in a card layout. */
     readonly singleton?: boolean;
+    /** Opt in to WidgetElement's layout-aware content zoom. Do not also scale internally. */
+    readonly supportsContentScale?: boolean;
     /** Default configuration used when the widget is added from the palette. */
     defaultConfig(): C;
 }
@@ -72,6 +74,7 @@ export class WidgetRegistry {
         }
         const element = document.createElement(plugin.elementTag) as WidgetElement;
         element.config = config;
+        element.supportsContentScale = plugin.supportsContentScale === true;
         return element;
     }
 }

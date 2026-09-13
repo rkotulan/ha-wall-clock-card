@@ -16,6 +16,7 @@ export class CalendarEventDialog extends LitElement {
 
     static styles = css`
         dialog {
+            zoom: calc(1 / var(--wcc-content-scale, 1));
             width: min(520px, calc(100vw - 32px));
             max-width: none;
             max-height: min(720px, calc(100vh - 32px));

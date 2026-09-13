@@ -186,7 +186,7 @@ export class HaRowSelector extends LitElement {
                 ${this.label && this.labelPosition !== LabelPosition.Hidden ? html`
                     <div class="label">${this.label}</div>
                 ` : ''}
-                <div class="value">
+                <div class="value ${this.selector && 'color_hex' in this.selector ? 'color-value' : ''}">
                     <ha-selector
                         .hass=${this.hass}
                         .selector=${this.selector}
@@ -351,11 +351,23 @@ export class HaRowSelector extends LitElement {
     }
 
     static styles = css`
+        .value.color-value {
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 0;
+        }
+
+        .color-value ha-selector {
+            flex-shrink: 0;
+        }
+
         .color-helper {
             color: var(--secondary-text-color);
             font-size: 12px;
             line-height: 1.5;
             margin-top: 4px;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .row {

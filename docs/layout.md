@@ -7,6 +7,13 @@ the equivalent zone layout. The first saved Designer change writes the normalize
 
 ## Zones
 
+For widgets placed side by side (`direction: row`), the zone's **Vertical
+alignment** setting aligns their top edges, centers, bottom edges or first text
+baselines. For example, `crossAlign: baseline` aligns differently sized clocks on
+the same text baseline. Widgets without a text baseline use the browser's
+synthesized baseline (usually their bottom edge). This setting applies to stacked
+row zones; column and exclusive zones keep their existing behavior.
+
 The Designer follows the active Home Assistant theme, including light and dark
 themes. Its controls use the theme's text and surface colors; the configured
 dashboard font color and background still apply to the card and live preview.
@@ -119,7 +126,8 @@ layout:
 | `widgets` | — | Ordered list of widgets in the zone |
 | `mode` | `stack` | `stack` shows all widgets; `exclusive` shows the highest-`priority` widget whose activity flag is on (used for the transportation/action-bar bottom bar) |
 | `direction` | `column` | Stack direction |
-| `align` | by column | `start` / `center` / `end` cross-axis alignment |
+| `align` | by column | `start` / `center` / `end` horizontal alignment |
+| `crossAlign` | `center` | Row zones: `start` (top), `center`, `end` (bottom), or `baseline` (text baseline) |
 | `gap` | spacing preset | Gap between widgets in this zone |
 | `padding` | — | Inner inset of the zone |
 | `span` | — | `panel` lets a sole area fill the complete cross-axis of a split panel |

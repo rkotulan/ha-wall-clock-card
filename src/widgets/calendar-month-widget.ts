@@ -84,6 +84,7 @@ export class CalendarMonthWidget extends WidgetElement<CalendarMonthConfig> {
         .wrap-events .event-text {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere;}
         .status {font-size:.8em;padding:6px 0;}
         dialog {box-sizing:border-box;width:min(580px,calc(100vw - 32px));max-height:80vh;overflow:auto;border:1px solid var(--divider-color,#888);border-radius:12px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121);padding:24px;font-size:max(16px,1em);}
+        dialog {zoom:calc(1 / var(--wcc-content-scale,1));}
         dialog::backdrop {background:#0008;}
         dialog h3 {margin:0 48px 24px 0;min-height:40px;display:flex;align-items:center;font-size:1.15em;}
         dialog .day-events {display:grid;gap:8px;clear:both;}

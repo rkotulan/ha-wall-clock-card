@@ -208,9 +208,12 @@ export class WccZone extends LitElement {
         }
 
         const direction = config?.direction === 'row' ? 'row' : 'column';
+        const crossAlign = ({start: 'flex-start', center: 'center', end: 'flex-end', baseline: 'baseline'} as const)[
+            config?.crossAlign ?? 'center'
+        ] ?? 'center';
         const alignStyle = direction === 'column' ? `align-items: ${align};` : `justify-content: ${align};`;
         return html`
-            <div class="stack ${direction}" style="${gap} ${padding} ${offsetY} ${alignStyle}">
+            <div class="stack ${direction}" style="${gap} ${padding} ${offsetY} ${alignStyle} ${direction === 'row' ? `align-items: ${crossAlign};` : ''}">
                 ${this.widgets}
             </div>
         `;

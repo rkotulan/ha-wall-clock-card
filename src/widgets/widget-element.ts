@@ -3,6 +3,7 @@ import {property} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {AppearanceConfig, WidgetConfig, ZoneConfig, ZoneId} from '../core/layout-types';
 import {withFontColorCssVariable} from '../core/font-color-controller';
+import {normalizeContentScale} from '../core/content-scale';
 import {
     resolveWidgetRowGrow,
     requiresWidgetIntrinsicWidth,
@@ -21,6 +22,8 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     @property({type: Object}) hass?: HomeAssistant;
     @property({type: Object}) config!: C;
     @property({type: Object}) appearance: AppearanceConfig = {};
+    @property({type: Boolean}) supportsContentScale = false;
+    private contentScaleApplied = false;
     /** Hosting zone context used by widgets with responsive internal layout. */
     @property({attribute: false}) zoneId?: ZoneId;
     @property({attribute: false}) zoneAlignment?: NonNullable<ZoneConfig['align']>;
@@ -57,7 +60,7 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         }
         if (changedProperties.has('config') || changedProperties.has('hass') || changedProperties.has('appearance')
             || changedProperties.has('zoneId') || changedProperties.has('zoneAlignment')
-            || changedProperties.has('zoneDirection')) {
+            || changedProperties.has('zoneDirection') || changedProperties.has('supportsContentScale')) {
             this.applyWidgetState();
             this.applyStyleOverrides();
         }
@@ -66,6 +69,20 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
     /** Applies the WidgetStyle escape hatches on the host element. */
     private applyStyleOverrides(): void {
         const style = this.config?.style;
+        // A single zoom boundary scales resolved sizes (including explicit px/rem
+        // overrides), icons and internal spacing together and participates in layout.
+        // The card, zone tracks/gaps, background and editor are outside this boundary.
+        if (this.supportsContentScale) {
+            const scale = normalizeContentScale(this.appearance?.contentScale) / 100;
+            if (scale === 1) this.style.removeProperty('zoom');
+            else this.style.setProperty('zoom', String(scale));
+            // Top-layer dialogs cancel this factor to retain their viewport bounds.
+            this.style.setProperty('--wcc-content-scale', String(scale));
+        } else if (this.contentScaleApplied) {
+            this.style.removeProperty('zoom');
+            this.style.removeProperty('--wcc-content-scale');
+        }
+        this.contentScaleApplied = this.supportsContentScale;
         const supportsBoundedWidth = supportsWidgetMaxWidth(this.config?.type);
         const supportsBoundedHeight = !['clock', 'date', 'action-bar', 'sensors', 'weather', 'calendar'].includes(this.config?.type);
         const grow = resolveWidgetRowGrow(this.config?.type, style?.grow, style?.widthMode);

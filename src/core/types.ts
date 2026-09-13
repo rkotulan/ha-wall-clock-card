@@ -31,6 +31,7 @@ export interface WallClockConfig {
     backgroundGrayscale?: number;
     sensors?: SensorConfig[]; // Multiple sensors
     fontColor?: string; // Font color for all text elements
+    contentScale?: number; // Legacy editor key; migrated to appearance.contentScale
     fontFamily?: string; // CSS font-family; font must be loaded by HA/theme/browser
     textShadow?: string; // CSS text-shadow applied to all text elements
     language?: string; // Language for translations

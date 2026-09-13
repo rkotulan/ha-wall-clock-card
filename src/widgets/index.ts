@@ -34,6 +34,7 @@ export * from './calendar/calendar-data';
 const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     {
         widgetId: 'clock',
+        supportsContentScale: true,
         name: 'Clock',
         description: 'The current time',
         icon: 'mdi:clock-outline',
@@ -43,6 +44,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'date',
+        supportsContentScale: true,
         name: 'Date',
         description: 'The current date',
         icon: 'mdi:calendar-outline',
@@ -52,6 +54,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'sensors',
+        supportsContentScale: true,
         name: 'Sensors',
         description: 'Values of Home Assistant sensors',
         icon: 'mdi:thermometer',
@@ -61,6 +64,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'weather',
+        supportsContentScale: true,
         name: 'Weather',
         description: 'Current weather and forecast',
         icon: 'mdi:weather-partly-cloudy',
@@ -70,6 +74,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'transportation',
+        supportsContentScale: true,
         name: 'Transportation',
         description: 'Public transport departures',
         icon: 'mdi:bus',
@@ -85,6 +90,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'action-bar',
+        supportsContentScale: true,
         name: 'Action bar',
         description: 'Buttons triggering actions',
         icon: 'mdi:gesture-tap-button',
@@ -94,6 +100,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'calendar-month',
+        supportsContentScale: true,
         name: 'Monthly overview',
         icon: 'mdi:calendar-month',
         elementTag: 'wcc-calendar-month',
@@ -102,6 +109,7 @@ const BUILT_IN_WIDGETS: WidgetPlugin[] = [
     },
     {
         widgetId: 'calendar',
+        supportsContentScale: true,
         name: 'Calendar',
         description: 'Upcoming Home Assistant calendar events',
         icon: 'mdi:calendar-month-outline',

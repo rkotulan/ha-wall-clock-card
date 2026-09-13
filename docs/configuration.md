@@ -113,12 +113,49 @@ layout:
 | `appearance.language` | HA language | UI/date/weather language where supported |
 | `appearance.timeZone` | HA time zone | IANA time-zone name such as `Europe/Prague` |
 | `appearance.size` | `medium` | Built-in component size preset |
+| `appearance.contentScale` | `100` | Content size in percent, from 50 to 200 |
 | `logLevel` | `info` | `debug`, `info`, `warn`, `error` or `none` |
 
 Per-widget appearance can override the card defaults. Widget-specific size controls
 (for example `clockSize`, `dateSize`, `labelSize`, `valueSize`, `iconSize` or `titleSize`) take
 precedence over `appearance.size`. Set `style.textShadow` on a widget to override the
 card shadow; use `none` to disable the shadow for that widget.
+
+## Content scale
+
+In **Card settings → General**, use **Content scale** to resize content from
+50% to 200% in steps of 5%. The legacy visual editor exposes the same setting.
+
+```yaml
+appearance:
+  contentScale: 120
+```
+
+At 120%, a configured 48px clock becomes 57.6px and a 24px icon becomes 28.8px.
+The original widget configuration is preserved. Text, icons, internal gaps,
+padding, borders and fixed content dimensions (such as buttons and minimum
+calendar cell heights) scale together. This applies to clock, date, sensors,
+weather, transportation, action bar, calendar agenda and monthly overview widgets.
+Explicit widget size overrides remain the base values; there is no second font
+size multiplier. Reset to 100% to restore the original appearance.
+
+Card dimensions, background, zone placement rules, zone padding and gaps between
+widgets are unchanged. Content participates in normal layout: text may wrap and
+intrinsic tracks can grow to accommodate it. Widget-specific fixed bounds and
+`style.margin` scale with their widget. Existing maximum-height scrolling and the
+monthly calendar's horizontal scrolling remain in effect; content which was
+configured not to wrap retains that behavior.
+
+Separators, embedded Home Assistant cards and custom widgets are not scaled by
+default. Calendar and transportation dialogs retain their normal size so that
+they stay within the browser window. The editor itself is also unchanged.
+Custom widget plugins may opt in with `supportsContentScale: true`; their content
+must not apply the multiplier again. The implementation uses CSS `zoom`, supported
+by current Home Assistant browsers. On older browsers without CSS zoom support,
+content remains at its original size.
+
+Omitting the setting or providing an invalid non-numeric value uses 100%.
+Numeric YAML values outside the supported range are clamped to 50–200%.
 
 ## Dynamic font color
 

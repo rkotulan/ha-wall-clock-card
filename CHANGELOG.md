@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.15.0
+
+- Add global Content scale (50–200%, default 100%) for built-in widget text,
+  icons and internal spacing, preserving explicit size proportions (#55).
+- Add top-edge, bottom-edge and text-baseline alignment for row zones (#55).
+- Keep calendar and transportation dialogs at normal size when content is scaled.
+- Fix the missing background color picker in narrow editors by placing its help
+  text below the inputs and allowing it to wrap (#56).
+- Clarify the action icon size example: a 72px icon uses a 144px button (#56).
+
 ## 3.14.3
 
 ### Typography controls (#50, #52)
