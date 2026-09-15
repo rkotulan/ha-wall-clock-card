@@ -22,6 +22,7 @@ export interface WeatherWidgetConfig extends WidgetConfig {
     updateInterval?: number;
     iconSet?: string;
     animateIcons?: boolean;
+    showIcons?: boolean;
     labelSize?: string;
     valueSize?: string;
     orientation?: WidgetOrientation;
@@ -59,6 +60,7 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         this.weather.weatherUpdateInterval = this.config.updateInterval;
         this.weather.weatherIconSet = this.config.iconSet ?? this.config.providerConfig?.iconSet;
         this.weather.weatherIconAnimation = this.config.animateIcons !== false;
+        this.weather.weatherShowIcons = this.config.showIcons !== false;
         this.weather.fontColor = this.fontColor;
         this.weather.language = resolveLanguage(this.appearance?.language, this.hass);
         this.weather.size = hasCustomSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);

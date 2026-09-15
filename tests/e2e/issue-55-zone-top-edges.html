@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 55: zone top edges and typography defaults</title>
+<style>html {font-size:16px} body {margin:0} wall-clock-card {display:block;width:1000px;height:700px}</style>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result=document.querySelector('#e2e-result'), records=[];
+const assert=(condition,message)=>{if(!condition) throw Error(message);};
+const near=(a,b,message)=>assert(Math.abs(a-b)<1.5,`${message}: ${a} != ${b}`);
+const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+function deep(root,selector) {
+    return [...root.querySelectorAll('*')].flatMap(el=>[
+        ...(el.matches(selector)?[el]:[]),...(el.shadowRoot?deep(el.shadowRoot,selector):[]),
+    ]);
+}
+const hass={config:{time_zone:'UTC'},language:'en',locale:{language:'en'},themes:{themes:{}},
+    localize:key=>key,connection:{subscribeMessage:async()=>()=>{}},
+    states:{'sensor.test':{entity_id:'sensor.test',state:'83.0',attributes:{unit_of_measurement:'°F'}}}};
+const card=document.createElement('wall-clock-card');
+const inspector=document.createElement('wcc-layout-inspector');
+const editor=document.createElement('layout-editor');
+const zones={};
+for(const row of ['top','middle','bottom']) {
+    zones[row+'-left']={widgets:[{type:'clock',id:row+'-clock',clockSize:'4.5',timeFormat:{second:'hidden'}}]};
+    zones[row==='middle'?'center':row+'-center']={widgets:[{type:'date',id:row+'-date',dateSize:'24px'}]};
+    zones[row+'-right']={widgets:[{type:'sensors',id:row+'-sensor',valueSize:'2rem',labelSize:'1rem',
+        sensors:[{entity:'sensor.test',label:'Temperature'}]}]};
+}
+let config={type:'custom:wall-clock-card',background:{source:'none'},layout:{zones}};
+function sync() {
+    card.setConfig(config);inspector.config=config;inspector.layout=config.layout;editor.config=config;
+}
+const zone=id=>deep(card.shadowRoot,'wcc-zone').find(el=>el.zoneId===id);
+const boxes=()=>Object.fromEntries(Object.keys(config.layout.zones).map(id=>[id,zone(id).getBoundingClientRect()]));
+async function change(row,value) {
+    assert(row,'Editor field exists');await row.updateComplete;
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed',{
+        detail:{value},bubbles:true,composed:true,
+    }));await frame();
+}
+try {
+    card.hass=hass;inspector.hass=hass;editor.hass=hass;
+    editor.addEventListener('config-changed',ev=>{config=ev.detail.config;sync();});
+    inspector.addEventListener('wcc-widget-config-changed',ev=>{
+        const {zone,index,widget}=ev.detail;
+        const widgets=[...config.layout.zones[zone].widgets];widgets[index]=widget;
+        config={...config,layout:{...config.layout,zones:{...config.layout.zones,[zone]:{...config.layout.zones[zone],widgets}}}};
+        sync();
+    });
+    sync();document.body.append(card,inspector,editor);await frame();
+    const original=boxes();
+    near(original['top-left'].top,original['top-right'].top,'Default top edges');
+    near(original['bottom-left'].bottom,original['bottom-right'].bottom,'Default bottom edges');
+    const toggle=()=>[...editor.shadowRoot.querySelectorAll('ha-row-selector')].find(el=>el.label==='Align zone top edges');
+    await change(toggle(),true);
+    assert(JSON.parse(JSON.stringify(config)).layout.alignZoneTopEdges===true,'Alignment persists in config');
+    const aligned=boxes();
+    for(const row of ['top','middle','bottom']) {
+        near(aligned[row+'-left'].top,aligned[row+'-right'].top,row+' zone top edges');
+        near(aligned[row+'-left'].top,aligned[row==='middle'?'center':row+'-center'].top,row+' center top edge');
+        near(aligned[row+'-left'].left,original[row+'-left'].left,row+' left column unchanged');
+        near(aligned[row+'-right'].right,original[row+'-right'].right,row+' right column unchanged');
+    }
+    near(aligned['bottom-left'].bottom,original['bottom-left'].bottom,'Tallest bottom zone retains its anchor');
+    near(aligned['middle-left'].top,original['middle-left'].top,'Tallest middle zone retains its anchor');
+    const clock=deep(card.shadowRoot,'wcc-clock-widget')[0];
+    await change(toggle(),false);
+    const reset=boxes();
+    for(const id of Object.keys(reset)) near(reset[id].top,original[id].top,id+' reset');
+    assert(deep(card.shadowRoot,'wcc-clock-widget')[0]===clock,'Toggling preserves widget instances');
+    records.push('All three rows align across zones; anchors, columns, reset and widget instances preserved');
+
+    // Sparse rows, spanning zones and compact grouping must not create implicit tracks.
+    for(const compactRows of [false,true]) {
+        for(const row of ['top','middle','bottom']) {
+            const ids=[row+'-left',row+'-right'];
+            config={...config,layout:{compactRows,alignZoneTopEdges:true,zones:Object.fromEntries(ids.map(id=>[id,zones[id]]))}};
+            sync();await frame();
+            near(zone(ids[0]).getBoundingClientRect().top,zone(ids[1]).getBoundingClientRect().top,'Sparse '+row);
+            const grid=deep(card.shadowRoot,'.grid')[0];
+            assert(getComputedStyle(grid).gridTemplateRows.trim().split(/\s+/).length===1,'Sparse row has only one track');
+        }
+    }
+    config={...config,layout:{alignZoneTopEdges:true,zones:{'bottom-center':zones['bottom-center']}}};sync();await frame();
+    const grid=deep(card.shadowRoot,'.grid')[0],gridBox=grid.getBoundingClientRect();
+    near(zone('bottom-center').getBoundingClientRect().width,gridBox.width-32,'Sole bottom center spans all columns');
+    config={...config,layout:{alignZoneTopEdges:true,compactRows:true,zones:{'top-left':zones['top-left'],'bottom-right':zones['bottom-right']}}};
+    sync();await frame();
+    assert(getComputedStyle(deep(card.shadowRoot,'.grid')[0]).gridTemplateRows.split(/\s+/).length===2,'Compact top/bottom uses two tracks');
+    records.push('Sparse and compact rows keep their tracks; sole center zone spans the row');
+
+    config={...config,layout:{alignZoneTopEdges:true,zones}};
+    for(const width of [360,1000]) for(const contentScale of [50,100,200]) {
+        card.style.width=width+'px';config={...config,appearance:{contentScale}};sync();await frame();
+        for(const row of ['top','middle','bottom']) near(zone(row+'-left').getBoundingClientRect().top,
+            zone(row+'-right').getBoundingClientRect().top,`${width}px / ${contentScale}% / ${row}`);
+    }
+    config={...config,layout:{...config.layout,format:'horizontal-2-1'}};sync();await frame();
+    assert(!deep(card.shadowRoot,'.zone-row.aligned').length,'Split format ignores grid alignment');
+    assert(!toggle(),'Grid-only setting hidden for split format');
+    records.push('Alignment works at narrow/wide widths and 50–200% scale; split formats unaffected');
+
+    config={...config,appearance:{},layout:{zones:{'top-left':zones['top-left'],'top-right':zones['top-right']}}};
+    inspector.selectedWidget={zone:'top-left',index:0,widgetId:'top-clock'};sync();await frame();
+    inspector.activeTab='appearance';await frame();
+    const field=label=>[...inspector.shadowRoot.querySelectorAll('ha-row-selector')].find(el=>el.label===label);
+    let weight=field('Font weight');
+    assert(weight.selector.select.options[0].label.includes('time 300'),'Clock default is explicit');
+    let size=field('Clock size (e.g., 16rem)');
+    assert(size.value==='4.5' && size.helper.includes('4.5rem'),'Resolved unit visible without rewriting input');
+    for(const value of ['4.','4.5','32px','']) {
+        await change(size,value);size=field('Clock size (e.g., 16rem)');
+        assert(size.value===value,'Editing and clearing preserved: '+value);
+    }
+    config={...config,appearance:{fontWeight:500}};sync();await frame();
+    assert(field('Font weight').selector.select.options[0].label==='Card default: 500','Card inheritance displayed');
+    await change(field('Font weight'),'700');
+    assert(getComputedStyle(deep(card.shadowRoot,'.hours-minutes')[0]).fontWeight==='700','Widget weight takes precedence');
+    await change(field('Font weight'),'');
+    assert(getComputedStyle(deep(card.shadowRoot,'.hours-minutes')[0]).fontWeight==='500','Clearing restores inherited weight');
+    config={...config,appearance:{}};inspector.selectedWidget={zone:'top-right',index:0,widgetId:'top-sensor'};sync();await frame();
+    inspector.activeTab='appearance';await frame();
+    assert(field('Font weight').selector.select.options[0].label.includes('values 400'),'Sensor defaults explicit');
+    records.push('Editor shows resolved rem, preserves typing, explains weights and applies overrides/inheritance');
+    result.dataset.status='passed';
+} catch(error) {records.push(error.stack);result.dataset.status='failed';}
+result.textContent=records.join('\n');
+</script>

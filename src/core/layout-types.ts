@@ -143,6 +143,8 @@ export interface LayoutConfig {
     zones: Partial<Record<ZoneId, ZoneConfig>>;
     /** Restore compact top/bottom grouping across an empty middle row (3×3 only). Defaults to false. */
     compactRows?: boolean;
+    /** Align zone boxes at the top within each 3×3 row, preserving the row's anchor. */
+    alignZoneTopEdges?: boolean;
     spacing?: SpacingPreset | SpacingConfig;
     /** Defaults to the original 3x3 geometry for backwards compatibility. */
     format?: LayoutFormat;

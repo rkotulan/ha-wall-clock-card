@@ -3,6 +3,7 @@ import {customElement, property, state} from 'lit/decorators.js';
 import {HomeAssistant} from 'custom-card-helpers';
 import {defaultZoneAlignment, LayoutConfig, WallClockConfigV3, WidgetConfig, WidgetStyle, ZoneId} from '../core/layout-types';
 import {Size} from '../core/types';
+import {normalizeFontSize} from '../utils/size';
 import {normalizeContentScale} from '../core/content-scale';
 import {WidgetRegistry} from '../widgets/widget-registry';
 import {supportsWidgetMaxWidth} from '../widgets/widget-layout';
@@ -14,6 +15,8 @@ import {LabelPosition} from '../components/ha-selector/types';
 import {resolveLayoutFormat} from '../core/layout-format';
 import {isHomeAssistantTemplate} from '../core/font-color-controller';
 import {widgetHasEditorSection, WidgetSettingsTab} from './widget-settings-sections';
+import {getEditorSessionState, setEditorSessionState} from './editor-session-state';
+import {InspectorScrollController} from './inspector-scroll-controller';
 import './layout-editor';
 import '../components/background-image/background-editor';
 
@@ -25,11 +28,6 @@ type EditorElement = HTMLElement & {
 };
 type CardSettingsTab = 'general' | 'spacing' | 'background';
 
-// Lovelace rebuilds the card after an autosave. Keep this transient UI state
-// outside the element so the newly-created inspector returns to the same tab.
-let retainedCardSettingsTab: CardSettingsTab = 'general';
-const retainedWidgetSettingsTabs = new Map<string, WidgetSettingsTab>();
-
 /** Shared contextual inspector used by the edit dialog and in-place card editor. */
 @customElement('wcc-layout-inspector')
 export class WccLayoutInspector extends LitElement {
@@ -40,7 +38,16 @@ export class WccLayoutInspector extends LitElement {
     @property({attribute: false}) selectedZone: ZoneId | null = null;
     @property({attribute: false}) editorSessionKey?: string;
     @state() private activeTab: WidgetSettingsTab = 'content';
-    @state() private activeCardTab: CardSettingsTab = retainedCardSettingsTab;
+    @state() private activeCardTab: CardSettingsTab = 'general';
+
+    private localTabs = new Map<string, WidgetSettingsTab | CardSettingsTab>();
+    private scrollState = new InspectorScrollController(this, () => ({
+        session: this.editorSessionKey,
+        view: this.selectedWidget
+            ? `inspector:scroll:widget:${this.widgetSelectionKey(this.selectedWidget)}:${this.activeTab}`
+            : this.selectedZone ? `inspector:scroll:zone:${this.selectedZone}`
+                : `inspector:scroll:card:${this.activeCardTab}`,
+    }));
 
     private editorCache = new Map<string, EditorElement>();
     private readonly languageOptions = getLanguageOptions();
@@ -306,13 +313,26 @@ export class WccLayoutInspector extends LitElement {
         `;
     }
 
-    updated(changedProperties: PropertyValues): void {
-        super.updated(changedProperties);
-        if (changedProperties.has('selectedWidget') || changedProperties.has('selectedZone')) {
+    willUpdate(changedProperties: PropertyValues): void {
+        super.willUpdate(changedProperties);
+        if (changedProperties.has('selectedWidget') || changedProperties.has('selectedZone')
+            || changedProperties.has('editorSessionKey')) {
             this.activeTab = this.selectedWidget
-                ? retainedWidgetSettingsTabs.get(this.widgetSelectionKey(this.selectedWidget)) ?? 'content'
+                ? this.readTab<WidgetSettingsTab>(`widget:${this.widgetSelectionKey(this.selectedWidget)}`) ?? 'content'
                 : 'content';
+            this.activeCardTab = this.readTab<CardSettingsTab>('card') ?? 'general';
         }
+    }
+
+    private readTab<T extends WidgetSettingsTab | CardSettingsTab>(key: string): T | undefined {
+        return (this.editorSessionKey
+            ? getEditorSessionState<T>(this.editorSessionKey, `inspector:tab:${key}`)
+            : this.localTabs.get(key)) as T | undefined;
+    }
+
+    private retainTab(key: string, tab: WidgetSettingsTab | CardSettingsTab): void {
+        if (this.editorSessionKey) setEditorSessionState(this.editorSessionKey, `inspector:tab:${key}`, tab);
+        else this.localTabs.set(key, tab);
     }
 
     private widgetSelectionKey(selection: WidgetSelection): string {
@@ -322,7 +342,7 @@ export class WccLayoutInspector extends LitElement {
     private selectWidgetTab(tab: WidgetSettingsTab): void {
         this.activeTab = tab;
         if (this.selectedWidget) {
-            retainedWidgetSettingsTabs.set(this.widgetSelectionKey(this.selectedWidget), tab);
+            this.retainTab(`widget:${this.widgetSelectionKey(this.selectedWidget)}`, tab);
         }
     }
 
@@ -354,6 +374,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private emitWidget(zone: ZoneId, index: number, widget: WidgetConfig): void {
+        this.scrollState.save();
         this.dispatchEvent(new CustomEvent('wcc-widget-config-changed', {
             detail: {zone, index, widget}, bubbles: true, composed: true,
         }));
@@ -404,6 +425,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private updateZone(settings: Record<string, unknown>, zone: ZoneId | null = this.selectedZone): void {
+        this.scrollState.save();
         if (!zone) return;
         this.dispatchEvent(new CustomEvent('wcc-zone-settings-changed', {
             detail: {zone, settings}, bubbles: true, composed: true,
@@ -411,6 +433,7 @@ export class WccLayoutInspector extends LitElement {
     }
 
     private emitCardConfig(config: WallClockConfigV3): void {
+        this.scrollState.save();
         this.dispatchEvent(new CustomEvent('wcc-card-config-changed', {
             detail: {config}, bubbles: true, composed: true,
         }));
@@ -696,7 +719,7 @@ export class WccLayoutInspector extends LitElement {
                                 @value-changed=${(ev: CustomEvent) => this.updateStyle('fontFamily', ev.detail.value)}>
                         </ha-row-selector>
                         <ha-row-selector .hass=${this.hass}
-                        .selector=${{select: {options: [{value: '', label: this.t('general.font_weight_default', 'Default')}, ...[100,200,300,400,500,600,700,800,900].map(weight => ({value: String(weight), label: String(weight)}))], mode: 'dropdown'}}}
+                        .selector=${{select: {options: [{value: '', label: this.inheritedFontWeightLabel(widget)}, ...[100,200,300,400,500,600,700,800,900].map(weight => ({value: String(weight), label: String(weight)}))], mode: 'dropdown'}}}
                         .value=${style.fontWeight === undefined ? '' : String(style.fontWeight)}
                         .label=${this.t('general.font_weight', 'Font weight')}
                         @value-changed=${(ev: CustomEvent) => this.updateStyle('fontWeight', ev.detail.value === '' ? undefined : Number(ev.detail.value))}>
@@ -757,11 +780,32 @@ export class WccLayoutInspector extends LitElement {
         `;
     }
 
+    private inheritedFontWeightLabel(widget: WidgetConfig): string {
+        const weight = this.config?.appearance?.fontWeight;
+        if (weight !== undefined) {
+            return this.t('general.font_weight_inherited', 'Card default: {weight}', {weight});
+        }
+        if (widget.type === 'clock') {
+            return this.t('general.font_weight_clock', 'Default: time 300, seconds and AM/PM 400');
+        }
+        if (widget.type === 'sensors') {
+            return this.t('general.font_weight_sensors', 'Default: values 400, labels 300');
+        }
+        if (widget.type === 'date') {
+            return this.t('general.font_weight_value', 'Default: {weight}', {weight: 400});
+        }
+        return this.t('general.font_weight_widget', 'Widget defaults');
+    }
+
     private renderWidgetSizeFields(widget: WidgetConfig, style: WidgetStyle): TemplateResult {
         const field = (key: string, label: string, fallback?: string) => html`
             <ha-row-selector .hass=${this.hass} .selector=${{text: {}}}
                     .value=${(widget[key] as string | undefined) ?? fallback ?? ''}
                     .label=${label}
+                    .helper=${['clockSize', 'dateSize', 'labelSize', 'valueSize'].includes(key)
+                        ? this.t('inspector.font_size_resolved', 'Base size: {size}. Numbers without a unit use rem.', {
+                            size: normalizeFontSize(String(widget[key] ?? fallback ?? '')) || this.t('general.font_weight_default', 'Default'),
+                        }) : ''}
                     @value-changed=${(ev: CustomEvent) => this.updateWidgetSize(key, ev.detail.value)}>
             </ha-row-selector>
         `;
@@ -918,7 +962,7 @@ export class WccLayoutInspector extends LitElement {
                             role="tab"
                             aria-selected=${this.activeCardTab === tab.id ? 'true' : 'false'}
                             @click=${() => {
-                                retainedCardSettingsTab = tab.id;
+                                this.retainTab('card', tab.id);
                                 this.activeCardTab = tab.id;
                             }}>
                         ${tab.label}
@@ -1000,6 +1044,7 @@ export class WccLayoutInspector extends LitElement {
                         .selector=${{select: {options: [{value: '', label: this.t('general.font_weight_default', 'Default')}, ...[100,200,300,400,500,600,700,800,900].map(weight => ({value: String(weight), label: String(weight)}))], mode: 'dropdown'}}}
                         .value=${appearance.fontWeight === undefined ? '' : String(appearance.fontWeight)}
                         .label=${this.t('general.font_weight', 'Font weight')}
+                        .helper=${this.t('general.font_weight_help', 'Default preserves each widget’s typography: clock time 300, sensor values 400. Choose a weight to use it across widgets.')}
                         @value-changed=${(ev: CustomEvent) => this.updateGeneralSetting('fontWeight', ev.detail.value === '' ? undefined : Number(ev.detail.value))}>
                 </ha-row-selector>
                 <ha-row-selector .hass=${this.hass}

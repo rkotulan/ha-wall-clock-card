@@ -117,6 +117,12 @@
   "general": {
     "font_weight": "Font weight",
     "font_weight_default": "Default",
+    "font_weight_inherited": "Card default: {weight}",
+    "font_weight_clock": "Default: time 300, seconds and AM/PM 400",
+    "font_weight_sensors": "Default: values 400, labels 300",
+    "font_weight_value": "Default: {weight}",
+    "font_weight_widget": "Widget defaults",
+    "font_weight_help": "Default preserves each widget’s typography: clock time 300, sensor values 400. Choose a weight to use it across widgets.",
     "title": "General", "layout": "Layout", "appearance": "Card appearance",
     "language_diagnostics": "Language and diagnostics",
     "font_color": "Font color", "font_color_template": "Dynamic template configured in the YAML code editor", "custom_color": "Custom color", "font_family": "Font family",
@@ -134,6 +140,7 @@
     "wheelchair_accessible": "Wheelchair accessible"
   },
   "inspector": {
+    "font_size_resolved": "Base size: {size}. Numbers without a unit use rem.",
     "widget_settings": "Widget settings",
     "appearance_layout": "Appearance and layout",
     "no_content": "This widget has no content settings.",
@@ -192,6 +199,8 @@
     "margin": "Margin (CSS shorthand)"
   },
   "layout": {
+    "align_zone_top_edges": "Align zone top edges",
+    "align_zone_top_edges_help": "Align the tops of left, center and right zones in each row. Each row keeps its position; custom zone padding and offsets still apply.",
     "structure": "Layout structure", "format": "Layout format",
     "format_help": "Changes the canvas geometry; widgets keep their current zones and settings.",
     "compact_rows": "Compact rows (original behavior)",
@@ -249,6 +258,7 @@
     "weather": {
       "source": "Weather source", "visible_content": "Displayed information",
       "icons": "Weather icons", "availability": "Availability", "refresh": "Data refresh",
+      "show_icons": "Show weather icons",
       "show": "Show weather", "show_help": "Display current weather and forecast", "title": "Weather title",
       "show_title": "Show forecast heading", "show_title_help": "Show the Weather or Forecast heading above the widget",
       "provider": "Weather provider", "provider_none": "None (disable weather)",

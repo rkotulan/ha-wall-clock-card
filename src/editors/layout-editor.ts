@@ -150,6 +150,17 @@ export class LayoutEditor extends LitElement {
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{boolean: {}}}
+                        .value=${this.layout.alignZoneTopEdges === true}
+                        .label=${this.t('layout.align_zone_top_edges', 'Align zone top edges')}
+                        .helper=${this.t('layout.align_zone_top_edges_help', 'Align the tops of left, center and right zones in each row. Each row keeps its position; custom zone padding and offsets still apply.')}
+                        .labelPosition=${this.inspector ? LabelPosition.Top : LabelPosition.Left}
+                        @value-changed=${(ev: CustomEvent) => this.emitLayout({
+                            ...this.layout, alignZoneTopEdges: ev.detail.value === true,
+                        })}
+                ></ha-row-selector>
+                <ha-row-selector
+                        .hass=${this.hass}
+                        .selector=${{boolean: {}}}
                         .value=${this.layout.compactRows === true}
                         .label=${this.t('layout.compact_rows', 'Compact rows (original behavior)')}
                         .labelPosition=${this.inspector ? LabelPosition.Top : LabelPosition.Left}

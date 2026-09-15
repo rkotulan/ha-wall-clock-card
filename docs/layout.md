@@ -38,6 +38,34 @@ their existing alignment in both modes.
 
 ## Layout formats and visual presets
 
+### Aligning zone top edges
+
+In **Card settings → Layout**, enable **Align zone top edges**
+(`layout.alignZoneTopEdges: true`) to align the left, center and right zone boxes
+at their tops within each row of the 3 × 3 grid. The tallest zone determines the
+row's content height. The row itself keeps its existing top, middle or bottom
+anchor, including when **Compact rows** is enabled. The setting defaults to
+`false` and does not affect split formats.
+
+This aligns zone boxes, not the visible tops or baselines of individual letters.
+Zone padding, vertical offsets and widget margins remain intentional overrides.
+For multiple widgets inside a single zone, use that zone's own row alignment.
+
+### Font size and weight
+
+The widget inspector shows the resolved base font size next to the editable
+value: for example, `4.5` means `4.5rem`. It keeps the original input editable,
+including partial decimal values. Explicit units such as `px` remain unchanged;
+the card's Content scale multiplies the base size when rendering.
+
+An unset font weight inherits the card's weight if configured. Otherwise, widgets
+keep their original typography: clock digits use 300, clock seconds and AM/PM use
+400, sensor values use 400 and sensor labels use 300. The inspector displays these
+defaults. Set the card's **Font weight** to give widgets a shared weight; an
+explicit widget weight takes precedence.
+
+## Split formats
+
 The original `3 × 3` canvas remains the default. A format changes only the geometry
 shared by the nine zones; it never changes widget configuration or entities:
 
@@ -151,7 +179,7 @@ Explicit values win over the preset. Invalid CSS lengths are ignored with a warn
 | `clock` | `timeFormat` (`hour12`, `showAmPm`, ...), `clockSize` (see [clock-date.md](clock-date.md)) |
 | `date` | `dateFormat`, `dateSize` (see [clock-date.md](clock-date.md)) |
 | `sensors` | `sensors`, `orientation`, `alignment`, `itemGap`, icon/separator controls, `labelSize`, `valueSize` (see [sensors.md](sensors.md)) |
-| `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `orientation`, `forecastDays`, `title`, `updateInterval`, `iconSet`, `animateIcons`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
+| `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `orientation`, `forecastDays`, `title`, `updateInterval`, `showIcons`, `iconSet`, `animateIcons`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
 | `transportation` | the [transportation config](transportation.md) keys, flattened |
 | `action-bar` | `enabled`, `actions`, `alignment`, `orientation`, `columns`, `backgroundOpacity`, `showButtonBackground`, `buttonGap`, `padding`, `iconSize`, `titleSize` (see [action-bar.md](action-bar.md)) |
 | `calendar` | `entities`, `displayMode`, `daysAhead`, `maxEvents`, event detail/background/font options and `updateInterval` (see [calendar.md](calendar.md)) |

@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 57: retain inspector scroll after autosave</title>
+<style>wcc-layout-inspector {width:498px;height:480px} #e2e-result {white-space:pre-wrap}</style>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result=document.querySelector('#e2e-result'),records=[];
+let stage='initial render';
+setTimeout(()=>{if(result.dataset.status==='running') {result.dataset.status='failed';result.textContent='Timed out at '+stage;}},8000);
+for (const event of ['error','unhandledrejection']) window.addEventListener(event,e=>{
+    result.dataset.status='failed';result.textContent=String(e.error?.stack ?? e.reason?.stack ?? e.message);
+});
+const assert=(ok,message)=>{if(!ok)throw Error(message);};
+const near=(a,b,message)=>assert(Math.abs(a-b)<2,`${message}: ${a} != ${b}`);
+const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+const hass={language:'en',locale:{language:'en'},localize:key=>key,states:{},themes:{themes:{}}};
+let config={type:'custom:wall-clock-card',layout:{zones:{'top-left':{widgets:[
+    {type:'sensors',id:'sensor-one',valueSize:'4.5'}, {type:'sensors',id:'sensor-two',valueSize:'2rem'},
+]}}}};
+let inspector;
+function create(session='issue-57-card-a') {
+    const el=document.createElement('wcc-layout-inspector');
+    el.hass=hass;el.config=config;el.layout=config.layout;el.editorSessionKey=session;
+    el.selectedWidget={zone:'top-left',index:0,widgetId:'sensor-one'};
+    document.body.append(el);return el;
+}
+const viewport=()=>inspector.shadowRoot.querySelector('.body, .card-settings-body');
+async function tab(name) {
+    const button=[...inspector.shadowRoot.querySelectorAll('[role=tab]')].find(el=>el.textContent.trim()===name);
+    assert(button,'Tab exists: '+name);button.click();await frame();
+}
+const selectedTab=()=>inspector.shadowRoot.querySelector('[aria-selected=true]')?.textContent.trim();
+async function scroll(value) {viewport().scrollTop=value;await frame();return viewport().scrollTop;}
+try {
+    inspector=create();await frame();await tab('Appearance');
+    stage='scroll appearance';
+    const position=await scroll(320);
+    assert(position>200,'Appearance panel is scrollable');
+    // Actual value-size event, with HA-like synchronous recreation on config save.
+    inspector.addEventListener('wcc-widget-config-changed',event=>{
+        config={...config,layout:{zones:{'top-left':{widgets:[event.detail.widget,config.layout.zones['top-left'].widgets[1]]}}}};
+        inspector.remove();inspector=create();
+    },{once:true});
+    const row=[...inspector.shadowRoot.querySelectorAll('ha-row-selector')].find(el=>el.label==='Value size (e.g., 2rem)');
+    await row.updateComplete;
+    stage='size change';
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed',{
+        detail:{value:'5rem'},bubbles:true,composed:true,
+    }));await frame();
+    assert(config.layout.zones['top-left'].widgets[0].valueSize==='5rem','Size change saved');
+    assert(selectedTab()==='Appearance','Recreated inspector restores active tab');
+    stage='navigation';
+    near(viewport().scrollTop,position,'Autosave restores scroll');
+    // Subsequent input and hass refresh retain the user's new position.
+    const adjusted=await scroll(210);
+    inspector.hass={...hass};inspector.layout=JSON.parse(JSON.stringify(config.layout));await frame();
+    near(viewport().scrollTop,adjusted,'Ordinary reactive updates retain scroll');
+    records.push('Editing value size survives synchronous autosave recreation with tab and scroll intact');
+
+    await tab('Content');near(viewport().scrollTop,0,'Fresh tab starts at top');
+    await tab('Appearance');near(viewport().scrollTop,adjusted,'Returning to tab restores its own scroll');
+    inspector.selectedWidget={zone:'top-left',index:1,widgetId:'sensor-two'};await frame();
+    assert(selectedTab()==='Content','Another widget has its own tab');
+    await tab('Appearance');near(viewport().scrollTop,0,'Another widget has its own scroll');
+    inspector.selectedWidget={zone:'top-left',index:0,widgetId:'sensor-one'};await frame();
+    near(viewport().scrollTop,adjusted,'Returning to widget restores scroll');
+    inspector.selectedWidget=null;inspector.selectedZone='top-left';await frame();
+    stage='zone and card';
+    const zonePosition=await scroll(110);
+    inspector.remove();inspector=create();inspector.selectedWidget=null;inspector.selectedZone='top-left';await frame();
+    near(viewport().scrollTop,zonePosition,'Zone settings survive recreation');
+    inspector.selectedZone=null;await frame();
+    const cardPosition=await scroll(170);
+    inspector.remove();inspector=create();inspector.selectedWidget=null;await frame();
+    near(viewport().scrollTop,cardPosition,'Card settings survive recreation');
+    records.push('Widget, tab, zone and card settings keep independent positions');
+
+    inspector.remove();inspector=create();inspector.style.height='2500px';await frame();
+    near(viewport().scrollTop,0,'Position waits when content does not yet overflow');
+    inspector.style.height='480px';await frame();
+    near(viewport().scrollTop,adjusted,'Resize restores position once viewport is ready');
+    inspector.remove();inspector=create();inspector.style.height='2500px';await frame();
+    viewport().dispatchEvent(new WheelEvent('wheel',{deltaY:100}));
+    inspector.style.height='480px';await frame();
+    near(viewport().scrollTop,0,'User scroll cancels delayed restoration');
+    records.push('Delayed viewport layout restores position without fighting user scrolling');
+
+    inspector.remove();inspector=create('issue-57-card-b');await frame();
+    stage='isolation';
+    assert(selectedTab()==='Content','Other card does not inherit tab');
+    await tab('Appearance');near(viewport().scrollTop,0,'Other card does not inherit scroll');
+    inspector.remove();inspector=create('issue-57-new-session');await frame();
+    assert(selectedTab()==='Content','New session starts on Content');
+    await tab('Appearance');near(viewport().scrollTop,0,'New session starts at top');
+    inspector.remove();inspector=create(undefined);inspector.editorSessionKey=undefined;await frame();await tab('Appearance');
+    const localPosition=await scroll(190);
+    await tab('Content');await tab('Appearance');near(viewport().scrollTop,localPosition,'Unscoped editor retains local navigation');
+    inspector.remove();inspector=create();inspector.editorSessionKey=undefined;await frame();
+    assert(selectedTab()==='Content','Unscoped editor does not leak state to new instance');
+    inspector.remove();
+    const card=document.createElement('wall-clock-card');
+    card.designerSessionKey='issue-57-card-a';card.clearRetainedDesignerContext();
+    inspector=create();await frame();
+    assert(selectedTab()==='Content','Ending dashboard edit session clears retained tab');
+    await tab('Appearance');near(viewport().scrollTop,0,'Ending dashboard edit session clears retained scroll');
+    records.push('Card/session isolation and local-only fallback pass');
+    result.dataset.status='passed';
+} catch(error) {result.dataset.status='failed';records.push(error.stack);}
+result.textContent=records.join('\n');
+</script>

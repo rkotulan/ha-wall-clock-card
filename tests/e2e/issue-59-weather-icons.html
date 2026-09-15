@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 59: optional weather icons</title>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result=document.querySelector('#e2e-result'),records=[];
+const assert=(ok,message)=>{if(!ok)throw Error(message);};
+const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+function deep(root,selector) {return [...root.querySelectorAll('*')].flatMap(el=>[
+    ...(el.matches(selector)?[el]:[]),...(el.shadowRoot?deep(el.shadowRoot,selector):[]),
+]);}
+const state={entity_id:'weather.test',state:'sunny',attributes:{temperature:25,temperature_unit:'°C',supported_features:7}};
+const hass={config:{time_zone:'UTC',latitude:49,longitude:16},language:'en',locale:{language:'en'},
+    states:{'weather.test':state},themes:{themes:{}},localize:key=>key,
+    connection:{subscribeMessage:async()=>()=>{}},callWS:async()=>({response:{'weather.test':{forecast:[
+        {datetime:'2026-09-15T12:00:00Z',temperature:25,templow:15,condition:'sunny'},
+    ]}}})};
+let widget={type:'weather',id:'weather',provider:'homeassistant',providerConfig:{entityId:'weather.test'},displayMode:'both'};
+const card=document.createElement('wall-clock-card'),inspector=document.createElement('wcc-layout-inspector');
+card.style.cssText='display:block;width:800px;height:450px';card.hass=hass;inspector.hass=hass;
+function sync() {
+    const config={type:'custom:wall-clock-card',background:{source:'none'},layout:{zones:{'top-right':{widgets:[widget]}}}};
+    card.setConfig(config);inspector.config=config;inspector.layout=config.layout;
+}
+inspector.selectedWidget={zone:'top-right',index:0,widgetId:'weather'};
+inspector.addEventListener('wcc-widget-config-changed',event=>{widget=event.detail.widget;sync();});
+async function toggle(value) {
+    const row=deep(inspector.shadowRoot,'ha-row-selector').find(el=>el.label==='Show weather icons');
+    assert(row,'Visibility switch in editor');await row.updateComplete;
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed',{
+        detail:{value},bubbles:true,composed:true,
+    }));await frame();
+    assert(widget.showIcons===value,'Editor persists showIcons');
+}
+try {
+    sync();document.body.append(card,inspector);await frame();
+    [...inspector.shadowRoot.querySelectorAll('[role=tab]')].find(el=>el.textContent.trim()==='Appearance').click();await frame();
+    for(const orientation of ['vertical','horizontal']) for(const iconSet of ['metno','wall-clock']) {
+        widget={...widget,orientation,iconSet,animateIcons:false,showIcons:undefined};sync();await frame();
+        assert(deep(card.shadowRoot,'.weather-icon').length===1,'Current icon visible by default');
+        assert(deep(card.shadowRoot,'.forecast-icon').length===1,'Forecast icon visible by default');
+        const text=deep(card.shadowRoot,'.weather-temp, .weather-condition, .forecast-temp').map(el=>el.textContent.trim()).join('|');
+        const visibleHeight=deep(card.shadowRoot,'.forecast-day')[0].getBoundingClientRect().height;
+        await toggle(false);
+        assert(!deep(card.shadowRoot,'.weather-icon, .forecast-icon').length,'No icon elements or placeholders');
+        assert(deep(card.shadowRoot,'.forecast-day')[0].getBoundingClientRect().height<visibleHeight,'Icon space removed');
+        assert(deep(card.shadowRoot,'.weather-temp, .weather-condition, .forecast-temp').map(el=>el.textContent.trim()).join('|')===text,'Weather text preserved');
+        assert(!deep(inspector.shadowRoot,'ha-row-selector').some(el=>el.label==='Weather icon set'),'Icon options hidden');
+        if(orientation==='horizontal') assert(getComputedStyle(deep(card.shadowRoot,'.weather-temp-container')[0]).marginLeft==='0px','Icon alignment offset removed');
+        await toggle(true);
+        assert(widget.iconSet===iconSet && widget.animateIcons===false,'Icon preferences preserved');
+        assert(deep(card.shadowRoot,'.weather-icon, .forecast-icon').length===2,'Icons restored');
+        records.push(`${orientation}/${iconSet}: default, hide, spacing, text, editor and restore pass`);
+    }
+    result.dataset.status='passed';
+} catch(error) {records.push(error.stack);result.dataset.status='failed';}
+result.textContent=records.join('\n');
+</script>

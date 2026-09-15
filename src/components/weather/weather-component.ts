@@ -19,6 +19,7 @@ export interface WeatherComponentConfig {
     weatherUpdateInterval?: number;
     weatherIconSet?: string;
     weatherIconAnimation?: boolean;
+    weatherShowIcons?: boolean;
     fontColor?: string;
     language?: string;
     size?: Size;
@@ -40,6 +41,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: Number }) weatherUpdateInterval?: number;
     @property({ type: String }) weatherIconSet?: string;
     @property({ type: Boolean }) weatherIconAnimation?: boolean;
+    @property({ type: Boolean }) weatherShowIcons = true;
     @property({ type: String }) fontColor?: string;
     @property({ type: String }) language?: string;
     @property({ type: String }) size?: Size;
@@ -229,6 +231,11 @@ export class WeatherComponent extends LitElement {
         .weather-container.horizontal .weather-temp-container {
             justify-content: flex-start;
             min-width: 0;
+        }
+
+        .weather-container.horizontal.no-icons .weather-current.with-forecast .weather-temp-container {
+            margin-left: 0;
+            max-width: 100%;
         }
 
         .weather-container.horizontal .weather-icon {
@@ -446,6 +453,7 @@ export class WeatherComponent extends LitElement {
         icon: string,
         label: string
     ) {
+        if (this.weatherShowIcons === false) return html``;
         if (this.weatherIconSet === 'wall-clock') {
             return html`
                 <wall-clock-weather-icon
@@ -495,7 +503,7 @@ export class WeatherComponent extends LitElement {
         const forecastTempWidth = this.getForecastTempWidth();
 
         return html`
-            <div class="weather-container ${this.orientation} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
+            <div class="weather-container ${this.orientation} ${this.weatherShowIcons === false ? 'no-icons' : ''} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
                  style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%;"
                  @click="${() => this._handleWeatherClick(weatherData.entityId)}">
                 ${this.weatherShowTitle !== false && (!horizontal || !showsCurrent) ? html`

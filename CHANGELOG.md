@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.16.0
+
+- Add optional top-edge alignment across the left, center and right zones of
+  each 3×3 row, preserving the row's anchor and existing defaults (#55).
+- Explain inherited and default font weights in the inspector, and display
+  resolved font-size units without interrupting typing (#55).
+- Retain inspector scroll positions and tabs across autosave recreation, scoped
+  to the card, widget and edit session (#57).
+- Add Show weather icons in the weather Appearance settings (`showIcons: false`
+  hides current and forecast icons and their spacing while retaining text) (#59).
+- Add browser regression coverage for alignment, typography, inspector state
+  and weather icon visibility.
+
 ## 3.15.0
 
 - Add global Content scale (50–200%, default 100%) for built-in widget text,

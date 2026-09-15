@@ -80,6 +80,12 @@
   "general": {
     "font_weight": "Tloušťka písma",
     "font_weight_default": "Výchozí",
+    "font_weight_inherited": "Z karty: {weight}",
+    "font_weight_clock": "Výchozí: čas 300, sekundy a AM/PM 400",
+    "font_weight_sensors": "Výchozí: hodnoty 400, popisky 300",
+    "font_weight_value": "Výchozí: {weight}",
+    "font_weight_widget": "Výchozí hodnoty widgetu",
+    "font_weight_help": "Výchozí nastavení zachovává písmo jednotlivých widgetů: čas 300, hodnoty senzorů 400. Výběrem váhy ji sjednotíte napříč widgety.",
     "title": "Obecné", "layout": "Rozložení", "appearance": "Vzhled karty",
     "language_diagnostics": "Jazyk a diagnostika",
     "font_color": "Barva písma", "font_color_template": "Dynamická šablona je nastavena v editoru YAML", "custom_color": "Vlastní barva", "font_family": "Rodina písma",
@@ -97,6 +103,7 @@
     "wheelchair_accessible": "Bezbariérový spoj"
   },
   "inspector": {
+    "font_size_resolved": "Základní velikost: {size}. Čísla bez jednotky používají rem.",
     "widget_settings": "Nastavení widgetu", "appearance_layout": "Vzhled a rozložení",
     "no_content": "Tento widget nemá žádné nastavení obsahu.",
     "no_behavior": "Tento widget nemá žádné další nastavení chování.",
@@ -139,6 +146,8 @@
     "margin": "Okraj (CSS zkrácený zápis)"
   },
   "layout": {
+    "align_zone_top_edges": "Zarovnat horní hrany zón",
+    "align_zone_top_edges_help": "Srovná horní hrany levé, prostřední a pravé zóny v každém řádku. Poloha celého řádku zůstane zachována; vlastní odsazení a posuny zón se použijí i nadále.",
     "structure": "Struktura rozložení", "format": "Formát rozložení",
     "format_help": "Mění geometrii plochy; widgety si zachovají své zóny a nastavení.",
     "compact_rows": "Kompaktní řádky (původní chování)",
@@ -190,6 +199,7 @@
     "weather": {
       "source": "Zdroj počasí", "visible_content": "Zobrazované informace",
       "icons": "Ikony počasí", "availability": "Dostupnost", "refresh": "Aktualizace dat",
+      "show_icons": "Zobrazovat ikony počasí",
       "show": "Zobrazit počasí", "show_help": "Zobrazí aktuální počasí a předpověď", "title": "Název počasí",
       "show_title": "Zobrazit nadpis předpovědi", "show_title_help": "Zobrazí nad widgetem nadpis Počasí nebo Předpověď",
       "provider": "Poskytovatel počasí", "provider_none": "Žádný (vypnout počasí)",

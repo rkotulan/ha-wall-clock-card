@@ -218,6 +218,15 @@ export class WeatherEditor extends BaseEditorSection {
                     <div class="options">
                         <ha-row-selector
                                 .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${this.config.weatherShowIcons !== false}
+                                .label=${this.t('editor.weather.show_icons', 'Show weather icons')}
+                                propertyName="weatherShowIcons"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        ${this.config.weatherShowIcons !== false ? html`
+                        <ha-row-selector
+                                .hass=${this.hass}
                                 .selector=${{select: {options: this._weatherIconSetOptions, mode: 'dropdown'}}}
                                 .value=${this.config.weatherIconSet || (this.config.weatherProvider === 'homeassistant' ? 'metno' : 'openweathermap')}
                                 .label=${this.t('editor.weather.icon_set', 'Weather icon set')}
@@ -234,6 +243,7 @@ export class WeatherEditor extends BaseEditorSection {
                                     propertyName="weatherIconAnimation"
                                     @value-changed=${this._handleFormValueChanged}>
                             </ha-row-selector>
+                        ` : ''}
                         ` : ''}
                     </div>
                 ` : ''}

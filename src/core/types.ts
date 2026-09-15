@@ -64,6 +64,7 @@ export interface WallClockConfig {
     weatherUpdateInterval?: number; // Interval in seconds to update weather data (minimum: 60)
     weatherIconSet?: string; // Icon set to use for weather
     weatherIconAnimation?: boolean; // Animate the built-in Wall Clock icon set
+    weatherShowIcons?: boolean;
 
     // Transportation departures settings
     transportation?: TransportationConfig; // Configuration for transportation departures

@@ -24,6 +24,12 @@ layout:
 
 ## Options
 
+In the widget's **Appearance** tab, turn off **Show weather icons** to hide icons
+for both current conditions and the forecast. Temperatures and text remain;
+the icons and their spacing are removed. In YAML, set `showIcons: false` on the
+weather widget. The default is `true`. The selected icon set and animation
+preference are retained when icons are hidden.
+
 | Key | Default | Description |
 |---|---:|---|
 | `enabled` | `true` | Show or hide this widget |

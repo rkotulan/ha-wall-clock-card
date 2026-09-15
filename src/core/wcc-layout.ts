@@ -94,6 +94,19 @@ export class WccLayout extends LitElement {
             min-height: 0;
         }
 
+        .zone-row {
+            display: contents;
+        }
+
+        .zone-row.aligned {
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-column: 1 / -1;
+            align-items: start;
+            min-width: 0;
+            min-height: 0;
+        }
+
         .format-surface::before {
             content: '';
             position: absolute;
@@ -444,6 +457,30 @@ export class WccLayout extends LitElement {
         return {zoneId: canonical, config, widgets};
     }
 
+    private renderGridRows(padding: CssPaddingEdges): TemplateResult[] {
+        const aligned = this.layout?.alignZoneTopEdges === true;
+        return (['top', 'middle', 'bottom'] as const).map(row => {
+            const entries = this.zoneEntries.filter(entry =>
+                entry.zoneId === 'center' ? row === 'middle' : entry.zoneId.startsWith(row + '-'));
+            if (!entries.length) return html``;
+            const anchor = row === 'top' ? 'start' : row === 'bottom' ? 'end' : 'center';
+            return html`
+                <div class="zone-row ${aligned ? 'aligned' : ''}"
+                     style="grid-row: ${row}-left; align-self: ${anchor};">
+                    ${repeat(entries, entry => entry.zoneId, entry => {
+                        const column = entry.zoneId.endsWith('-left') ? '1'
+                            : entry.zoneId.endsWith('-right') ? '3'
+                            : row !== 'middle' && entries.length === 1 ? '1 / -1' : '2';
+                        const placement = aligned
+                            ? `grid-row: 1; grid-column: ${column}; align-self: start; justify-self: stretch;`
+                            : this.zonePlacement(entry.zoneId);
+                        return this.renderZone(entry, 'grid-3x3', padding, placement);
+                    })}
+                </div>
+            `;
+        });
+    }
+
     render(): TemplateResult {
         const spacing = resolveSpacing(this.layout);
         const padding = expandCssPadding(spacing.padding);
@@ -473,11 +510,7 @@ export class WccLayout extends LitElement {
                         panel,
                         padding,
                     ))
-                    : repeat(
-                        this.zoneEntries,
-                        entry => entry.zoneId,
-                        entry => this.renderZone(entry, format, padding, this.zonePlacement(entry.zoneId)),
-                    )}
+                    : this.renderGridRows(padding)}
             </div>
         `;
     }
