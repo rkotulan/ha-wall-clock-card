@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Aby wyrównać widżety w tej strefie do górnej krawędzi, dolnej krawędzi lub linii bazowej tekstu, ustaw Direction na Row, a Mode na Stack. Pojawi się wtedy opcja Vertical alignment.",
+    "vertical_alignment_help": "Wyrównuje widżety wewnątrz tej strefy. Opcja Align zone top edges w Card settings → Layout steruje wyrównaniem między oddzielnymi strefami."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Kolor aktywnej ikony",

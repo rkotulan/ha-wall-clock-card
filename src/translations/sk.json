@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Ak chcete zarovnať widgety v tejto zóne nahor, nadol alebo na základnú čiaru textu, nastavte Direction na Row a Mode na Stack. Potom sa zobrazí voľba Vertical alignment.",
+    "vertical_alignment_help": "Zarovnáva widgety v rámci tejto zóny. Voľba Align zone top edges v Card settings → Layout určuje zarovnanie medzi samostatnými zónami."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Farba aktívnej ikony",

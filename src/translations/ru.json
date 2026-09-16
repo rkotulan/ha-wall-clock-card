@@ -48,6 +48,10 @@
       "kmh": "км/ч"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Чтобы выровнять виджеты в этой зоне по верхнему краю, нижнему краю или базовой линии текста, установите Direction в Row, а Mode в Stack. После этого появится настройка Vertical alignment.",
+    "vertical_alignment_help": "Выравнивает виджеты внутри этой зоны. Параметр Align zone top edges в Card settings → Layout управляет выравниванием между отдельными зонами."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Цвет активного значка",

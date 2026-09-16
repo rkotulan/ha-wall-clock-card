@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "За да подравните уиджетите в тази зона по горния ръб, долния ръб или базовата линия на текста, задайте Direction на Row и Mode на Stack. Тогава ще се появи настройката Vertical alignment.",
+    "vertical_alignment_help": "Подравнява уиджетите в тази зона. Опцията Align zone top edges в Card settings → Layout управлява подравняването между отделни зони."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Цвят на активната икона",

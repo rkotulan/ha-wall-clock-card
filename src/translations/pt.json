@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Para alinhar os widgets desta zona pela borda superior, pela borda inferior ou pela linha de base do texto, defina Direction como Row e Mode como Stack. O controle Vertical alignment será exibido.",
+    "vertical_alignment_help": "Alinha os widgets dentro desta zona. A opção Align zone top edges em Card settings → Layout controla o alinhamento entre zonas separadas."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Cor do ícone ativo",

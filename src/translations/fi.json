@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Jos haluat kohdistaa tämän alueen widgetit yläreunan, alareunan tai tekstin perusviivan mukaan, valitse Direction-asetukseksi Row ja Mode-asetukseksi Stack. Tällöin Vertical alignment -asetus tulee näkyviin.",
+    "vertical_alignment_help": "Kohdistaa widgetit tämän alueen sisällä. Card settings → Layout -kohdan Align zone top edges ohjaa erillisten alueiden välistä kohdistusta."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Aktiivisen kuvakkeen väri",

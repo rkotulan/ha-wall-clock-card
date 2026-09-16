@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Om widgets in deze zone uit te lijnen op de bovenkant, onderkant of tekstbasislijn, stel je Direction in op Row en Mode op Stack. Daarna verschijnt de instelling Vertical alignment.",
+    "vertical_alignment_help": "Lijnt widgets binnen deze zone uit. Align zone top edges onder Card settings → Layout regelt de uitlijning tussen afzonderlijke zones."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Kleur van het actieve pictogram",

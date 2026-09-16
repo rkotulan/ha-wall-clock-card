@@ -165,6 +165,8 @@
     "row": "Row",
     "horizontal_alignment": "Horizontal alignment",
     "vertical_alignment": "Vertical alignment",
+    "row_alignment_help": "To align widgets in this zone at the top, bottom or text baseline, set Direction to Row and Mode to Stack. The Vertical alignment control will then appear.",
+    "vertical_alignment_help": "Aligns widgets within this zone. Align zone top edges in Card settings → Layout controls alignment between separate zones.",
     "align_top": "Top edge", "align_bottom": "Bottom edge", "align_baseline": "Text baseline",
     "span_panel": "Fill the complete split panel",
     "span_panel_help": "Available when this is the only occupied area in its panel.",

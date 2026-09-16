@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Pentru a alinia widgeturile din această zonă la marginea de sus, la marginea de jos sau la linia de bază a textului, setați Direction la Row și Mode la Stack. Va apărea apoi opțiunea Vertical alignment.",
+    "vertical_alignment_help": "Aliniază widgeturile din interiorul acestei zone. Opțiunea Align zone top edges din Card settings → Layout controlează alinierea între zone separate."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Culoarea pictogramei active",

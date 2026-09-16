@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Um Widgets in dieser Zone an der Oberkante, Unterkante oder Textgrundlinie auszurichten, setzen Sie Direction auf Row und Mode auf Stack. Danach erscheint die Einstellung Vertical alignment.",
+    "vertical_alignment_help": "Richtet Widgets innerhalb dieser Zone aus. Align zone top edges unter Card settings → Layout steuert die Ausrichtung zwischen verschiedenen Zonen."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Farbe des aktiven Symbols",

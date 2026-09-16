@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Για να ευθυγραμμίσετε τα widget σε αυτή τη ζώνη στο πάνω άκρο, στο κάτω άκρο ή στη γραμμή βάσης του κειμένου, ορίστε το Direction σε Row και το Mode σε Stack. Τότε θα εμφανιστεί η ρύθμιση Vertical alignment.",
+    "vertical_alignment_help": "Ευθυγραμμίζει τα widget μέσα σε αυτή τη ζώνη. Η επιλογή Align zone top edges στο Card settings → Layout ελέγχει την ευθυγράμμιση μεταξύ ξεχωριστών ζωνών."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Χρώμα ενεργού εικονιδίου",

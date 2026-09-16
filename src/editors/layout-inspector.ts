@@ -890,6 +890,7 @@ export class WccLayoutInspector extends LitElement {
                                 {value: 'column', label: this.t('inspector.column', 'Column')}, {value: 'row', label: this.t('inspector.row', 'Row')},
                             ], mode: 'dropdown'}}}
                             .value=${config.direction ?? 'column'} .label=${this.t('inspector.direction', 'Direction')}
+                            .helper=${this.t('inspector.row_alignment_help', 'To align widgets in this zone at the top, bottom or text baseline, set Direction to Row and Mode to Stack. The Vertical alignment control will then appear.')}
                             @value-changed=${(ev: CustomEvent) =>
                                 this.updateZone({direction: ev.detail.value === 'column' ? undefined : ev.detail.value})}>
                     </ha-row-selector>
@@ -926,6 +927,7 @@ export class WccLayoutInspector extends LitElement {
                                 ], mode: 'dropdown'}}}
                                 .value=${config.crossAlign ?? 'center'}
                                 .label=${this.t('inspector.vertical_alignment', 'Vertical alignment')}
+                                .helper=${this.t('inspector.vertical_alignment_help', 'Aligns widgets within this zone. Align zone top edges in Card settings → Layout controls alignment between separate zones.')}
                                 @value-changed=${(ev: CustomEvent) => this.updateZone({crossAlign: ev.detail.value === 'center' ? undefined : ev.detail.value})}>
                         </ha-row-selector>
                     ` : ''}

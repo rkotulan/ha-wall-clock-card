@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "For at justere widgets i denne zone efter overkant, underkant eller tekstens grundlinje skal du sætte Direction til Row og Mode til Stack. Derefter vises indstillingen Vertical alignment.",
+    "vertical_alignment_help": "Justerer widgets inden for denne zone. Align zone top edges under Card settings → Layout styrer justeringen mellem separate zoner."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Farve på aktivt ikon",

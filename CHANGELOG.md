@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.16.1
+
+- Explain in the zone editor that Vertical alignment becomes available with
+  Direction set to Row and Mode set to Stack (#55).
+- Clarify the difference between alignment within a zone and top-edge alignment
+  across separate zones, with help text in all 19 supported languages.
+
 ## 3.16.0
 
 - Add optional top-edge alignment across the left, center and right zones of

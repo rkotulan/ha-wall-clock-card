@@ -48,6 +48,10 @@
       "kmh": "km/h"
     }
   },
+  "inspector": {
+    "row_alignment_help": "Ha a zónában lévő widgeteket a felső vagy alsó szélükhöz, illetve a szöveg alapvonalához szeretné igazítani, állítsa a Direction értékét Row, a Mode értékét pedig Stack értékre. Ekkor megjelenik a Vertical alignment beállítás.",
+    "vertical_alignment_help": "A zónán belüli widgeteket igazítja. A különálló zónák közötti igazítást a Card settings → Layout alatt található Align zone top edges beállítás szabályozza."
+  },
   "editor": {
     "action_plugin": {
       "active_color": "Aktív ikon színe",

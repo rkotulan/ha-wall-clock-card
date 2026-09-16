@@ -118,6 +118,8 @@
     "exclusive": "Exkluzivní (aktivní widget s nejvyšší prioritou)", "direction": "Směr",
     "column": "Sloupec", "row": "Řádek", "horizontal_alignment": "Vodorovné zarovnání",
     "vertical_alignment": "Svislé zarovnání",
+    "row_alignment_help": "Pro zarovnání widgetů v této zóně nahoře, dole nebo na účaří textu nastavte Směr na Řádek a Režim na Skládat. Poté se zobrazí volba Svislé zarovnání.",
+    "vertical_alignment_help": "Zarovnává widgety uvnitř této zóny. Volba Zarovnat horní hrany zón v Nastavení karty → Rozložení určuje zarovnání mezi různými zónami.",
     "align_top": "Horní okraj", "align_bottom": "Dolní okraj", "align_baseline": "Účaří textu",
     "span_panel": "Roztáhnout přes celý dělený panel",
     "span_panel_help": "Použije se, pokud je toto jediná obsazená oblast v panelu.",
