@@ -56,11 +56,11 @@ export class DateFormatEditor extends BaseEditorSection {
                 <ha-row-selector
                         .hass=${this.hass}
                         .selector=${{
-                            text: {}
+                            text: {multiline: true}
                         }}
                         .value=${this.config.dateFormat?.custom || ''}
                         .label=${this.t('editor.format.custom_date', 'Custom date format')}
-                        .helper=${this.t('editor.format.custom_date_help', 'For example yyyy-MM-dd or EEEE, MMMM d, yyyy. When filled, it overrides the settings below.')}
+                        .helper=${this.t('editor.format.custom_date_help', 'For example yyyy-MM-dd or EEEE, MMMM d, yyyy. Press Enter to start a new line. When filled, it overrides the settings below.')}
                         propertyName="dateFormat.custom"
                         @value-changed=${this._handleFormValueChanged}
                 ></ha-row-selector>

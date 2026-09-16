@@ -122,6 +122,7 @@ export class ClockComponent extends LitElement {
         }
 
         .date {
+            white-space: pre-line;
             font-size: 6rem; /* Medium size (default) */
             font-weight: var(--wcc-font-weight, 400);
             text-align: center;

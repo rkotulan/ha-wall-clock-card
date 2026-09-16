@@ -250,7 +250,7 @@
       "colon_static": "Static", "colon_fast": "Fast (0.5 s on/off)", "colon_slow": "Slow (1 s on/off)",
       "numeric": "Numeric", "two_digit": "2-digit", "hidden": "Hidden",
       "custom_date": "Custom date format",
-      "custom_date_help": "For example yyyy-MM-dd or EEEE, MMMM d, yyyy. When filled, it overrides the settings below.",
+      "custom_date_help": "For example yyyy-MM-dd or EEEE, MMMM d, yyyy. Press Enter to start a new line. When filled, it overrides the settings below.",
       "weekday_display": "Weekday display", "month_display": "Month display", "day_display": "Day display",
       "year_display": "Year display", "long_monday": "Long (Monday)", "short_mon": "Short (Mon)",
       "narrow_m": "Narrow (M)", "long_january": "Long (January)", "short_jan": "Short (Jan)",

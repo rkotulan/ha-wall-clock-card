@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Multiline date regression</title>
+<body style="background: #222; color: white">
+<pre id="e2e-result" data-status="running">Running…</pre>
+<script type="module">
+    import '../../dist/wall-clock-card.js';
+
+    const result = document.getElementById('e2e-result');
+    function assert(condition, message) {
+        if (!condition) throw new Error(message);
+    }
+    async function settle(clock) {
+        await clock.updateComplete;
+        await clock.updateComplete;
+    }
+    try {
+        const clock = document.createElement('ha-clock');
+        clock.showClock = false;
+        clock.language = 'en';
+        clock.timeZone = 'UTC';
+        clock.dateSize = '32px';
+        clock.size = 'custom';
+        clock.dateFormat = {custom: 'EEEE\nMMMM d, yyyy'};
+        document.body.append(clock);
+        await settle(clock);
+        const date = clock.shadowRoot.querySelector('.date');
+        const lines = date.textContent.split('\n');
+        assert(lines.length === 2 && lines.every(Boolean), 'Date must contain two nonempty lines');
+        const multilineHeight = date.getBoundingClientRect().height;
+
+        // Measure actual layout: textContent alone would pass before the fix.
+        clock.dateFormat = {custom: 'EEEE, MMMM d, yyyy'};
+        await settle(clock);
+        const singleHeight = date.getBoundingClientRect().height;
+        assert(Math.abs(multilineHeight - 2 * singleHeight) < 1,
+            `Expected two rendered lines: multiline=${multilineHeight}, single=${singleHeight}`);
+        assert(!date.textContent.includes('\n'), 'Switching formats must restore a single line');
+
+        // Both halves of the legacy clock use the same date rendering.
+        clock.showClock = true;
+        clock.dateFormat = {custom: 'EEEE\r\nMMMM d, yyyy'};
+        await settle(clock);
+        assert(Math.abs(date.getBoundingClientRect().height - multilineHeight) < 1,
+            'Windows line breaks must render correctly with the clock visible');
+        clock.remove();
+
+        // Load the lazy editor bundle via the public card API.
+        await customElements.get('wall-clock-card').getConfigElement();
+        const editor = document.createElement('date-format-editor');
+        editor.hass = {language: 'en', locale: {language: 'en'}};
+        editor.config = {dateFormat: {custom: 'EEEE\nMMMM d, yyyy'}};
+        document.body.append(editor);
+        await editor.updateComplete;
+        const field = editor.shadowRoot.querySelector('[propertyName="dateFormat.custom"]');
+        assert(field.selector.text.multiline === true, 'Editor must offer multiline input');
+        assert(field.value === editor.config.dateFormat.custom, 'Editor must preserve line breaks');
+        editor.remove();
+        result.dataset.status = 'passed';
+        result.textContent = 'PASS: multiline date layout, single-line updates, CRLF, and editor input';
+    } catch (error) {
+        result.dataset.status = 'failed';
+        result.textContent = error.stack || String(error);
+    }
+</script>
+</body>
+</html>

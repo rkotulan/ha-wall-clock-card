@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.16.2
+
+- Preserve line breaks in custom date formats so the weekday can appear above the full date (#58).
+- Allow multiline custom date input in the visual editor, with updated English and Czech help text and a YAML example in the documentation.
+
 ## 3.16.1
 
 - Explain in the zone editor that Vertical alignment becomes available with

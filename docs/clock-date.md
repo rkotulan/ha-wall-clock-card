@@ -61,7 +61,25 @@ changes visibility. It remains static when the browser requests reduced motion.
 
 Common custom tokens include `yyyy`/`yy`, `MMMM`/`MMM`/`MM`/`M`, `EEEE`/`EEE`,
 `dd`/`d`, `HH`/`H`, `hh`/`h`, `mm`, `ss` and `a`. Literal punctuation and spaces
-are preserved.
+are preserved, including line breaks. In the visual editor, press Enter in the
+custom date format field to start a new line.
+
+To show the weekday above the full date, use a YAML literal block (`|-`):
+
+```yaml
+- type: date
+  dateFormat:
+    custom: |-
+      EEEE
+      MMMM d, yyyy
+```
+
+With `appearance.language: en`, for example, this displays:
+
+```text
+Monday
+September 7, 2026
+```
 
 `clockSize`/`dateSize` take precedence over the card-wide size preset. Generic
 `style.fontSize` is accepted as a fallback, but the named fields are clearer for

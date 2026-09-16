@@ -191,7 +191,7 @@
       "colon_static": "Statická", "colon_fast": "Rychle (0,5 s zap./vyp.)", "colon_slow": "Pomalu (1 s zap./vyp.)",
       "numeric": "Číslo", "two_digit": "Dvě číslice", "hidden": "Skryté",
       "custom_date": "Vlastní formát data",
-      "custom_date_help": "Například yyyy-MM-dd nebo EEEE, MMMM d, yyyy. Vyplněná hodnota přepíše nastavení níže.",
+      "custom_date_help": "Například yyyy-MM-dd nebo EEEE, MMMM d, yyyy. Klávesou Enter začnete nový řádek. Vyplněná hodnota přepíše nastavení níže.",
       "weekday_display": "Zobrazení dne v týdnu", "month_display": "Zobrazení měsíce",
       "day_display": "Zobrazení dne", "year_display": "Zobrazení roku", "long_monday": "Dlouhý (pondělí)",
       "short_mon": "Krátký (po)", "narrow_m": "Úzký (P)", "long_january": "Dlouhý (leden)",
