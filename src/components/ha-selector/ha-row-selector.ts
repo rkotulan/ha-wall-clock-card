@@ -484,17 +484,19 @@ export class HaRowSelector extends LitElement {
         /* Common styles */
         .value {
             flex: 1;
+            min-width: 0;
             display: flex;
             align-items: center;
-            overflow: hidden; /* Already present */
-            text-overflow: ellipsis; /* Add this */
-            white-space: nowrap; /* Add this */
+            overflow: hidden;
+            /* Inherited by HA's helper text, including across shadow roots. */
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         ha-selector {
             width: 100%;
-            overflow: hidden; /* Add this */
-            text-overflow: ellipsis; /* Add this */
+            min-width: 0;
+            overflow: hidden;
         }
 
         /* Action buttons container */

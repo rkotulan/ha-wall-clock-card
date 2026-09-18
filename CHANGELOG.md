@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.16.3
+
+- Wrap editor helper text within the available width so long instructions, including the custom date format help, remain fully readable (#58).
+
 ## 3.16.2
 
 - Preserve line breaks in custom date formats so the weekday can appear above the full date (#58).
