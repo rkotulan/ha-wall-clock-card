@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.17.0
+
+- Add `forecastDateGap` to configure the space after forecast day labels in vertical weather widgets, keeping the default at `8px` (#60).
+- Expose the setting in the Appearance tab with English and Czech help text and document the YAML option.
+- Preserve the setting through visual editor changes, including clearing it to restore the default.
+
 ## 3.16.4
 
 - Add left, center and right date text alignment in the visual editor and YAML (`dateTextAlign`), preserving center alignment by default (#58).

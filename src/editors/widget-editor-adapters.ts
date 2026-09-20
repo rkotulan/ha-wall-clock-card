@@ -53,6 +53,7 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
                 weatherIconSet: widget.iconSet,
                 weatherIconAnimation: widget.animateIcons,
                 weatherShowIcons: widget.showIcons,
+                forecastDateGap: widget.forecastDateGap,
             });
         case 'transportation': {
             const {type, id, priority, style, visibility, ...transportation} = widget;
@@ -128,6 +129,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 iconSet: editorConfig.weatherIconSet,
                 animateIcons: editorConfig.weatherIconAnimation,
                 showIcons: editorConfig.weatherShowIcons,
+                forecastDateGap: editorConfig.forecastDateGap,
                 orientation: widget.orientation,
             }) as WidgetConfig;
         case 'transportation': {

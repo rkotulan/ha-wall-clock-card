@@ -26,6 +26,7 @@ export interface WeatherComponentConfig {
     labelSize?: string;
     valueSize?: string;
     orientation?: ResolvedWidgetOrientation;
+    forecastDateGap?: string;
 }
 
 @customElement('ha-weather')
@@ -48,6 +49,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: String }) labelSize?: string;
     @property({ type: String }) valueSize?: string;
     @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
+    @property({ type: String }) forecastDateGap?: string;
 
     private logger = createLogger('weather-component');
     private weatherController: WeatherController;
@@ -163,7 +165,7 @@ export class WeatherComponent extends LitElement {
         .forecast-date {
             font-size: 1.4rem; /* Medium size (default) */
             font-weight: var(--wcc-font-weight, 300);
-            margin-right: 8px;
+            margin-right: var(--forecast-date-gap, 8px);
             opacity: 0.8;
             width: 2rem;
             text-align: right;
@@ -504,7 +506,7 @@ export class WeatherComponent extends LitElement {
 
         return html`
             <div class="weather-container ${this.orientation} ${this.weatherShowIcons === false ? 'no-icons' : ''} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
-                 style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%;"
+                 style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%; --forecast-date-gap: ${this.forecastDateGap?.trim() || '8px'};"
                  @click="${() => this._handleWeatherClick(weatherData.entityId)}">
                 ${this.weatherShowTitle !== false && (!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">

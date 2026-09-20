@@ -26,6 +26,7 @@ export interface WeatherWidgetConfig extends WidgetConfig {
     labelSize?: string;
     valueSize?: string;
     orientation?: WidgetOrientation;
+    forecastDateGap?: string;
 }
 
 @customElement('wcc-weather-widget')
@@ -67,6 +68,7 @@ export class WeatherWidget extends WidgetElement<WeatherWidgetConfig> {
         this.weather.labelSize = this.config.labelSize;
         this.weather.valueSize = this.config.valueSize;
         this.weather.orientation = orientation;
+        this.weather.forecastDateGap = this.config.forecastDateGap;
         this.setAttribute('data-orientation', orientation);
         if (this.hass) {
             this.weather.hass = this.hass;

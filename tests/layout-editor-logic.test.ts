@@ -387,6 +387,20 @@ describe('applyGeneralSetting', () => {
 });
 
 describe('widget editor adapters', () => {
+    it('preserves, updates and clears the forecast date gap through weather editor changes', () => {
+        const widget = {type: 'weather', provider: 'homeassistant', forecastDateGap: '1rem'};
+        const editor = toEditorConfig(widget);
+        expect(editor.forecastDateGap).toBe('1rem');
+        expect(fromEditorConfig(widget, {...editor, weatherTitle: 'Forecast'})).toEqual({
+            ...widget, title: 'Forecast',
+        });
+        expect(fromEditorConfig(widget, {...editor, forecastDateGap: '0px'}).forecastDateGap).toBe('0px');
+        expect(fromEditorConfig(widget, {...editor, forecastDateGap: ''}).forecastDateGap).toBe('');
+        const {forecastDateGap, ...cleared} = editor;
+        expect(fromEditorConfig(widget, cleared)).not.toHaveProperty('forecastDateGap');
+        expect(toEditorConfig({type: 'weather'})).not.toHaveProperty('forecastDateGap');
+    });
+
     it.each(['left', 'center', 'right'])('preserves date alignment %s across format edits', dateTextAlign => {
         const widget = {
             type: 'date', id: 'date', dateSize: '32px', dateTextAlign,

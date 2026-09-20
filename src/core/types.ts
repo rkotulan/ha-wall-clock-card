@@ -68,6 +68,7 @@ export interface WallClockConfig {
     weatherIconSet?: string; // Icon set to use for weather
     weatherIconAnimation?: boolean; // Animate the built-in Wall Clock icon set
     weatherShowIcons?: boolean;
+    forecastDateGap?: string;
 
     // Transportation departures settings
     transportation?: TransportationConfig; // Configuration for transportation departures

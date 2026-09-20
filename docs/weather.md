@@ -38,6 +38,7 @@ preference are retained when icons are hidden.
 | `displayMode` | `current` for a newly added widget | `current`, `forecast` or `both` |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
+| `forecastDateGap` | `8px` | CSS length between the forecast day label and its values in vertical orientation (for example `16px` or `1rem`); empty uses `8px` |
 | `title` | localized “Weather” | Section title |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
 | `iconSet` | provider default | `wall-clock`, `basmilius`, `openweathermap` or `metno` |
