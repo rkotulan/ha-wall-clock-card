@@ -17,9 +17,12 @@ export type {
 
 // Common interfaces
 
+export type DateTextAlign = 'left' | 'center' | 'right';
+
 export interface WallClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
     dateFormat?: ExtendedDateTimeFormatOptions;
+    dateTextAlign?: DateTextAlign;
     backgroundOpacity?: number;
     backgroundTransparent?: boolean;
     backgroundColor?: string;

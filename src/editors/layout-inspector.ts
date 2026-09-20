@@ -927,7 +927,7 @@ export class WccLayoutInspector extends LitElement {
                                 ], mode: 'dropdown'}}}
                                 .value=${config.crossAlign ?? 'center'}
                                 .label=${this.t('inspector.vertical_alignment', 'Vertical alignment')}
-                                .helper=${this.t('inspector.vertical_alignment_help', 'Aligns widgets within this zone. Align zone top edges in Card settings → Layout controls alignment between separate zones.')}
+                                .helper=${this.t('inspector.vertical_alignment_help', 'Aligns widgets relative to each other within this row, not to the card edges or within a widget. With one widget, changing this may have no visible effect. Align zone top edges in Card settings → Layout aligns separate zones.')}
                                 @value-changed=${(ev: CustomEvent) => this.updateZone({crossAlign: ev.detail.value === 'center' ? undefined : ev.detail.value})}>
                         </ha-row-selector>
                     ` : ''}

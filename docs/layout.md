@@ -177,7 +177,7 @@ Explicit values win over the preset. Invalid CSS lengths are ignored with a warn
 | `type` | Options (beyond common ones) |
 |---|---|
 | `clock` | `timeFormat` (`hour12`, `showAmPm`, ...), `clockSize` (see [clock-date.md](clock-date.md)) |
-| `date` | `dateFormat`, `dateSize` (see [clock-date.md](clock-date.md)) |
+| `date` | `dateFormat`, `dateSize`, `dateTextAlign` (see [clock-date.md](clock-date.md)) |
 | `sensors` | `sensors`, `orientation`, `alignment`, `itemGap`, icon/separator controls, `labelSize`, `valueSize` (see [sensors.md](sensors.md)) |
 | `weather` | `enabled`, `provider`, `providerConfig`, `displayMode`, `orientation`, `forecastDays`, `title`, `updateInterval`, `showIcons`, `iconSet`, `animateIcons`, `labelSize`, `valueSize` (see [weather.md](weather.md)) |
 | `transportation` | the [transportation config](transportation.md) keys, flattened |

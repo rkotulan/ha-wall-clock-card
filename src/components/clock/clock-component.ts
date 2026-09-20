@@ -2,7 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { ExtendedDateTimeFormatOptions, createLogger, getSizeValue } from '../../utils';
 import { ClockController } from './clock-controller';
-import { Size } from '../../core/types';
+import { DateTextAlign, Size } from '../../core/types';
 
 export interface ClockConfig {
     timeFormat?: ExtendedDateTimeFormatOptions;
@@ -13,6 +13,7 @@ export interface ClockConfig {
     size?: Size;
     clockSize?: string;
     dateSize?: string;
+    dateTextAlign?: DateTextAlign;
     clockTopMargin?: string;
 }
 
@@ -26,6 +27,7 @@ export class ClockComponent extends LitElement {
     @property({ type: String }) size?: Size;
     @property({ type: String }) clockSize?: string;
     @property({ type: String }) dateSize?: string;
+    @property({ type: String }) dateTextAlign: DateTextAlign = 'center';
     @property({ type: String }) clockTopMargin?: string;
     // The zone layout splits time and date into two widgets; each widget renders
     // one half of this component. Both default to true so v2 usage is unchanged.
@@ -266,7 +268,7 @@ export class ClockComponent extends LitElement {
             ` : ''}
             ${this.showDate ? html`
                 <div class="date ${this.showClock ? '' : 'standalone'}"
-                     style="color: ${this.fontColor}; font-size: ${dateSize};">${this.getCurrentDate()}</div>
+                     style="color: ${this.fontColor}; font-size: ${dateSize}; text-align: ${this.dateTextAlign === 'left' || this.dateTextAlign === 'right' ? this.dateTextAlign : 'center'};">${this.getCurrentDate()}</div>
             ` : ''}
         `;
     }

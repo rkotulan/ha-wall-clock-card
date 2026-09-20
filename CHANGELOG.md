@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.16.4
+
+- Add left, center and right date text alignment in the visual editor and YAML (`dateTextAlign`), preserving center alignment by default (#58).
+- Wrap dropdown helper text and clarify that row alignment positions widgets relative to each other, not to the card edges (#55).
+- Add browser regression coverage for multiline date alignment, editor persistence and bottom-left date positioning.
+
 ## 3.16.3
 
 - Wrap editor helper text within the available width so long instructions, including the custom date format help, remain fully readable (#58).

@@ -5,7 +5,7 @@ import '../components/clock';
 import type {ClockComponent} from '../components/clock';
 import {ExtendedDateTimeFormatOptions} from '../utils';
 import {resolveLanguage} from '../utils/ha-locale';
-import {Size} from '../core/types';
+import {DateTextAlign, Size} from '../core/types';
 import {WidgetConfig} from '../core/layout-types';
 import {WidgetElement} from './widget-element';
 import {normalizeDateFormat} from './format-defaults';
@@ -14,6 +14,8 @@ export interface DateWidgetConfig extends WidgetConfig {
     dateFormat?: ExtendedDateTimeFormatOptions;
     /** Per-widget date size; overrides the card-wide size preset when present. */
     dateSize?: string;
+    /** Alignment of date lines within the widget, independent of zone placement. */
+    dateTextAlign?: DateTextAlign;
 }
 
 /** The date half of the former unified clock. */
@@ -36,6 +38,7 @@ export class DateWidget extends WidgetElement<DateWidgetConfig> {
         this.clock.fontColor = this.fontColor;
         this.clock.size = dateSize ? Size.Custom : (this.appearance?.size ?? Size.Medium);
         this.clock.dateSize = dateSize;
+        this.clock.dateTextAlign = this.config.dateTextAlign ?? 'center';
     }
 
     render() {

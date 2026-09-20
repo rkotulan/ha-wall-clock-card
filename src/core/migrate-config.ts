@@ -36,7 +36,7 @@ function definedProps<T extends object>(source: T): Partial<T> {
 // v2 top-level keys that are consumed by the migration and must not ride along
 // into the v3 passthrough (the rest — e.g. `type`, `grid_options` — is preserved).
 const CONSUMED_V2_KEYS = [
-    'timeFormat', 'dateFormat', 'sensors', 'showWeather', 'weatherProvider', 'weatherConfig',
+    'timeFormat', 'dateFormat', 'dateTextAlign', 'sensors', 'showWeather', 'weatherProvider', 'weatherConfig',
     'weatherDisplayMode', 'weatherForecastDays', 'weatherTitle', 'weatherShowTitle', 'weatherUpdateInterval',
     'weatherIconSet', 'weatherIconAnimation', 'weatherShowIcons', 'transportation', 'actionBar', 'enableActionBar',
     'imageSource', 'imageConfig', 'backgroundImages', 'backgroundOpacity', 'backgroundColor',
@@ -81,6 +81,7 @@ export function migrateToLayout(config: WallClockConfig): WallClockConfigV3 {
         type: 'date',
         id: 'date',
         dateFormat: config.dateFormat,
+        dateTextAlign: config.dateTextAlign,
         dateSize: config.customSizes?.dateSize,
     }));
     if (config.customSizes?.clockTopMargin) {

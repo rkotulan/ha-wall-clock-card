@@ -165,6 +165,11 @@ export class HaRowSelector extends LitElement {
         return !!this.selector && Object.prototype.hasOwnProperty.call(this.selector, 'boolean');
     }
 
+    // Render long dropdown descriptions outside HA's single-line helper area.
+    private get hasExternalHelper(): boolean {
+        return !!this.selector && ('select' in this.selector || 'color_hex' in this.selector);
+    }
+
     private get isNumberBoxSelector(): boolean {
         return !!this.selector && 'number' in this.selector &&
             !!this.selector.number && this.selector.number.mode !== 'slider';
@@ -186,18 +191,18 @@ export class HaRowSelector extends LitElement {
                 ${this.label && this.labelPosition !== LabelPosition.Hidden ? html`
                     <div class="label">${this.label}</div>
                 ` : ''}
-                <div class="value ${this.selector && 'color_hex' in this.selector ? 'color-value' : ''}">
+                <div class="value ${this.hasExternalHelper ? 'external-helper-value' : ''}">
                     <ha-selector
                         .hass=${this.hass}
                         .selector=${this.selector}
                         .value=${this.selectorValue}
-                        .helper=${this.isBooleanSelector || this.selector && 'color_hex' in this.selector ? undefined : this.helper}
+                        .helper=${this.isBooleanSelector || this.hasExternalHelper ? undefined : this.helper}
                         .disabled=${this.disabled}
                         .required=${this.required}
                         @value-changed=${this._valueChanged}
                     ></ha-selector>
-                    ${this.selector && 'color_hex' in this.selector && this.helper ? html`
-                        <div class="color-helper">${this.helper}</div>
+                    ${this.hasExternalHelper && this.helper ? html`
+                        <div class="external-helper">${this.helper}</div>
                     ` : ''}
                 </div>
                 <div class="action-buttons">
@@ -351,17 +356,18 @@ export class HaRowSelector extends LitElement {
     }
 
     static styles = css`
-        .value.color-value {
+        .value.external-helper-value {
             flex-direction: column;
             align-items: stretch;
             min-width: 0;
         }
 
-        .color-value ha-selector {
+        .external-helper-value ha-selector {
             flex-shrink: 0;
         }
 
-        .color-helper {
+        .external-helper {
+            min-width: 0;
             color: var(--secondary-text-color);
             font-size: 12px;
             line-height: 1.5;

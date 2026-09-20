@@ -53,6 +53,7 @@ changes visibility. It remains static when the browser requests reduced motion.
 | Key | Default | Values |
 |---|---|---|
 | `dateSize` | card size preset | Any CSS font size |
+| `dateTextAlign` | `center` | `left`, `center`, `right`; aligns date lines within the widget |
 | `dateFormat.weekday` | `long` | `long`, `short`, `narrow`; omit/choose hidden to hide |
 | `dateFormat.year` | `numeric` | `numeric`, `2-digit`; omit/choose hidden to hide |
 | `dateFormat.month` | `long` | `long`, `short`, `narrow`, `numeric`, `2-digit`; omit/choose hidden to hide |
@@ -68,6 +69,7 @@ To show the weekday above the full date, use a YAML literal block (`|-`):
 
 ```yaml
 - type: date
+  dateTextAlign: left
   dateFormat:
     custom: |-
       EEEE
@@ -80,6 +82,10 @@ With `appearance.language: en`, for example, this displays:
 Monday
 September 7, 2026
 ```
+
+Choose **Date text alignment** in the date widget editor to align the lines left,
+center, or right. This does not change the widget's position in its zone.
+Existing configurations remain centered when `dateTextAlign` is omitted.
 
 `clockSize`/`dateSize` take precedence over the card-wide size preset. Generic
 `style.fontSize` is accepted as a fallback, but the named fields are clearer for

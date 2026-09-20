@@ -387,6 +387,21 @@ describe('applyGeneralSetting', () => {
 });
 
 describe('widget editor adapters', () => {
+    it.each(['left', 'center', 'right'])('preserves date alignment %s across format edits', dateTextAlign => {
+        const widget = {
+            type: 'date', id: 'date', dateSize: '32px', dateTextAlign,
+            dateFormat: {custom: 'EEEE\nMMMM d, yyyy'},
+            style: {color: '#fff'},
+        };
+        const editor = toEditorConfig(widget);
+        expect(editor.dateTextAlign).toBe(dateTextAlign);
+        expect(fromEditorConfig(widget, editor)).toEqual(widget);
+        const dateFormat = {custom: 'EEEE\nd. MMMM'};
+        expect(fromEditorConfig(widget, {...editor, dateFormat})).toEqual({...widget, dateFormat});
+        const {dateTextAlign: removed, ...cleared} = editor;
+        expect(fromEditorConfig(widget, cleared)).not.toHaveProperty('dateTextAlign');
+    });
+
     it('round-trips a weather widget through the weather-editor keys', () => {
         const widget = {
             type: 'weather', id: 'weather', priority: 3,

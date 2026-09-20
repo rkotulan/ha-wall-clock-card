@@ -46,6 +46,36 @@
             'Windows line breaks must render correctly with the clock visible');
         clock.remove();
 
+        // Exercise the public widget config, including live changes and removal.
+        const widget = document.createElement('wcc-date-widget');
+        widget.appearance = {language: 'en', timeZone: 'UTC'};
+        const dateConfig = {type: 'date', dateSize: '32px', dateFormat: {custom: 'EEEE\nMMMM d, yyyy'}};
+        widget.config = dateConfig;
+        widget.style.width = '600px';
+        document.body.append(widget);
+        for (const alignment of [undefined, 'left', 'right', 'center', 'left', undefined]) {
+            widget.config = {...dateConfig, dateTextAlign: alignment};
+            await settle(widget);
+            const child = widget.shadowRoot.querySelector('ha-clock');
+            await settle(child);
+            const rendered = child.shadowRoot.querySelector('.date');
+            const expected = alignment ?? 'center';
+            assert(getComputedStyle(rendered).textAlign === expected, `Expected ${expected} alignment`);
+            const text = [...rendered.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes('\n'));
+            assert(text, 'Widget must render both date lines');
+            const newline = text.textContent.indexOf('\n');
+            const range = document.createRange();
+            range.setStart(text, 0);
+            range.setEnd(text, newline);
+            const first = range.getBoundingClientRect();
+            range.setStart(text, newline + 1);
+            range.setEnd(text, text.textContent.length);
+            const second = range.getBoundingClientRect();
+            const edge = rect => expected === 'left' ? rect.left : expected === 'right' ? rect.right : (rect.left + rect.right) / 2;
+            assert(Math.abs(edge(first) - edge(second)) < 1, `Date lines must share their ${expected} edge/center`);
+        }
+        widget.remove();
+
         // Load the lazy editor bundle via the public card API.
         await customElements.get('wall-clock-card').getConfigElement();
         const editor = document.createElement('date-format-editor');
@@ -56,6 +86,20 @@
         const field = editor.shadowRoot.querySelector('[propertyName="dateFormat.custom"]');
         assert(field.selector.text.multiline === true, 'Editor must offer multiline input');
         assert(field.value === editor.config.dateFormat.custom, 'Editor must preserve line breaks');
+        const alignmentField = editor.shadowRoot.querySelector('[propertyName="dateTextAlign"]');
+        assert(alignmentField.value === 'center', 'Editor alignment must default to center');
+        assert(alignmentField.selector.select.options.map(option => option.value).join(',') === 'left,center,right',
+            'Editor must offer all three alignments');
+        let savedConfig;
+        editor.addEventListener('config-changed', event => savedConfig = event.detail.config);
+        alignmentField.dispatchEvent(new CustomEvent('value-changed', {
+            detail: {propertyName: 'dateTextAlign', value: 'left'},
+        }));
+        assert(savedConfig?.dateTextAlign === 'left', 'Editor must save alignment changes');
+        assert(savedConfig.dateFormat.custom === editor.config.dateFormat.custom, 'Alignment changes must preserve the format');
+        editor.config = savedConfig;
+        await editor.updateComplete;
+        assert(alignmentField.value === 'left', 'Editor must restore the saved alignment');
         editor.remove();
         result.dataset.status = 'passed';
         result.textContent = 'PASS: multiline date layout, single-line updates, CRLF, and editor input';

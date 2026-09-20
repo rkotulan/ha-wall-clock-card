@@ -55,6 +55,18 @@ export class DateFormatEditor extends BaseEditorSection {
             <div class="content">
                 <ha-row-selector
                         .hass=${this.hass}
+                        .selector=${{select: {options: [
+                            {value: 'left', label: this.t('ui.left', 'Left')},
+                            {value: 'center', label: this.t('ui.center', 'Center')},
+                            {value: 'right', label: this.t('ui.right', 'Right')},
+                        ], mode: 'dropdown'}}}
+                        .value=${this.config.dateTextAlign ?? 'center'}
+                        .label=${this.t('editor.format.date_text_align', 'Date text alignment')}
+                        propertyName="dateTextAlign"
+                        @value-changed=${this._handleFormValueChanged}
+                ></ha-row-selector>
+                <ha-row-selector
+                        .hass=${this.hass}
                         .selector=${{
                             text: {multiline: true}
                         }}

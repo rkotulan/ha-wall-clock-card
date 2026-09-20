@@ -1,0 +1,100 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 55: reported bottom-left date positioning</title>
+<style>html {font-size:16px} body {margin:0} #fixture {position:absolute;top:0;left:0} #e2e-result {position:absolute;top:0;left:0}</style>
+<div id="fixture"></div>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result');
+const fixture = document.querySelector('#fixture');
+const records = [];
+const assert = (condition, message) => { if (!condition) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const hass = {config:{time_zone:'UTC'}, language:'en', locale:{language:'en'}, themes:{themes:{}},
+    localize:key=>key, connection:{subscribeMessage:async()=>()=>{}}, states:{}};
+// Exact zone fragment supplied in issue #55.
+const reportedZone = {
+    widgets: [{type:'date', id:'date', dateSize:'2.8',
+        dateFormat:{custom:'EEEE\nMMMM d, yyyy', day:'hidden'}}],
+    direction:'row', crossAlign:'end',
+};
+let count = 0;
+try {
+    for (const mode of ['dashboard', 'dialog']) {
+        for (const width of [360, 1000]) for (const height of [240, 400, 700]) {
+            for (const alignZoneTopEdges of [false, true]) for (const compactRows of [false, true]) {
+                fixture.style.width = width + 'px';
+                fixture.style.height = height + 'px';
+                const card = document.createElement('wall-clock-card');
+                card.hass = hass;
+                if (mode === 'dialog') {
+                    card.setAttribute('dialog-preview', '');
+                    card.style.setProperty('--wcc-preview-width', width + 'px');
+                    card.style.setProperty('--wcc-preview-height', height + 'px');
+                    card.style.setProperty('--wcc-preview-scale', '0.5');
+                }
+                card.setConfig({type:'custom:wall-clock-card', background:{source:'none'},
+                    layout:{alignZoneTopEdges, compactRows, zones:{'bottom-left':reportedZone}}});
+                fixture.append(card);
+                await frame();
+                const haCard = deep(card.shadowRoot, 'ha-card')[0];
+                const grid = deep(card.shadowRoot, '.grid')[0];
+                const zone = deep(card.shadowRoot, 'wcc-zone')[0];
+                const date = deep(card.shadowRoot, '.date')[0];
+                const box = haCard.getBoundingClientRect();
+                const zoneBox = zone.getBoundingClientRect();
+                const dateBox = date.getBoundingClientRect();
+                const scale = mode === 'dialog' ? 0.5 : 1;
+                const inset = parseFloat(getComputedStyle(grid).paddingBottom) * scale;
+                const label = `${mode} ${width}x${height} aligned=${alignZoneTopEdges} compact=${compactRows}`;
+                assert(Math.abs(box.bottom - zoneBox.bottom - inset) < 1.5,
+                    `${label}: zone bottom=${zoneBox.bottom}, card bottom=${box.bottom}, inset=${inset}`);
+                assert(Math.abs(zoneBox.bottom - dateBox.bottom) < 1.5,
+                    `${label}: date bottom=${dateBox.bottom}, zone bottom=${zoneBox.bottom}`);
+                assert(date.textContent.includes('\n'), `${label}: multiline date missing`);
+                count++;
+                card.remove();
+            }
+        }
+    }
+    records.push(`PASS: ${count} bottom-left cases across dashboard/dialog CSS, 360/1000px widths, 240/400/700px heights, compact rows and aligned zone tops.`);
+    for (const parentHeight of ['auto', 'min-height']) {
+        fixture.style.width = '1000px';
+        fixture.style.height = 'auto';
+        fixture.style.minHeight = parentHeight === 'min-height' ? '700px' : '';
+        const card = document.createElement('wall-clock-card');
+        card.hass = hass;
+        fixture.append(card);
+        let previousBottom;
+        for (const crossAlign of ['start', 'center', 'end', 'baseline']) {
+            card.setConfig({type:'custom:wall-clock-card', background:{source:'none'},
+                layout:{zones:{'bottom-left':{...reportedZone, crossAlign}}}});
+            await frame();
+            const box = deep(card.shadowRoot, 'ha-card')[0].getBoundingClientRect();
+            const dateBox = deep(card.shadowRoot, '.date')[0].getBoundingClientRect();
+            const grid = deep(card.shadowRoot, '.grid')[0];
+            const inset = parseFloat(getComputedStyle(grid).paddingBottom);
+            assert(Math.abs(box.bottom - dateBox.bottom - inset) < 1.5,
+                `${parentHeight}/${crossAlign}: date must remain at the card bottom`);
+            if (previousBottom !== undefined) assert(Math.abs(dateBox.bottom - previousBottom) < 1.5,
+                'Cross alignment must not move a lone date widget');
+            previousBottom = dateBox.bottom;
+            if (crossAlign === 'end') records.push(
+                `${parentHeight} parent: card height=${box.height.toFixed(1)}px, date bottom=${dateBox.bottom.toFixed(1)}px, viewport height=${innerHeight}px; bottom inset=${inset}px.`);
+        }
+        card.remove();
+    }
+    records.push('PASS: automatic/min-height containers and all four crossAlign values with a single date widget.');
+    result.dataset.status = 'passed';
+} catch (error) {
+    records.push(`After ${count} passed cases: ${error.stack}`);
+    result.dataset.status = 'failed';
+}
+result.textContent = records.join('\n');
+</script>

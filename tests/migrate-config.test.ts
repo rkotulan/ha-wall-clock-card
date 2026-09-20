@@ -12,6 +12,13 @@ import {SPACING_PRESETS, WallClockConfigV3} from '../src/core/layout-types';
 import {Size} from '../src/core/types';
 
 describe('migrateToLayout', () => {
+    it('moves legacy date alignment into the date widget', () => {
+        const result = migrateToLayout({dateTextAlign: 'left'});
+        expect(result.layout.zones.center?.widgets.find(widget => widget.type === 'date'))
+            .toMatchObject({dateTextAlign: 'left'});
+        expect(result).not.toHaveProperty('dateTextAlign');
+    });
+
     it('migrates an empty v2 config to clock + date in the center zone', () => {
         const result = migrateToLayout({});
 

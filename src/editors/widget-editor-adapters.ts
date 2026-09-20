@@ -27,7 +27,7 @@ export function toEditorConfig(widget: WidgetConfig): EditorConfig {
         case 'clock':
             return defined({timeFormat: widget.timeFormat});
         case 'date':
-            return defined({dateFormat: widget.dateFormat});
+            return defined({dateFormat: widget.dateFormat, dateTextAlign: widget.dateTextAlign});
         case 'sensors':
             return defined({
                 sensors: widget.sensors ?? [],
@@ -93,6 +93,7 @@ export function fromEditorConfig(widget: WidgetConfig, editorConfig: EditorConfi
                 ...preservedFields(widget),
                 dateSize: widget.dateSize,
                 dateFormat: editorConfig.dateFormat,
+                dateTextAlign: editorConfig.dateTextAlign,
             }) as WidgetConfig;
         case 'sensors':
             return defined({
