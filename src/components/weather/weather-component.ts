@@ -92,6 +92,12 @@ export class WeatherComponent extends LitElement {
             max-width: 100%;
             max-height: 100%;
             overflow-y: auto;
+            pointer-events: none;
+        }
+
+        .weather-container .weather-current,
+        .weather-container .weather-forecast {
+            pointer-events: auto;
         }
 
         .weather-container.clickable {
