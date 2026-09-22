@@ -94,7 +94,10 @@ export class WeatherComponent extends LitElement {
             overflow-y: auto;
         }
 
-        .weather-container.clickable {
+        .weather-container.clickable :is(
+            .weather-title, .weather-temp-container, .weather-condition,
+            .forecast-date, .forecast-icon, .forecast-temp
+        ) {
             cursor: pointer;
         }
 
@@ -443,8 +446,14 @@ export class WeatherComponent extends LitElement {
         return getSizeValue(this.size, undefined, 'forecastTempWidth');
     }
 
-    private _handleWeatherClick(entityId?: string): void {
-        if (entityId && this.hass) {
+    private _handleWeatherClick(event: MouseEvent, entityId?: string): void {
+        // Layout wrappers can span the entire zone, especially in horizontal
+        // mode. Only weather content should open more-info, not empty space.
+        const content = event.target instanceof Element && event.target.closest(
+            '.weather-title, .weather-temp-container, .weather-condition, ' +
+            '.forecast-date, .forecast-icon, .forecast-temp'
+        );
+        if (content && entityId && this.hass) {
             fireEvent(this, 'hass-more-info', { entityId });
         }
     }
@@ -507,7 +516,7 @@ export class WeatherComponent extends LitElement {
         return html`
             <div class="weather-container ${this.orientation} ${this.weatherShowIcons === false ? 'no-icons' : ''} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
                  style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%; --forecast-date-gap: ${this.forecastDateGap?.trim() || '8px'};"
-                 @click="${() => this._handleWeatherClick(weatherData.entityId)}">
+                 @click="${(event: MouseEvent) => this._handleWeatherClick(event, weatherData.entityId)}">
                 ${this.weatherShowTitle !== false && (!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
                         ${horizontal ? horizontalTitle : weatherTitle}

@@ -103,7 +103,7 @@
     "wheelchair_accessible": "Bezbariérový spoj"
   },
   "inspector": {
-    "font_size_resolved": "Základní velikost: {size}. Čísla bez jednotky používají rem.",
+    "font_size_resolved": "Nastavená velikost: {size}. Čísla bez jednotky používají rem.",
     "widget_settings": "Nastavení widgetu", "appearance_layout": "Vzhled a rozložení",
     "no_content": "Tento widget nemá žádné nastavení obsahu.",
     "no_behavior": "Tento widget nemá žádné další nastavení chování.",

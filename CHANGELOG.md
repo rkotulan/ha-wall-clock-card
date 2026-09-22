@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.17.1
+
+- Limit weather more-info clicks and the pointer cursor to weather content, so empty zone space and horizontal forecast gaps do not open the dialog (#62).
+- Preserve weather layout and cover both orientations, all display modes, both icon sets and hidden icons with browser regression checks.
+- Clarify the font-size helper as "Configured size" in English and Czech, distinguishing the selected value from the default (#55).
+
 ## 3.17.0
 
 - Add `forecastDateGap` to configure the space after forecast day labels in vertical weather widgets, keeping the default at `8px` (#60).

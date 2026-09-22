@@ -803,7 +803,7 @@ export class WccLayoutInspector extends LitElement {
                     .value=${(widget[key] as string | undefined) ?? fallback ?? ''}
                     .label=${label}
                     .helper=${['clockSize', 'dateSize', 'labelSize', 'valueSize'].includes(key)
-                        ? this.t('inspector.font_size_resolved', 'Base size: {size}. Numbers without a unit use rem.', {
+                        ? this.t('inspector.font_size_resolved', 'Configured size: {size}. Numbers without a unit use rem.', {
                             size: normalizeFontSize(String(widget[key] ?? fallback ?? '')) || this.t('general.font_weight_default', 'Default'),
                         }) : ''}
                     @value-changed=${(ev: CustomEvent) => this.updateWidgetSize(key, ev.detail.value)}>

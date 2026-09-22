@@ -140,7 +140,7 @@
     "wheelchair_accessible": "Wheelchair accessible"
   },
   "inspector": {
-    "font_size_resolved": "Base size: {size}. Numbers without a unit use rem.",
+    "font_size_resolved": "Configured size: {size}. Numbers without a unit use rem.",
     "widget_settings": "Widget settings",
     "appearance_layout": "Appearance and layout",
     "no_content": "This widget has no content settings.",

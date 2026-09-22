@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 62: weather click area</title>
+<style>body { margin: 0; } ha-weather { width: 600px; }</style>
+<ha-weather></ha-weather>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (condition, message) => { if (!condition) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+const weather = document.querySelector('ha-weather');
+const state = {entity_id: 'weather.test', state: 'sunny', attributes: {
+    temperature: 25, temperature_unit: '°C', supported_features: 7,
+}};
+const hass = {
+    config: {time_zone: 'UTC', latitude: 49, longitude: 16},
+    language: 'en', locale: {language: 'en'}, states: {'weather.test': state},
+    localize: key => key, connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.test': {forecast: [
+        {datetime: '2026-09-22T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny'},
+        {datetime: '2026-09-23T12:00:00Z', temperature: 24, templow: 14, condition: 'cloudy'},
+    ]}}}),
+};
+let opened = [];
+weather.addEventListener('hass-more-info', event => opened.push(event.detail.entityId));
+function clickAt(x, y, expected, label) {
+    const target = weather.shadowRoot.elementFromPoint(x, y);
+    assert(target, `${label}: hit target exists`);
+    opened = [];
+    target.dispatchEvent(new MouseEvent('click', {bubbles: true, composed: true, clientX: x, clientY: y}));
+    assert(opened.length === expected, `${label}: expected ${expected} dialogs, got ${opened.length}`);
+    if (expected) assert(opened[0] === 'weather.test', `${label}: correct entity`);
+    assert((getComputedStyle(target).cursor === 'pointer') === !!expected, `${label}: cursor matches action`);
+}
+function clickCenter(element, expected, label) {
+    const rect = element.getBoundingClientRect();
+    clickAt(rect.left + rect.width / 2, rect.top + rect.height / 2, expected, label);
+}
+try {
+    Object.assign(weather, {hass, showWeather: true, weatherProvider: 'homeassistant',
+        weatherConfig: {entityId: 'weather.test'}, weatherIconAnimation: false});
+    await frame();
+    for (const orientation of ['vertical', 'horizontal']) {
+        for (const mode of ['current', 'forecast', 'both']) {
+            for (const icons of ['metno', 'wall-clock', 'hidden']) {
+                Object.assign(weather, {orientation, weatherDisplayMode: mode,
+                    weatherIconSet: icons === 'hidden' ? 'metno' : icons, weatherShowIcons: icons !== 'hidden'});
+                await frame();
+                const root = weather.shadowRoot;
+                assert(root.querySelector('.weather-container.clickable'), 'Weather loaded');
+                for (const element of root.querySelectorAll(
+                    '.weather-title, .weather-temp, .weather-condition, .weather-icon, .forecast-date, .forecast-icon, .forecast-temp'
+                )) clickCenter(element, 1, `${orientation}/${mode}/${icons}: ${element.className}`);
+
+                if (orientation === 'vertical') {
+                    const rect = root.querySelector('.weather-container').getBoundingClientRect();
+                    clickAt(rect.left + 2, rect.top + rect.height / 2, 0, 'Empty zone left of weather');
+                } else if (mode !== 'forecast') {
+                    const rect = root.querySelector('.weather-current').getBoundingClientRect();
+                    const container = root.querySelector('.weather-container').getBoundingClientRect();
+                    clickAt(container.right - 2, rect.top + rect.height / 2, 0, 'Empty space beside current weather');
+                }
+                if (orientation === 'horizontal' && mode !== 'current') {
+                    const days = root.querySelectorAll('.forecast-day');
+                    const first = days[0].getBoundingClientRect(), second = days[1].getBoundingClientRect();
+                    clickAt((first.right + second.left) / 2, first.top + 5, 0, 'Gap between forecast days');
+                    clickAt(first.left + 2, first.top + 5, 0, 'Empty space inside forecast column');
+                }
+                records.push(`${orientation}/${mode}/${icons}: content opens once; empty space and cursor pass`);
+            }
+        }
+    }
+    delete weather.controller.weatherData.entityId;
+    weather.requestUpdate();
+    await frame();
+    clickCenter(weather.shadowRoot.querySelector('.weather-temp'), 0, 'Weather without entity');
+    result.dataset.status = 'passed';
+} catch (error) {
+    records.push(error.stack);
+    result.dataset.status = 'failed';
+}
+result.textContent = records.join('\n');
+weather.remove();
+</script>
