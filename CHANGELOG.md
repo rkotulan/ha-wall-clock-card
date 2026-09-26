@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.17.3
+
+- Keep action buttons within their layout bounds on hover. With no zone gap or action-bar padding, the previous hover enlargement extended into adjacent weather and made the button's right edge unresponsive (related to #64). Background hover feedback is preserved.
+- Add a real-pointer browser regression test for the hover overlap and verify weather font-weight changes through the visual editor. The reported font-weight mismatch and weight-dependent button shift remain unreproduced.
+
 ## 3.17.2
 
 - Preserve explicitly empty weather titles in the visual editor and hide the heading without leaving its spacing (#65).

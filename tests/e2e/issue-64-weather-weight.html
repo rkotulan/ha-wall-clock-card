@@ -72,6 +72,34 @@ try {
         }
         records.push(`${width}px/${orientation}/${override ? 'widget override' : 'inherited'}: weights 100–900 match clock/date/sensors; centered action responds at both edges`);
     }
+    const inspector = document.createElement('wcc-layout-inspector');
+    inspector.hass = hass;
+    inspector.selectedWidget = {zone: 'bottom-right', index: 0, widgetId: 'weather'};
+    const sync = () => {
+        card.setConfig(structuredClone(config));
+        inspector.config = structuredClone(config); inspector.layout = inspector.config.layout;
+    };
+    inspector.addEventListener('wcc-widget-config-changed', event => {
+        config.layout.zones['bottom-right'].widgets[0] = JSON.parse(JSON.stringify(event.detail.widget));
+        sync();
+    });
+    sync(); document.body.append(inspector); await frame();
+    [...inspector.shadowRoot.querySelectorAll('[role=tab]')].find(el => el.textContent.trim() === 'Appearance').click();
+    await frame();
+    for (const weight of [100, 200, 300, 400, 500, 600, 700, 800, 900, undefined]) {
+        const row = deep(inspector.shadowRoot, 'ha-row-selector').find(el => el.label === 'Font weight');
+        assert(row, 'Weather font weight editor exists'); await row.updateComplete;
+        row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed', {
+            detail: {value: weight === undefined ? '' : String(weight)}, bubbles: true, composed: true,
+        }));
+        await frame();
+        assert(config.layout.zones['bottom-right'].widgets[0].style?.fontWeight === weight, 'Editor saves selected weight');
+        for (const el of deep(card.shadowRoot, '.weather-title, .weather-temp, .weather-condition, .forecast-date, .forecast-temp')) {
+            assert(getComputedStyle(el).fontWeight === String(weight ?? config.appearance.fontWeight), 'Editor weight reaches every weather text');
+        }
+    }
+    inspector.remove();
+    records.push('Editor changes 100–900 survive JSON save; clearing restores global inheritance');
     result.dataset.status = 'passed';
 } catch (error) {records.push(error.stack); result.dataset.status = 'failed';}
 result.textContent = records.join('\n'); card.remove();

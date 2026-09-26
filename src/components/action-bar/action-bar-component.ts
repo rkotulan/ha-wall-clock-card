@@ -183,7 +183,8 @@ export class ActionBarComponent extends BottomBarComponent {
 
         .action-button:hover {
             background-color: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
+            /* Keep the hit area inside its layout box: scaling into a sibling
+               zone lets that zone intercept the visible button's edge. */
         }
 
         .action-bar-container.flat-buttons .action-button {

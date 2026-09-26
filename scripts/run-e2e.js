@@ -179,6 +179,16 @@ async function runBrowser(browserPath, url, profilePath) {
 
         const started = Date.now();
         while (Date.now() - started < 20000) {
+            // Optional harness request for a real pointer move (CSS :hover and
+            // browser hit testing cannot be exercised with synthetic events).
+            const pointer = await devTools.send('Runtime.evaluate', {
+                expression: 'window.e2ePointerMove', returnByValue: true,
+            });
+            if (pointer.result?.value) {
+                const {x, y} = pointer.result.value;
+                await devTools.send('Input.dispatchMouseEvent', {type: 'mouseMoved', x, y});
+                await devTools.send('Runtime.evaluate', {expression: 'delete window.e2ePointerMove'});
+            }
             const evaluation = await devTools.send('Runtime.evaluate', {
                 expression: `(() => {
                     const result = document.getElementById('e2e-result');

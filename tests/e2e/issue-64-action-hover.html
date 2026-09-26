@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 64: action hover beside weather</title>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => {if (!ok) throw Error(message);};
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+async function move(x, y) {
+    window.e2ePointerMove = {x, y};
+    while (window.e2ePointerMove) await new Promise(resolve => setTimeout(resolve, 10));
+    // Allow the existing hover transition to finish before measuring its edges.
+    await new Promise(resolve => setTimeout(resolve, 350));
+}
+function hit(x, y) {
+    let el = document.elementFromPoint(x, y);
+    while (el?.shadowRoot) {
+        const child = el.shadowRoot.elementFromPoint(x, y);
+        if (!child || child === el) break;
+        el = child;
+    }
+    return el;
+}
+const hass = {config: {time_zone: 'UTC'}, language: 'en', locale: {language: 'en'},
+    states: {'weather.test': {entity_id: 'weather.test', state: 'sunny', attributes: {
+        temperature: 25, temperature_unit: '°C', supported_features: 7,
+    }}, 'sensor.test': {entity_id: 'sensor.test', state: '25', attributes: {}}},
+    themes: {themes: {}}, localize: key => key, connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.test': {forecast: [
+        {datetime: '2026-09-26T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny'},
+    ]}}}),
+};
+const card = document.createElement('wall-clock-card'); card.hass = hass;
+card.style.cssText = 'display:block;position:fixed;left:0;top:0;width:320px;height:400px';
+let opened = [];
+card.addEventListener('hass-more-info', event => opened.push(event.detail.entityId));
+try {
+    document.body.append(card);
+    for (const orientation of ['vertical', 'horizontal']) for (const weight of [100, 900]) {
+        await move(1, 1);
+        card.setConfig({type: 'custom:wall-clock-card', background: {source: 'none'},
+            appearance: {fontFamily: 'Arial'}, layout: {spacing: {zoneGap: '0px'}, zones: {
+                'bottom-center': {widgets: [{type: 'action-bar', padding: '0px', actions: [
+                    {actionId: 'action-more-info', entity_id: 'sensor.test', title: 'Details', icon: 'mdi:information'},
+                ]}]},
+                'bottom-right': {widgets: [{type: 'weather', provider: 'homeassistant',
+                    providerConfig: {entityId: 'weather.test'}, orientation, style: {fontWeight: weight}}]},
+            }}});
+        await frame();
+        const button = deep(card.shadowRoot, '.action-button')[0];
+        let rect = button.getBoundingClientRect();
+        await move((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
+        assert(button.matches(':hover'), 'Real browser pointer activates hover');
+        rect = button.getBoundingClientRect();
+        for (const x of [rect.left + 1, (rect.left + rect.right) / 2, rect.right - 1]) {
+            const target = hit(x, (rect.top + rect.bottom) / 2);
+            let parent = target;
+            while (parent && parent !== button) parent = parent.parentElement ?? parent.getRootNode().host;
+            assert(parent === button, `${orientation}/${weight}: hover edge intercepted by ${target?.tagName}.${target?.className}`);
+            opened = [];
+            target.dispatchEvent(new CustomEvent('action', {detail: {action: 'tap'}, bubbles: true, composed: true}));
+            assert(opened.length === 1 && opened[0] === 'sensor.test', 'Hovered action opens correct entity once');
+        }
+        records.push(`${orientation}/${weight}: real hover, left/center/right hit areas and action pass`);
+    }
+    result.dataset.status = 'passed';
+} catch (error) {records.push(error.stack);result.dataset.status = 'failed';}
+result.textContent = records.join('\n');card.remove();
+</script>
