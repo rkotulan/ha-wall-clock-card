@@ -1,0 +1,78 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 64: weather weight and adjacent actions</title>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => { if (!ok) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const hass = {config: {time_zone: 'UTC'}, language: 'en', locale: {language: 'en'},
+    states: {'weather.test': {entity_id: 'weather.test', state: 'sunny', attributes: {
+        temperature: 25, temperature_unit: '°C', supported_features: 7,
+    }}, 'sensor.test': {entity_id: 'sensor.test', state: '25', attributes: {}}},
+    themes: {themes: {}}, localize: key => key, connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.test': {forecast: [
+        {datetime: '2026-09-26T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny'},
+    ]}}}),
+};
+const card = document.createElement('wall-clock-card'); card.hass = hass;
+card.style.cssText = 'display:block;width:900px;height:600px;font-family:Arial';
+const weather = {type: 'weather', id: 'weather', provider: 'homeassistant', providerConfig: {entityId: 'weather.test'}};
+const config = {type: 'custom:wall-clock-card', background: {source: 'none'}, appearance: {fontFamily: 'Arial'}, layout: {zones: {
+    'top-left': {widgets: [{type: 'clock', clockSize: '32px'}, {type: 'date', dateSize: '32px'},
+        {type: 'sensors', sensors: [{entity: 'sensor.test'}]}]},
+    'bottom-center': {widgets: [{type: 'action-bar', actions: [{actionId: 'action-more-info', entity_id: 'sensor.test', title: 'Details', icon: 'mdi:information'}]}]},
+    'bottom-right': {widgets: [weather]},
+}}};
+let opened = [];
+card.addEventListener('hass-more-info', event => opened.push(event.detail.entityId));
+function hit(x, y) {
+    let el = document.elementFromPoint(x, y);
+    while (el?.shadowRoot) {
+        const child = el.shadowRoot.elementFromPoint(x, y);
+        if (!child || child === el) break;
+        el = child;
+    }
+    return el;
+}
+try {
+    card.setConfig(config); document.body.append(card); await frame();
+    for (const width of [600, 900]) for (const orientation of ['vertical', 'horizontal']) for (const override of [false, true]) {
+        card.style.width = `${width}px`;
+        weather.orientation = orientation;
+        let center;
+        for (const weight of [100, 200, 300, 400, 500, 600, 700, 800, 900]) {
+            config.appearance.fontWeight = weight;
+            weather.style = override ? {fontWeight: weight} : {};
+            card.setConfig(structuredClone(config)); await frame();
+            for (const selector of ['.hours-minutes', '.date', '.sensor-value', '.weather-title', '.weather-temp', '.weather-condition', '.forecast-date', '.forecast-temp']) {
+                const el = deep(card.shadowRoot, selector)[0]; assert(el, selector + ' exists');
+                assert(getComputedStyle(el).fontWeight === String(weight), `${selector} weight ${getComputedStyle(el).fontWeight} expected ${weight}`);
+                assert(getComputedStyle(el).fontFamily === 'Arial', `${selector} font family`);
+            }
+            const button = deep(card.shadowRoot, '.action-button')[0], rect = button.getBoundingClientRect();
+            const currentCenter = (rect.left + rect.right) / 2;
+            center ??= currentCenter;
+            assert(Math.abs(currentCenter - center) < 1, 'Action remains centered');
+            for (const x of [rect.left + 2, currentCenter, rect.right - 2]) {
+                opened = [];
+                const target = hit(x, (rect.top + rect.bottom) / 2);
+                let parent = target;
+                while (parent && parent !== button) parent = parent.parentElement ?? parent.getRootNode().host;
+                assert(parent === button, `${orientation}/${weight}: button obscured by ${target?.tagName}.${target?.className}`);
+                target.dispatchEvent(new CustomEvent('action', {detail: {action: 'tap'}, bubbles: true, composed: true}));
+                assert(opened.length === 1 && opened[0] === 'sensor.test', `${orientation}/${weight}: action click at ${x} got ${opened}`);
+            }
+        }
+        records.push(`${width}px/${orientation}/${override ? 'widget override' : 'inherited'}: weights 100–900 match clock/date/sensors; centered action responds at both edges`);
+    }
+    result.dataset.status = 'passed';
+} catch (error) {records.push(error.stack); result.dataset.status = 'failed';}
+result.textContent = records.join('\n'); card.remove();
+</script>

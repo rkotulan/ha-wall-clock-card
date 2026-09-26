@@ -173,7 +173,7 @@ export class WeatherEditor extends BaseEditorSection {
                         <ha-row-selector
                             .hass=${this.hass}
                             .selector=${{text: {type: "text"}}}
-                            .value=${this.config.weatherTitle || this.t('common.title', 'Weather')}
+                            .value=${this.config.weatherTitle ?? this.t('common.title', 'Weather')}
                             .label=${this.t('editor.weather.title', 'Weather title')}
                             propertyName="weatherTitle"
                             @value-changed=${this._handleFormValueChanged}>

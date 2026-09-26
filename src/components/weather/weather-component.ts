@@ -499,9 +499,11 @@ export class WeatherComponent extends LitElement {
 
         const displayMode = this.weatherDisplayMode || 'both';
         const forecastDays = this.weatherForecastDays || 3;
-        const weatherTitle = this.weatherTitle || localize('common.title', this.language, 'Weather');
         const horizontal = this.orientation === 'horizontal';
-        const horizontalTitle = localize('forecast.title', this.language, 'Forecast');
+        const weatherTitle = this.weatherTitle ?? (horizontal
+            ? localize('forecast.title', this.language, 'Forecast')
+            : localize('common.title', this.language, 'Weather'));
+        const showTitle = this.weatherShowTitle !== false && weatherTitle !== '';
         const showsCurrent = displayMode === 'current' || displayMode === 'both';
 
         // Limit forecast periods to available data.
@@ -517,9 +519,9 @@ export class WeatherComponent extends LitElement {
             <div class="weather-container ${this.orientation} ${this.weatherShowIcons === false ? 'no-icons' : ''} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
                  style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%; --forecast-date-gap: ${this.forecastDateGap?.trim() || '8px'};"
                  @click="${(event: MouseEvent) => this._handleWeatherClick(event, weatherData.entityId)}">
-                ${this.weatherShowTitle !== false && (!horizontal || !showsCurrent) ? html`
+                ${showTitle && (!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
-                        ${horizontal ? horizontalTitle : weatherTitle}
+                        ${weatherTitle}
                     </div>
                 ` : ''}
 
@@ -539,10 +541,10 @@ export class WeatherComponent extends LitElement {
                                          : valueSize};">${Math.round(weatherData.current.temperature)}${weatherData.temperatureUnit || '°'}</div>
                                 ${horizontal ? html`
                                     <div class="weather-current-copy">
-                                        ${this.weatherShowTitle !== false ? html`
+                                        ${showTitle ? html`
                                             <div class="weather-title"
                                                  style="color: ${this.fontColor}; font-size: ${customLabelSize ? labelSize : 'clamp(0.75rem, 3cqw, 1rem)'};">
-                                                ${horizontalTitle}
+                                                ${weatherTitle}
                                             </div>
                                         ` : ''}
                                         <div class="weather-condition"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.17.2
+
+- Preserve explicitly empty weather titles in the visual editor and hide the heading without leaving its spacing (#65).
+- Respect custom weather titles in both orientations while retaining localized defaults when no title is configured.
+- Add browser regression coverage for weather title persistence and visibility, plus font weights 100–900 and adjacent action-button positioning and hit areas (#64). The reported #64 issue was not reproduced in the tested layouts.
+
 ## 3.17.1
 
 - Limit weather more-info clicks and the pointer cursor to weather content, so empty zone space and horizontal forecast gaps do not open the dialog (#62).

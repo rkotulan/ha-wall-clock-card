@@ -39,7 +39,7 @@ preference are retained when icons are hidden.
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
 | `forecastDateGap` | `8px` | CSS length between the forecast day label and its values in vertical orientation (for example `16px` or `1rem`); empty uses `8px` |
-| `title` | localized “Weather” | Section title |
+| `title` | localized “Weather” (vertical) / “Forecast” (horizontal) | Section title in either orientation; `title: ''` hides the heading |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
 | `iconSet` | provider default | `wall-clock`, `basmilius`, `openweathermap` or `metno` |
 | `animateIcons` | `true` | Animate the built-in `wall-clock` icon set |

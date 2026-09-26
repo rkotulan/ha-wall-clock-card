@@ -1,0 +1,72 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 65: empty weather title</title>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => { if (!ok) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const hass = {
+    config: {time_zone: 'UTC', latitude: 49, longitude: 16}, language: 'en', locale: {language: 'en'},
+    states: {'weather.test': {entity_id: 'weather.test', state: 'sunny', attributes: {
+        temperature: 25, temperature_unit: '°C', supported_features: 7,
+    }}}, themes: {themes: {}}, localize: key => key,
+    connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.test': {forecast: [
+        {datetime: '2026-09-26T12:00:00Z', temperature: 25, templow: 15, condition: 'sunny'},
+    ]}}}),
+};
+let widget = {type: 'weather', id: 'weather', provider: 'homeassistant', providerConfig: {entityId: 'weather.test'}};
+const card = document.createElement('wall-clock-card'), inspector = document.createElement('wcc-layout-inspector');
+card.style.cssText = 'display:block;width:800px;height:450px';
+card.hass = hass; inspector.hass = hass;
+inspector.selectedWidget = {zone: 'top-right', index: 0, widgetId: 'weather'};
+function sync() {
+    const config = {type: 'custom:wall-clock-card', background: {source: 'none'}, layout: {zones: {'top-right': {widgets: [widget]}}}};
+    card.setConfig(config); inspector.config = config; inspector.layout = config.layout;
+}
+inspector.addEventListener('wcc-widget-config-changed', event => {
+    widget = JSON.parse(JSON.stringify(event.detail.widget)); sync();
+});
+const titleRow = () => deep(inspector.shadowRoot, 'ha-row-selector').find(el => el.propertyName === 'weatherTitle');
+async function editTitle(value) {
+    const row = titleRow(); assert(row, 'Title editor exists'); await row.updateComplete;
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed', {
+        detail: {value}, bubbles: true, composed: true,
+    }));
+    await frame();
+    assert(widget.title === value, 'Title survives editor save and JSON round-trip');
+    assert(titleRow().value === value, 'Editor retains saved title');
+}
+try {
+    sync(); document.body.append(card, inspector); await frame();
+    for (const orientation of ['vertical', 'horizontal']) for (const displayMode of ['current', 'forecast', 'both']) {
+        widget = {...widget, orientation, displayMode}; delete widget.title; delete widget.showTitle;
+        sync(); await frame();
+        const headings = () => deep(card.shadowRoot, '.weather-title');
+        assert(headings().length === 1, 'Default heading exists');
+        assert(headings()[0].textContent.trim() === (orientation === 'horizontal' ? 'Forecast' : 'Weather'), 'Default translation preserved');
+        await editTitle('Garden');
+        assert(headings()[0].textContent.trim() === 'Garden', 'Custom title displayed');
+        await editTitle('');
+        assert(headings().length === 0, 'Empty title removes heading and its spacing');
+        assert(deep(card.shadowRoot, '.weather-temp, .forecast-temp').length > 0, 'Weather data remains visible');
+        await editTitle(' ');
+        assert(headings()[0].textContent.trim() === '', 'Existing space workaround stays blank');
+        await editTitle('Restored');
+        assert(headings()[0].textContent.trim() === 'Restored', 'Title restored');
+        widget = {...widget, showTitle: false}; sync(); await frame();
+        assert(headings().length === 0, 'Visibility switch overrides custom title');
+        records.push(`${orientation}/${displayMode}: default, custom, empty, save, space, restore and hide pass`);
+    }
+    result.dataset.status = 'passed';
+} catch (error) { records.push(error.stack); result.dataset.status = 'failed'; }
+result.textContent = records.join('\n');
+card.remove(); inspector.remove();
+</script>
