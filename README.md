@@ -177,6 +177,12 @@ layout:
 See [Development](docs/developer/development.md) for the build and verification
 workflow.
 
+## Support the project
+
+If Wall Clock Card makes your dashboard more useful, you can
+[buy me a coffee](https://buymeacoffee.com/rkotulan) to support its development.
+Thank you for your support!
+
 ## License
 
 MIT
