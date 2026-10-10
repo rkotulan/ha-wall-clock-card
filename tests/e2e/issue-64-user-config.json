@@ -1,0 +1,101 @@
+{
+  "type": "custom:wall-clock-card",
+  "layout": {
+    "zones": {
+      "bottom-right": {
+        "widgets": [
+          {
+            "type": "weather",
+            "id": "weather",
+            "style": {
+              "fontWeight": 400
+            },
+            "labelSize": "1.5",
+            "provider": "homeassistant",
+            "providerConfig": {
+              "entityId": "weather.pirateweather"
+            },
+            "displayMode": "forecast",
+            "forecastDays": 5,
+            "title": "",
+            "showTitle": false,
+            "iconSet": "basmilius",
+            "animateIcons": false,
+            "showIcons": false,
+            "forecastDateGap": "2rem",
+            "orientation": "vertical"
+          }
+        ]
+      },
+      "top-left": {
+        "widgets": [
+          {
+            "type": "clock",
+            "id": "clock",
+            "clockSize": "5"
+          }
+        ]
+      },
+      "top-right": {
+        "widgets": [
+          {
+            "type": "sensors",
+            "id": "sensors",
+            "sensors": [
+              {
+                "entity": "sensor.XXX_XXX",
+                "label": ""
+              }
+            ],
+            "showIcons": false,
+            "valueSize": "5",
+            "style": {
+              "fontWeight": 300
+            }
+          }
+        ],
+        "direction": "row",
+        "crossAlign": "end"
+      },
+      "bottom-left": {
+        "widgets": [
+          {
+            "type": "date",
+            "id": "date",
+            "dateFormat": {
+              "custom": "EEEE\nMMMM d, yyyy"
+            },
+            "dateTextAlign": "left",
+            "dateSize": "5"
+          }
+        ]
+      },
+      "bottom-center": {
+        "widgets": [
+          {
+            "type": "action-bar",
+            "id": "action-bar",
+            "enabled": true,
+            "actions": [
+              {
+                "actionId": "action-navigate",
+                "title": "",
+                "icon": "mdi:camera-iris",
+                "path": "/issue64-cameras"
+              }
+            ],
+            "iconSize": "30px",
+            "backgroundOpacity": 0,
+            "showButtonBackground": false
+          }
+        ],
+        "direction": "row",
+        "crossAlign": "end"
+      }
+    }
+  },
+  "background": {
+    "source": "none",
+    "color": "#000000"
+  }
+}

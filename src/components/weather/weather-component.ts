@@ -2,7 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { WeatherData, WeatherForecastType, WeatherProviderConfig } from '../../weather-providers';
-import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue} from '../../utils';
+import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue, normalizeFontSize} from '../../utils';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
 import type {ResolvedWidgetOrientation} from '../../widgets/widget-layout';
@@ -183,8 +183,39 @@ export class WeatherComponent extends LitElement {
         .forecast-temp {
             font-size: 1.4rem; /* Medium size (default) */
             font-weight: var(--wcc-font-weight, 400);
-            width: 80px;
+            width: var(--forecast-temp-width, 80px);
             text-align: right;
+        }
+
+        /* Share content-sized columns across vertical rows. Custom fonts and
+           longer localized/hourly labels must not be squeezed into fixed widths. */
+        .weather-container.vertical .weather-forecast {
+            display: grid;
+            grid-template-columns: repeat(3, max-content);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .weather-container.vertical.no-icons .weather-forecast {
+            grid-template-columns: repeat(2, max-content);
+        }
+
+        .weather-container.vertical .forecast-day {
+            display: grid;
+            grid-column: 1 / -1;
+            grid-template-columns: subgrid;
+        }
+
+        .weather-container.vertical .forecast-date {
+            width: auto;
+            min-width: 2rem;
+            white-space: nowrap;
+        }
+
+        .weather-container.vertical .forecast-temp {
+            width: auto;
+            min-width: var(--forecast-temp-width, 80px);
+            white-space: nowrap;
         }
 
         .forecast-separator {
@@ -514,10 +545,11 @@ export class WeatherComponent extends LitElement {
         const customLabelSize = this.size === Size.Custom && !!this.labelSize?.trim();
         const customValueSize = this.size === Size.Custom && !!this.valueSize?.trim();
         const forecastTempWidth = this.getForecastTempWidth();
+        const forecastDateGap = normalizeFontSize(String(this.forecastDateGap ?? '').trim() || '8px');
 
         return html`
             <div class="weather-container ${this.orientation} ${this.weatherShowIcons === false ? 'no-icons' : ''} ${weatherData.forecastType === 'hourly' ? 'hourly' : ''} ${weatherData.entityId ? 'clickable' : ''}"
-                 style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%; --forecast-date-gap: ${this.forecastDateGap?.trim() || '8px'};"
+                 style="color: ${this.fontColor}; --first-forecast-column-center: ${50 / Math.max(limitedForecastDays, 1)}%; --forecast-date-gap: ${forecastDateGap}; --forecast-temp-width: ${forecastTempWidth};"
                  @click="${(event: MouseEvent) => this._handleWeatherClick(event, weatherData.entityId)}">
                 ${showTitle && (!horizontal || !showsCurrent) ? html`
                     <div class="weather-title" style="color: ${this.fontColor}; font-size: ${labelSize};">
@@ -582,7 +614,7 @@ export class WeatherComponent extends LitElement {
                                     <div class="forecast-temp"
                                          style="font-size: ${horizontal && !customLabelSize
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
-                                             : labelSize}; width: ${forecastTempWidth};">
+                                             : labelSize};">
                                         <span>${Math.round(day.temperatureMin)}°</span>
                                         <span class="forecast-separator"> - </span>
                                         <span>${Math.round(day.temperatureMax)}°</span>

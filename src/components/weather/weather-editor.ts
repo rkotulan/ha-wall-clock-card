@@ -257,7 +257,7 @@ export class WeatherEditor extends BaseEditorSection {
                                 .value=${this.config.forecastDateGap || ''}
                                 .required=${false}
                                 .label=${this.t('editor.weather.forecast_date_gap', 'Space after day label')}
-                                .helper=${this.t('editor.weather.forecast_date_gap_help', 'Gap in vertical forecasts (for example 8px or 1rem). Empty uses 8px.')}
+                                .helper=${this.t('editor.weather.forecast_date_gap_help', 'Gap in vertical forecasts (for example 8px or 1rem). Unitless numbers use rem. Empty uses 8px.')}
                                 propertyName="forecastDateGap"
                                 @value-changed=${this._handleFormValueChanged}>
                         </ha-row-selector>

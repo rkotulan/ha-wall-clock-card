@@ -38,7 +38,7 @@ preference are retained when icons are hidden.
 | `displayMode` | `current` for a newly added widget | `current`, `forecast` or `both` |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
-| `forecastDateGap` | `8px` | CSS length between the forecast day label and its values in vertical orientation (for example `16px` or `1rem`); empty uses `8px` |
+| `forecastDateGap` | `8px` | CSS length between the forecast day label and its values in vertical orientation (for example `16px` or `1rem`); unitless numbers use `rem`, empty uses `8px` |
 | `title` | localized “Weather” (vertical) / “Forecast” (horizontal) | Section title in either orientation; `title: ''` hides the heading |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
 | `iconSet` | provider default | `wall-clock`, `basmilius`, `openweathermap` or `metno` |
@@ -53,6 +53,12 @@ Horizontal orientation places the current icon, temperature and condition first,
 followed by compact forecast columns. Vertical orientation preserves the traditional
 stacked presentation. With `auto`, center-column zones use the horizontal layout and
 side zones use the vertical layout.
+
+Vertical forecasts size their shared day and temperature columns to fit the text,
+including custom font sizes and longer localized labels. Temperature ranges stay
+on one line. To increase the space after the day label, use `forecastDateGap`;
+`style.maxWidth` limits the widget's outer width and does not add internal spacing
+or force it to fill that width.
 
 ## Wall Clock icon set
 

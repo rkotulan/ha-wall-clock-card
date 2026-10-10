@@ -69,7 +69,7 @@ export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
                     this.zoneAlignment,
                 ) as ActionBarAlignment,
                 orientation: resolveWidgetOrientation(this.config.orientation, this.zoneId),
-                columns: resolveActionBarColumns(this.config.columns, this.zoneDirection),
+                columns: resolveActionBarColumns(this.config.columns, this.zoneDirection, this.config.actions?.length ?? 0),
                 backgroundOpacity: this.config.backgroundOpacity,
                 showButtonBackground: this.config.showButtonBackground,
                 buttonGap: this.config.buttonGap,

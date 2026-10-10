@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.17.4
+
+- Size vertical forecast columns to their text and keep temperature ranges on one line, including custom fonts and longer localized labels (#66). Preserve access to wider content in narrow widgets by scrolling.
+- Interpret unitless `forecastDateGap` values as `rem`, so `forecastDateGap: '2'` works as `2rem`. Clarify that `maxWidth` limits the outer widget width rather than adding forecast spacing.
+- Fix the action-button hit area reproduced from the YAML in #64: retain intrinsic widths in row-hosted center tracks, center a lone action in one automatic grid column, and keep Home Assistant icons within constrained buttons.
+- Add browser regression coverage for both reported configurations, responsive layouts, font weights, navigation and icon/button edges. The reported font-weight mismatch remains unreproduced with equal configured weights.
+
 ## 3.17.3
 
 - Keep action buttons within their layout bounds on hover. With no zone gap or action-bar padding, the previous hover enlargement extended into adjacent weather and made the button's right edge unresponsive (related to #64). Background hover feedback is preserved.

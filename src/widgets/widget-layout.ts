@@ -63,9 +63,9 @@ export function requiresWidgetIntrinsicWidth(
     return type === 'sensors' && (zoneId === 'center' || zoneId?.endsWith('-center') === true);
 }
 
-/** A row-hosted action bar defaults to a compact two-column grid. */
-export function resolveActionBarColumns(columns?: number, zoneDirection?: ZoneConfig['direction']): number | undefined {
-    return columns ?? (zoneDirection === 'row' ? 2 : undefined);
+/** A row-hosted action bar defaults to at most two populated columns. */
+export function resolveActionBarColumns(columns?: number, zoneDirection?: ZoneConfig['direction'], actionCount = 2): number | undefined {
+    return columns ?? (zoneDirection === 'row' ? Math.min(2, Math.max(1, actionCount)) : undefined);
 }
 
 /** Widgets whose host can be width-bounded without clipping their internal layout. */

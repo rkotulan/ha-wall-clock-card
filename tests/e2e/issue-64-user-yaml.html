@@ -1,0 +1,144 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 64: reproduction from the user's YAML</title>
+<style>
+    body { margin: 0; background: #000; color: #fff; font: 12px Arial, sans-serif; }
+    wall-clock-card { display: block; width: 100vw; height: 100vh; }
+    #e2e-result { position: fixed; top: 130px; left: 24px; max-width: 65vw; white-space: pre-wrap; pointer-events: none; }
+</style>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+// Model HA's nested icon geometry (ha-icon.ts / ha-svg-icon.ts): the inner
+// icon uses --mdc-icon-size even when the outer ha-icon is constrained.
+// https://github.com/home-assistant/frontend/blob/dev/src/components/ha-svg-icon.ts
+customElements.define('ha-icon', class extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({mode: 'open'}).innerHTML = `<style>:host{fill:currentColor}.ha-svg-icon{display:inline-flex;align-items:center;justify-content:center;position:relative;vertical-align:middle;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px)}svg{width:100%;height:100%;pointer-events:none;display:block}</style><span class="ha-svg-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12"/></svg></span>`;
+    }
+});
+await import('../../dist/wall-clock-card.js');
+const original = await fetch('./issue-64-user-config.json').then(response => response.json());
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => { if (!ok) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const forecast = Array.from({length: 5}, (_, i) => ({datetime: `2026-10-${12 + i}T12:00:00Z`, temperature: 88 + i, templow: 70 + i, condition: 'sunny'}));
+const hass = {config: {time_zone: 'UTC'}, language: 'en', locale: {language: 'en'},
+    states: {'weather.pirateweather': {entity_id: 'weather.pirateweather', state: 'sunny', attributes: {temperature: 80, temperature_unit: '°F', supported_features: 7}},
+        'sensor.XXX_XXX': {entity_id: 'sensor.XXX_XXX', state: '74', attributes: {unit_of_measurement: '°F'}}},
+    themes: {themes: {}}, localize: key => key, connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.pirateweather': {forecast}}}),
+};
+const card = document.createElement('wall-clock-card'); card.hass = hass;
+let navigations = 0, status = 'passed';
+window.addEventListener('location-changed', () => navigations++);
+function hit(x, y) {
+    let el = document.elementFromPoint(x, y);
+    while (el?.shadowRoot) { const child = el.shadowRoot.elementFromPoint(x, y); if (!child || child === el) break; el = child; }
+    return el;
+}
+function belongsTo(el, button) {
+    while (el && el !== button) el = el.parentElement ?? el.getRootNode().host;
+    return el === button;
+}
+function measure() {
+    const button = deep(card.shadowRoot, '.action-button')[0];
+    const icon = button.querySelector('ha-icon');
+    const zone = deep(card.shadowRoot, 'wcc-zone').find(el => el.zoneId === 'bottom-center');
+    const box = button.getBoundingClientRect(), iconBox = icon.shadowRoot.querySelector('.ha-svg-icon').getBoundingClientRect();
+    return {button, icon, box, iconBox, zoneWidth: zone.getBoundingClientRect().width,
+        buttonWidth: box.width, iconWidth: iconBox.width, center: (box.left + box.right) / 2,
+        iconHits: [iconBox.left + 1, (iconBox.left + iconBox.right) / 2, iconBox.right - 1]
+            .map(x => ({x, works: belongsTo(hit(x, (iconBox.top + iconBox.bottom) / 2), button)}))};
+}
+async function move(x, y) {
+    window.e2ePointerMove = {x, y};
+    while (window.e2ePointerMove) await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 350));
+}
+function check(name) {
+    const m = measure();
+    assert(m.buttonWidth >= m.iconWidth, `${name}: ${m.buttonWidth}px button cannot contain ${m.iconWidth}px icon`);
+    assert(m.iconBox.left >= m.box.left - 1 && m.iconBox.right <= m.box.right + 1, `${name}: icon stays in button bounds`);
+    assert(m.iconHits.every(hit => hit.works), `${name}: visible icon has an unresponsive edge (${JSON.stringify(m.iconHits)})`);
+    for (const x of [m.box.left + 1, m.center, m.box.right - 1]) {
+        const target = hit(x, (m.box.top + m.box.bottom) / 2);
+        assert(belongsTo(target, m.button), `${name}: button edge intercepted by ${target?.tagName}`);
+        const before = navigations;
+        target.dispatchEvent(new MouseEvent('click', {bubbles: true, composed: true}));
+        assert(navigations === before + 1 && location.pathname === '/issue64-cameras', `${name}: click navigates exactly once`);
+    }
+}
+try {
+    card.setConfig(original); document.body.append(card); await frame();
+    const initial = measure();
+    records.push(JSON.stringify({zoneWidth: initial.zoneWidth, buttonWidth: initial.buttonWidth,
+        iconWidth: initial.iconWidth, iconHits: initial.iconHits}));
+    if (!new URLSearchParams(location.search).has('preview')) {
+        check('Original YAML');
+        assert(Math.abs(initial.center - card.getBoundingClientRect().width / 2) < 1, 'A lone action is centered in the card');
+        const sensorValue = deep(card.shadowRoot, '.sensor-value')[0];
+        assert(getComputedStyle(sensorValue).fontWeight === '300', 'Original sensor weight 300 respected');
+        assert(deep(card.shadowRoot, '.forecast-date, .forecast-temp').every(el => getComputedStyle(el).fontWeight === '400'), 'Original weather weight 400 respected');
+        for (const width of [320, 600, 1024, 1920]) {
+            card.style.width = `${width}px`; card.style.height = '600px';
+            let center;
+            for (const weight of [100, 400, 900]) {
+                const config = structuredClone(original);
+                config.layout.zones['bottom-right'].widgets[0].style.fontWeight = weight;
+                card.setConfig(config); await frame();
+                const m = measure(); center ??= m.center;
+                assert(Math.abs(m.center - center) < 1, `${width}/${weight}: weather weight shifts the action button`);
+                check(`${width}/${weight}`);
+                await move((m.iconBox.left + m.iconBox.right) / 2, (m.iconBox.top + m.iconBox.bottom) / 2);
+                assert(m.button.matches(':hover'), 'Real pointer activates hover');
+                check(`${width}/${weight}/hover`);
+            }
+            records.push(`${width}px: weights 100/400/900, hover, both icon/button edges and click navigation pass`);
+        }
+        card.style.width = '600px';
+        for (const actionCount of [1, 4]) for (const columns of [undefined, 3]) {
+            const config = structuredClone(original);
+            const actions = config.layout.zones['bottom-center'].widgets[0];
+            actions.actions = Array.from({length: actionCount}, () => ({...actions.actions[0]}));
+            actions.columns = columns;
+            card.setConfig(config); await frame();
+            check(`${actionCount} actions/${columns ?? 'auto'} columns`);
+        }
+        const narrow = structuredClone(original);
+        const bar = narrow.layout.zones['bottom-center'].widgets[0];
+        bar.columns = 2; bar.style = {maxWidth: '80px'};
+        card.setConfig(narrow); await frame();
+        check('Width-bounded grid with native HA icon geometry');
+        for (const weight of [100, 400, 600, 900]) {
+            const config = structuredClone(original);
+            for (const zone of ['top-left', 'top-right', 'bottom-left', 'bottom-right']) {
+                config.layout.zones[zone].widgets[0].style = {fontWeight: weight};
+            }
+            card.setConfig(config); await frame();
+            for (const el of deep(card.shadowRoot, '.hours-minutes, .date, .sensor-value, .forecast-date, .forecast-temp')) {
+                assert(getComputedStyle(el).fontWeight === String(weight), `${el.className}: shared weight ${weight} respected`);
+            }
+        }
+        // The shared host-width fix must preserve relative sizing in definite
+        // row tracks (the information-strip layout).
+        const strip = structuredClone(original);
+        const weather = strip.layout.zones['bottom-right'].widgets[0];
+        delete strip.layout.zones['bottom-left']; delete strip.layout.zones['bottom-right'];
+        strip.layout.zones['bottom-center'].widgets.push(weather);
+        card.setConfig(strip); await frame();
+        const actionWidth = deep(card.shadowRoot, 'wcc-action-bar-widget')[0].getBoundingClientRect().width;
+        const weatherWidth = deep(card.shadowRoot, 'wcc-weather-widget')[0].getBoundingClientRect().width;
+        assert(Math.abs(weatherWidth / actionWidth - 1.5) < 0.01, 'Row widgets preserve their 3:2 width shares');
+        check('Full-width information strip');
+        records.push('Single/multiple actions, explicit columns, constrained HA icons and shared font weights pass');
+    }
+} catch (error) { records.push(error.stack); status = 'failed'; }
+card.style.width = '100vw'; card.style.height = '100vh'; card.setConfig(original); await frame();
+result.textContent = records.join('\n'); result.dataset.status = status;
+</script>

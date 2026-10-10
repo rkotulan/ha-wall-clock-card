@@ -35,7 +35,7 @@ layout:
 | `enabled` | `true` | Enable this action bar |
 | `actions` | `[]` | Ordered action buttons |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
-| `columns` | 2 in row zones | Fixed grid column count; when set, overrides orientation |
+| `columns` | Up to 2 in row zones | Fixed grid column count; when set, overrides orientation. A single action automatically uses one column |
 | `alignment` | `auto` | `auto`, `left`, `center` or `right` |
 | `backgroundOpacity` | `0.3` | Black panel opacity from 0 to 1 |
 | `showButtonBackground` | `true` | Show the translucent circular surface behind each action |

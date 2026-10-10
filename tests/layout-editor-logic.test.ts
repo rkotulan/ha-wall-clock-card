@@ -65,8 +65,12 @@ describe('layout editor logic', () => {
 
     it('uses a two-column action grid automatically in row zones', () => {
         expect(resolveActionBarColumns(undefined, 'row')).toBe(2);
+        expect(resolveActionBarColumns(undefined, 'row', 1)).toBe(1);
+        expect(resolveActionBarColumns(undefined, 'row', 4)).toBe(2);
+        expect(resolveActionBarColumns(undefined, 'row', 0)).toBe(1);
         expect(resolveActionBarColumns(undefined, 'column')).toBeUndefined();
         expect(resolveActionBarColumns(3, 'row')).toBe(3);
+        expect(resolveActionBarColumns(3, 'row', 1)).toBe(3);
     });
 
     it('keeps sensors intrinsically sized in content-width center tracks', () => {

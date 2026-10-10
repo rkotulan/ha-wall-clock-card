@@ -140,7 +140,11 @@ export class ActionBarComponent extends BottomBarComponent {
         }
 
         .action-bar-container.grid .action-button {
-            width: min(var(--action-button-size, 144px), 100%);
+            /* A percentage inside min() loses the preferred button width
+               during intrinsic grid sizing. Keep that width and cap it only
+               once the hosting track has a definite size. */
+            width: var(--action-button-size, 144px);
+            max-width: 100%;
             height: auto;
             aspect-ratio: 1;
             justify-self: center;
@@ -367,7 +371,7 @@ export class ActionBarComponent extends BottomBarComponent {
                                    style="${appearance.color ? `color: ${appearance.color};` : ''}
                                           width: ${this.getIconSize()};
                                           height: ${this.getIconSize()};
-                                          --mdc-icon-size: ${this.getIconSize()};">
+                                          --mdc-icon-size: min(${this.getIconSize()}, 100%);">
                            </ha-icon>`
                     : html`<svg viewBox="0 0 24 24"
                                style="${appearance.color ? `fill: ${appearance.color};` : ''}

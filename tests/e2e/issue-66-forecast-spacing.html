@@ -1,0 +1,119 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 66: vertical forecast spacing</title>
+<style>
+    body { margin: 24px; background: #151a22; color: #eee; font: 16px Arial, sans-serif; }
+    h1 { font-size: 22px; }
+    wall-clock-card { display: block; width: 920px; height: 300px; }
+    pre { white-space: pre-wrap; font-size: 13px; }
+</style>
+<h1>Issue #66 — five-day forecast, no icons, labelSize: 1.5, forecastDateGap: 2</h1>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const result = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => { if (!ok) throw Error(message); };
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const forecast = Array.from({length: 5}, (_, i) => ({
+    datetime: `2026-10-${String(12 + i).padStart(2, '0')}T12:00:00Z`,
+    temperature: 88 + i, templow: 70 + i, condition: 'sunny',
+}));
+const hass = {
+    config: {time_zone: 'UTC', latitude: 49, longitude: 16}, language: 'en', locale: {language: 'en'},
+    states: {'weather.pirateweather': {entity_id: 'weather.pirateweather', state: 'sunny', attributes: {
+        temperature: 80, temperature_unit: '°F', supported_features: 7,
+    }}}, themes: {themes: {}}, localize: key => key,
+    connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.pirateweather': {forecast}}}),
+};
+const original = {
+    type: 'weather', id: 'weather', provider: 'homeassistant',
+    providerConfig: {entityId: 'weather.pirateweather'}, displayMode: 'forecast', forecastDays: 5,
+    title: ' ', showIcons: false, forecastDateGap: '2', labelSize: '1.5',
+    style: {grow: 2, maxWidth: '900px'}, orientation: 'vertical',
+};
+const card = document.createElement('wall-clock-card');
+card.hass = hass;
+let status = 'passed';
+function sync(widget = original, language = 'en') {
+    card.setConfig({type: 'custom:wall-clock-card', background: {source: 'none'},
+        appearance: {language}, layout: {zones: {'bottom-right': {widgets: [widget], direction: 'row'}}}});
+}
+function measure() {
+    const weather = deep(card.shadowRoot, 'ha-weather')[0];
+    const root = weather.shadowRoot;
+    const rows = [...root.querySelectorAll('.forecast-day')];
+    const day = rows[0].querySelector('.forecast-date'), temp = rows[0].querySelector('.forecast-temp');
+    return {weather, root, rows, day, temp, gap: getComputedStyle(day).marginRight,
+        hostWidth: weather.getBoundingClientRect().width,
+        forecastWidth: root.querySelector('.weather-forecast').getBoundingClientRect().width,
+        dayWidth: day.getBoundingClientRect().width, tempWidth: temp.getBoundingClientRect().width,
+        fontSize: getComputedStyle(temp).fontSize};
+}
+function checkRows(name) {
+    const {rows, root} = measure();
+    const forecast = root.querySelector('.weather-forecast');
+    const container = root.querySelector('.weather-container').getBoundingClientRect();
+    const forecastBox = forecast.getBoundingClientRect();
+    assert(forecastBox.left >= container.left - 1 && forecastBox.right <= container.right + 1, `${name}: forecast stays inside the widget`);
+    assert(rows[0].getBoundingClientRect().left >= forecastBox.left - 1, `${name}: first column stays accessible in narrow widgets`);
+    const lefts = [];
+    for (const row of rows) {
+        const day = row.querySelector('.forecast-date'), temp = row.querySelector('.forecast-temp');
+        const dayBox = day.getBoundingClientRect(), tempBox = temp.getBoundingClientRect();
+        const spans = [...temp.querySelectorAll('span')].filter(el => getComputedStyle(el).display !== 'none');
+        assert(spans.every(el => Math.abs(el.getBoundingClientRect().top - spans[0].getBoundingClientRect().top) < 1), `${name}: temperatures stay on one line`);
+        assert(day.scrollWidth <= day.clientWidth + 1, `${name}: day label fits its column`);
+        assert(temp.scrollWidth <= temp.clientWidth + 1, `${name}: temperature range fits its column`);
+        assert(dayBox.right <= tempBox.left + 1, `${name}: columns do not overlap`);
+        lefts.push(tempBox.left);
+    }
+    assert(Math.max(...lefts) - Math.min(...lefts) < 1, `${name}: temperature columns align across rows`);
+}
+try {
+    sync(); document.body.append(card); await frame();
+    const initial = measure();
+    records.push(JSON.stringify({gap: initial.gap, hostWidth: initial.hostWidth,
+        forecastWidth: initial.forecastWidth, dayWidth: initial.dayWidth, tempWidth: initial.tempWidth,
+        fontSize: initial.fontSize}));
+    if (!new URLSearchParams(location.search).has('preview')) {
+        assert(initial.rows.length === 5, 'Original configuration renders five rows');
+        assert(initial.gap === '32px', 'Unitless date gap uses rem');
+        assert(deep(card.shadowRoot, 'wcc-weather-widget')[0].style.maxWidth === '900px', 'Original maxWidth is applied');
+        checkRows('Original configuration');
+        for (const width of [420, 920]) for (const language of ['en', 'cs', 'fr'])
+        for (const font of ['1.5', '3rem']) for (const showIcons of [false, true]) {
+            card.style.width = `${width}px`;
+            const widget = {...original, labelSize: font, showIcons, iconSet: 'wall-clock', animateIcons: false,
+                forecastDateGap: '16px'};
+            sync(widget, language); await frame();
+            checkRows(`${width}px/${language}/${font}/icons=${showIcons}`);
+            assert(measure().gap === '16px', 'Explicit CSS gap preserved');
+        }
+        records.push('24 cases: narrow/wide cards, EN/CS/FR, 1.5/3rem fonts, icons on/off passed');
+        for (const gap of ['', '0', '1rem', 'calc(1rem + 4px)']) {
+            sync({...original, forecastDateGap: gap}); await frame();
+            assert(measure().gap === ({'': '8px', '0': '0px', '1rem': '16px', 'calc(1rem + 4px)': '20px'})[gap], `Gap ${gap} resolves correctly`);
+        }
+        sync({...original, style: {grow: 2, maxWidth: '260px'}}); await frame();
+        assert(deep(card.shadowRoot, 'wcc-weather-widget')[0].getBoundingClientRect().width <= 260.5, 'maxWidth bounds the widget');
+        for (const forecastType of ['hourly', 'twice_daily']) {
+            sync({...original, providerConfig: {...original.providerConfig, forecastType}}); await frame();
+            checkRows(forecastType);
+        }
+        sync({...original, orientation: 'horizontal', labelSize: '1rem'}); await frame();
+        const horizontal = measure();
+        assert(horizontal.rows.every(row => Math.abs(row.getBoundingClientRect().top - horizontal.rows[0].getBoundingClientRect().top) < 1), 'Horizontal periods stay side by side');
+        assert(horizontal.day.getBoundingClientRect().top < horizontal.temp.getBoundingClientRect().top, 'Horizontal dates remain above temperatures');
+        records.push('CSS gaps, maxWidth, hourly/twice-daily labels and horizontal layout passed');
+    }
+} catch (error) { records.push(error.stack); status = 'failed'; }
+card.style.width = '920px'; sync(); await frame();
+result.textContent = records.join('\n');
+result.dataset.status = status;
+</script>

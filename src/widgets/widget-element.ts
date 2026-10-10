@@ -107,7 +107,9 @@ export abstract class WidgetElement<C extends WidgetConfig = WidgetConfig> exten
         this.style.color = style?.color ?? '';
         this.style.textShadow = style?.textShadow ?? this.appearance?.textShadow ?? '';
         this.style.flex = useRowGrow ? `${grow} 1 0%` : useContentWidth ? '0 1 auto' : '';
-        this.style.width = useRowGrow ? '0px' : useContentWidth ? 'auto' : '';
+        // A zero preferred width also erases intrinsic contributions in the
+        // center grid track. The flex basis controls row sharing on its own.
+        this.style.width = useRowGrow || useContentWidth ? 'auto' : '';
         this.style.minWidth = useRowGrow || useContentWidth ? '0px' : '';
     }
 
