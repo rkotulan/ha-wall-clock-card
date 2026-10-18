@@ -1,8 +1,9 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
-import { WeatherData, WeatherForecastType, WeatherProviderConfig } from '../../weather-providers';
-import {createLogger, formatDate, localize, Messenger, translate, WeatherMessage, getSizeValue, normalizeFontSize} from '../../utils';
+import { WeatherData, WeatherProviderConfig } from '../../weather-providers';
+import {createLogger, localize, Messenger, translate, WeatherMessage, getSizeValue, normalizeFontSize} from '../../utils';
+import {formatForecastDate} from './forecast-date';
 import { WeatherController, WeatherControllerConfig } from './weather-controller';
 import { Size } from '../../core/types';
 import type {ResolvedWidgetOrientation} from '../../widgets/widget-layout';
@@ -27,6 +28,7 @@ export interface WeatherComponentConfig {
     valueSize?: string;
     orientation?: ResolvedWidgetOrientation;
     forecastDateGap?: string;
+    forecastTimeLeadingZero?: boolean;
 }
 
 @customElement('ha-weather')
@@ -50,6 +52,7 @@ export class WeatherComponent extends LitElement {
     @property({ type: String }) valueSize?: string;
     @property({ type: String }) orientation: ResolvedWidgetOrientation = 'vertical';
     @property({ type: String }) forecastDateGap?: string;
+    @property({ type: Boolean }) forecastTimeLeadingZero = true;
 
     private logger = createLogger('weather-component');
     private weatherController: WeatherController;
@@ -428,31 +431,6 @@ export class WeatherComponent extends LitElement {
         return condition;
     }
 
-    /**
-     * Format a date for display in the forecast
-     */
-    private formatForecastDate(date: Date, forecastType?: WeatherForecastType): string {
-        // Get language from config or default to English
-        const language = this.language || 'en';
-
-        if (forecastType === 'hourly') {
-            return new Intl.DateTimeFormat(language, {
-                hour: '2-digit',
-                minute: '2-digit'
-            }).format(date);
-        }
-
-        if (forecastType === 'twice_daily') {
-            return new Intl.DateTimeFormat(language, {
-                weekday: 'short',
-                hour: '2-digit'
-            }).format(date);
-        }
-
-        // Format: "Mon", "Tue", etc.
-        return formatDate(date, language, {weekday: 'short'});
-    }
-
     // Public getter for weather data
     get weatherData(): WeatherData | undefined {
         const weatherData = this.weatherController.weatherData;
@@ -544,6 +522,9 @@ export class WeatherComponent extends LitElement {
         const valueSize = this.getValueSize();
         const customLabelSize = this.size === Size.Custom && !!this.labelSize?.trim();
         const customValueSize = this.size === Size.Custom && !!this.valueSize?.trim();
+        // Keep the compact preset size; an explicit value size controls every
+        // temperature, independently of the labels.
+        const forecastValueSize = customValueSize ? valueSize : labelSize;
         const forecastTempWidth = this.getForecastTempWidth();
         const forecastDateGap = normalizeFontSize(String(this.forecastDateGap ?? '').trim() || '8px');
 
@@ -604,7 +585,7 @@ export class WeatherComponent extends LitElement {
                                     <div class="forecast-date"
                                          style="font-size: ${horizontal && !customLabelSize
                                              ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
-                                             : labelSize};">${this.formatForecastDate(day.date, weatherData.forecastType)}</div>
+                                             : labelSize};">${formatForecastDate(day.date, this.language || 'en', weatherData.forecastType, this.forecastTimeLeadingZero)}</div>
                                     ${this.renderWeatherIcon(
                                         'forecast-icon',
                                         day.condition,
@@ -612,9 +593,9 @@ export class WeatherComponent extends LitElement {
                                         this.conditionDisplayText(day.condition, day.conditionText)
                                     )}
                                     <div class="forecast-temp"
-                                         style="font-size: ${horizontal && !customLabelSize
-                                             ? `min(${labelSize}, clamp(0.82rem, 4cqw, 1.4rem))`
-                                             : labelSize};">
+                                         style="font-size: ${horizontal && !customValueSize && !customLabelSize
+                                             ? `min(${forecastValueSize}, clamp(0.82rem, 4cqw, 1.4rem))`
+                                             : forecastValueSize};">
                                         <span>${Math.round(day.temperatureMin)}°</span>
                                         <span class="forecast-separator"> - </span>
                                         <span>${Math.round(day.temperatureMax)}°</span>

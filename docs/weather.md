@@ -30,6 +30,15 @@ the icons and their spacing are removed. In YAML, set `showIcons: false` on the
 weather widget. The default is `true`. The selected icon set and animation
 preference are retained when icons are hidden.
 
+Under **Appearance → Forecast layout**, turn off **Leading zero in forecast time**
+to display `9:00 AM` instead of `09:00 AM`. This also applies to 24-hour and
+twice-daily forecast times. In YAML, set `forecastTimeLeadingZero: false` on the
+weather widget. The default is `true`.
+
+**Value size** controls both the current temperature and forecast temperatures.
+**Label size** controls the heading, condition text and forecast day/time labels.
+Without a custom value size, forecasts retain their compact sizing.
+
 | Key | Default | Description |
 |---|---:|---|
 | `enabled` | `true` | Show or hide this widget |
@@ -38,13 +47,14 @@ preference are retained when icons are hidden.
 | `displayMode` | `current` for a newly added widget | `current`, `forecast` or `both` |
 | `orientation` | `auto` | `auto`, `horizontal` or `vertical` |
 | `forecastDays` | `3` | Forecast rows to show (1–7) |
+| `forecastTimeLeadingZero` | `true` | Pad the hour in hourly and twice-daily forecast labels; set `false` for `9:00 AM` instead of `09:00 AM` (or `9:00` instead of `09:00` in a 24-hour locale) |
 | `forecastDateGap` | `8px` | CSS length between the forecast day label and its values in vertical orientation (for example `16px` or `1rem`); unitless numbers use `rem`, empty uses `8px` |
 | `title` | localized “Weather” (vertical) / “Forecast” (horizontal) | Section title in either orientation; `title: ''` hides the heading |
 | `updateInterval` | `1800` | Refresh interval in seconds (minimum 60) |
 | `iconSet` | provider default | `wall-clock`, `basmilius`, `openweathermap` or `metno` |
 | `animateIcons` | `true` | Animate the built-in `wall-clock` icon set |
 | `labelSize` | size preset | CSS size for labels/title |
-| `valueSize` | size preset | CSS size for values |
+| `valueSize` | size preset | CSS size for current and forecast temperatures; labels use `labelSize` |
 
 Clicking Home Assistant-backed current weather opens that entity's native more-info
 dialog.

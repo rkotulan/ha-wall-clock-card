@@ -253,6 +253,15 @@ export class WeatherEditor extends BaseEditorSection {
                     <div class="options">
                         <ha-row-selector
                                 .hass=${this.hass}
+                                .selector=${{boolean: {}}}
+                                .value=${this.config.forecastTimeLeadingZero !== false}
+                                .label=${this.t('editor.weather.forecast_time_leading_zero', 'Leading zero in forecast time')}
+                                .helper=${this.t('editor.weather.forecast_time_leading_zero_help', 'Show 09:00 AM instead of 9:00 AM. Applies to hourly and twice-daily forecasts.')}
+                                propertyName="forecastTimeLeadingZero"
+                                @value-changed=${this._handleFormValueChanged}>
+                        </ha-row-selector>
+                        <ha-row-selector
+                                .hass=${this.hass}
                                 .selector=${{text: {type: "text"}}}
                                 .value=${this.config.forecastDateGap || ''}
                                 .required=${false}

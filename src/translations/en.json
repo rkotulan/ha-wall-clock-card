@@ -272,6 +272,8 @@
       "icon_set": "Weather icon set", "animate_icons": "Animate icons",
       "animate_icons_help": "Uses subtle motion and respects the system reduced-motion preference.",
       "forecast_layout": "Forecast layout",
+      "forecast_time_leading_zero": "Leading zero in forecast time",
+      "forecast_time_leading_zero_help": "Show 09:00 AM instead of 9:00 AM. Applies to hourly and twice-daily forecasts.",
       "forecast_date_gap": "Space after day label",
       "forecast_date_gap_help": "Gap in vertical forecasts (for example 8px or 1rem). Unitless numbers use rem. Empty uses 8px.",
       "forecast_type": "Forecast type", "forecast_type_help": "Automatic uses a forecast supported by the selected entity",

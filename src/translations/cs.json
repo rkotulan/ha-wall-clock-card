@@ -214,6 +214,8 @@
       "animate_icons": "Animovat ikony",
       "animate_icons_help": "Používá jemný pohyb a respektuje systémové omezení animací.",
       "forecast_layout": "Rozložení předpovědi",
+      "forecast_time_leading_zero": "Úvodní nula v čase předpovědi",
+      "forecast_time_leading_zero_help": "Zobrazí 09:00 místo 9:00. Platí pro hodinovou předpověď a předpověď dvakrát denně.",
       "forecast_date_gap": "Mezera za názvem dne",
       "forecast_date_gap_help": "Mezera ve svislé předpovědi (například 8px nebo 1rem). Čísla bez jednotky použijí rem. Prázdné pole použije 8px.",
       "forecast_type": "Typ předpovědi", "forecast_type_help": "Automaticky použije předpověď podporovanou vybranou entitou",

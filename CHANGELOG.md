@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.18.0
+
+- Add a weather Appearance switch for the leading zero in hourly and twice-daily forecast times (#67). Set `forecastTimeLeadingZero: false` to display `9:00 AM` instead of `09:00 AM`, or `9:00` instead of `09:00` in a 24-hour locale. The default remains unchanged.
+- Apply custom weather `valueSize` to forecast temperatures as well as the current temperature, independently of `labelSize`, in both orientations. Preserve compact forecast sizing when no custom value size is set.
+- Add regression coverage for localized time formatting, editor persistence and independent forecast label/value sizes.
+
 ## 3.17.4
 
 - Size vertical forecast columns to their text and keep temperature ranges on one line, including custom fonts and longer localized labels (#66). Preserve access to wider content in narrow widgets by scrolling.

@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Issue 67: forecast time padding and value size</title>
+<style>html {font-size:16px} wall-clock-card {display:block;width:900px;height:500px}</style>
+<pre id="e2e-result" data-status="running">Running</pre>
+<script type="module">
+import '../../dist/wall-clock-card.js';
+const output = document.querySelector('#e2e-result'), records = [];
+const assert = (ok, message) => {if (!ok) throw Error(message);};
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function deep(root, selector) {
+    return [...root.querySelectorAll('*')].flatMap(el => [
+        ...(el.matches(selector) ? [el] : []), ...(el.shadowRoot ? deep(el.shadowRoot, selector) : []),
+    ]);
+}
+const date = new Date(2026, 9, 15, 9);
+const hass = {config: {time_zone: 'UTC'}, language: 'en-US', locale: {language: 'en-US'},
+    states: {'weather.test': {entity_id: 'weather.test', state: 'sunny', attributes: {
+        temperature: 25, temperature_unit: '°C', supported_features: 7,
+    }}}, themes: {themes: {}}, localize: key => key,
+    connection: {subscribeMessage: async () => () => {}},
+    callWS: async () => ({response: {'weather.test': {forecast: [
+        {datetime: date.toISOString(), temperature: 25, templow: 15, condition: 'sunny'},
+    ]}}}),
+};
+let weather = {type: 'weather', id: 'weather', provider: 'homeassistant',
+    providerConfig: {entityId: 'weather.test', forecastType: 'hourly'}, displayMode: 'forecast'};
+const config = {type: 'custom:wall-clock-card', background: {source: 'none'},
+    appearance: {language: 'en-US'}, layout: {zones: {center: {widgets: [weather]}}}};
+const card = document.createElement('wall-clock-card'); card.hass = hass;
+const inspector = document.createElement('wcc-layout-inspector'); inspector.hass = hass;
+inspector.selectedWidget = {zone: 'center', index: 0, widgetId: 'weather'};
+function sync() {
+    config.layout.zones.center.widgets[0] = weather;
+    card.setConfig(structuredClone(config));
+    inspector.config = structuredClone(config); inspector.layout = inspector.config.layout;
+}
+inspector.addEventListener('wcc-widget-config-changed', event => {
+    weather = JSON.parse(JSON.stringify(event.detail.widget)); sync();
+});
+const label = () => deep(card.shadowRoot, '.forecast-date')[0].textContent.trim().replace(/\s/g, ' ');
+const font = selector => getComputedStyle(deep(card.shadowRoot, selector)[0]).fontSize;
+async function editRow(row, value) {
+    assert(row, 'Editor row exists'); await row.updateComplete;
+    row.shadowRoot.querySelector('ha-selector').dispatchEvent(new CustomEvent('value-changed', {
+        detail: {value}, bubbles: true, composed: true,
+    }));
+    await frame();
+}
+try {
+    sync(); document.body.append(card, inspector);
+    const started = performance.now();
+    while (!deep(card.shadowRoot, '.forecast-date').length) {
+        assert(performance.now() - started < 3000, 'Forecast did not render');
+        await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    [...inspector.shadowRoot.querySelectorAll('[role=tab]')].find(el => el.textContent.trim() === 'Appearance').click();
+    await frame();
+    for (const orientation of ['horizontal', 'vertical']) {
+        weather.orientation = orientation; sync(); await frame();
+        const defaults = font('.forecast-temp');
+        assert(label() === '09:00 AM', `${orientation}: padded default (${label()})`);
+        for (const enabled of [false, true, false]) {
+            const row = deep(inspector.shadowRoot, 'ha-row-selector').find(el => el.propertyName === 'forecastTimeLeadingZero');
+            await editRow(row, enabled);
+            assert(weather.forecastTimeLeadingZero === enabled, 'Padding saved as boolean');
+            assert(label() === (enabled ? '09:00 AM' : '9:00 AM'), `${orientation}: toggle updates label (${label()})`);
+        }
+        delete weather.forecastTimeLeadingZero; sync(); await frame();
+        assert(label() === '09:00 AM', 'Clearing restores padding');
+        for (const size of ['2rem', '1.5', '36px']) {
+            const row = deep(inspector.shadowRoot, 'ha-row-selector').find(el => el.label.startsWith('Value size'));
+            await editRow(row, size);
+            assert(weather.valueSize === size, 'Value size survives editor save');
+            const expected = size === '36px' ? '36px' : `${parseFloat(size) * 16}px`;
+            assert(font('.forecast-temp') === expected, `${orientation}/${size}: forecast value uses ${font('.forecast-temp')}`);
+        }
+        weather.labelSize = '1rem'; weather.valueSize = '2rem'; weather.displayMode = 'both'; sync(); await frame();
+        assert(font('.weather-temp') === '32px' && font('.forecast-temp') === '32px', 'Both temperatures use value size');
+        assert(font('.weather-condition') === '16px' && font('.forecast-date') === '16px', 'Labels use label size');
+        delete weather.labelSize; delete weather.valueSize; weather.displayMode = 'forecast'; sync(); await frame();
+        assert(font('.forecast-temp') === defaults, 'Clearing sizes restores compact default');
+        records.push(`${orientation}: padding toggle and independent value size work through inspector and JSON save`);
+    }
+    output.dataset.status = 'passed';
+} catch (error) {records.push(error.stack); output.dataset.status = 'failed';}
+output.textContent = records.join('\n'); card.remove(); inspector.remove();
+</script>

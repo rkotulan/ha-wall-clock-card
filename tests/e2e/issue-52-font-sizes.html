@@ -95,7 +95,9 @@
             await frame();
             const independent = sizes(card);
             assert(independent['weather-temp'] === '32px', 'Value size not independent');
+            assert(independent['forecast-temp'] === '32px', 'Forecast value size not independent');
             assert(independent['weather-condition'] === '19.2px', 'Label size not independent');
+            assert(independent['forecast-date'] === '19.2px', 'Forecast label size not independent');
             host.config = originalConfig;
             await host.updateComplete;
             await frame();

@@ -391,6 +391,19 @@ describe('applyGeneralSetting', () => {
 });
 
 describe('widget editor adapters', () => {
+    it.each([true, false, undefined])('round-trips forecast time padding (%s) across edits and JSON saves', forecastTimeLeadingZero => {
+        const widget = {type: 'weather', provider: 'homeassistant', forecastTimeLeadingZero};
+        const editor = toEditorConfig(widget);
+        expect(editor.forecastTimeLeadingZero).toBe(forecastTimeLeadingZero);
+        const saved = JSON.parse(JSON.stringify(fromEditorConfig(widget, {...editor, weatherTitle: 'Forecast'})));
+        expect(saved.forecastTimeLeadingZero).toBe(forecastTimeLeadingZero);
+        expect(saved.title).toBe('Forecast');
+        expect(fromEditorConfig(widget, {...editor, forecastTimeLeadingZero: false}).forecastTimeLeadingZero).toBe(false);
+        expect(fromEditorConfig(widget, {...editor, forecastTimeLeadingZero: true}).forecastTimeLeadingZero).toBe(true);
+        const {forecastTimeLeadingZero: removed, ...cleared} = editor;
+        expect(fromEditorConfig(widget, cleared)).not.toHaveProperty('forecastTimeLeadingZero');
+    });
+
     it('preserves, updates and clears the forecast date gap through weather editor changes', () => {
         const widget = {type: 'weather', provider: 'homeassistant', forecastDateGap: '1rem'};
         const editor = toEditorConfig(widget);
