@@ -1,6 +1,6 @@
 import {css, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
-// Side-effect import: registers the ha-action-bar element (the class is used type-only)
+// Side-effect import: registers the wcc-action-bar element (the class is used type-only)
 import '../components/action-bar';
 import type {ActionBarComponent} from '../components/action-bar';
 import {ActionBarAlignment, ModuleActionConfig} from '../components/action-bar/types';
@@ -27,7 +27,7 @@ export interface ActionBarWidgetConfig extends WidgetConfig {
 
 @customElement('wcc-action-bar-widget')
 export class ActionBarWidget extends WidgetElement<ActionBarWidgetConfig> {
-    private actionBar = document.createElement('ha-action-bar') as ActionBarComponent;
+    private actionBar = document.createElement('wcc-action-bar') as ActionBarComponent;
     private appliedConfig?: ActionBarWidgetConfig;
     private appliedZoneId?: string;
     private appliedZoneAlignment?: string;

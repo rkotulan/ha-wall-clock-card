@@ -69,7 +69,7 @@ new MyActionPlugin().register();
 Export/import the plugin from `plugins/index.ts` so registration runs before the
 editor or action bar asks the singleton registry for it. `registerPlugin()` registers
 both metadata and the handler with `ActionRegistry`; do not query a rendered
-`ha-action-bar` element to install handlers.
+`wcc-action-bar` element to install handlers.
 
 ## Custom editor
 

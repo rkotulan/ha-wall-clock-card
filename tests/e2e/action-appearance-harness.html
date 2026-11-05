@@ -38,7 +38,11 @@ let hass = {
 };
 try {
     await customElements.whenDefined('action-bar-editor');
-    const bar = document.createElement('ha-action-bar');
+    // Home Assistant registers this tag when the add-card dialog loads (#69).
+    class HomeAssistantActionBar extends HTMLElement {}
+    customElements.define('ha-action-bar', HomeAssistantActionBar);
+    assert(document.createElement('ha-action-bar') instanceof HomeAssistantActionBar, 'Home Assistant can register its own action bar after the card loads');
+    const bar = document.createElement('wcc-action-bar');
     bar.hass = hass;
     bar.config = {enabled: true, actions: [action, {
         actionId: 'light-toggle', title: 'Light', icon: 'mdi:lightbulb',

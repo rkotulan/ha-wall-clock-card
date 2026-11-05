@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.18.1
+
+- Rename the card's internal action bar to `wcc-action-bar` so Home Assistant 2026.11 can register `ha-action-bar` when opening the Add card dialog (#69).
+- Add browser regression coverage for both action bar elements loading on the same page.
+
 ## 3.18.0
 
 - Add a weather Appearance switch for the leading zero in hourly and twice-daily forecast times (#67). Set `forecastTimeLeadingZero: false` to display `9:00 AM` instead of `09:00 AM`, or `9:00` instead of `09:00` in a 24-hour locale. The default remains unchanged.

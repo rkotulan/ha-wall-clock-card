@@ -30,7 +30,7 @@ export interface ActionBarComponentConfig {
     iconSize?: string;
 }
 
-@customElement('ha-action-bar')
+@customElement('wcc-action-bar')
 export class ActionBarComponent extends BottomBarComponent {
     /**
      * Priority of this component
