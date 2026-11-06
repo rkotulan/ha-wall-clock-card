@@ -22,7 +22,7 @@ split-panel layouts.
 - Built-in and installed Home Assistant cards as dashboard widgets.
 - Local, Picsum, Unsplash, Home Assistant sensor and media backgrounds (including Immich albums).
 - Automatic in-memory migration of existing 2.x configurations.
-- Czech and English Designer UI; weather-condition translations cover additional languages.
+- Czech, English and Ukrainian Designer UI; weather-condition translations cover additional languages.
 
 ## Tablet layout example
 
