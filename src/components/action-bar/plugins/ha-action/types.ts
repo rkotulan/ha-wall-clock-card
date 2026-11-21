@@ -1,5 +1,4 @@
-import { ActionConfig } from 'custom-card-helpers';
-import { ModuleActionConfig } from '../../types';
+import { HomeAssistantActionConfig, ModuleActionConfig } from '../../types';
 
 // Action type for a standard Home Assistant action executed via handleAction()
 export const HA_ACTION = 'action-ha';
@@ -22,5 +21,5 @@ export interface HaActionConfig extends ModuleActionConfig {
     /**
      * The standard Home Assistant action to run on tap.
      */
-    tap_action?: ActionConfig;
+    tap_action?: HomeAssistantActionConfig;
 }

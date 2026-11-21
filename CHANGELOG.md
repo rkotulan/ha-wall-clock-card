@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.18.2
+
+- Fix Action Bar service buttons using Home Assistant's `perform-action` format, including alarm snooze, dismiss and light actions (#70).
+- Preserve service data, targets and confirmation settings for tap, hold and double-tap actions while retaining support for legacy `call-service` configurations.
+- Add regression tests using the real action helper and the reported snooze configuration.
+
 ## 3.18.1
 
 - Rename the card's internal action bar to `wcc-action-bar` so Home Assistant 2026.11 can register `ha-action-bar` when opening the Add card dialog (#69).

@@ -1,5 +1,5 @@
 import { handleAction } from 'custom-card-helpers';
-import { ActionHandler } from '../../types';
+import { ActionHandler, normalizeActionConfig } from '../../types';
 import { registerPlugin, ActionPlugin } from '../../plugin-registry';
 import { HA_ACTION, HaActionConfig } from './types';
 
@@ -20,7 +20,7 @@ export const haActionHandler: ActionHandler<HaActionConfig> = (action, hass, ele
         hass,
         {
             entity: action.entity,
-            tap_action: action.tap_action,
+            tap_action: normalizeActionConfig(action.tap_action),
         },
         'tap'
     );

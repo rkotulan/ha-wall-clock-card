@@ -13,6 +13,7 @@ import { ActionBarController } from './action-bar-controller';
 import {
     ActionBarConfig,
     executeAction,
+    normalizeActionConfig,
     ActionBarAlignment, ModuleActionConfig, ActionGesture
 } from './types';
 import { HomeAssistant, hasAction } from 'custom-card-helpers';
@@ -362,8 +363,8 @@ export class ActionBarComponent extends BottomBarComponent {
                  tabindex="0"
                  aria-label="${action.title}"
                  ${actionHandler({
-                     hasHold: hasAction(action.hold_action),
-                     hasDoubleClick: hasAction(action.double_tap_action),
+                     hasHold: hasAction(normalizeActionConfig(action.hold_action)),
+                     hasDoubleClick: hasAction(normalizeActionConfig(action.double_tap_action)),
                  })}
                  @action=${(ev: CustomEvent) => this._handleAction(action, ev.detail?.action || 'tap')}>
                 ${isHomeAssistantIconName(iconToUse)

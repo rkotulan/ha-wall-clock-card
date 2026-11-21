@@ -1,5 +1,26 @@
-import {HomeAssistant, ActionConfig, handleAction} from 'custom-card-helpers';
+import {HomeAssistant, ActionConfig, CallServiceActionConfig, handleAction} from 'custom-card-helpers';
 import type {WidgetOrientation} from '../../core/layout-types';
+
+/** Modern HA service action, missing from custom-card-helpers' action types. */
+export interface PerformActionConfig extends Omit<CallServiceActionConfig, 'action' | 'service' | 'service_data'> {
+    action: 'perform-action';
+    perform_action: string;
+    data?: CallServiceActionConfig['service_data'];
+}
+
+export type HomeAssistantActionConfig = ActionConfig | PerformActionConfig;
+
+/** Translate modern service actions for custom-card-helpers without changing saved config. */
+export function normalizeActionConfig(action: HomeAssistantActionConfig | undefined): ActionConfig | undefined {
+    if (action?.action !== 'perform-action') return action;
+
+    return {
+        ...action,
+        action: 'call-service',
+        service: action.perform_action,
+        service_data: action.data,
+    };
+}
 
 /**
  * Alignment options for action bar buttons
@@ -58,9 +79,9 @@ export interface ModuleActionConfig extends BaseActionConfig {
      * routes the whole action through HA's handleAction() instead of a plugin
      * handler, so any action bar button can use standard HA actions.
      */
-    tap_action?: ActionConfig;
-    hold_action?: ActionConfig;
-    double_tap_action?: ActionConfig;
+    tap_action?: HomeAssistantActionConfig;
+    hold_action?: HomeAssistantActionConfig;
+    double_tap_action?: HomeAssistantActionConfig;
 
     [key: string]: any; // Allow any additional properties for module-specific configuration
 }
@@ -164,7 +185,7 @@ export type ActionGesture = 'tap' | 'hold' | 'double_tap';
  * Anything else (e.g. an automation action sequence stored by mistake) is
  * ignored so the plugin handler still runs instead of a silent no-op.
  */
-function isStandardActionConfig(value: unknown): value is ActionConfig {
+function isStandardActionConfig(value: unknown): value is HomeAssistantActionConfig {
     return !!value
         && typeof value === 'object'
         && !Array.isArray(value)
@@ -198,7 +219,12 @@ export function executeAction(
         if (!config.entity && nestedEntity) {
             config.entity = nestedEntity;
         }
-        handleAction(element || document.body, hass, config, gesture);
+        handleAction(element || document.body, hass, {
+            ...config,
+            tap_action: normalizeActionConfig(config.tap_action),
+            hold_action: normalizeActionConfig(config.hold_action),
+            double_tap_action: normalizeActionConfig(config.double_tap_action),
+        }, gesture);
         return;
     }
 
