@@ -31,6 +31,7 @@ import roTranslations from '../../translations/ro.json';
 import ruTranslations from '../../translations/ru.json';
 import skTranslations from '../../translations/sk.json';
 import svTranslations from '../../translations/sv.json';
+import ukTranslations from '../../translations/uk.json';
 
 // Unified language definition with code, label, and translations
 export interface LanguageDefinition {
@@ -61,6 +62,7 @@ export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
   { code: 'ru', label: 'Russian (Русский)', locale: 'ru-RU', translations: ruTranslations },
   { code: 'sk', label: 'Slovak (Slovenčina)', locale: 'sk-SK', translations: skTranslations },
   { code: 'sv', label: 'Swedish (Svenska)', locale: 'sv-SE', translations: svTranslations },
+  { code: 'uk', label: 'Ukrainian (Українська)', locale: 'uk-UA', translations: ukTranslations },
 ];
 
 // Map of language codes to translations (derived from SUPPORTED_LANGUAGES)
